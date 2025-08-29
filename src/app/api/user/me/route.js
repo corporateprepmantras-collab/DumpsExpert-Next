@@ -4,12 +4,20 @@ import { authOptions } from "@/lib/auth/authOptions";
 import { connectMongoDB } from "@/lib/mongo";
 import UserInfo from "@/models/userInfoSchema";
 
-export async function GET() {
+import { getToken } from "next-auth/jwt";
+
+export async function GET(req) {
   try {
     console.log("Route hit: /api/user/me");
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.email) {
-      console.error("Unauthorized: No valid session");
+    let session = await getServerSession(authOptions);
+    let email = session?.user?.email;
+    // Fallback: Use JWT token if session is missing (for edge/middleware parity)
+    if (!email) {
+      const token = await getToken({ req });
+      email = token?.email;
+    }
+    if (!email) {
+      console.error("Unauthorized: No valid session or token");
       return NextResponse.json(
         { error: "Unauthorized access" },
         { status: 401 }
@@ -17,7 +25,7 @@ export async function GET() {
     }
 
     await connectMongoDB();
-    const user = await UserInfo.findOne({ email: session.user.email }).select(
+    const user = await UserInfo.findOne({ email }).select(
       "-password"
     );
     if (!user) {

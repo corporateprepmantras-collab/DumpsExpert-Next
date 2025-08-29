@@ -33,10 +33,10 @@ export default function NavbarSearch({ hideOnLarge = false }) {
   useEffect(() => {
     if (query.length > 0) {
       setLoading(true);
-      fetch(`https://dummyjson.com/products/search?q=${query}`)
+      fetch(`/api/products?q=${query}`)
         .then((res) => res.json())
         .then((data) => {
-          setProducts(data.products || []);
+          setProducts(data.data || []);
           setSearched(true);
         })
         .finally(() => setLoading(false));
@@ -87,18 +87,10 @@ export default function NavbarSearch({ hideOnLarge = false }) {
           {!loading && searched && products.length > 0 && (
             <div className="grid grid-cols-1 gap-4">
               {products.map((product) => (
-                <Link href="#" key={product.id}>
-                  <div className="border h-[350px] rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                    <img
-                      src={product.thumbnail}
-                      alt={product.title}
-                      className="w-full h-48 object-cover rounded-md mb-3"
-                    />
+                <Link href={`/ItDumps/${product.category}/by-slug/${product.slug}`} key={product._id}>
+                  <div className="border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                     <h3 className="font-semibold text-lg">{product.title}</h3>
-                    <p className="text-gray-600 text-sm line-clamp-2">
-                      {product.description}
-                    </p>
-                    <p className="text-black font-bold mt-2">${product.price}</p>
+                    <p className="text-gray-600 text-sm">{product.sapExamCode}</p>
                   </div>
                 </Link>
               ))}
@@ -179,18 +171,10 @@ export default function NavbarSearch({ hideOnLarge = false }) {
         {!loading && searched && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 mt-6 w-full max-w-6xl cursor-pointer">
             {products.map((product) => (
-              <Link href="#" key={product.id}>
-                <div className="border h-[350px] rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                  <img
-                    src={product.thumbnail}
-                    alt={product.title}
-                    className="w-full h-48 object-cover rounded-md mb-3"
-                  />
+              <Link href={`/ItDumps/${product.category}/by-slug/${product.slug}`} key={product._id}>
+                <div className="border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                   <h3 className="font-semibold text-lg">{product.title}</h3>
-                  <p className="text-gray-600 text-sm line-clamp-2">
-                    {product.description}
-                  </p>
-                  <p className="text-black font-bold mt-2">${product.price}</p>
+                  <p className="text-gray-600 text-sm">{product.sapExamCode}</p>
                 </div>
               </Link>
             ))}

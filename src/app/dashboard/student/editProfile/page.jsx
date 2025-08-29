@@ -37,7 +37,7 @@ const EditProfile = () => {
 
     try {
       // 🔁 Replace with actual API
-      await axios.post("http://localhost:8000/api/profile/update", payload, {
+      await axios.post("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/profile/update", payload, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });

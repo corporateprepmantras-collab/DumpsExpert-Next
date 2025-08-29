@@ -47,7 +47,7 @@ const MaintenancePage = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:8000/api/maintenance-page/update",
+        "http://${process.env.NEXT_PUBLIC_BASE_URL}/api/maintenance-page/update",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

@@ -17,7 +17,7 @@ const PdfCoursesClient = () => {
         }
 
         const res = await axios.get(
-          `http://localhost:8000/api/orders/user/${userId}`,
+          `http://${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/user/${userId}`,
           { withCredentials: true }
         );
 

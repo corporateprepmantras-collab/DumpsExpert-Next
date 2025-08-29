@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function getDumpsData() {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://${process.env.NEXT_PUBLIC_BASE_URL}";
     const res = await fetch(`${apiUrl}/api/product-categories`, {
       cache: "no-store", // Remove revalidate to force dynamic rendering
     });

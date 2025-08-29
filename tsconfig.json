@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     "src/app/api/products/[id]/route.js"
-  ],
+, "src/app/dashboard/admin/exam/[examId]/page.tsx"  ],
   "exclude": [
     "node_modules"
   ]

@@ -30,7 +30,7 @@ export default function InstructionsPage() {
     const fetchInstructions = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`"http://localhost:8000"}/api/exams/bySlug/${slug}`);
+        const res = await axios.get(`"http://${process.env.NEXT_PUBLIC_BASE_URL}"}/api/exams/bySlug/${slug}`);
         const examData = res.data;
 
         setMainInstructions(

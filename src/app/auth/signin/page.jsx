@@ -38,28 +38,41 @@ export default function SignIn() {
   };
 
   const handleOAuthSignIn = async (provider) => {
+    setError("");
     try {
       const result = await signIn(provider, { callbackUrl: "/dashboard", redirect: false });
       if (result?.error) {
         setError("OAuth sign-in failed");
         return;
       }
-      // Wait for session to update
-      setTimeout(async () => {
-        const res = await fetch("/api/user/me");
-        if (res.ok) {
-          const user = await res.json();
-          if (user.role === "admin") {
-            router.push("/dashboard/admin");
-          } else if (user.role === "student" && user.subscription === "yes") {
-            router.push("/dashboard/student");
-          } else {
-            router.push("/dashboard/guest");
+
+      // Retry fetching user info up to 5 times (with 500ms delay)
+      let user = null;
+      let attempts = 0;
+      while (attempts < 5 && !user) {
+        try {
+          const res = await fetch("/api/user/me");
+          if (res.ok) {
+            user = await res.json();
+            break;
           }
-        } else {
-          router.push("/dashboard/guest");
-        }
-      }, 1000);
+        } catch {}
+        await new Promise((r) => setTimeout(r, 500));
+        attempts++;
+      }
+
+      if (!user) {
+        setError("Could not fetch user info after sign-in. Please try refreshing the page or contact support.");
+        return;
+      }
+
+      if (user.role === "admin") {
+        router.push("/dashboard/admin");
+      } else if (user.role === "student" && user.subscription === "yes") {
+        router.push("/dashboard/student");
+      } else {
+        router.push("/dashboard/guest");
+      }
     } catch (err) {
       setError("An error occurred during OAuth sign-in. Please try again.");
       console.error("OAuth sign-in error:", err);

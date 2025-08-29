@@ -12,7 +12,7 @@ const Announcement = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/announcement");
+        const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/announcement");
         const data = res.data;
         setActive(data?.active || false);
         setDelay(data?.delay?.toFixed(2) || "2.00");

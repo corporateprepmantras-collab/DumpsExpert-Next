@@ -118,7 +118,7 @@
 //       });
 //       if (formData.image) blogFormData.append("image", formData.image);
 
-//       const res = await axios.post("http://localhost:8000/api/blogs/create", blogFormData, {
+//       const res = await axios.post("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/blogs/create", blogFormData, {
 //         headers: { "Content-Type": "multipart/form-data" },
 //         withCredentials: true,
 //       });

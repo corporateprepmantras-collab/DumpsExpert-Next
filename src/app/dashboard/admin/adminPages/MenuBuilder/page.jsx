@@ -37,7 +37,7 @@ export default function MenuBuilder() {
   useEffect(() => {
     const fetchMenus = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/menu-builder");
+        const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/menu-builder");
         setMainMenu(res.data.mainMenu || []);
         setPremadeMenu(res.data.premadeMenu || []);
       } catch (err) {
@@ -56,7 +56,7 @@ export default function MenuBuilder() {
 
     const userId = localStorage.getItem("userId");
     try {
-      const res = await axios.post("http://localhost:8000/api/menu-builder/add", {
+      const res = await axios.post("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/menu-builder/add", {
         type: "mainMenu",
         item: newItem,
         userId,
@@ -81,7 +81,7 @@ export default function MenuBuilder() {
     }
 
     try {
-      await axios.put("http://localhost:8000/api/menu-builder", {
+      await axios.put("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/menu-builder", {
         mainMenu,
         premadeMenu,
         userId,
