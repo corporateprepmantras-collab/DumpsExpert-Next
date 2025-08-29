@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useParams } from "next/navigation";
+import "react-quill/dist/quill.snow.css";
+
 const ReactQuill = dynamic(() => import("react-quill"), {
   ssr: false,
-  loading: () => <p>Loading editor...</p>
+  loading: () => <p>Loading editor...</p>,
 });
-import "react-quill/dist/quill.snow.css";
 
 const InputWrapper = ({ label, children }) => (
   <div className="mb-4">
@@ -28,7 +29,7 @@ const quillModules = {
   ],
 };
 
-const QuestionForm = () => {
+function QuestionForm() {
   const router = useRouter();
   const params = useParams();
   const { examId, questionId } = params || {};
@@ -38,62 +39,33 @@ const QuestionForm = () => {
   const [loading, setLoading] = useState(true);
 
   const [questionText, setQuestionText] = useState("");
-  const [questionImage, setQuestionImage] = useState("");
-  const [options, setOptions] = useState([
-    { text: "", image: "" },
-    { text: "", image: "" },
-    { text: "", image: "" },
-    { text: "", image: "" },
-  ]);
-  const [correctAnswers, setCorrectAnswers] = useState([false, false, false, false]);
-  const [isSample, setIsSample] = useState(false);
-  const [type, setType] = useState("radio");
-  const [status, setStatus] = useState("publish");
   const [marks, setMarks] = useState(1);
   const [negativeMarks, setNegativeMarks] = useState(0);
   const [difficulty, setDifficulty] = useState("Easy");
-  const [explanation, setExplanation] = useState("");
+  const [status, setStatus] = useState("publish");
+  const [isSample, setIsSample] = useState(false);
   const [tags, setTags] = useState("");
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
 
-  // Fetch exam and question if editing
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (examId) {
           const examRes = await fetch(`/api/exams/${examId}`);
-          if (!examRes.ok) throw new Error("Failed to fetch exam");
           const examData = await examRes.json();
           setExam(examData);
         }
-
         if (questionId) {
           const qRes = await fetch(`/api/questions/${questionId}`);
-          if (!qRes.ok) throw new Error("Failed to fetch question");
           const qData = await qRes.json();
           setQuestion(qData);
-
           setQuestionText(qData.questionText || "");
-          setQuestionImage(qData.questionImage || "");
-          setOptions(
-            qData.options?.map(o => ({ text: o.text, image: o.image || "" })) || [
-              { text: "", image: "" },
-              { text: "", image: "" },
-              { text: "", image: "" },
-              { text: "", image: "" },
-            ]
-          );
-          setCorrectAnswers(
-            ["A", "B", "C", "D"].map(label => qData.correctAnswers?.includes(label))
-          );
-          setIsSample(qData.isSample || false);
-          setType(qData.questionType || "radio");
-          setStatus(qData.status || "publish");
           setMarks(qData.marks || 1);
           setNegativeMarks(qData.negativeMarks || 0);
           setDifficulty(qData.difficulty || "Easy");
-          setExplanation(qData.explanation || "");
+          setStatus(qData.status || "publish");
+          setIsSample(qData.isSample || false);
           setTags(qData.tags?.join(", ") || "");
           setSubject(qData.subject || "");
           setTopic(qData.topic || "");
@@ -107,45 +79,6 @@ const QuestionForm = () => {
     fetchData();
   }, [examId, questionId]);
 
-  const toggleCorrectAnswer = (index) => {
-    const updated = [...correctAnswers];
-    updated[index] = !updated[index];
-    setCorrectAnswers(updated);
-    const count = updated.filter(Boolean).length;
-    setType(count > 1 ? "checkbox" : "radio");
-  };
-
-  const uploadImage = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/questions/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      return data.secure_url;
-    } catch (err) {
-      console.error("Image upload failed:", err);
-      return null;
-    }
-  };
-
-  const handleOptionImageUpload = async (e, index) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const url = await uploadImage(file);
-    if (url) {
-      const updated = [...options];
-      updated[index].image = url;
-      setOptions(updated);
-    }
-  };
-
-  const handleQuestionImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const url = await uploadImage(file);
-    if (url) setQuestionImage(url);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!exam) return;
@@ -153,23 +86,12 @@ const QuestionForm = () => {
     const payload = {
       examId: exam._id,
       questionText,
-      questionImage,
-      questionType: type,
-      difficulty,
       marks,
       negativeMarks,
+      difficulty,
       subject,
       topic,
-      tags: tags.split(",").map(tag => tag.trim()),
-      explanation,
-      options: options.map((opt, i) => ({
-        label: "ABCD"[i],
-        text: opt.text,
-        image: opt.image,
-      })),
-      correctAnswers: correctAnswers
-        .map((isCorrect, i) => (isCorrect ? "ABCD"[i] : null))
-        .filter(Boolean),
+      tags: tags.split(",").map((t) => t.trim()),
       isSample,
       status,
     };
@@ -188,7 +110,7 @@ const QuestionForm = () => {
           body: JSON.stringify(payload),
         });
       }
-      router.push(`/admin/exams/${exam._id}/questions`);
+      router.push(`/dashboard/admin/exam/${exam._id}/questions`);
     } catch (err) {
       console.error("Error saving question:", err);
     }
@@ -199,18 +121,17 @@ const QuestionForm = () => {
   return (
     <div className="p-6 space-y-6 bg-white rounded-md shadow-md border">
       <button
-        onClick={() => router.push(`/admin/exams/${exam._id}/questions`)}
+        onClick={() => router.push(`/dashboard/admin/exam/${exam._id}/questions`)}
         className="bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm rounded shadow"
       >
         ← Back
       </button>
 
       <h2 className="text-2xl font-semibold text-gray-800">
-        {questionId ? "Edit" : "Add"} Question
+        {questionId ? "Edit Question" : "Add New Question"}
       </h2>
 
       <form onSubmit={handleSubmit} className="grid gap-6">
-        {/* Question fields */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputWrapper label="Marks">
             <input
@@ -271,14 +192,11 @@ const QuestionForm = () => {
             />
           </InputWrapper>
           <InputWrapper label="Add to Sample">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={isSample}
-                onChange={() => setIsSample(!isSample)}
-              />
-              Yes
-            </label>
+            <input
+              type="checkbox"
+              checked={isSample}
+              onChange={() => setIsSample(!isSample)}
+            />
           </InputWrapper>
         </section>
 
@@ -302,15 +220,6 @@ const QuestionForm = () => {
       </form>
     </div>
   );
-};
+}
 
 export default QuestionForm;
-import QuestionForm from "../../../questionManage/QuestionForm";
-export default function QuestionPage() {
-  return (
-    <div>
-      <h1>Create New Question</h1>
-      <QuestionForm />
-    </div>
-  );
-}
