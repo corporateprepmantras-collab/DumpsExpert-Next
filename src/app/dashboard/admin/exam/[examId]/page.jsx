@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useParams } from "next/navigation";
-=======
 
 
 import { useState, useEffect } from "react";
@@ -164,7 +163,6 @@ export default function ExamFormWrapper() {
     { name: "mrpINR", label: "MRP (₹)", type: "number" },
     { name: "lastUpdatedBy", label: "Updated By", type: "text", required: true },
   ];
-=======
   if (loading) return (
     <div className="flex justify-center items-center py-10">
       <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
