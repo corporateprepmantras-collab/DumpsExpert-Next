@@ -3,12 +3,10 @@ import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useParams } from "next/navigation";
 
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import "react-quill/dist/quill.snow.css";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation"; // ✅ correct import
-import ExamForm from "../examComps/ExamForm";
-
-const ExamForm = () => {
+export default function ExamFormPage() {
   const router = useRouter();
   const params = useParams();
   const examId = params?.examId;
@@ -18,8 +16,6 @@ const ExamForm = () => {
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  const isEditing = Boolean(exam);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -40,6 +36,8 @@ const ExamForm = () => {
     productId: "",
   });
 
+  const isEditing = Boolean(exam);
+
   // Fetch exam if editing
   useEffect(() => {
     if (!examId) return;
@@ -50,7 +48,11 @@ const ExamForm = () => {
         if (!res.ok) throw new Error("Failed to fetch exam");
         const data = await res.json();
         setExam(data);
-        setFormData((prev) => ({ ...prev, ...data, status: data.status || "unpublished" }));
+        setFormData((prev) => ({
+          ...prev,
+          ...data,
+          status: data.status || "unpublished",
+        }));
       } catch (err) {
         console.error(err);
       } finally {
@@ -60,31 +62,18 @@ const ExamForm = () => {
 
     fetchExam();
   }, [examId]);
-export default function ExamFormWrapper() {
-  const params = useParams();
-  const examId = params.examId; // App Router me jo folder name hai use params se milega
-
-  const [exam, setExam] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   // Fetch products
   useEffect(() => {
-    const fetchExam = async () => {
-      if (!examId) {
-        // Add mode
-        setExam(null);
-        setLoading(false);
-        return;
-      }
-
+    const fetchProducts = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/exams/${examId}`);
+        const res = await fetch("/api/products");
         const data = await res.json();
-        setExam(data); // Edit mode
+        setProducts(data);
       } catch (err) {
-        console.error("Failed to fetch exam:", err);
+        console.error("Failed to fetch products:", err);
       } finally {
-        setLoading(false);
+        setLoadingProducts(false);
       }
     };
     fetchProducts();
@@ -124,11 +113,9 @@ export default function ExamFormWrapper() {
         body: JSON.stringify(payload),
       });
 
+      if (!res.ok) throw new Error("Failed to save exam");
 
-    fetchExam();
-  }, [examId]);
-
-      router.push("/admin/exams");
+      router.push("/dashboard/admin/exam");
     } catch (err) {
       console.error("Error saving exam:", err);
       alert("Something went wrong. Please try again.");
@@ -163,14 +150,6 @@ export default function ExamFormWrapper() {
     { name: "mrpINR", label: "MRP (₹)", type: "number" },
     { name: "lastUpdatedBy", label: "Updated By", type: "text", required: true },
   ];
-  if (loading) return (
-    <div className="flex justify-center items-center py-10">
-      <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-      </svg>
-    </div>
-  );
 
   if (loadingExam) return <p>Loading exam...</p>;
 
@@ -178,7 +157,7 @@ export default function ExamFormWrapper() {
     <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-8">
       <div className="flex justify-between items-center">
         <button
-          onClick={() => router.push("/admin/exams")}
+          onClick={() => router.push("/dashboard/admin/exam")}
           type="button"
           className="text-sm text-gray-600 hover:underline"
         >
@@ -282,9 +261,5 @@ export default function ExamFormWrapper() {
         </div>
       </form>
     </div>
-
-
-      <ExamForm exam={exam} />
-   
   );
 }
