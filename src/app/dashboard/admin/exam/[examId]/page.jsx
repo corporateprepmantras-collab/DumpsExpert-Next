@@ -22,7 +22,7 @@ export default function ExamFormWrapper() {
       }
 
       try {
-        const res = await fetch(`http://localhost:3000/api/exams/${examId}`);
+        const res = await fetch(`/api/exams/${examId}`);
         const data = await res.json();
         setExam(data); // Edit mode
       } catch (err) {

@@ -34,7 +34,7 @@ export default function ExamForm({ exam }) {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/products/get");
+        const res = await fetch("/api/products/get");
         const data = await res.json();
         setProducts(data.data);
         console.log(data);
@@ -95,19 +95,19 @@ export default function ExamForm({ exam }) {
 
     try {
       if (isEditing) {
-        await fetch(`http://localhost:3000//api/exams/${exam._id}`, {
+        await fetch(`/api/exams/${exam._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       } else {
-        await fetch("http://localhost:3000//api/exams", {
+        await fetch("/api/exams", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       }
-      router.push("http://localhost:3000//dashboard/admin/exam");
+      router.push("/dashboard/admin/exam");
     } catch (err) {
       console.error("Error saving exam:", err);
     }
