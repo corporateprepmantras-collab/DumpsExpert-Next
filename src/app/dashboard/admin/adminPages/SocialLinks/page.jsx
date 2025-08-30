@@ -46,7 +46,7 @@ export default function SocialLinks() {
   const [message, setMessage] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  const api = "http://localhost:8000/api/social-links";
+  const api = "http://${process.env.NEXT_PUBLIC_BASE_URL}/api/social-links";
 
   useEffect(() => {
     fetchLinks();
@@ -191,6 +191,7 @@ export default function SocialLinks() {
         </CardContent>
       </Card>
 
+      {/* Snackbar for notifications */}
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbarOpen}

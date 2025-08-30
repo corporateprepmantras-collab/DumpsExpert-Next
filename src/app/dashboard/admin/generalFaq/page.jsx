@@ -53,7 +53,7 @@ const AdminGeneralFAQs = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this FAQ?")) return;
     try {
-      await axios.delete(`http://localhost:8000/api/general-faqs/${id}`, {
+      await axios.delete(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/general-faqs/${id}`, {
         withCredentials: true,
       });
       setFaqs((prev) => prev.filter((faq) => faq._id !== id));

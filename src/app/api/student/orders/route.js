@@ -5,6 +5,7 @@ import UserInfo from "@/models/userInfoSchema";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/authOptions";
+import Product from "@/models/productListSchema"; // Add this import
 
 // Define authUsers model to ensure it's registered before use
 const authUserModel = mongoose.models.authUsers || mongoose.model('authUsers', new mongoose.Schema({

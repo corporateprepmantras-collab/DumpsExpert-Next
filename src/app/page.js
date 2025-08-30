@@ -1,20 +1,18 @@
 // app/page.jsx
-
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 
 import banner from "@/assets/landingassets/banner.webp";
 
-// ✅ Corrected folder name (landingpage instead of "landin page")
-import ExamDumpsSlider from "@/landin page/ExamDumpsSlider";
-import UnlockGoals from "@/landin page/UnlockGoals";
-import GeneralFAQs from "@/landin page/GeneralFAQs";
-import ContentDumpsFirst from "@/landin page/ContentBoxFirst";
-import ContentDumpsSecond from "@/landin page/ContentBoxSecond";
-import Testimonial from "@/landin page/Testimonial";
+// Corrected folder name
+import ExamDumpsSlider from "@/landingpage/ExamDumpsSlider";
+import UnlockGoals from "@/landingpage/UnlockGoals";
+import GeneralFAQs from "@/landingpage/GeneralFAQs";
+import ContentDumpsFirst from "@/landingpage/ContentBoxFirst";
+import ContentDumpsSecond from "@/landingpage/ContentBoxSecond";
+import Testimonial from "@/landingpage/Testimonial";
 
 export const metadata = {
   title: "Dumpsxpert – #1 IT Exam Dumps Provider",
@@ -22,20 +20,19 @@ export const metadata = {
     "Pass your IT certifications in first attempt with trusted exam dumps, practice tests & PDF guides by Dumpsxpert.",
 };
 
-// ✅ Server Component (no "use client")
+// Server Component
 export default async function HomePage() {
+  // ✅ Use a proper production URL from env
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://dumpsxpert-next.vercel.app";
+
   // fetch categories
-  const categoriesRes = await fetch(
-    `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/blogs/blog-categories`,
-    { cache: "no-store" }
-  );
+  const categoriesRes = await fetch(`${baseUrl}/api/blogs/blog-categories`, {
+    cache: "no-store",
+  });
   const categories = await categoriesRes.json();
 
   // fetch blogs
-  const blogsRes = await fetch(
-    `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/blogs`,
-    { cache: "no-store" }
-  );
+  const blogsRes = await fetch(`${baseUrl}/api/blogs`, { cache: "no-store" });
   const blogsData = await blogsRes.json();
   const blogs = blogsData?.data || [];
 
@@ -52,7 +49,7 @@ export default async function HomePage() {
 
   return (
     <div className="p-6">
-      {/* === Hero Section === */}
+      {/* Hero Section */}
       <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
         <div className="w-full lg:w-1/2 mt-10 lg:mt-0">
           <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4">
@@ -97,7 +94,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* === Popular Dumps Section === */}
+      {/* Popular Dumps */}
       <section className="py-16 px-4 md:px-12">
         <h2 className="text-3xl font-bold text-center mb-10">
           Top Trending Certification Dumps
@@ -121,7 +118,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* === Blog Section === */}
+      {/* Blog Section */}
       <section className="py-20 px-4 md:px-20 bg-white">
         <h2 className="text-3xl font-bold text-center mb-10 text-gray-800">
           Latest Exam Tips & Insights
@@ -204,7 +201,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* === Extra Sections === */}
+      {/* Extra Sections */}
       <ExamDumpsSlider />
       <ContentDumpsFirst />
       <UnlockGoals />

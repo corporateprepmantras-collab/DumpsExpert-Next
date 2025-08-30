@@ -17,18 +17,13 @@ const StudentOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const userId = localStorage.getItem("studentId");
-        if (!userId) {
-          console.error("No user ID found in localStorage");
-          return;
-        }
-
-        const res = await axios.get(`http://localhost:8000/api/orders/user/${userId}`, {
+        // Fetch all orders for the current user
+        const res = await axios.get("/api/student/orders", {
           withCredentials: true,
         });
 
-        setOrders(res.data.data);
-        setFilteredOrders(res.data.data);
+        setOrders(res.data.orders);
+        setFilteredOrders(res.data.orders);
       } catch (err) {
         console.error("Error fetching orders:", err);
       }
@@ -36,6 +31,27 @@ const StudentOrders = () => {
 
     fetchOrders();
   }, []);
+
+  // Function to fetch a specific order when needed
+  const fetchOrderDetails = async (orderId) => {
+    try {
+      const res = await axios.get(`/api/student/order/${orderId}`, {
+        withCredentials: true,
+      });
+      return res.data.order;
+    } catch (err) {
+      console.error("Error fetching order details:", err);
+      return null;
+    }
+  };
+
+  // Handle viewing order details
+  const handleViewDetails = async (orderId) => {
+    const orderDetails = await fetchOrderDetails(orderId);
+    if (orderDetails) {
+      setSelectedOrder(orderDetails);
+    }
+  };
 
   useEffect(() => {
     if (!searchQuery) {
@@ -115,7 +131,7 @@ const StudentOrders = () => {
                 </td>
                 <td className="p-2 border">
                   <button
-                    onClick={() => setSelectedOrder(order)}
+                    onClick={() => handleViewDetails(order._id)}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
                   >
                     Details

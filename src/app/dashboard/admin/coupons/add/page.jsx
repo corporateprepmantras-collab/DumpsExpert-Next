@@ -19,7 +19,7 @@ const CouponForm = () => {
   useEffect(() => {
     const fetchCoupon = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:8000/api/coupons/${id}`);
+        const { data } = await axios.get(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons/${id}`);
         setForm({
           name: data.name,
           discount: data.discount,
@@ -54,9 +54,9 @@ const CouponForm = () => {
       };
 
       if (id) {
-        await axios.put(`http://localhost:8000/api/coupons/${id}`, payload);
+        await axios.put(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons/${id}`, payload);
       } else {
-        await axios.post(`http://localhost:8000/api/coupons`, payload);
+        await axios.post(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons`, payload);
       }
 
       router.push("/admin/coupons/list");

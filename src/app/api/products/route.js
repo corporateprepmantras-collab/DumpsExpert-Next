@@ -33,12 +33,30 @@ export async function GET(req) {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+    const searchQuery = searchParams.get("q");
 
     if (id) {
       const product = await Product.findById(id);
       if (!product)
         return NextResponse.json({ message: "Product not found" }, { status: 404 });
       return NextResponse.json({ data: product });
+    }
+
+    // Search functionality
+    if (searchQuery) {
+      const searchRegex = new RegExp(searchQuery, 'i');
+      const products = await Product.find({
+        $or: [
+          { title: { $regex: searchRegex } },
+          { sapExamCode: { $regex: searchRegex } },
+          { category: { $regex: searchRegex } }
+        ]
+      }).limit(10).lean();
+      
+      return NextResponse.json({
+        data: products,
+        total: products.length
+      });
     }
 
     // list

@@ -10,7 +10,7 @@ const CouponList = () => {
 
   const fetchCoupons = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/api/coupons");
+      const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons");
       console.log("Fetched coupons:", res.data);
       setCoupons(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -22,7 +22,7 @@ const CouponList = () => {
   const deleteCoupon = async (id) => {
     if (!window.confirm("Are you sure you want to delete this coupon?")) return;
     try {
-      await axios.delete(`http://localhost:8000/api/coupons/${id}`);
+      await axios.delete(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons/${id}`);
       fetchCoupons(); // Refresh list after deletion
     } catch (err) {
       console.error("Failed to delete coupon:", err);

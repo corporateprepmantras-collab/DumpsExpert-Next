@@ -70,7 +70,7 @@ const Cart = () => {
 
   const handleQuantityChange = (id, type, operation) => {
     updateQuantity(id, type, operation);
-    toast.success(`Quantity updated for ${type}`);
+    toast.success(`Quantity ${operation === 'inc' ? 'increased' : 'decreased'} for item`);
   };
 
   const handleCoupon = async () => {
@@ -89,11 +89,15 @@ const Cart = () => {
         code: couponCode,
       });
       const { discount } = response.data.coupon;
-      setDiscount(discount);
+      
+      // Calculate discount amount based on subtotal
+      const discountAmount = (subtotal * discount) / 100;
+      
+      setDiscount(discountAmount);
       setCouponError("");
       setCouponApplicable(true);
       setCouponCode("");
-      toast.success(`Coupon applied successfully! You saved ₹${discount}`);
+      toast.success(`Coupon applied successfully! You saved ₹${discountAmount.toFixed(2)} (${discount}% off)`);
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Failed to apply coupon";
@@ -355,12 +359,12 @@ const Cart = () => {
             <p>
               Discount:{" "}
               <span className="float-right text-green-600">
-                ₹{discount || 0}
+                ₹{discount.toFixed(2) || 0}
               </span>
             </p>
             {couponApplicable && (
               <p className="text-green-600 text-sm">
-                Coupon applied! You saved ₹{discount}
+                Coupon applied! You saved ₹{discount.toFixed(2)}
               </p>
             )}
           </div>

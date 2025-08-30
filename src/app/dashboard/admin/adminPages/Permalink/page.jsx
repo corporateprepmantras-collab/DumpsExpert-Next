@@ -9,7 +9,7 @@ const Permalink = () => {
 
   const fetchPermalinks = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/api/permalinks", {
+      const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/permalinks", {
         withCredentials: true,
       });
       setPages(res.data);
@@ -27,7 +27,7 @@ const Permalink = () => {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      await axios.put("http://localhost:8000/api/permalinks", pages, {
+      await axios.put("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/permalinks", pages, {
         withCredentials: true,
       });
       alert("Permalinks updated successfully!");
@@ -40,7 +40,7 @@ const Permalink = () => {
 
   const handleSeed = async () => {
     try {
-      await axios.post("http://localhost:8000/api/permalinks/seed", {}, {
+      await axios.post("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/permalinks/seed", {}, {
         withCredentials: true,
       });
       await fetchPermalinks();

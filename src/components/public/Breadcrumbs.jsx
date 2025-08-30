@@ -16,7 +16,7 @@ export default function Breadcrumbs() {
 
   const segments = pathname
     .split("/")
-    .filter(Boolean); // removes empty strings
+    .filter(Boolean); 
 
   const buildHref = (index) =>
     "/" + segments.slice(0, index + 1).join("/");

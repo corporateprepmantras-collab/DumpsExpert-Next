@@ -24,7 +24,11 @@ export default function GuestDashboardLayout({ children }) {
     }
   }, [loading, user, router]);
 
-  if (loading || !user) return <div className="min-h-screen bg-gray-100" />;
+  if (loading || !user) return <div className="min-h-screen flex items-center justify-center"><span>Loading...</span></div>;
+
+  if (user.error) {
+    return <div className="min-h-screen flex items-center justify-center text-red-600">{user.error}</div>;
+  }
 
   if (user.role !== "guest") {
     return null; // Prevent rendering until redirect

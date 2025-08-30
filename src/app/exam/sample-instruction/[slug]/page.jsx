@@ -9,14 +9,14 @@ export default function SampleInstructionsPage({ params }) {
   const [exam, setExam] = useState({});
 
   const router = useRouter();
-  const { slug } = params; // ✅ slug comes from params in App Router
+  const { slug } = params; // slug comes from params in App Router
 
   useEffect(() => {
     if (!slug) return;
 
     const fetchInstructions = async () => {
       try {
-        const res = await axios.get(`http://localhost:8000/api/exams/byslug/sdfsdf%20sdfsf`);
+        const res = await axios.get(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/exams/byslug/${encodeURIComponent(slug)}`);
         const examData = res.data[0];
         setExam(examData);
       } catch (err) {

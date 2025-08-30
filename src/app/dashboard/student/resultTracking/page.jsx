@@ -16,7 +16,7 @@ const ResultHistoryPage = () => {
         if (!studentId) throw new Error('Missing student ID');
 
         const res = await axios.get(
-          `http://localhost:8000/api/results/history/${studentId}`
+          `http://${process.env.NEXT_PUBLIC_BASE_URL}/api/results/history/${studentId}`
         );
         setHistory(res.data);
       } catch (err) {

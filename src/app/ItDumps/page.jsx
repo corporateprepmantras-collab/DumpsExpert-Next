@@ -4,13 +4,10 @@ import { FaCheckCircle } from "react-icons/fa";
 import guarantee from "../../assets/userAssets/guaranteed.png";
 
 // Fetch from your backend API
-export const dynamic = "force-dynamic";
-
 async function getDumpsData() {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const res = await fetch(`${apiUrl}/api/product-categories`, {
-      cache: "no-store", // Remove revalidate to force dynamic rendering
+    const res = await fetch("http://localhost:3000/api/product-categories", {
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -19,10 +16,12 @@ async function getDumpsData() {
 
     const json = await res.json();
 
+    // Case 1: API returns array directly
     if (Array.isArray(json)) {
       return json;
     }
 
+    // Case 2: API returns { data: [...] }
     if (Array.isArray(json?.data)) {
       return json.data;
     }
@@ -35,7 +34,8 @@ async function getDumpsData() {
   }
 }
 
-export default async function ItDumpsPage() {
+
+export default async function ITDumpsPage() {
   const dumpsData = await getDumpsData();
 
   return (
@@ -71,14 +71,12 @@ export default async function ItDumpsPage() {
           </div>
 
           <div className="space-y-3">
-            {["90 Days Free Updates", "24/7 Customer Support"].map(
-              (text, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <FaCheckCircle className="text-blue-600 text-xl" />
-                  {text}
-                </div>
-              )
-            )}
+            {["90 Days Free Updates", "24/7 Customer Support"].map((text, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <FaCheckCircle className="text-blue-600 text-xl" />
+                {text}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -88,7 +86,7 @@ export default async function ItDumpsPage() {
             dumpsData.map((item) => (
               <Link
                 key={item._id}
-                href={`/ItDumps/${item.name.toLowerCase()}`}
+                href={`/itdumps/${item.name.toLowerCase()}`}
                 className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[170px] md:w-[180px]"
               >
                 <div className="h-28 md:h-32 w-full relative">
@@ -107,9 +105,7 @@ export default async function ItDumpsPage() {
               </Link>
             ))
           ) : (
-            <p className="text-gray-600 text-center">
-              No categories available.
-            </p>
+            <p className="text-gray-600 text-center">No categories available.</p>
           )}
         </div>
       </div>
