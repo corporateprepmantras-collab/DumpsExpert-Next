@@ -1,64 +1,51 @@
 // lib/auth/authOptions.js
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import FacebookProvider from "next-auth/providers/facebook";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
-import { connectMongoDB, clientPromise } from "@/lib/mongo";
-import UserInfo from "@/models/userInfoSchema";
-import bcrypt from "bcryptjs";
+import NextAuth from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
+import FacebookProvider from 'next-auth/providers/facebook';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
+import { connectMongoDB, clientPromise } from '@/lib/mongo';
+import UserInfo from '@/models/userInfoSchema';
+import bcrypt from 'bcryptjs';
 
 export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise, {
-    collections: {
-      Users: "authUsers",
-      Accounts: "accounts",
-      Sessions: "sessions",
-    },
-  }),
+  adapter: MongoDBAdapter(clientPromise, { collections: { Users: 'authUsers', Accounts: 'accounts', Sessions: 'sessions' } }),
   providers: [
     CredentialsProvider({
-      id: "credentials",
-      name: "Email OTP",
+      id: 'credentials',
+      name: 'Email OTP',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
-            throw new Error("Email and password are required");
+            throw new Error('Email and password are required');
           }
 
           await connectMongoDB();
-          const user = await UserInfo.findOne({
-            email: credentials.email,
-          }).select("+password");
+          const user = await UserInfo.findOne({ email: credentials.email }).select('+password');
           if (!user) {
-            throw new Error("User not found. Please sign up with OTP.");
+            throw new Error('User not found. Please sign up with OTP.');
           }
 
           if (!user.isVerified) {
-            throw new Error("Email not verified. Please verify your email.");
+            throw new Error('Email not verified. Please verify your email.');
           }
 
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            user.password
-          );
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
           if (!isPasswordValid) {
-            throw new Error("Invalid password");
+            throw new Error('Invalid password');
           }
 
-          const adapter = MongoDBAdapter(clientPromise, {
-            collections: { Users: "authUsers" },
-          });
+          const adapter = MongoDBAdapter(clientPromise, { collections: { Users: 'authUsers' } });
           let authUser = await adapter.getUserByEmail(credentials.email);
           if (!authUser) {
             authUser = await adapter.createUser({
               email: user.email,
-              name: user.name || user.email.split("@")[0],
-              image: user.profileImage || "",
+              name: user.name || user.email.split('@')[0],
+              image: user.profileImage || '',
             });
             await UserInfo.updateOne(
               { email: credentials.email },
@@ -76,9 +63,9 @@ export const authOptions = {
             id: authUser.id.toString(),
             email: user.email,
             name: user.name,
-            role: user.role || "guest",
-            subscription: user.subscription || "no",
-            provider: user.provider || "credentials",
+            role: user.role || 'guest',
+            subscription: user.subscription || 'no',
+            provider: user.provider || 'credentials',
             providerId: user.providerId,
             isVerified: user.isVerified,
             phone: user.phone,
@@ -90,54 +77,39 @@ export const authOptions = {
             createdAt: user.createdAt,
           };
         } catch (error) {
-          console.error("Authorize error:", error.message);
+          console.error('Authorize error:', error.message);
           throw error;
         }
       },
     }),
     GoogleProvider({
-      clientId:
-        process.env.GOOGLE_CLIENT_ID ||
-        "873410730510-jlf5uvog05c9fm87hrjgl9q0hqh1jl9q.apps.googleusercontent.com",
-      clientSecret:
-        process.env.GOOGLE_CLIENT_SECRET ||
-        "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",
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
         },
       },
     }),
     FacebookProvider({
-      clientId: process.env.FACEBOOK_CLIENT_ID || "733837585885174",
-      clientSecret:
-        process.env.FACEBOOK_CLIENT_SECRET ||
-        "9550143785b374636d4b76bb3884d5a0",
+      clientId: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
     maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
         await connectMongoDB();
-        const adapter = MongoDBAdapter(clientPromise, {
-          collections: {
-            Users: "authUsers",
-            Accounts: "accounts",
-            Sessions: "sessions",
-          },
-        });
+        const adapter = MongoDBAdapter(clientPromise, { collections: { Users: 'authUsers', Accounts: 'accounts', Sessions: 'sessions' } });
         const email = user.email;
 
-        if (
-          account?.provider === "google" ||
-          account?.provider === "facebook"
-        ) {
+        if (account?.provider === 'google' || account?.provider === 'facebook') {
           let authUser = await adapter.getUserByEmail(email);
           let userInfo = await UserInfo.findOne({ email });
 
@@ -145,27 +117,18 @@ export const authOptions = {
           if (!authUser) {
             authUser = await adapter.createUser({
               email,
-              name: user.name || email.split("@")[0],
-              image: user.image || "",
+              name: user.name || email.split('@')[0],
+              image: user.image || '',
             });
           }
 
           // Link account to authUser
-          const accountDoc = await clientPromise.then((client) =>
-            client.db().collection("accounts").findOne({
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-            })
+          const accountDoc = await clientPromise.then(client =>
+            client.db().collection('accounts').findOne({ provider: account.provider, providerAccountId: account.providerAccountId })
           );
-          if (
-            !accountDoc ||
-            accountDoc.userId.toString() !== authUser.id.toString()
-          ) {
-            await clientPromise.then((client) =>
-              client.db().collection("accounts").deleteMany({
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-              })
+          if (!accountDoc || accountDoc.userId.toString() !== authUser.id.toString()) {
+            await clientPromise.then(client =>
+              client.db().collection('accounts').deleteMany({ provider: account.provider, providerAccountId: account.providerAccountId })
             );
             await adapter.linkAccount({
               provider: account.provider,
@@ -186,16 +149,16 @@ export const authOptions = {
             userInfo = new UserInfo({
               authUserId: authUser.id,
               email,
-              name: user.name || email.split("@")[0],
+              name: user.name || email.split('@')[0],
               provider: account.provider,
               providerId: account.providerAccountId,
               isVerified: true,
-              role: "guest", // Default role
-              subscription: "no", // Default subscription
-              phone: "",
-              address: "",
-              bio: "",
-              profileImage: user.image || "",
+              role: 'guest', // Default role
+              subscription: 'no', // Default subscription
+              phone: '',
+              address: '',
+              bio: '',
+              profileImage: user.image || '',
               createdAt: new Date(),
             });
             await userInfo.save();
@@ -207,8 +170,8 @@ export const authOptions = {
                 provider: account.provider,
                 providerId: account.providerAccountId,
                 isVerified: true,
-                name: userInfo.name || user.name || email.split("@")[0],
-                profileImage: userInfo.profileImage || user.image || "",
+                name: userInfo.name || user.name || email.split('@')[0],
+                profileImage: userInfo.profileImage || user.image || '',
                 // Preserve existing role and subscription unless explicitly updated
               }
             );
@@ -216,8 +179,8 @@ export const authOptions = {
 
           // Update user object with UserInfo data
           user.id = authUser.id.toString();
-          user.role = userInfo.role || "guest";
-          user.subscription = userInfo.subscription || "no";
+          user.role = userInfo.role || 'guest';
+          user.subscription = userInfo.subscription || 'no';
           user.provider = userInfo.provider || account.provider;
           user.providerId = userInfo.providerId || account.providerAccountId;
           user.isVerified = userInfo.isVerified;
@@ -235,7 +198,7 @@ export const authOptions = {
         // Credentials provider
         return true;
       } catch (error) {
-        console.error("SignIn callback error:", error.message);
+        console.error('SignIn callback error:', error.message);
         return false;
       }
     },
@@ -246,9 +209,9 @@ export const authOptions = {
           token.id = user.id;
           token.email = user.email;
           token.name = user.name;
-          token.role = user.role || "guest";
-          token.subscription = user.subscription || "no";
-          token.provider = user.provider || account?.provider || "credentials";
+          token.role = user.role || 'guest';
+          token.subscription = user.subscription || 'no';
+          token.provider = user.provider || account?.provider || 'credentials';
           token.providerId = user.providerId;
           token.isVerified = user.isVerified ?? false;
           token.phone = user.phone;
@@ -262,14 +225,12 @@ export const authOptions = {
         } else {
           // Refresh token with latest UserInfo data
           await connectMongoDB();
-          const userInfo = await UserInfo.findOne({
-            email: token.email,
-          }).select(
-            "role subscription name email provider providerId isVerified phone address dob gender bio profileImage createdAt"
+          const userInfo = await UserInfo.findOne({ email: token.email }).select(
+            'role subscription name email provider providerId isVerified phone address dob gender bio profileImage createdAt'
           );
           if (userInfo) {
-            token.role = userInfo.role || "guest";
-            token.subscription = userInfo.subscription || "no";
+            token.role = userInfo.role || 'guest';
+            token.subscription = userInfo.subscription || 'no';
             token.name = userInfo.name;
             token.email = userInfo.email;
             token.provider = userInfo.provider;
@@ -290,7 +251,7 @@ export const authOptions = {
         token.exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
         return token;
       } catch (error) {
-        console.error("JWT callback error:", error.message);
+        console.error('JWT callback error:', error.message);
         return token; // Return original token to avoid breaking session
       }
     },
@@ -316,88 +277,70 @@ export const authOptions = {
         session.expires = new Date(token.exp * 1000).toISOString();
         return session;
       } catch (error) {
-        console.error("Session callback error:", error.message);
+        console.error('Session callback error:', error.message);
         return session; // Return original session to avoid breaking session
       }
     },
   },
   pages: {
-    signIn: "/auth/signin",
-    error: "/auth/error",
-    signOut: "/auth/signout",
+    signIn: '/auth/signin',
+    error: '/auth/error',
+    signOut: '/auth/signout',
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV !== "production", // Disable debug in production
+  debug: process.env.NODE_ENV !== 'production', // Disable debug in production
   cookies: {
     sessionToken: {
       // Set both legacy and __Secure- prefixed cookie names for edge compatibility
-      name:
-        process.env.NODE_ENV === "production"
-          ? "__Secure-next-auth.session-token"
-          : "next-auth.session-token",
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 24 * 60 * 60, // 24 hours
-        domain:
-          process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
-            : undefined,
+        domain: process.env.NODE_ENV === 'production' ? '.dumpsxpert-next.vercel.app' : undefined,
       },
     },
     callbackUrl: {
-      name: "next-auth.callback-url",
+      name: 'next-auth.callback-url',
       options: {
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        domain:
-          process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
-            : undefined,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? '.dumpsxpert-next.vercel.app' : undefined,
       },
     },
     csrfToken: {
-      name: "next-auth.csrf-token",
+      name: 'next-auth.csrf-token',
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        domain:
-          process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
-            : undefined,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? '.dumpsxpert-next.vercel.app' : undefined,
       },
     },
     state: {
-      name: "next-auth.state",
+      name: 'next-auth.state',
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 900,
-        domain:
-          process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
-            : undefined,
+        domain: process.env.NODE_ENV === 'production' ? '.dumpsxpert-next.vercel.app' : undefined,
       },
     },
     pkceCodeVerifier: {
-      name: "next-auth.pkce.code_verifier",
+      name: 'next-auth.pkce.code_verifier',
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 900,
-        domain:
-          process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
-            : undefined,
+        domain: process.env.NODE_ENV === 'production' ? '.dumpsxpert-next.vercel.app' : undefined,
       },
     },
   },
