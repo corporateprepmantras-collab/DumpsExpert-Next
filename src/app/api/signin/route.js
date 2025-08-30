@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongo';
 import UserInfo from '@/models/userInfoSchema';
-import AuthUsers from '@/app/api/order/route.js';
+import authUsers from '@/app/api/order/route.js';
 import { signIn } from 'next-auth';
 
 export async function POST(request) {
