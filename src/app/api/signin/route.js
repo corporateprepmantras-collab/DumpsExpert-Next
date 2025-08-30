@@ -34,7 +34,7 @@ export async function POST(request) {
       );
     }
 
-    const authUser = await AuthUsers.findOne({ _id: userInfo.authUserId });
+    const authUser = await authUsers.findOne({ _id: userInfo.authUserId });
     if (!authUser) {
       return NextResponse.json(
         { message: 'Auth user not found' },
