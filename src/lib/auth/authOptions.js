@@ -107,10 +107,10 @@ export const authOptions = {
       },
     }),
     FacebookProvider({
-      clientId: process.env.FACEBOOK_CLIENT_ID || "733837585885174",
+      clientId: process.env.FACEBOOK_CLIENT_ID || "",
       clientSecret:
         process.env.FACEBOOK_CLIENT_SECRET ||
-        "9550143785b374636d4b76bb3884d5a0",
+        "",
     }),
   ],
   session: {
