@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { signIn, getServerSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -35,38 +35,49 @@ export default function SignIn() {
       setError("An error occurred during sign-in. Please try again.");
       console.error("Sign-in error:", err);
     }
-  };const handleOAuthSignIn = async (provider) => {
-  setError("");
-  try {
-    const result = await signIn(provider, { redirect: false });
+  };
 
-    if (result?.error) {
-      setError("OAuth sign-in failed");
-      return;
+  const handleOAuthSignIn = async (provider) => {
+    setError("");
+    try {
+      const result = await signIn(provider, { callbackUrl: "/dashboard", redirect: false });
+      if (result?.error) {
+        setError("OAuth sign-in failed");
+        return;
+      }
+
+      // Retry fetching user info up to 5 times (with 500ms delay)
+      let user = null;
+      let attempts = 0;
+      while (attempts < 5 && !user) {
+        try {
+          const res = await fetch("/api/user/me");
+          if (res.ok) {
+            user = await res.json();
+            break;
+          }
+        } catch {}
+        await new Promise((r) => setTimeout(r, 500));
+        attempts++;
+      }
+
+      if (!user) {
+        setError("Could not fetch user info after sign-in. Please try refreshing the page or contact support.");
+        return;
+      }
+
+      if (user.role === "admin") {
+        router.push("/dashboard/admin");
+      } else if (user.role === "student" && user.subscription === "yes") {
+        router.push("/dashboard/student");
+      } else {
+        router.push("/dashboard/guest");
+      }
+    } catch (err) {
+      setError("An error occurred during OAuth sign-in. Please try again.");
+      console.error("OAuth sign-in error:", err);
     }
-
-    // Wait until session is updated
-    const session = await getServerSession();
-
-    if (!session?.user) {
-      setError("Could not load user session. Please refresh and try again.");
-      return;
-    }
-
-    const { role, subscription } = session.user;
-
-    if (role === "admin") {
-      router.push("/dashboard/admin");
-    } else if (role === "student" && subscription === "yes") {
-      router.push("/dashboard/student");
-    } else {
-      router.push("/dashboard/guest");
-    }
-  } catch (err) {
-    setError("An error occurred during OAuth sign-in. Please try again.");
-    console.error("OAuth sign-in error:", err);
-  }
-};
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
