@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn, getServerSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -46,7 +46,7 @@ export default function SignIn() {
     }
 
     // Wait until session is updated
-    const session = await getSession();
+    const session = await getServerSession();
 
     if (!session?.user) {
       setError("Could not load user session. Please refresh and try again.");
