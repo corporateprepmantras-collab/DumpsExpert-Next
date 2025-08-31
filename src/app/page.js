@@ -23,7 +23,9 @@ export const metadata = {
 // Server Component
 export default async function HomePage() {
   // ✅ Use a proper production URL from env
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://dumpsxpert-next.vercel.app";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    "https://https://dumps-expert-next.vercel.app";
 
   // fetch categories
   const categoriesRes = await fetch(`${baseUrl}/api/blogs/blog-categories`, {

@@ -108,9 +108,7 @@ export const authOptions = {
     }),
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID || "",
-      clientSecret:
-        process.env.FACEBOOK_CLIENT_SECRET ||
-        "",
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "",
     }),
   ],
   session: {
@@ -148,26 +146,20 @@ export const authOptions = {
 
           // Link account to authUser
           const accountDoc = await clientPromise.then((client) =>
-            client
-              .db()
-              .collection("accounts")
-              .findOne({
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-              })
+            client.db().collection("accounts").findOne({
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+            })
           );
           if (
             !accountDoc ||
             accountDoc.userId.toString() !== authUser.id.toString()
           ) {
             await clientPromise.then((client) =>
-              client
-                .db()
-                .collection("accounts")
-                .deleteMany({
-                  provider: account.provider,
-                  providerAccountId: account.providerAccountId,
-                })
+              client.db().collection("accounts").deleteMany({
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+              })
             );
             await adapter.linkAccount({
               provider: account.provider,
@@ -345,7 +337,7 @@ export const authOptions = {
         maxAge: 24 * 60 * 60, // 24 hours
         domain:
           process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
+            ? ".https://dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -357,7 +349,7 @@ export const authOptions = {
         secure: process.env.NODE_ENV === "production",
         domain:
           process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
+            ? ".https://dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -370,7 +362,7 @@ export const authOptions = {
         secure: process.env.NODE_ENV === "production",
         domain:
           process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
+            ? ".https://dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -384,7 +376,7 @@ export const authOptions = {
         maxAge: 900,
         domain:
           process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
+            ? ".https://dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -398,7 +390,7 @@ export const authOptions = {
         maxAge: 900,
         domain:
           process.env.NODE_ENV === "production"
-            ? ".dumpsxpert-next.vercel.app"
+            ? ".https://dumps-expert-next.vercel.app"
             : undefined,
       },
     },
