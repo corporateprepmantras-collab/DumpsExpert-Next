@@ -34,20 +34,25 @@ export const authOptions = {
           const user = await UserInfo.findOne({
             email: credentials.email,
           }).select("+password");
+
           if (!user) {
-            throw new Error("User not found. Please sign up with OTP.");
+            console.log("No user found for", credentials.email);
+            return null;
           }
 
           if (!user.isVerified) {
-            throw new Error("Email not verified. Please verify your email.");
+            console.log("User not verified:", credentials.email);
+            return null;
           }
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password
           );
+
           if (!isPasswordValid) {
-            throw new Error("Invalid password");
+            console.log("Invalid password for", credentials.email);
+            return null;
           }
 
           const adapter = MongoDBAdapter(clientPromise, {

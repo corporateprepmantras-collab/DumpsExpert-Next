@@ -4,7 +4,8 @@ const bcrypt = require('bcryptjs');
 const userInfoSchema = new mongoose.Schema({
   authUserId: { type: mongoose.Schema.Types.ObjectId, required: true }, // Links to authUsers _id
   email: { type: String, required: true, unique: true },
-  password: { type: String },
+password: {
+  type: String,required: true,select: false,  },
   name: { type: String },
   role: { type: String, enum: ['guest', 'student', 'admin'], default: 'guest' },
   subscription: { type: String, default: 'no' },

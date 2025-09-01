@@ -30,9 +30,10 @@ export default function SignUp() {
       });
 
       const data = await response.json();
+
       if (!response.ok) {
-        setError(data.message || "Failed to send OTP");
-        if (data.message.includes("already exists")) {
+        setError(data.message || data.error || "Failed to send OTP");
+        if (data.message?.includes("already exists") || data.error?.includes("already exists")) {
           router.push("/auth/signin");
         }
         return;
@@ -62,8 +63,9 @@ export default function SignUp() {
       });
 
       const data = await response.json();
+
       if (!response.ok) {
-        setError(data.message || "OTP verification failed");
+        setError(data.message || data.error || "OTP verification failed");
         return;
       }
 
@@ -81,7 +83,9 @@ export default function SignUp() {
 
       // Refresh session to update JWT claims
       await signIn(undefined, { redirect: false });
-      router.push("/dashboard");
+
+      // Redirect to dashboard
+      router.push(data.redirect || "/dashboard");
     } catch (err) {
       setError("An error occurred during OTP verification. Please try again.");
       console.error("Verify OTP error:", err);
@@ -105,6 +109,7 @@ export default function SignUp() {
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
+
         {step === 1 ? (
           <form onSubmit={handleSendOTP}>
             <div className="mb-4">
@@ -164,6 +169,7 @@ export default function SignUp() {
             </button>
           </form>
         )}
+
         <div className="mt-4">
           <button
             onClick={() => handleOAuthSignUp("google")}
@@ -178,6 +184,7 @@ export default function SignUp() {
             Sign Up with Facebook
           </button>
         </div>
+
         <p className="mt-4 text-center">
           Already have an account?{" "}
           <Link href="/auth/signin" className="text-blue-500 hover:underline">
