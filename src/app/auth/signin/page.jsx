@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -22,15 +22,27 @@ export default function SignIn() {
       });
 
       if (result?.error) {
-        setError(result.error || "Sign-in failed");
-        if (result.error.includes("not found") || result.error.includes("not verified")) {
-          router.push("/auth/signup");
-        }
+        setError("Invalid email, password, or unverified account.");
         return;
       }
 
-      await signIn(undefined, { redirect: false });
-    router.push("/dashboard");
+      // ✅ Get session info after login
+      const session = await getSession();
+
+      if (!session?.user) {
+        setError("Could not load user session. Please refresh and try again.");
+        return;
+      }
+
+      const { role, subscription } = session.user;
+
+      if (role === "admin") {
+        router.push("/dashboard/admin");
+      } else if (role === "student" && subscription === "yes") {
+        router.push("/dashboard/student");
+      } else {
+        router.push("/dashboard/guest");
+      }
     } catch (err) {
       setError("An error occurred during sign-in. Please try again.");
       console.error("Sign-in error:", err);
@@ -40,35 +52,26 @@ export default function SignIn() {
   const handleOAuthSignIn = async (provider) => {
     setError("");
     try {
-      const result = await signIn(provider, { callbackUrl: "/dashboard", redirect: false });
+      const result = await signIn(provider, { redirect: false });
+
       if (result?.error) {
         setError("OAuth sign-in failed");
         return;
       }
 
-      // Retry fetching user info up to 5 times (with 500ms delay)
-      let user = null;
-      let attempts = 0;
-      while (attempts < 5 && !user) {
-        try {
-          const res = await fetch("/api/user/me");
-          if (res.ok) {
-            user = await res.json();
-            break;
-          }
-        } catch {}
-        await new Promise((r) => setTimeout(r, 500));
-        attempts++;
-      }
+      // ✅ Use client-safe getSession()
+      const session = await getSession();
 
-      if (!user) {
-        setError("Could not fetch user info after sign-in. Please try refreshing the page or contact support.");
+      if (!session?.user) {
+        setError("Could not load user session. Please refresh and try again.");
         return;
       }
 
-      if (user.role === "admin") {
+      const { role, subscription } = session.user;
+
+      if (role === "admin") {
         router.push("/dashboard/admin");
-      } else if (user.role === "student" && user.subscription === "yes") {
+      } else if (role === "student" && subscription === "yes") {
         router.push("/dashboard/student");
       } else {
         router.push("/dashboard/guest");
