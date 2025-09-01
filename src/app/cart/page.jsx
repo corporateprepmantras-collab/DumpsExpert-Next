@@ -9,6 +9,7 @@ import { Toaster, toast } from "sonner";
 import useCartStore from "@/store/useCartStore";
 import cartImg from "../../assets/landingassets/emptycart.webp";
 import { useSession, signIn } from "next-auth/react";
+import axios from "axios";
 
 const Cart = () => {
   const { data: session, status, update } = useSession();
@@ -32,7 +33,7 @@ const Cart = () => {
     const fetchUserId = async () => {
       if (status === "authenticated") {
         try {
-          const response = await instance.get("/api/user/me");
+          const response = await axios.get("/api/user/me");
           setUserId(response.data.id);
           console.log("Fetched userId from /api/user/me:", response.data.id);
         } catch (error) {
@@ -70,7 +71,9 @@ const Cart = () => {
 
   const handleQuantityChange = (id, type, operation) => {
     updateQuantity(id, type, operation);
-    toast.success(`Quantity ${operation === 'inc' ? 'increased' : 'decreased'} for item`);
+    toast.success(
+      `Quantity ${operation === "inc" ? "increased" : "decreased"} for item`
+    );
   };
 
   const handleCoupon = async () => {
@@ -81,23 +84,27 @@ const Cart = () => {
     }
 
     try {
-      if (!instance || typeof instance.post !== "function") {
+      if (!instance || typeof axios.post !== "function") {
         throw new Error("Axios instance is not initialized");
       }
 
-      const response = await instance.post("/api/coupons/validate", {
+      const response = await axios.post("/api/coupons/validate", {
         code: couponCode,
       });
       const { discount } = response.data.coupon;
-      
+
       // Calculate discount amount based on subtotal
       const discountAmount = (subtotal * discount) / 100;
-      
+
       setDiscount(discountAmount);
       setCouponError("");
       setCouponApplicable(true);
       setCouponCode("");
-      toast.success(`Coupon applied successfully! You saved ₹${discountAmount.toFixed(2)} (${discount}% off)`);
+      toast.success(
+        `Coupon applied successfully! You saved ₹${discountAmount.toFixed(
+          2
+        )} (${discount}% off)`
+      );
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Failed to apply coupon";
@@ -126,7 +133,7 @@ const Cart = () => {
     }
 
     try {
-      if (!instance || typeof instance.post !== "function") {
+      if (!instance || typeof axios.post !== "function") {
         throw new Error("Axios instance is not initialized");
       }
 
@@ -139,7 +146,7 @@ const Cart = () => {
         currency: "INR",
         userId, // Include userId for validation
       };
-      const response = await instance.post(
+      const response = await axios.post(
         "/api/payments/razorpay/create-order",
         orderData
       );
@@ -163,7 +170,7 @@ const Cart = () => {
           try {
             console.log("Verifying Razorpay payment:", razorpayResponse);
             console.log("User ID sent to verify:", userId);
-            const paymentVerification = await instance.post(
+            const paymentVerification = await axios.post(
               "/api/payments/razorpay/verify",
               {
                 razorpay_payment_id: razorpayResponse.razorpay_payment_id,
@@ -180,7 +187,7 @@ const Cart = () => {
                 items: cartItems,
                 totalAmount: grandTotal,
               });
-              await instance.post("/api/order", {
+              await axios.post("/api/order", {
                 userId,
                 items: cartItems,
                 totalAmount: grandTotal,

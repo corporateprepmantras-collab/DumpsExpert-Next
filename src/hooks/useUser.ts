@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import instance from '@/lib/axios';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import instance from "@/lib/axios";
+import axios from "axios";
 
 export function useUser() {
   const { data: session, status } = useSession();
@@ -10,17 +11,17 @@ export function useUser() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (status === 'loading') return; // Wait for session to resolve
-      if (status === 'unauthenticated') {
+      if (status === "loading") return; // Wait for session to resolve
+      if (status === "unauthenticated") {
         setLoading(false);
         return; // No session, no user
       }
 
       try {
-        const response = await instance.get('/api/user/me');
+        const response = await axios.get("/api/user/me");
         setUser(response.data);
       } catch (err) {
-        setError(err.response?.data?.error || 'Failed to fetch user data');
+        setError(err.response?.data?.error || "Failed to fetch user data");
       } finally {
         setLoading(false);
       }
@@ -31,11 +32,13 @@ export function useUser() {
 
   const updateUser = async (data) => {
     try {
-      const response = await instance.put('/api/user/me', data);
+      const response = await axios.put("/api/user/me", data);
       setUser(response.data);
       return response.data;
     } catch (err) {
-      throw new Error(err.response?.data?.error || 'Failed to update user data');
+      throw new Error(
+        err.response?.data?.error || "Failed to update user data"
+      );
     }
   };
 
