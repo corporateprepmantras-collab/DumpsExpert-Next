@@ -51,7 +51,7 @@ export default function StudentSidebar() {
       </div>
       {/* Overlay for mobile sidebar */}
       <div
-        className={`fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity duration-200 ${isOpen ? "block opacity-100" : "hidden opacity-0"} lg:hidden`}
+        className={`fixed inset-0 bg-black/70 z-40 transition-opacity duration-200 ${isOpen ? "block opacity-100" : "hidden opacity-0"} lg:hidden`}
         onClick={() => setIsOpen(false)}
       ></div>
       {/* Sidebar Drawer (mobile/tablet) */}

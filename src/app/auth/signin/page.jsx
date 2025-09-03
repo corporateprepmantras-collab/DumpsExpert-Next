@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -22,65 +22,33 @@ export default function SignIn() {
       });
 
       if (result?.error) {
-        setError("Invalid email, password, or unverified account.");
+        setError(result.error || "Sign-in failed");
+        if (result.error.includes("not found") || result.error.includes("not verified")) {
+          router.push("/auth/signup");
+        }
         return;
       }
 
-      // ✅ Get session info after login
-      const session = await getSession();
-
-      if (!session?.user) {
-        setError("Could not load user session. Please refresh and try again.");
-        return;
-      }
-
-      const { role, subscription } = session.user;
-
-      if (role === "admin") {
-        router.push("/dashboard/admin");
-      } else if (role === "student" && subscription === "yes") {
-        router.push("/dashboard/student");
-      } else {
-        router.push("/dashboard/guest");
-      }
+      await signIn(undefined, { redirect: false });
+    router.push("/dashboard");
     } catch (err) {
       setError("An error occurred during sign-in. Please try again.");
       console.error("Sign-in error:", err);
     }
   };
 
-  const handleOAuthSignIn = async (provider) => {
-    setError("");
-    try {
-      const result = await signIn(provider, { redirect: false });
-
-      if (result?.error) {
-        setError("OAuth sign-in failed");
-        return;
-      }
-
-      // ✅ Use client-safe getSession()
-      const session = await getSession();
-
-      if (!session?.user) {
-        setError("Could not load user session. Please refresh and try again.");
-        return;
-      }
-
-      const { role, subscription } = session.user;
-
-      if (role === "admin") {
-        router.push("/dashboard/admin");
-      } else if (role === "student" && subscription === "yes") {
-        router.push("/dashboard/student");
-      } else {
-        router.push("/dashboard/guest");
-      }
-    } catch (err) {
-      setError("An error occurred during OAuth sign-in. Please try again.");
-      console.error("OAuth sign-in error:", err);
-    }
-  };
+const handleOAuthSignIn = async (provider) => {
+  setError("");
+  try {
+    await signIn(provider, { 
+      callbackUrl: "/dashboard",
+      redirect: true // Let NextAuth handle the redirect
+    });
+  } catch (err) {
+    setError("OAuth sign-in failed");
+    console.error("OAuth sign-in error:", err);
+  }
+};
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

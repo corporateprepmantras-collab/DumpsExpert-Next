@@ -230,12 +230,12 @@ export default function AdminSidebar() {
       </div>
       {/* Overlay for mobile sidebar */}
       <div
-        className={`fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity duration-200 ${sidebarOpen ? "block opacity-100" : "hidden opacity-0"} lg:hidden`}
+        className={`fixed inset-0 z-40 transition-opacity duration-200 ${sidebarOpen ? "block opacity-100" : "hidden opacity-0"}`}
         onClick={() => setSidebarOpen(false)}
       ></div>
       {/* Sidebar Drawer (mobile/tablet) */}
       <aside
-        className={`fixed top-0 left-0 h-full w-3/4 max-w-xs bg-white shadow-lg z-50 transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:hidden flex flex-col pt-16`}
+        className={`fixed top-0 left-0 h-full   w-1xl bg-white shadow-lg z-50  lg:hidden flex flex-col pt-16`}
       >
         <div className="h-full overflow-y-auto p-4">
           <div className="flex items-center justify-between mb-4">

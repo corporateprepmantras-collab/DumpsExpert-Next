@@ -236,7 +236,7 @@ export default function Navbar() {
 
       {/* Mobile Nav Overlay */}
       <div
-        className={`fixed top-0 left-0 h-full w-full bg-black bg-opacity-40 z-40 transition-opacity duration-200 ${
+        className={`fixed top-0 left-0 h-full w-full bg-black/70 z-40 transition-opacity duration-200 ${
           isOpen ? 'block opacity-100' : 'hidden opacity-0'
         } lg:hidden`}
         onClick={() => setIsOpen(false)}
