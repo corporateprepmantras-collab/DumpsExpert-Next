@@ -91,7 +91,7 @@ export default function SignUp() {
       console.error("Verify OTP error:", err);
     }
   };
-
+ 
   const handleOAuthSignUp = async (provider) => {
     try {
       const result = await signIn(provider, { callbackUrl: "/dashboard" });

@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -8,8 +8,24 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [redirectTo, setRedirectTo] = useState("");
   const router = useRouter();
 
+  const { data: session } = useSession(); // ✅ useSession hook
+
+  // ✅ Handle redirect after login using useEffect
+useEffect(() => {
+  if (session?.user) {
+    const { role, subscription } = session.user;
+
+    let target = "/dashboard/guest";
+    if (role === "admin") target = "/dashboard/admin";
+    else if (role === "student" && subscription === "yes") target = "/dashboard/student";
+
+    const timer = setTimeout(() => router.push(target), 800);
+    return () => clearTimeout(timer);
+  }
+}, [session, router]);
   const handleEmailSignIn = async (e) => {
     e.preventDefault();
     setError("");
@@ -22,15 +38,18 @@ export default function SignIn() {
       });
 
       if (result?.error) {
-        setError(result.error || "Sign-in failed");
-        if (result.error.includes("not found") || result.error.includes("not verified")) {
-          router.push("/auth/signup");
-        }
+        setError("Invalid email, password, or unverified account.");
         return;
       }
 
-      await signIn(undefined, { redirect: false });
-    router.push("/dashboard");
+      // ✅ Set redirect route and wait for useSession to update
+      const role = result?.user?.role;
+      const subscription = result?.user?.subscription;
+
+      if (role === "admin") setRedirectTo("/dashboard/admin");
+      else if (role === "student" && subscription === "yes")
+        setRedirectTo("/dashboard/student");
+      else setRedirectTo("/dashboard/guest");
     } catch (err) {
       setError("An error occurred during sign-in. Please try again.");
       console.error("Sign-in error:", err);
@@ -40,13 +59,10 @@ export default function SignIn() {
 const handleOAuthSignIn = async (provider) => {
   setError("");
   try {
-    await signIn(provider, { 
-      callbackUrl: "/dashboard",
-      redirect: true // Let NextAuth handle the redirect
-    });
+    await signIn(provider); // redirect true (default), page will reload & session updates
   } catch (err) {
     setError("OAuth sign-in failed");
-    console.error("OAuth sign-in error:", err);
+    console.error(err);
   }
 };
 
