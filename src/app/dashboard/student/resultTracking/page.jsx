@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const ResultHistoryPage = () => {
   const [history, setHistory] = useState([]);
@@ -12,15 +12,13 @@ const ResultHistoryPage = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const studentId = localStorage.getItem('studentId');
-        if (!studentId) throw new Error('Missing student ID');
+        const studentId = localStorage.getItem("studentId");
+        if (!studentId) throw new Error("Missing student ID");
 
-        const res = await axios.get(
-          `http://${process.env.NEXT_PUBLIC_BASE_URL}/api/results/history/${studentId}`
-        );
+        const res = await axios.get(` /api/results/history/${studentId}`);
         setHistory(res.data);
       } catch (err) {
-        console.error('Failed to fetch result history:', err);
+        console.error("Failed to fetch result history:", err);
       } finally {
         setLoading(false);
       }
@@ -56,23 +54,27 @@ const ResultHistoryPage = () => {
                 <span
                   className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
                     result.percentage >= 33
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
                   }`}
                 >
-                  {result.percentage >= 33 ? 'Pass' : 'Fail'}
+                  {result.percentage >= 33 ? "Pass" : "Fail"}
                 </span>
               </div>
               <button
                 onClick={() =>
-                  router.push('/student/courses-exam/result-details', {
-                    scroll: false,
-                  }, {
-                    state: {
-                      questions: result.questions,
-                      userAnswers: result.userAnswers,
+                  router.push(
+                    "/student/courses-exam/result-details",
+                    {
+                      scroll: false,
                     },
-                  })
+                    {
+                      state: {
+                        questions: result.questions,
+                        userAnswers: result.userAnswers,
+                      },
+                    }
+                  )
                 }
                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
               >

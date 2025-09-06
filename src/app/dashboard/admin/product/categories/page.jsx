@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axios from "@/lib/axios";
+import axios from "axios";
 
 const ProductCategories = () => {
   const [categories, setCategories] = useState([]);
@@ -78,39 +78,41 @@ const ProductCategories = () => {
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  setError("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
 
-  try {
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("status", formData.status);
+    try {
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("status", formData.status);
 
-    if (formData.image) {
-      data.append("image", formData.image);
+      if (formData.image) {
+        data.append("image", formData.image);
+      }
+
+      let res;
+      if (modalMode === "add") {
+        res = await axios.post("/api/product-categories", data);
+      } else {
+        res = await axios.put(
+          `/api/product-categories/${currentCategory._id}`,
+          data
+        );
+      }
+
+      if (res.status === 200 || res.status === 201) {
+        await fetchCategories();
+        setIsModalOpen(false);
+        resetForm();
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    let res;
-    if (modalMode === "add") {
-      res = await axios.post("/api/product-categories", data);
-    } else {
-      res = await axios.put(`/api/product-categories/${currentCategory._id}`, data);
-    }
-
-    if (res.status === 200 || res.status === 201) {
-      await fetchCategories();
-      setIsModalOpen(false);
-      resetForm();
-    }
-  } catch (error) {
-    setError(error.response?.data?.message || "Something went wrong");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+  };
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this category?")) return;

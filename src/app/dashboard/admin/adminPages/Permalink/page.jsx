@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from "react";
 import { FaLink } from "react-icons/fa";
 import axios from "axios";
@@ -9,7 +9,7 @@ const Permalink = () => {
 
   const fetchPermalinks = async () => {
     try {
-      const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/permalinks", {
+      const res = await axios.get("/api/permalinks", {
         withCredentials: true,
       });
       setPages(res.data);
@@ -27,7 +27,7 @@ const Permalink = () => {
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      await axios.put("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/permalinks", pages, {
+      await axios.put("/api/permalinks", pages, {
         withCredentials: true,
       });
       alert("Permalinks updated successfully!");
@@ -40,9 +40,13 @@ const Permalink = () => {
 
   const handleSeed = async () => {
     try {
-      await axios.post("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/permalinks/seed", {}, {
-        withCredentials: true,
-      });
+      await axios.post(
+        "/api/permalinks/seed",
+        {},
+        {
+          withCredentials: true,
+        }
+      );
       await fetchPermalinks();
       alert("Permalinks reset to default!");
     } catch (err) {
@@ -67,10 +71,7 @@ const Permalink = () => {
         {/* Permalink Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {pages.map((page, index) => (
-            <div
-              key={index}
-              className="bg-white shadow rounded p-4 space-y-2"
-            >
+            <div key={index} className="bg-white shadow rounded p-4 space-y-2">
               <label className="block font-medium text-gray-700">
                 Page Name: {page.pageName}
               </label>

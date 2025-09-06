@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ const ExamCoursesPage = () => {
           return;
         }
 
-        const res = await axios.get(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/user/${userId}`, {
+        const res = await axios.get(` /api/orders/user/${userId}`, {
           withCredentials: true,
         });
 
@@ -37,7 +37,7 @@ const ExamCoursesPage = () => {
 
   const handleAttemptClick = async (courseId) => {
     try {
-      const res = await axios.get(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/exams/byCourseId/${courseId}`);
+      const res = await axios.get(` /api/exams/byCourseId/${courseId}`);
       const exam = res.data?.data?.[0];
 
       if (exam?._id) {

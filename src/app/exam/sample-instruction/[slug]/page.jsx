@@ -16,7 +16,9 @@ export default function SampleInstructionsPage({ params }) {
 
     const fetchInstructions = async () => {
       try {
-        const res = await axios.get(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/exams/byslug/${encodeURIComponent(slug)}`);
+        const res = await axios.get(
+          ` /api/exams/byslug/${encodeURIComponent(slug)}`
+        );
         const examData = res.data[0];
         setExam(examData);
       } catch (err) {
@@ -54,16 +56,43 @@ export default function SampleInstructionsPage({ params }) {
                 📋 Please read the following test instructions carefully:
               </p>
 
-              <li>🧾 <strong>Exam Name:</strong> {exam.name}</li>
-              <li>🆔 <strong>Exam Code:</strong> {exam.code}</li>
-              <li>⏱️ <strong>Sample Duration:</strong> {exam.sampleDuration} minutes</li>
-              <li>✍️ <strong>Marks per Question:</strong> {exam.eachQuestionMark} marks</li>
-              <li>🎯 <strong>Passing Score:</strong> {exam.passingScore}%</li>
-              <li>✅ Questions marked for review will appear in <span className="text-purple-600">purple</span>.</li>
-              <li>❌ Skipped questions will appear in <span className="text-red-600">red</span>.</li>
-              <li>✔️ Answered questions will appear in <span className="text-green-600">green</span>.</li>
-              <li>🚨 Switching tabs more than 5 times will <strong>automatically submit</strong> your test.</li>
-              <li>🚫 Copy-paste and tab switching are restricted to ensure fairness.</li>
+              <li>
+                🧾 <strong>Exam Name:</strong> {exam.name}
+              </li>
+              <li>
+                🆔 <strong>Exam Code:</strong> {exam.code}
+              </li>
+              <li>
+                ⏱️ <strong>Sample Duration:</strong> {exam.sampleDuration}{" "}
+                minutes
+              </li>
+              <li>
+                ✍️ <strong>Marks per Question:</strong> {exam.eachQuestionMark}{" "}
+                marks
+              </li>
+              <li>
+                🎯 <strong>Passing Score:</strong> {exam.passingScore}%
+              </li>
+              <li>
+                ✅ Questions marked for review will appear in{" "}
+                <span className="text-purple-600">purple</span>.
+              </li>
+              <li>
+                ❌ Skipped questions will appear in{" "}
+                <span className="text-red-600">red</span>.
+              </li>
+              <li>
+                ✔️ Answered questions will appear in{" "}
+                <span className="text-green-600">green</span>.
+              </li>
+              <li>
+                🚨 Switching tabs more than 5 times will{" "}
+                <strong>automatically submit</strong> your test.
+              </li>
+              <li>
+                🚫 Copy-paste and tab switching are restricted to ensure
+                fairness.
+              </li>
             </ul>
 
             <div className="flex items-center mt-4">
@@ -83,7 +112,9 @@ export default function SampleInstructionsPage({ params }) {
               onClick={handleStart}
               disabled={!agreed || loading || !!error}
               className={`mt-6 px-6 py-2 text-white rounded ${
-                agreed ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+                agreed
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
             >
               Start Sample Test

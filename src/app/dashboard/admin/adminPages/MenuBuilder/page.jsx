@@ -29,7 +29,11 @@ import {
 export default function MenuBuilder() {
   const [mainMenu, setMainMenu] = useState([]);
   const [premadeMenu, setPremadeMenu] = useState([]);
-  const [newItem, setNewItem] = useState({ text: "", url: "", target: "_self" });
+  const [newItem, setNewItem] = useState({
+    text: "",
+    url: "",
+    target: "_self",
+  });
   const [message, setMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
@@ -37,7 +41,7 @@ export default function MenuBuilder() {
   useEffect(() => {
     const fetchMenus = async () => {
       try {
-        const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/menu-builder");
+        const res = await axios.get("/api/menu-builder");
         setMainMenu(res.data.mainMenu || []);
         setPremadeMenu(res.data.premadeMenu || []);
       } catch (err) {
@@ -56,7 +60,7 @@ export default function MenuBuilder() {
 
     const userId = localStorage.getItem("userId");
     try {
-      const res = await axios.post("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/menu-builder/add", {
+      const res = await axios.post("/api/menu-builder/add", {
         type: "mainMenu",
         item: newItem,
         userId,
@@ -81,7 +85,7 @@ export default function MenuBuilder() {
     }
 
     try {
-      await axios.put("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/menu-builder", {
+      await axios.put("/api/menu-builder", {
         mainMenu,
         premadeMenu,
         userId,
@@ -145,20 +149,26 @@ export default function MenuBuilder() {
                 label="Text"
                 fullWidth
                 value={newItem.text}
-                onChange={(e) => setNewItem({ ...newItem, text: e.target.value })}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, text: e.target.value })
+                }
                 sx={{ mb: 2 }}
               />
               <TextField
                 label="URL"
                 fullWidth
                 value={newItem.url}
-                onChange={(e) => setNewItem({ ...newItem, url: e.target.value })}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, url: e.target.value })
+                }
                 sx={{ mb: 2 }}
               />
               <Select
                 fullWidth
                 value={newItem.target}
-                onChange={(e) => setNewItem({ ...newItem, target: e.target.value })}
+                onChange={(e) =>
+                  setNewItem({ ...newItem, target: e.target.value })
+                }
                 sx={{ mb: 2 }}
               >
                 <MenuItem value="_self">_self</MenuItem>

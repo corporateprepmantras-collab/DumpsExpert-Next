@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
 
-// const BASE_URL = "http://${process.env.NEXT_PUBLIC_BASE_URL}";
+// const BASE_URL = " ";
 
 export default function BlogPage() {
   const [categories, setCategories] = useState([]);
@@ -28,47 +28,47 @@ export default function BlogPage() {
   }, []);
 
   // ✅ Fetch blogs
-useEffect(() => {
-  const fetchBlogs = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`/api/blogs`);
-      const allBlogs = res.data?.data || []; // ✅ fix
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`/api/blogs`);
+        const allBlogs = res.data?.data || []; // ✅ fix
 
-      // Filter by selected category
-      const filteredByCategory = selectedCategory
-        ? allBlogs.filter(
-            (b) =>
-              b.category?.toLowerCase() === selectedCategory.toLowerCase()
+        // Filter by selected category
+        const filteredByCategory = selectedCategory
+          ? allBlogs.filter(
+              (b) =>
+                b.category?.toLowerCase() === selectedCategory.toLowerCase()
+            )
+          : allBlogs;
+
+        // Filter by search query
+        const filteredBlogs = search
+          ? filteredByCategory.filter((b) =>
+              b.sectionName?.toLowerCase().includes(search.toLowerCase())
+            )
+          : filteredByCategory;
+
+        setBlogs(filteredBlogs);
+
+        // Top 10 recent posts (descending by createdAt)
+        const recent = [...allBlogs]
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
-        : allBlogs;
+          .slice(0, 10);
+        setRecentPosts(recent);
+      } catch (err) {
+        console.error("Error fetching blogs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      // Filter by search query
-      const filteredBlogs = search
-        ? filteredByCategory.filter((b) =>
-            b.sectionName?.toLowerCase().includes(search.toLowerCase())
-          )
-        : filteredByCategory;
-
-      setBlogs(filteredBlogs);
-
-      // Top 10 recent posts (descending by createdAt)
-      const recent = [...allBlogs]
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-        .slice(0, 10);
-      setRecentPosts(recent);
-    } catch (err) {
-      console.error("Error fetching blogs:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchBlogs();
-}, [selectedCategory, search]);
+    fetchBlogs();
+  }, [selectedCategory, search]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -118,10 +118,15 @@ useEffect(() => {
               Loading blogs...
             </p>
           ) : blogs.length === 0 ? (
-            <p className="text-gray-600 italic col-span-full">No blogs found.</p>
+            <p className="text-gray-600 italic col-span-full">
+              No blogs found.
+            </p>
           ) : (
             blogs.map((blog) => (
-              <Link key={blog._id} href={`/blogsPages/blog/${blog.slug || blog._id}`}>
+              <Link
+                key={blog._id}
+                href={`/blogsPages/blog/${blog.slug || blog._id}`}
+              >
                 <div className="bg-gray-100 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
                   {blog.imageUrl && (
                     <img

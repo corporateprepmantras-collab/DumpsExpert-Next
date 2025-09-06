@@ -15,7 +15,7 @@ const OrdersPending = () => {
 
   const fetchOrders = async (page) => {
     try {
-      const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/orders", {
+      const res = await axios.get("/api/orders", {
         params: {
           status: "pending",
           page,
@@ -50,11 +50,15 @@ const OrdersPending = () => {
               orders.map((order) => (
                 <tr key={order._id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 border">{order.orderNumber}</td>
-                  <td className="px-4 py-2 border">{order.user?.name || "N/A"}</td>
+                  <td className="px-4 py-2 border">
+                    {order.user?.name || "N/A"}
+                  </td>
                   <td className="px-4 py-2 border">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-2 border">₹{order.total.toFixed(2)}</td>
+                  <td className="px-4 py-2 border">
+                    ₹{order.total.toFixed(2)}
+                  </td>
                 </tr>
               ))
             ) : (
@@ -74,7 +78,9 @@ const OrdersPending = () => {
           onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
           disabled={currentPage === 1}
           className={`px-3 py-1 border rounded ${
-            currentPage === 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "hover:bg-gray-100"
+            currentPage === 1
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "hover:bg-gray-100"
           }`}
         >
           Prev
@@ -85,7 +91,9 @@ const OrdersPending = () => {
             key={idx}
             onClick={() => setCurrentPage(idx + 1)}
             className={`px-3 py-1 border rounded ${
-              currentPage === idx + 1 ? "bg-blue-500 text-white" : "hover:bg-gray-100"
+              currentPage === idx + 1
+                ? "bg-blue-500 text-white"
+                : "hover:bg-gray-100"
             }`}
           >
             {idx + 1}
@@ -96,7 +104,9 @@ const OrdersPending = () => {
           onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
           disabled={currentPage === totalPages}
           className={`px-3 py-1 border rounded ${
-            currentPage === totalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "hover:bg-gray-100"
+            currentPage === totalPages
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "hover:bg-gray-100"
           }`}
         >
           Next

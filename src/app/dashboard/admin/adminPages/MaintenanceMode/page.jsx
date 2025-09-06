@@ -13,9 +13,7 @@ const MaintenancePage = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axios.get(
-          "/api/maintenance-page/"
-        );
+        const res = await axios.get("/api/maintenance-page/");
         const data = res.data;
         if (data) {
           setMaintenanceMode(data.maintenanceMode);
@@ -46,11 +44,9 @@ const MaintenancePage = () => {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      const res = await axios.post(
-        "http://${process.env.NEXT_PUBLIC_BASE_URL}/api/maintenance-page/update",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      const res = await axios.post("/api/maintenance-page/update", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       alert("✅ Maintenance settings updated!");
       console.log("Update response:", res.data);
     } catch (err) {

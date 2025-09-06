@@ -1,13 +1,13 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import axios from '@/lib/axios';
-import { useRouter } from 'next/navigation';
+"use client";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true); // Added loading state
-  const [search, setSearch] = useState('');
-  const [error, setError] = useState('');
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -16,27 +16,27 @@ const ProductList = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('/api/products');
+      const res = await axios.get("/api/products");
       setProducts(res.data.data || []);
     } catch (err) {
-      setError('Failed to load products');
+      setError("Failed to load products");
     } finally {
       setIsLoading(false); // Always hide loader after fetch
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
     try {
       await axios.delete(`/api/products?id=${id}`);
-      setProducts(prev => prev.filter(p => p._id !== id));
+      setProducts((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
-      setError('Failed to delete product');
+      setError("Failed to delete product");
     }
   };
 
-  const filtered = products.filter(p => 
+  const filtered = products.filter((p) =>
     p.title.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -49,11 +49,11 @@ const ProductList = () => {
             type="text"
             placeholder="Search..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-1 rounded"
           />
           <button
-            onClick={() => router.push('/dashboard/admin/product/list/add')}
+            onClick={() => router.push("/dashboard/admin/product/list/add")}
             className="bg-blue-600 text-white px-4 py-1 rounded"
           >
             + Add Product
@@ -109,15 +109,23 @@ const ProductList = () => {
                   <td className="p-2 border">{product.dumpsPriceInr}</td>
                   <td className="p-2 border">{product.category}</td>
                   <td className="p-2 border">
-                    <span className={`px-2 py-1 text-white text-xs rounded ${
-                      product.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-white text-xs rounded ${
+                        product.status === "active"
+                          ? "bg-green-500"
+                          : "bg-yellow-500"
+                      }`}
+                    >
                       {product.status}
                     </span>
                   </td>
                   <td className="p-2 border space-x-1">
                     <button
-                      onClick={() => router.push(`/dashboard/admin/product/list/edit/${product._id}`)}
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/admin/product/list/edit/${product._id}`
+                        )
+                      }
                       className="bg-green-500 text-white px-2 py-1 rounded text-xs"
                     >
                       Edit
@@ -129,7 +137,11 @@ const ProductList = () => {
                       Delete
                     </button>
                     <button
-                      onClick={() => router.push(`/dashboard/admin/product/${product._id}/faq`)}
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/admin/product/${product._id}/faq`
+                        )
+                      }
                       className="bg-indigo-500 text-white px-2 py-1 rounded text-xs"
                     >
                       Manage FAQ
