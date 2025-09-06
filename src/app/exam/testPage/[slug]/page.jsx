@@ -30,7 +30,7 @@ export default function TestPage({ params }) {
     const fetchQuestions = async () => {
       try {
         const res = await axios.get(
-          `http://${process.env.NEXT_PUBLIC_BASE_URL}/api/questions/byProductSlug/${slug}`
+          `/api/questions/byProductSlug/${slug}`
         );
         const data = res.data;
         console.log("📦 Fetched question data:", data);
@@ -54,7 +54,7 @@ export default function TestPage({ params }) {
     const fetchExam = async () => {
       try {
         const res = await axios.get(
-          `http://${process.env.NEXT_PUBLIC_BASE_URL}/api/exams/byslug/${slug}`
+          `/api/exams/byslug/${slug}`
         );
         const fetchedExam = res.data;
         console.log("✅ Exam fetched:", fetchedExam);
@@ -236,7 +236,7 @@ export default function TestPage({ params }) {
 
     try {
       const res = await axios.post(
-        "http://${process.env.NEXT_PUBLIC_BASE_URL}/api/results/save",
+        "/api/results/save",
         resultData
       );
 

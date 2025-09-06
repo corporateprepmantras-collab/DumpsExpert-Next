@@ -1,22 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-export default function SampleInstructionsPage({ params }) {
+
+export default function SampleInstructionsPage() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exam, setExam] = useState({});
 
   const router = useRouter();
-  const { slug } = params; // slug comes from params in App Router
+  const { slug } = useParams(); // ✅ useParams instead of props
 
   useEffect(() => {
     if (!slug) return;
 
     const fetchInstructions = async () => {
       try {
-        const res = await axios.get(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/exams/byslug/${encodeURIComponent(slug)}`);
+        const res = await axios.get(`/api/exams/byslug/${encodeURIComponent(slug)}`);
         const examData = res.data[0];
         setExam(examData);
       } catch (err) {
@@ -59,11 +61,6 @@ export default function SampleInstructionsPage({ params }) {
               <li>⏱️ <strong>Sample Duration:</strong> {exam.sampleDuration} minutes</li>
               <li>✍️ <strong>Marks per Question:</strong> {exam.eachQuestionMark} marks</li>
               <li>🎯 <strong>Passing Score:</strong> {exam.passingScore}%</li>
-              <li>✅ Questions marked for review will appear in <span className="text-purple-600">purple</span>.</li>
-              <li>❌ Skipped questions will appear in <span className="text-red-600">red</span>.</li>
-              <li>✔️ Answered questions will appear in <span className="text-green-600">green</span>.</li>
-              <li>🚨 Switching tabs more than 5 times will <strong>automatically submit</strong> your test.</li>
-              <li>🚫 Copy-paste and tab switching are restricted to ensure fairness.</li>
             </ul>
 
             <div className="flex items-center mt-4">
