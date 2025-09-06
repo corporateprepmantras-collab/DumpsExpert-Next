@@ -226,65 +226,60 @@ export default function ProductDetailsPage() {
           {/* Prices */}
           <div className="mt-4 space-y-6">
             {/* Dumps PDF Section */}
-            {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-semibold">Downloadable File</p>
-                  <p className="text-blue-600 font-bold">
-                    ₹{product.dumpsPriceInr ?? "N/A"}
-                    <span className="text-red-500 ml-2 line-through">
-                      ₹{product.dumpsMrpInr ?? "N/A"}
-                    </span>
-                    <span className="text-gray-600 text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpInr,
-                        product.dumpsPriceInr
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                  <p>
-                    $
-                    <span className="text-blue-400 font-bold ml-1">
-                      {product.dumpsPriceUsd ?? "N/A"}
-                    </span>
-                    <span className="text-red-400 font-bold line-through ml-2">
-                      ${product.dumpsMrpUsd ?? "N/A"}
-                    </span>
-                    <span className="text-gray-400 font-bold text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpUsd,
-                        product.dumpsPriceUsd
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {product.samplePdfUrl && (
-                    <button
-                      onClick={() =>
-                        handleDownload(
-                          product.samplePdfUrl,
-                          `${product.title}-Sample.pdf`
-                        )
-                      }
-                      className="bg-gray-800 text-white px-3 py-1 rounded text-sm"
-                    >
-                      Download Sample
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleAddToCart("regular")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded"
-                  >
-                    🛒 Add to Cart
-                  </button>
-                </div>
-              </div>
-            )}
+        {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
+  <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 p-3 border rounded-lg">
+    {/* Left Section (Pricing Info) */}
+    <div className="w-full md:w-auto">
+      <p className="font-semibold text-base md:text-lg">Downloadable File</p>
+
+      {/* INR Pricing */}
+      <p className="text-blue-600 font-bold text-sm md:text-base">
+        ₹{product.dumpsPriceInr ?? "N/A"}
+        <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
+          ₹{product.dumpsMrpInr ?? "N/A"}
+        </span>
+        <span className="text-gray-600 text-xs md:text-sm ml-1">
+          ({calculateDiscount(product.dumpsMrpInr, product.dumpsPriceInr)}% off)
+        </span>
+      </p>
+
+      {/* USD Pricing */}
+      <p className="text-sm md:text-base">
+        $
+        <span className="text-blue-400 font-bold ml-1">
+          {product.dumpsPriceUsd ?? "N/A"}
+        </span>
+        <span className="text-red-400 font-bold line-through ml-2 text-xs md:text-sm">
+          ${product.dumpsMrpUsd ?? "N/A"}
+        </span>
+        <span className="text-gray-400 font-bold text-xs md:text-sm ml-1">
+          ({calculateDiscount(product.dumpsMrpUsd, product.dumpsPriceUsd)}% off)
+        </span>
+      </p>
+    </div>
+
+    {/* Right Section (Buttons) */}
+    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+      {product.samplePdfUrl && (
+        <button
+          onClick={() =>
+            handleDownload(product.samplePdfUrl, `${product.title}-Sample.pdf`)
+          }
+          className="bg-gray-800 text-white px-4 py-2 rounded text-sm w-full sm:w-auto"
+        >
+          Download Sample
+        </button>
+      )}
+      <button
+        onClick={() => handleAddToCart("regular")}
+        className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded w-full sm:w-auto"
+      >
+        🛒 Add to Cart
+      </button>
+    </div>
+  </div>
+)}
+
 
             {/* Online Exam Section */}
             {exams && exams._id && (
