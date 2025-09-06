@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-
 import Image from "next/image";
 
+// Register GSAP plugin
 gsap.registerPlugin(ScrollTrigger);
 
 // Assets
@@ -75,20 +75,22 @@ const WhyChooseSection = () => {
   const cardRefs = useRef([]);
 
   useEffect(() => {
-    // Shrink left sticky panel on scroll
-    gsap.to(".sticky-left", {
-      scrollTrigger: {
-        trigger: rightRef.current,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: true,
-      },
-      scale: 0.95,
-      transformOrigin: "top center",
-    });
+    // Animate sticky shrink only on md+ screens
+    if (window.innerWidth >= 768) {
+      gsap.to(".sticky-left", {
+        scrollTrigger: {
+          trigger: rightRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true,
+        },
+        scale: 0.95,
+        transformOrigin: "top center",
+      });
+    }
 
-    // Animate each card
-    cardRefs.current.forEach((card, index) => {
+    // Animate cards on scroll
+    cardRefs.current.forEach((card) => {
       gsap.fromTo(
         card,
         { autoAlpha: 0, y: 80 },
@@ -108,13 +110,13 @@ const WhyChooseSection = () => {
   }, []);
 
   return (
-    <div className="flex w-full min-h-screen">
-      {/* Sticky Left Panel */}
-      <div className="sticky-left md:w-1/2 sticky top-0 h-screen bg-indigo-800 text-white p-10 flex flex-col justify-center items-center transition-all duration-500">
-        <h2 className="text-4xl font-bold mb-4 text-center">
+    <div className="flex flex-col md:flex-row w-full min-h-screen">
+      {/* Sticky Left Panel (desktop) / Top header (mobile) */}
+      <div className="sticky-left md:w-1/2 md:sticky md:top-0 h-auto md:h-screen bg-indigo-800 text-white p-6 sm:p-10 flex flex-col justify-center items-center transition-all duration-500">
+        <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">
           Why Choose DumpsXpert?
         </h2>
-        <p className="text-lg text-center text-white/90">
+        <p className="text-base sm:text-lg text-center text-white/90">
           Unlock your potential with our premium resources. <br />
           Real questions, real results, real support — all designed to help you
           succeed.
@@ -127,9 +129,9 @@ const WhyChooseSection = () => {
           <section
             key={index}
             ref={(el) => (cardRefs.current[index] = el)}
-            className="min-h-160 flex flex-col items-center justify-center px-6 sm:px-12  text-center"
+            className="min-h-[70vh] sm:min-h-[80vh] flex flex-col items-center justify-center px-6 sm:px-12 text-center"
           >
-            <div className="w-32 h-32  rounded-lg overflow-hidden shadow-md">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden shadow-md mb-6">
               <Image
                 src={card.icon}
                 alt={card.title}
@@ -138,8 +140,12 @@ const WhyChooseSection = () => {
                 className="object-cover w-full h-full"
               />
             </div>
-            <h3 className="text-2xl font-semibold mb-4">{card.title}</h3>
-            <p className="max-w-lg text-gray-700 text-lg">{card.description}</p>
+            <h3 className="text-xl sm:text-2xl font-semibold mb-3">
+              {card.title}
+            </h3>
+            <p className="max-w-lg text-gray-700 text-sm sm:text-base md:text-lg">
+              {card.description}
+            </p>
           </section>
         ))}
       </div>
@@ -148,4 +154,3 @@ const WhyChooseSection = () => {
 };
 
 export default WhyChooseSection;
-import { useState } from "react";
