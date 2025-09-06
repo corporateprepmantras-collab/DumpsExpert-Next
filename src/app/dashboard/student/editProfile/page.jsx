@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
@@ -37,7 +37,7 @@ const EditProfile = () => {
 
     try {
       // 🔁 Replace with actual API
-      await axios.post("/api/profile/update", payload, {
+      await axios.post("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/profile/update", payload, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });

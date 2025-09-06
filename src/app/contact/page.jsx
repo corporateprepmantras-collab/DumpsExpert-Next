@@ -36,7 +36,7 @@ const Contact = () => {
           </p>
 
           <div className="flex gap-5 text-3xl text-[#555]">
-            <Link href="/contact" target="_blank">
+            <Link href="https://dumpsxpert.com/contact" target="_blank">
               <FaFacebook />
             </Link>
             <Link href="https://x.com/DumpsXpert" target="_blank">
@@ -48,7 +48,7 @@ const Contact = () => {
             >
               <FaLinkedinIn />
             </Link>
-            <Link href="/contact" target="_blank">
+            <Link href="https://dumpsxpert.com/contact" target="_blank">
               <FaInstagram />
             </Link>
             <Link href="https://www.youtube.com/@DumpsXpert" target="_blank">

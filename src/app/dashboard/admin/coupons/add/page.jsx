@@ -19,7 +19,7 @@ const CouponForm = () => {
   useEffect(() => {
     const fetchCoupon = async () => {
       try {
-        const { data } = await axios.get(` /api/coupons/${id}`);
+        const { data } = await axios.get(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons/${id}`);
         setForm({
           name: data.name,
           discount: data.discount,
@@ -54,9 +54,9 @@ const CouponForm = () => {
       };
 
       if (id) {
-        await axios.put(` /api/coupons/${id}`, payload);
+        await axios.put(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons/${id}`, payload);
       } else {
-        await axios.post(` /api/coupons`, payload);
+        await axios.post(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/coupons`, payload);
       }
 
       router.push("/admin/coupons/list");
@@ -71,10 +71,7 @@ const CouponForm = () => {
       <h1 className="text-2xl font-semibold mb-4">
         {id ? "Edit Coupon" : "Add Coupon"}
       </h1>
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 bg-white p-4 shadow rounded"
-      >
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-4 shadow rounded">
         <input
           type="text"
           name="name"
@@ -110,10 +107,7 @@ const CouponForm = () => {
           required
         />
         <div className="text-right">
-          <button
-            type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded"
-          >
+          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
             {id ? "Update" : "Create"}
           </button>
         </div>

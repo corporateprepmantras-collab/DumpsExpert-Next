@@ -46,7 +46,7 @@ export default function SocialLinks() {
   const [message, setMessage] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  const api = "/api/social-links";
+  const api = "http://${process.env.NEXT_PUBLIC_BASE_URL}/api/social-links";
 
   useEffect(() => {
     fetchLinks();

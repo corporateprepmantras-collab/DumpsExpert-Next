@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 // Import Next.js router for navigation
 import { useRouter } from "next/navigation";
 // Import axios instance for API calls
-import api from "axios";
+import api from "@/lib/axios";
 
 // Helper function to truncate text for display
 const truncateText = (text, wordLimit = 5) => {
@@ -36,7 +36,7 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
       try {
         // API call to get questions by exam ID
         const { data } = await api.get(`/api/questions/byExam/${examId}`);
-
+        
         // Check if response has data array
         if (data?.success && Array.isArray(data.data)) {
           // Update state with fetched questions
@@ -84,9 +84,7 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
         </h2>
         <button
           // Navigate to add question page
-          onClick={() =>
-            router.push(`/dashboard/admin/exam/${examId}/questions/new`)
-          }
+          onClick={() => router.push(`/dashboard/admin/exam/${examId}/questions/new`)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium shadow"
         >
           + Add Question
@@ -161,9 +159,7 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                     {/* Edit button */}
                     <button
                       onClick={() =>
-                        router.push(
-                          `/dashboard/admin/exam/${examId}/questions/${q._id}`
-                        )
+                        router.push(`/dashboard/admin/exam/${examId}/questions/${q._id}`)
                       }
                       className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-xs"
                     >

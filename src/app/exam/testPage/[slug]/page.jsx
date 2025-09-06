@@ -29,7 +29,9 @@ export default function TestPage({ params }) {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const res = await axios.get(` /api/questions/byProductSlug/${slug}`);
+        const res = await axios.get(
+          `http://${process.env.NEXT_PUBLIC_BASE_URL}/api/questions/byProductSlug/${slug}`
+        );
         const data = res.data;
         console.log("📦 Fetched question data:", data);
 
@@ -51,7 +53,9 @@ export default function TestPage({ params }) {
   useEffect(() => {
     const fetchExam = async () => {
       try {
-        const res = await axios.get(` /api/exams/byslug/${slug}`);
+        const res = await axios.get(
+          `http://${process.env.NEXT_PUBLIC_BASE_URL}/api/exams/byslug/${slug}`
+        );
         const fetchedExam = res.data;
         console.log("✅ Exam fetched:", fetchedExam);
         setExam(fetchedExam[0]);
@@ -231,7 +235,10 @@ export default function TestPage({ params }) {
     };
 
     try {
-      const res = await axios.post("/api/results/save", resultData);
+      const res = await axios.post(
+        "http://${process.env.NEXT_PUBLIC_BASE_URL}/api/results/save",
+        resultData
+      );
 
       router.push(
         `/student/courses-exam/result?attempt=${res.data.attempt || 1}`

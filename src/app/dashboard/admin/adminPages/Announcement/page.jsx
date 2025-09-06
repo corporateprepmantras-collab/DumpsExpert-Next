@@ -1,4 +1,4 @@
-"use client";
+"use client"
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -12,7 +12,7 @@ const Announcement = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get("/api/announcement");
+        const res = await axios.get("http://${process.env.NEXT_PUBLIC_BASE_URL}/api/announcement");
         const data = res.data;
         setActive(data?.active || false);
         setDelay(data?.delay?.toFixed(2) || "2.00");
@@ -43,10 +43,14 @@ const Announcement = () => {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      await axios.post("/api/announcement/update", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-      });
+      await axios.post(
+        "/api/announcement/update",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        }
+      );
       alert("✅ Announcement updated successfully!");
     } catch (err) {
       console.error(err);

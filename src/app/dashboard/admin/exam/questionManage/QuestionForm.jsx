@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 // Import Next.js router for navigation
 import { useRouter, useParams } from "next/navigation";
 // Import axios instance for API calls
-import api from "axios";
+import api from "@/lib/axios";
 
 // Main component for adding/editing questions
 const QuestionForm = () => {
@@ -15,7 +15,7 @@ const QuestionForm = () => {
   const questionId = params.questionId;
   // Initialize router for navigation
   const router = useRouter();
-
+  
   // State for form data
   const [formData, setFormData] = useState({
     questionText: "",
@@ -31,14 +31,14 @@ const QuestionForm = () => {
       { label: "A", text: "", image: "" },
       { label: "B", text: "", image: "" },
       { label: "C", text: "", image: "" },
-      { label: "D", text: "", image: "" },
+      { label: "D", text: "", image: "" }
     ],
     correctAnswers: [],
     isSample: false,
     explanation: "",
-    status: "draft",
+    status: "draft"
   });
-
+  
   // State for image files
   const [questionImageFile, setQuestionImageFile] = useState(null);
   const [optionImageFiles, setOptionImageFiles] = useState({});
@@ -65,13 +65,13 @@ const QuestionForm = () => {
             // Ensure options array has at least 4 items
             const options = data.data.options || [];
             while (options.length < 4) {
-              options.push({
-                label: String.fromCharCode(65 + options.length),
-                text: "",
-                image: "",
+              options.push({ 
+                label: String.fromCharCode(65 + options.length), 
+                text: "", 
+                image: "" 
               });
             }
-
+            
             // Update form state with the fetched data
             setFormData({
               questionText: data.data.questionText || "",
@@ -87,23 +87,23 @@ const QuestionForm = () => {
               correctAnswers: data.data.correctAnswers || [],
               isSample: data.data.isSample || false,
               explanation: data.data.explanation || "",
-              status: data.data.status || "draft",
+              status: data.data.status || "draft"
             });
-
+            
             // Set preview images for existing images
             if (data.data.questionImage) {
-              setPreviewImages((prev) => ({
+              setPreviewImages(prev => ({
                 ...prev,
-                question: data.data.questionImage,
+                question: data.data.questionImage
               }));
             }
-
+            
             // Set preview images for option images
             data.data.options?.forEach((option, index) => {
               if (option.image) {
-                setPreviewImages((prev) => ({
+                setPreviewImages(prev => ({
                   ...prev,
-                  [`option-${index}`]: option.image,
+                  [`option-${index}`]: option.image
                 }));
               }
             });
@@ -116,7 +116,7 @@ const QuestionForm = () => {
           setLoading(false);
         }
       };
-
+      
       // Call fetch function
       fetchQuestion();
     } else {
@@ -128,9 +128,9 @@ const QuestionForm = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     // Update form data based on input type
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : value
     }));
   };
 
@@ -141,12 +141,12 @@ const QuestionForm = () => {
     // Update specific option field
     updatedOptions[index] = {
       ...updatedOptions[index],
-      [field]: value,
+      [field]: value
     };
     // Update form data with new options
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      options: updatedOptions,
+      options: updatedOptions
     }));
   };
 
@@ -160,13 +160,13 @@ const QuestionForm = () => {
     } else {
       // For checkbox, toggle selection
       updatedAnswers = formData.correctAnswers.includes(label)
-        ? formData.correctAnswers.filter((a) => a !== label)
+        ? formData.correctAnswers.filter(a => a !== label)
         : [...formData.correctAnswers, label];
     }
     // Update form data with new correct answers
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      correctAnswers: updatedAnswers,
+      correctAnswers: updatedAnswers
     }));
   };
 
@@ -179,9 +179,9 @@ const QuestionForm = () => {
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       // Update preview images
-      setPreviewImages((prev) => ({
+      setPreviewImages(prev => ({
         ...prev,
-        question: previewUrl,
+        question: previewUrl
       }));
     }
   };
@@ -191,16 +191,16 @@ const QuestionForm = () => {
     const file = e.target.files[0];
     if (file) {
       // Update option image files
-      setOptionImageFiles((prev) => ({
+      setOptionImageFiles(prev => ({
         ...prev,
-        [index]: file,
+        [index]: file
       }));
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       // Update preview images
-      setPreviewImages((prev) => ({
+      setPreviewImages(prev => ({
         ...prev,
-        [`option-${index}`]: previewUrl,
+        [`option-${index}`]: previewUrl
       }));
     }
   };
@@ -211,12 +211,12 @@ const QuestionForm = () => {
     e.preventDefault();
     // Set loading state
     setLoading(true);
-
+    
     try {
       // Create FormData object for file uploads
       const submitData = new FormData();
       // Append all form fields to FormData
-      Object.keys(formData).forEach((key) => {
+      Object.keys(formData).forEach(key => {
         if (key === "options" || key === "correctAnswers" || key === "tags") {
           // Stringify arrays for form data
           submitData.append(key, JSON.stringify(formData[key]));
@@ -225,20 +225,20 @@ const QuestionForm = () => {
           submitData.append(key, formData[key]);
         }
       });
-
+      
       // Append exam ID to form data
       submitData.append("examId", examId);
-
+      
       // Append question image if selected
       if (questionImageFile) {
         submitData.append("questionImage", questionImageFile);
       }
-
+      
       // Append option images if selected
-      Object.keys(optionImageFiles).forEach((index) => {
+      Object.keys(optionImageFiles).forEach(index => {
         submitData.append(`optionImage-${index}`, optionImageFiles[index]);
       });
-
+      
       // Determine API endpoint and method based on edit or add
       let response;
       if (isEditing) {
@@ -246,18 +246,18 @@ const QuestionForm = () => {
         submitData.append("_id", questionId);
         response = await api.put(`/api/questions/${questionId}`, submitData, {
           headers: {
-            "Content-Type": "multipart/form-data",
-          },
+            "Content-Type": "multipart/form-data"
+          }
         });
       } else {
         // For adding new question
         response = await api.post("/api/questions", submitData, {
           headers: {
-            "Content-Type": "multipart/form-data",
-          },
+            "Content-Type": "multipart/form-data"
+          }
         });
       }
-
+      
       // Check if API call was successful
       if (response.data.success) {
         // Navigate back to questions list
@@ -270,9 +270,7 @@ const QuestionForm = () => {
     } catch (err) {
       // Log error and show alert
       console.error("Operation failed", err);
-      alert(
-        "Operation failed: " + (err.response?.data?.message || err.message)
-      );
+      alert("Operation failed: " + (err.response?.data?.message || err.message));
     } finally {
       // Reset loading state
       setLoading(false);
@@ -295,13 +293,13 @@ const QuestionForm = () => {
       <h1 className="text-2xl font-bold mb-6">
         {isEditing ? "Edit" : "Add"} Question
       </h1>
-
+      
       {/* Question form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic information section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
-
+          
           {/* Question code input */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -316,7 +314,7 @@ const QuestionForm = () => {
               placeholder="Enter question code"
             />
           </div>
-
+          
           {/* Question text input */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -332,7 +330,7 @@ const QuestionForm = () => {
               required
             />
           </div>
-
+          
           {/* Question image upload */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -355,7 +353,7 @@ const QuestionForm = () => {
               </div>
             )}
           </div>
-
+          
           {/* Question type selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -376,20 +374,18 @@ const QuestionForm = () => {
         {/* Options section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold mb-4">Options</h2>
-
+          
           {/* Map through options */}
           {formData.options.map((option, index) => (
             <div key={index} className="mb-4 p-4 border rounded-md">
               <div className="flex items-center mb-2">
                 {/* Option label */}
                 <span className="font-medium mr-3">Option {option.label}:</span>
-
+                
                 {/* Correct answer checkbox */}
                 <label className="flex items-center">
                   <input
-                    type={
-                      formData.questionType === "radio" ? "radio" : "checkbox"
-                    }
+                    type={formData.questionType === "radio" ? "radio" : "checkbox"}
                     name="correctAnswers"
                     checked={formData.correctAnswers.includes(option.label)}
                     onChange={() => handleCorrectAnswerChange(option.label)}
@@ -398,21 +394,19 @@ const QuestionForm = () => {
                   Correct Answer
                 </label>
               </div>
-
+              
               {/* Option text input */}
               <div className="mb-3">
                 <textarea
                   value={option.text}
-                  onChange={(e) =>
-                    handleOptionChange(index, "text", e.target.value)
-                  }
+                  onChange={(e) => handleOptionChange(index, "text", e.target.value)}
                   className="w-full p-2 border rounded-md"
                   rows="2"
                   placeholder="Enter option text"
                   required
                 />
               </div>
-
+              
               {/* Option image upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -442,7 +436,7 @@ const QuestionForm = () => {
         {/* Additional information section */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold mb-4">Additional Information</h2>
-
+          
           {/* Difficulty selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -460,7 +454,7 @@ const QuestionForm = () => {
                 <option value="hard">Hard</option>
               </select>
             </div>
-
+            
             {/* Marks input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -477,7 +471,7 @@ const QuestionForm = () => {
               />
             </div>
           </div>
-
+          
           {/* Negative marks input */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -494,7 +488,7 @@ const QuestionForm = () => {
                 step="0.5"
               />
             </div>
-
+            
             {/* Sample question checkbox */}
             <div className="flex items-center">
               <input
@@ -505,15 +499,12 @@ const QuestionForm = () => {
                 className="mr-2"
                 id="isSample"
               />
-              <label
-                htmlFor="isSample"
-                className="text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="isSample" className="text-sm font-medium text-gray-700">
                 Sample Question
               </label>
             </div>
           </div>
-
+          
           {/* Subject and topic inputs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -529,7 +520,7 @@ const QuestionForm = () => {
                 placeholder="Enter subject"
               />
             </div>
-
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Topic
@@ -544,7 +535,7 @@ const QuestionForm = () => {
               />
             </div>
           </div>
-
+          
           {/* Tags input */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -554,17 +545,14 @@ const QuestionForm = () => {
               type="text"
               value={formData.tags.join(", ")}
               onChange={(e) => {
-                const tagsArray = e.target.value
-                  .split(",")
-                  .map((tag) => tag.trim())
-                  .filter((tag) => tag);
-                setFormData((prev) => ({ ...prev, tags: tagsArray }));
+                const tagsArray = e.target.value.split(",").map(tag => tag.trim()).filter(tag => tag);
+                setFormData(prev => ({ ...prev, tags: tagsArray }));
               }}
               className="w-full p-2 border rounded-md"
               placeholder="Enter tags separated by commas"
             />
           </div>
-
+          
           {/* Explanation textarea */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -579,7 +567,7 @@ const QuestionForm = () => {
               placeholder="Enter explanation for the answer"
             />
           </div>
-
+          
           {/* Status selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -602,14 +590,12 @@ const QuestionForm = () => {
           {/* Cancel button */}
           <button
             type="button"
-            onClick={() =>
-              router.push(`/dashboard/admin/exam/${examId}/questions`)
-            }
+            onClick={() => router.push(`/dashboard/admin/exam/${examId}/questions`)}
             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </button>
-
+          
           {/* Submit button */}
           <button
             type="submit"
