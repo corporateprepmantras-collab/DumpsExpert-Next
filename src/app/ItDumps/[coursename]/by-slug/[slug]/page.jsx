@@ -80,28 +80,25 @@ export default function ProductDetailsPage() {
     toast.success(`Added ${item.title} to cart!`);
   };
 
-  useEffect(() => {
-    async function loadData() {
-      // Fetch the product by slug
+ useEffect(() => {
+  async function loadData() {
+    try {
+      // ✅ Fetch the product by slug
       const productData = await fetchProduct(slug);
       setProduct(productData);
 
-      // Fetch related products
+      // ✅ Fetch related products
       const allProducts = await fetchAllProducts();
       setRelatedProducts(allProducts.filter((p) => p.slug !== slug));
 
-      // Mock exams data (replace with actual API if available)
-      setExams({
-        _id: "exam-1",
-        duration: 90,
-        numberOfQuestions: 60,
-        priceINR: 1499,
-        mrpINR: 2499,
-        priceUSD: 20,
-        mrpUSD: 35,
-      });
+      // ✅ Fetch exam details by slug
+      const examRes = await fetch(`/api/exams/${encodeURIComponent(slug)}`);
+      if (!examRes.ok) throw new Error("Failed to fetch exam details");
+      const examData = await examRes.json();
 
-      // Mock reviews (replace with actual API if available)
+      setExams(examData); // 👈 store actual exam details
+
+      // ✅ Mock reviews (replace later with API if available)
       const mockReviews = [
         {
           name: "Amit",
@@ -124,15 +121,18 @@ export default function ProductDetailsPage() {
       ];
       setReviews(mockReviews);
 
-      // Calculate average rating
+      // ✅ Calculate average rating
       if (mockReviews.length > 0) {
         const total = mockReviews.reduce((sum, r) => sum + r.rating, 0);
         setAvgRating((total / mockReviews.length).toFixed(1));
       }
+    } catch (err) {
+      console.error("Error loading product/exam data:", err);
     }
+  }
 
-    loadData();
-  }, [slug]);
+  if (slug) loadData();
+}, [slug]);
 
   const calculateDiscount = (mrp, price) => {
     if (!mrp || !price || mrp <= price) return 0;

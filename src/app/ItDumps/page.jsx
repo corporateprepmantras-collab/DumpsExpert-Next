@@ -6,7 +6,7 @@ import guarantee from "../../assets/userAssets/guaranteed.png";
 // Fetch from your backend API
 async function getDumpsData() {
   try {
-    const res = await fetch("http://localhost:3000/api/product-categories", {
+    const res = await fetch("/api/product-categories", {
       cache: "no-store",
     });
 
@@ -33,7 +33,6 @@ async function getDumpsData() {
     return [];
   }
 }
-
 
 export default async function ITDumpsPage() {
   const dumpsData = await getDumpsData();
@@ -71,12 +70,14 @@ export default async function ITDumpsPage() {
           </div>
 
           <div className="space-y-3">
-            {["90 Days Free Updates", "24/7 Customer Support"].map((text, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <FaCheckCircle className="text-blue-600 text-xl" />
-                {text}
-              </div>
-            ))}
+            {["90 Days Free Updates", "24/7 Customer Support"].map(
+              (text, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <FaCheckCircle className="text-blue-600 text-xl" />
+                  {text}
+                </div>
+              )
+            )}
           </div>
         </div>
 
@@ -86,7 +87,7 @@ export default async function ITDumpsPage() {
             dumpsData.map((item) => (
               <Link
                 key={item._id}
-                href={`/itdumps/${item.name.toLowerCase()}`}
+                href={`/itDumps/${item.name.toLowerCase()}`}
                 className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[170px] md:w-[180px]"
               >
                 <div className="h-28 md:h-32 w-full relative">
@@ -105,7 +106,9 @@ export default async function ITDumpsPage() {
               </Link>
             ))
           ) : (
-            <p className="text-gray-600 text-center">No categories available.</p>
+            <p className="text-gray-600 text-center">
+              No categories available.
+            </p>
           )}
         </div>
       </div>
