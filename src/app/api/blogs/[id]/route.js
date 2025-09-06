@@ -1,142 +1,87 @@
-// import { NextResponse } from "next/server";
-// import { connectMongoDB } from "@/lib/mongo";
-// import BlogList from "@/models/blogSchema";
-// // import { deleteFromCloudinary } from "@/utils/cloudinary";
+import { NextResponse } from "next/server";
+import { connectMongoDB } from "@/lib/mongo";
+import Blog from "@/models/blogSchema";
+import { uploadToCloudinaryBlog, deleteFromCloudinary } from "@/lib/cloudinary";
 
-// // GET: Fetch a blog post by ID
-// export async function GET(request, { params }) {
-//   try {
-//     await connectMongoDB();
-//     const blog = await BlogList.findById(params.id);
-//     if (!blog) {
-//       return NextResponse.json({ message: "Blog not found" }, { status: 404 });
-//     }
-//     return NextResponse.json({ data: blog }, { status: 200 });
-//   } catch (error) {
-//     console.error("Error fetching blog by ID:", error);
-//     return NextResponse.json(
-//       { message: "Internal server error", error: error.message },
-//       { status: 500 }
-//     );
-//   }
-// }
+export async function GET(request,  context) {
+  try {
+    const { params } = await context;
+    await connectMongoDB();
+    const blog = await Blog.findById({ _id: params.id });
 
-// // PUT: Update a blog post
-// // export async function PUT(request, { params }) {
-// //   try {
-// //     await connectMongoDB();
-// //     const formData = await request.formData();
-// //     const title = formData.get("title") || "Untitled Blog";
-// //     const content = formData.get("content") || "Default content";
-// //     const language = formData.get("language") || "en";
-// //     const slug =
-// //       formData.get("slug") ||
-// //       (title
-// //         ? title
-// //             .toLowerCase()
-// //             .replace(/[^a-z0-9]+/g, "-")
-// //             .replace(/^-|-$/g, "")
-// //         : "untitled-blog");
-// //     const category = formData.get("category") || "";
-// //     const metaTitle = formData.get("metaTitle") || title;
-// //     const metaKeywords = formData.get("metaKeywords") || "";
-// //     const metaDescription = formData.get("metaDescription") || "";
-// //     const schema = formData.get("schema") || "";
-// //     const status = formData.get("status") || "unpublish";
-// //     const file = formData.get("file");
+    if (!blog) {
+      return NextResponse.json({ error: "Blog not found" }, { status: 404 });
+    }
 
-// //     const updatedData = {
-// //       title,
-// //       content,
-// //       language,
-// //       slug,
-// //       category,
-// //       metaTitle,
-// //       metaKeywords,
-// //       metaDescription,
-// //       schema,
-// //       status,
-// //     };
+    return NextResponse.json({ data: blog });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
 
-// //     if (file) {
-// //       const oldBlog = await BlogList.findById(params.id);
-// //       if (oldBlog && oldBlog.imagePublicId) {
-// //         try {
-// //           await deleteFromCloudinary(oldBlog.imagePublicId);
-// //         } catch (cloudinaryError) {
-// //           console.warn("Error deleting image from Cloudinary:", cloudinaryError);
-// //         }
-// //       }
-// //       updatedData.imageUrl = formData.get("imageUrl"); // Replace with Cloudinary upload logic
-// //       updatedData.imagePublicId = formData.get("imagePublicId"); // Replace with Cloudinary public ID
-// //     }
+export async function PUT(request, context) {
+  try {
+    const { params } = context;
+    await connectMongoDB();
 
-// //     const updatedBlog = await BlogList.findByIdAndUpdate(params.id, updatedData, {
-// //       new: true,
-// //       runValidators: true,
-// //     });
+    const blog = await Blog.findById({ _id: params.id });
 
-// //     if (!updatedBlog) {
-// //       return NextResponse.json({ message: "Blog not found" }, { status: 404 });
-// //     }
+    if (!blog) {
+      return NextResponse.json({ error: "Blog not found" }, { status: 404 });
+    }
 
-// //     return NextResponse.json(
-// //       {
-// //         message: "Blog updated successfully",
-// //         data: updatedBlog,
-// //       },
-// //       { status: 200 }
-// //     );
-// //   } catch (error) {
-// //     console.error("Error updating blog:", error);
-// //     return NextResponse.json(
-// //       {
-// //         message: "Server error while updating blog",
-// //         error: error.message,
-// //       },
-// //       { status: 500 }
-// //     );
-// //   }
-// // }
+    const formData = await request.formData();
+    const image = formData.get("image");
 
-// // DELETE: Delete a blog post
-// // export async function DELETE(request, { params }) {
-// //   try {
-// //     await connectMongoDB();
-// //     const blog = await BlogList.findById(params.id);
-// //     if (!blog) {
-// //       return NextResponse.json({ message: "Blog not found" }, { status: 404 });
-// //     }
+    let updateData = {
+      title: formData.get("title"),
+      content: formData.get("content"),
+      category: formData.get("category"),
+      status: formData.get("status"),
+      metaTitle: formData.get("metaTitle"),
+      metaKeywords: formData.get("metaKeywords"),
+      metaDescription: formData.get("metaDescription"),
+      schema: formData.get("schema") || "{}",
+    };
 
-// //     if (blog.imagePublicId) {
-// //       try {
-// //         await deleteFromCloudinary(blog.imagePublicId);
-// //       } catch (cloudinaryError) {
-// //         console.warn("Error deleting image from Cloudinary:", cloudinaryError);
-// //       }
-// //     }
+    if (image && image.name !== "undefined") {
+      if (blog.imagePublicId) {
+        await deleteFromCloudinary(blog.imagePublicId);
+      }
 
-// //     await BlogList.findByIdAndDelete(params.id);
+      const uploadResult = await uploadToCloudinaryBlog(image);
+      updateData.imageUrl = uploadResult.secure_url;
+      updateData.imagePublicId = uploadResult.public_id;
+    }
 
-// //     return NextResponse.json(
-// //       {
-// //         message: "Blog deleted successfully",
-// //         deletedId: params.id,
-// //       },
-// //       { status: 200 }
-// //     );
-// //   } catch (error) {
-// //     console.error("Error deleting blog:", error);
-// //     return NextResponse.json(
-// //       {
-// //         message: "Server error during blog deletion",
-// //         error: error.message,
-// //       },
-// //       { status: 500 }
-// //     );
-// //   }
-// // }
-// src/app/api/announcements/route.js
-export async function GET() {
-  return new Response("Not implemented", { status: 404 });
+    const updatedBlog = await Blog.findByIdAndUpdate(params.id, updateData, {
+      new: true,
+    });
+
+    return NextResponse.json({ data: updatedBlog });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, context) {
+  try {
+    const { params } = context;
+    await connectMongoDB();
+    const blog = await Blog.findById({ _id: params.id });
+
+    if (!blog) {
+      return NextResponse.json({ error: "Blog not found" }, { status: 404 });
+    }
+
+    if (blog.imagePublicId) {
+      await deleteFromCloudinary(blog.imagePublicId);
+    }
+
+    await Blog.findByIdAndDelete(params.id);
+
+    return NextResponse.json({ message: "Blog deleted successfully" });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

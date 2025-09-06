@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 export default function ExamForm({ exam }) {
   const router = useRouter();
   const isEditing = Boolean(exam);
+  console.log(isEditing, exam);
 
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
@@ -81,16 +82,23 @@ export default function ExamForm({ exam }) {
     e.preventDefault();
     const payload = {
       ...formData,
-      eachQuestionMark: Number(formData.eachQuestionMark),
+      code: formData.code.trim(),
       duration: Number(formData.duration),
-      sampleDuration: Number(formData.sampleDuration),
-      passingScore: Number(formData.passingScore),
-      numberOfQuestions: Number(formData.numberOfQuestions),
-      priceUSD: Number(formData.priceUSD),
-      priceINR: Number(formData.priceINR),
-      mrpUSD: Number(formData.mrpUSD),
+      eachQuestionMark: Number(formData.eachQuestionMark),
+      lastUpdatedBy: formData.lastUpdatedBy.trim(),
+      mainInstructions: formData.mainInstructions.trim(),
       mrpINR: Number(formData.mrpINR),
+      mrpUSD: Number(formData.mrpUSD),
+      name: formData.name.trim(),
+      numberOfQuestions: Number(formData.numberOfQuestions),
+      passingScore: Number(formData.passingScore),
+      priceINR: Number(formData.priceINR),
+      priceUSD: Number(formData.priceUSD),
       productId: formData.productId,
+      sampleDuration: Number(formData.sampleDuration),
+      sampleInstructions: formData.sampleInstructions.trim(),
+      status: formData.status || "unpublished",
+     
     };
 
     try {
@@ -100,14 +108,16 @@ export default function ExamForm({ exam }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+             router.push("/dashboard/admin/exam");
       } else {
         await fetch("/api/exams", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+             router.push("/dashboard/admin/exam");
       }
-      router.push("/dashboard/admin/exam");
+ 
     } catch (err) {
       console.error("Error saving exam:", err);
     }

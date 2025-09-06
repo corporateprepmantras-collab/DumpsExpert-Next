@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectMongoDB } from '@/lib/mongo';
 import UserInfo from '@/models/userInfoSchema';
-import authUsers from '@/app/api/order/route.js';
+// import authUsers from '@/models/authUsersSchema';
 import { signIn } from 'next-auth';
 
 export async function POST(request) {
@@ -34,13 +34,13 @@ export async function POST(request) {
       );
     }
 
-    const authUser = await authUsers.findOne({ _id: userInfo.authUserId });
-    if (!authUser) {
-      return NextResponse.json(
-        { message: 'Auth user not found' },
-        { status: 400 }
-      );
-    }
+    // const authUser = await authUsers.findOne({ _id: userInfo.authUserId });
+    // if (!authUser) {
+    //   return NextResponse.json(
+    //     { message: 'Auth user not found' },
+    //     { status: 400 }
+    //   );
+    // }
 
     const result = await signIn('credentials', {
       email,

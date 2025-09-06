@@ -45,6 +45,26 @@ export const uploadToCloudinaryfile = (buffer) => {
   });
 };
 
+export const uploadToCloudinaryBlog = async (file) => {
+  try {
+    const buffer = await file.arrayBuffer();
+    const bytes = Buffer.from(buffer);
+    
+    return new Promise((resolve, reject) => { 
+      const uploadStream = cloudinary.v2.uploader.upload_stream(
+        { folder: 'blogs' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      
+      uploadStream.end(bytes);
+    });
+  } catch (error) {
+    throw new Error('Failed to upload image');
+  }
+};
 
 
 

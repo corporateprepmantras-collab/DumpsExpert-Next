@@ -37,7 +37,7 @@ export async function POST(req) {
       );
     }
 
-    if (!["Ready", "Not Ready"].includes(status)) {
+    if (!["Ready", "Publish"].includes(status)) {
       return NextResponse.json(
         { message: "Invalid status" },
         { status: 400 }

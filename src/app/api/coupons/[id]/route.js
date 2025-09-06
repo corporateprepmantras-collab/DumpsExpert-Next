@@ -1,3 +1,4 @@
+// app/api/coupons/[id]/route.js
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Coupon from "@/models/couponSchema";
@@ -27,16 +28,36 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     await connectMongoDB();
-    const updated = await Coupon.findByIdAndUpdate(params.id, await request.json(), {
-      new: true,
-      runValidators: true,
-    });
+    const { name, discount, startDate, endDate } = await request.json();
+    
+    if (!name || !discount || !startDate || !endDate) {
+      return NextResponse.json(
+        { error: "All fields are required" },
+        { status: 400 }
+      );
+    }
+
+    const updated = await Coupon.findByIdAndUpdate(
+      params.id, 
+      {
+        name: name.trim().toUpperCase(),
+        discount,
+        startDate,
+        endDate,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+    
     if (!updated) {
       return NextResponse.json(
         { message: "Coupon not found" },
         { status: 404 }
       );
     }
+    
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
     console.error("Error updating coupon:", error);
