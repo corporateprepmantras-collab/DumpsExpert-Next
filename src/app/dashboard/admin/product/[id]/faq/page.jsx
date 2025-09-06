@@ -1,16 +1,16 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import axios from '@/lib/axios';
-import { useParams, useRouter } from 'next/navigation';
+"use client";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useParams, useRouter } from "next/navigation";
 
 const ManageFaq = () => {
   const { id } = useParams();
   const router = useRouter();
   const [faqs, setFaqs] = useState([]);
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
   const [editFaq, setEditFaq] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,25 +22,25 @@ const ManageFaq = () => {
       const res = await axios.get(`/api/faqs?productId=${id}`);
       setFaqs(res.data.faqs || []);
     } catch (err) {
-      setError('Failed to load FAQs');
+      setError("Failed to load FAQs");
     }
   };
 
   const handleAddFaq = async () => {
     if (!question || !answer) {
-      setError('Both question and answer are required');
+      setError("Both question and answer are required");
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post('/api/faqs', { productId: id, question, answer });
-      setQuestion('');
-      setAnswer('');
-      setError('');
+      await axios.post("/api/faqs", { productId: id, question, answer });
+      setQuestion("");
+      setAnswer("");
+      setError("");
       fetchFaqs();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add FAQ');
+      setError(err.response?.data?.message || "Failed to add FAQ");
     } finally {
       setLoading(false);
     }
@@ -48,38 +48,38 @@ const ManageFaq = () => {
 
   const handleUpdateFaq = async () => {
     if (!editFaq || !question || !answer) {
-      setError('Both question and answer are required');
+      setError("Both question and answer are required");
       return;
     }
 
     setLoading(true);
     try {
-      await axios.put('/api/faqs', {
+      await axios.put("/api/faqs", {
         productId: id,
         faqId: editFaq._id,
         question,
-        answer
+        answer,
       });
       setEditFaq(null);
-      setQuestion('');
-      setAnswer('');
-      setError('');
+      setQuestion("");
+      setAnswer("");
+      setError("");
       fetchFaqs();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update FAQ');
+      setError(err.response?.data?.message || "Failed to update FAQ");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteFaq = async (faqId) => {
-    if (!confirm('Delete this FAQ?')) return;
-    
+    if (!confirm("Delete this FAQ?")) return;
+
     try {
       await axios.delete(`/api/faqs?productId=${id}&faqId=${faqId}`);
       fetchFaqs();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete FAQ');
+      setError(err.response?.data?.message || "Failed to delete FAQ");
     }
   };
 
@@ -91,8 +91,8 @@ const ManageFaq = () => {
 
   const handleCancelEdit = () => {
     setEditFaq(null);
-    setQuestion('');
-    setAnswer('');
+    setQuestion("");
+    setAnswer("");
   };
 
   return (
@@ -124,7 +124,7 @@ const ManageFaq = () => {
                 disabled={loading}
                 className="bg-blue-600 text-white px-4 py-2 rounded"
               >
-                {loading ? 'Updating...' : 'Update FAQ'}
+                {loading ? "Updating..." : "Update FAQ"}
               </button>
               <button
                 onClick={handleCancelEdit}
@@ -139,7 +139,7 @@ const ManageFaq = () => {
               disabled={loading}
               className="bg-blue-600 text-white px-4 py-2 rounded"
             >
-              {loading ? 'Adding...' : 'Add FAQ'}
+              {loading ? "Adding..." : "Add FAQ"}
             </button>
           )}
         </div>
@@ -152,7 +152,10 @@ const ManageFaq = () => {
         ) : (
           <ul className="space-y-3">
             {faqs.map((faq, index) => (
-              <li key={faq._id} className="border p-3 rounded flex justify-between items-start">
+              <li
+                key={faq._id}
+                className="border p-3 rounded flex justify-between items-start"
+              >
                 <div>
                   <p className="font-semibold">Q: {faq.question}</p>
                   <p className="text-gray-700">A: {faq.answer}</p>

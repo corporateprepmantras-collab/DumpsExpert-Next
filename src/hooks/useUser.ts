@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import instance from "@/lib/axios";
+import instance from "axios";
 import axios from "axios";
 
 export function useUser() {
