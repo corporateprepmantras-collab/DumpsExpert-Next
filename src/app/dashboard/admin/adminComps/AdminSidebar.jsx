@@ -135,7 +135,7 @@ const sidebarItems = [
         children: [
           {
             label: "Coupon List",
-            to: "/dashboard/admin/coupons/list",
+            to: "/dashboard/admin/coupons",
           },
       
         ],
@@ -174,6 +174,10 @@ const sidebarItems = [
           {
             label: "Category",
             to: "/dashboard/admin/blog/category",
+          },
+                  {
+            label: "Posts",
+            to: "/dashboard/admin/blog",
           },
         ],
       },

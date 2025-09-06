@@ -16,6 +16,7 @@ export default function ExamsPage() {
         setLoading(true);
         const res = await fetch('/api/exams');
         const data = await res.json();
+        console.log('Fetched exams:', data); // Debugging line
         setExams(data);
       } catch (err) {
         setError('Failed to load exams');

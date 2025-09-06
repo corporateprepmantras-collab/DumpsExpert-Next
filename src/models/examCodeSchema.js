@@ -26,11 +26,11 @@ const examSchema = new mongoose.Schema(
       ref: "Product",
       required: true,
     },
-    courseId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
-      required: true,
-    },
+    // courseId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Course",
+    //   required: true,
+    // },
   },
   { timestamps: true }
 );

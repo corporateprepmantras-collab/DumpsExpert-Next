@@ -1,3 +1,4 @@
+// app/api/coupons/route.js
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Coupon from "@/models/couponSchema";

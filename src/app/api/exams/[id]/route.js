@@ -1,7 +1,8 @@
 import { connectMongoDB } from "@/lib/mongo";
 import Exam from "@/models/examCodeSchema";
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
+  const { params } = await context; // 👈 await lagao
   await connectMongoDB();
   try {
     const exam = await Exam.findById(params.id);
@@ -21,7 +22,8 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(request, context) {
+  const { params } = await context; // 👈 yaha bhi
   await connectMongoDB();
   try {
     const data = await request.json();
@@ -44,7 +46,8 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
+  const { params } = await context; // 👈 aur yaha bhi
   await connectMongoDB();
   try {
     const deleted = await Exam.findByIdAndDelete(params.id);
@@ -55,9 +58,7 @@ export async function DELETE(request, { params }) {
     }
     return new Response(
       JSON.stringify({ message: "Exam deleted successfully" }),
-      {
-        status: 200,
-      }
+      { status: 200 }
     );
   } catch (error) {
     return new Response(JSON.stringify({ error: "Failed to delete exam" }), {
