@@ -198,222 +198,176 @@ setExams(Array.isArray(examData) ? examData : [examData]);
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="md:w-[60%] space-y-3">
-          <h1 className="text-3xl font-bold">{product.title}</h1>
-          <p className="text-sm">
-            Exam Code: <strong>{product.sapExamCode}</strong>
-          </p>
-          <p className="text-sm">
-            Category: <strong>{product.category}</strong>
-          </p>
+     {/* Right Column */}
+<div className="md:w-[60%] space-y-3">
+  {/* Title & Basic Info */}
+  <h1 className="text-2xl md:text-3xl font-bold break-words">{product.title}</h1>
+  <p className="text-xs md:text-sm">
+    Exam Code: <strong>{product.sapExamCode}</strong>
+  </p>
+  <p className="text-xs md:text-sm">
+    Category: <strong>{product.category}</strong>
+  </p>
 
-          {/* Ratings */}
-          {avgRating && (
-            <div className="flex items-center gap-2">
-              {[1, 2, 3, 4, 5].map((v) => (
-                <FaStar
-                  key={v}
-                  className={`text-xl ${
-                    v <= Math.round(avgRating)
-                      ? "text-yellow-400"
-                      : "text-gray-300"
-                  }`}
-                />
-              ))}
-              <span className="text-sm text-gray-600">({avgRating}/5)</span>
-            </div>
+  {/* Ratings */}
+  {avgRating && (
+    <div className="flex items-center gap-2 flex-wrap">
+      {[1, 2, 3, 4, 5].map((v) => (
+        <FaStar
+          key={v}
+          className={`text-lg md:text-xl ${
+            v <= Math.round(avgRating) ? "text-yellow-400" : "text-gray-300"
+          }`}
+        />
+      ))}
+      <span className="text-xs md:text-sm text-gray-600">({avgRating}/5)</span>
+    </div>
+  )}
+
+  {/* Pricing Sections */}
+  <div className="mt-4 space-y-6">
+    {/* Dumps PDF */}
+    {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
+      <div className="flex flex-col md:flex-row md:justify-between gap-4 p-3 border rounded-lg bg-white shadow-sm">
+        {/* Info */}
+        <div className="w-full">
+          <p className="font-semibold text-base md:text-lg">
+            Downloadable File
+          </p>
+          <p className="text-blue-600 font-bold text-sm md:text-base">
+            ₹{product.dumpsPriceInr ?? "N/A"}
+            <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
+              ₹{product.dumpsMrpInr ?? "N/A"}
+            </span>
+            <span className="text-gray-600 text-xs md:text-sm ml-1">
+              ({calculateDiscount(product.dumpsMrpInr, product.dumpsPriceInr)}% off)
+            </span>
+          </p>
+          <p className="text-xs md:text-sm">
+            $<span className="text-blue-400 font-bold ml-1">{product.dumpsPriceUsd ?? "N/A"}</span>
+            <span className="text-red-400 font-bold line-through ml-2 text-xs md:text-sm">
+              ${product.dumpsMrpUsd ?? "N/A"}
+            </span>
+            <span className="text-gray-400 font-bold text-xs md:text-sm ml-1">
+              ({calculateDiscount(product.dumpsMrpUsd, product.dumpsPriceUsd)}% off)
+            </span>
+          </p>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          {product.samplePdfUrl && (
+            <button
+              onClick={() =>
+                handleDownload(product.samplePdfUrl, `${product.title}-Sample.pdf`)
+              }
+              className="bg-gray-800 text-white px-4 py-2 rounded text-sm w-full sm:w-auto"
+            >
+              Download Sample
+            </button>
           )}
-
-          {/* Pricing Sections */}
-          <div className="mt-4 space-y-6">
-            {/* Dumps PDF */}
-            {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
-              <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 p-3 border rounded-lg">
-                <div className="w-full md:w-auto">
-                  <p className="font-semibold text-base md:text-lg">
-                    Downloadable File
-                  </p>
-                  <p className="text-blue-600 font-bold text-sm md:text-base">
-                    ₹{product.dumpsPriceInr ?? "N/A"}
-                    <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
-                      ₹{product.dumpsMrpInr ?? "N/A"}
-                    </span>
-                    <span className="text-gray-600 text-xs md:text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpInr,
-                        product.dumpsPriceInr
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                  <p className="text-sm md:text-base">
-                    $
-                    <span className="text-blue-400 font-bold ml-1">
-                      {product.dumpsPriceUsd ?? "N/A"}
-                    </span>
-                    <span className="text-red-400 font-bold line-through ml-2 text-xs md:text-sm">
-                      ${product.dumpsMrpUsd ?? "N/A"}
-                    </span>
-                    <span className="text-gray-400 font-bold text-xs md:text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpUsd,
-                        product.dumpsPriceUsd
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                  {product.samplePdfUrl && (
-                    <button
-                      onClick={() =>
-                        handleDownload(
-                          product.samplePdfUrl,
-                          `${product.title}-Sample.pdf`
-                        )
-                      }
-                      className="bg-gray-800 text-white px-4 py-2 rounded text-sm w-full sm:w-auto"
-                    >
-                      Download Sample
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleAddToCart("regular")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded w-full sm:w-auto"
-                  >
-                    🛒 Add to Cart
-                  </button>
-                </div>
-              </div>
-            )}
-
-         {/* Online Exam */}
-    {Array.isArray(exams) && exams.length > 0 ? (
-      exams.map((exam) => (
-    exam && (
-      <div key={exam._id} className="flex justify-between items-center p-4 border rounded-lg mb-4 bg-white shadow-sm">
-        <div>
-          <p className="font-semibold"> Exam Name: {exam.name || "Online Exam"}</p>
-          <p className="text-blue-600 font-bold">
-            ₹{product.dumpsMrpInr ?? "N/A"}
-            <span className="text-red-600 font-bold line-through ml-2">
-              ₹{product.dumpsPriceInr ?? "N/A"}
-            </span>
-            <span className="text-gray-600 font-bold text-sm ml-1">
-              ({calculateDiscount(exam.product, product.priceINR)}% off)
-            </span>
-          </p>
-          <p>
-            $
-            <span className="text-blue-400 font-bold ml-1">
-              {product.dumpsPriceUsd ?? "N/A"}
-            </span>
-            <span className="text-red-400 font-bold line-through ml-2">
-              ${product.dumpsMrpUsd ?? "N/A"}
-            </span>
-            <span className="text-gray-400 font-bold text-sm ml-1">
-              ({calculateDiscount(product.dumpsMrpUsd, product.dumpsPriceUsd)}% off)
-            </span>
-          </p>
-          <p className="text-sm mt-1">
-             Exam Code: <strong>{exam.code ?? "N/A"}</strong> | Duration: <strong>{exam.duration ?? 0} mins</strong>
-          </p>
-          <p className="text-sm">Passing Score: <strong>{exam.passingScore ?? "N/A"}</strong></p>
-        </div>
-        <div className="flex items-center gap-2">
           <button
-            onClick={() => router.push(`/exam/sample-instruction/${slug}`)}
-            className="bg-blue-600 cursor-pointer text-white px-3 py-1 rounded text-sm"
-          >
-            Try Online Exam
-          </button>
-          <button
-            onClick={() => handleAddToCart("online")}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded"
+            onClick={() => handleAddToCart("regular")}
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded w-full sm:w-auto"
           >
             🛒 Add to Cart
           </button>
         </div>
       </div>
-    )
-  ))
-) : (
-  <p></p>
-)}
-{console.log("Product data:", product)
-}
+    )}
 
-            {/* Combo */}
-  {Array.isArray(exams) && exams.length > 0 ? (
-      exams.map((exam) => (
-    exam && (
-      <div key={exam._id} className="flex justify-between items-center p-4 border rounded-lg mb-4 bg-white shadow-sm">
-        <div>
-          <p className="font-semibold"> Exam Name: {exam.name || "Online Exam"}</p>
-          <p className="text-blue-600 font-bold">
+    {/* Online Exam */}
+    {Array.isArray(exams) && exams.length > 0 && exams.map((exam) => (
+      <div
+        key={exam._id}
+        className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4"
+      >
+        {/* Info */}
+        <div className="w-full">
+          <p className="font-semibold text-sm md:text-base">
+            Exam Name: {exam.name || "Online Exam"}
+          </p>
+          <p className="text-blue-600 font-bold text-sm md:text-base">
             ₹{product.dumpsMrpInr ?? "N/A"}
-            <span className="text-red-600 font-bold line-through ml-2">
+            <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
               ₹{product.dumpsPriceInr ?? "N/A"}
             </span>
-            <span className="text-gray-600 font-bold text-sm ml-1">
-              ({calculateDiscount(exam.product, product.priceINR)}% off)
-            </span>
           </p>
-          <p>
-            $
-            <span className="text-blue-400 font-bold ml-1">
-              {product.dumpsPriceUsd ?? "N/A"}
-            </span>
-            <span className="text-red-400 font-bold line-through ml-2">
-              ${product.dumpsMrpUsd ?? "N/A"}
-            </span>
-            <span className="text-gray-400 font-bold text-sm ml-1">
-              ({calculateDiscount(product.dumpsMrpUsd, product.dumpsPriceUsd)}% off)
-            </span>
+          <p className="text-xs md:text-sm mt-1">
+            Exam Code: <strong>{exam.code ?? "N/A"}</strong> | Duration:{" "}
+            <strong>{exam.duration ?? 0} mins</strong>
           </p>
-          <p className="text-sm mt-1">
-             Exam Code: <strong>{exam.code ?? "N/A"}</strong> | Duration: <strong>{exam.duration ?? 0} mins</strong>
+          <p className="text-xs md:text-sm">
+            Passing Score: <strong>{exam.passingScore ?? "N/A"}</strong>
           </p>
-          <p className="text-sm">Passing Score: <strong>{exam.passingScore ?? "N/A"}</strong></p>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <button
             onClick={() => router.push(`/exam/sample-instruction/${slug}`)}
-            className="bg-blue-600 cursor-pointer text-white px-3 py-1 rounded text-sm"
+            className="bg-blue-600 text-white px-3 py-2 rounded text-sm w-full sm:w-auto"
           >
             Try Online Exam
           </button>
           <button
             onClick={() => handleAddToCart("online")}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded"
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm w-full sm:w-auto"
           >
             🛒 Add to Cart
           </button>
         </div>
       </div>
-    )
-  ))
-) : (              <div className="flex justify-between items-center">
-              
-              </div>
-            )}
-          </div>
+    ))}
 
-          {/* Description */}
-          <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-2">Description:</h2>
-            <div
-              className="prose max-w-none text-sm"
-              dangerouslySetInnerHTML={{
-                __html: product.Description || "No description available",
-              }}
-            />
-          </div>
+    {/* Combo */}
+    {Array.isArray(exams) && exams.length > 0 && exams.map((exam) => (
+      <div
+        key={`combo-${exam._id}`}
+        className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4"
+      >
+        {/* Info */}
+        <div className="w-full">
+          <p className="font-semibold text-sm md:text-base">Get Combo (PDF + Online Exam)</p>
+          <p className="text-blue-600 font-bold text-sm md:text-base">
+            ₹{product.comboPriceInr ?? "N/A"}
+            <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
+              ₹{product.comboMrpInr ?? "N/A"}
+            </span>
+          </p>
+          <p className="text-xs md:text-sm">
+            $<span className="text-blue-400 font-bold ml-1">{product.comboPriceUsd ?? "N/A"}</span>
+            <span className="text-red-400 line-through ml-2 text-xs md:text-sm">
+              ${product.comboMrpUsd ?? "N/A"}
+            </span>
+          </p>
         </div>
+
+        {/* Button */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <button
+            onClick={() => handleAddToCart("combo")}
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm w-full sm:w-auto"
+          >
+            🛒 Add to Cart
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {/* Description */}
+  <div className="mt-6">
+    <h2 className="text-lg md:text-xl font-semibold mb-2">Description:</h2>
+    <div
+      className="prose max-w-none text-xs md:text-sm"
+      dangerouslySetInnerHTML={{
+        __html: product.Description || "No description available",
+      }}
+    />
+  </div>
+</div>
+
       </div>
 
       {/* Long Description */}
