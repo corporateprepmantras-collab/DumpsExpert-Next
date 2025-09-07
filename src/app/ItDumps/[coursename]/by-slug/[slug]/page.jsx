@@ -342,56 +342,63 @@ setExams(Array.isArray(examData) ? examData : [examData]);
     )
   ))
 ) : (
-  <p>No online exams available</p>
+  <p></p>
 )}
 {console.log("Product data:", product)
 }
 
             {/* Combo */}
-            {(product.comboPriceInr || product.dumpsPriceUsd) && (
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-semibold">Get Combo (PDF + Online Exam)</p>
-                  <p className="text-blue-600 font-bold">
-                    ₹{product.comboPriceInr ?? "N/A"}
-                    <span className="text-red-600 font-bold line-through ml-2">
-                      ₹{product.comboMrpInr ?? "N/A"}
-                    </span>
-                    <span className="text-gray-600 font-bold text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.comboMrpInr,
-                        product.comboPriceInr
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                  <p>
-                    $
-                    <span className="text-blue-400 font-bold ml-1">
-                      {product.comboPriceUsd ?? "N/A"}
-                    </span>
-                    <span className="text-red-400 font-bold line-through ml-2">
-                      ${product.comboMrpUsd ?? "N/A"}
-                    </span>
-                    <span className="text-gray-400 font-bold text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.comboMrpUsd,
-                        product.comboPriceUsd
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleAddToCart("combo")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded"
-                  >
-                    🛒 Add to Cart
-                  </button>
-                </div>
+  {Array.isArray(exams) && exams.length > 0 ? (
+      exams.map((exam) => (
+    exam && (
+      <div key={exam._id} className="flex justify-between items-center p-4 border rounded-lg mb-4 bg-white shadow-sm">
+        <div>
+          <p className="font-semibold"> Exam Name: {exam.name || "Online Exam"}</p>
+          <p className="text-blue-600 font-bold">
+            ₹{product.dumpsMrpInr ?? "N/A"}
+            <span className="text-red-600 font-bold line-through ml-2">
+              ₹{product.dumpsPriceInr ?? "N/A"}
+            </span>
+            <span className="text-gray-600 font-bold text-sm ml-1">
+              ({calculateDiscount(exam.product, product.priceINR)}% off)
+            </span>
+          </p>
+          <p>
+            $
+            <span className="text-blue-400 font-bold ml-1">
+              {product.dumpsPriceUsd ?? "N/A"}
+            </span>
+            <span className="text-red-400 font-bold line-through ml-2">
+              ${product.dumpsMrpUsd ?? "N/A"}
+            </span>
+            <span className="text-gray-400 font-bold text-sm ml-1">
+              ({calculateDiscount(product.dumpsMrpUsd, product.dumpsPriceUsd)}% off)
+            </span>
+          </p>
+          <p className="text-sm mt-1">
+             Exam Code: <strong>{exam.code ?? "N/A"}</strong> | Duration: <strong>{exam.duration ?? 0} mins</strong>
+          </p>
+          <p className="text-sm">Passing Score: <strong>{exam.passingScore ?? "N/A"}</strong></p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push(`/exam/sample-instruction/${slug}`)}
+            className="bg-blue-600 cursor-pointer text-white px-3 py-1 rounded text-sm"
+          >
+            Try Online Exam
+          </button>
+          <button
+            onClick={() => handleAddToCart("online")}
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded"
+          >
+            🛒 Add to Cart
+          </button>
+        </div>
+      </div>
+    )
+  ))
+) : (              <div className="flex justify-between items-center">
+              
               </div>
             )}
           </div>

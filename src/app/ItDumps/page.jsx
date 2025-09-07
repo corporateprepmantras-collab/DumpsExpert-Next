@@ -92,7 +92,7 @@ export default async function ITDumpsPage() {
               .map((item) => (
                 <Link
                   key={item._id}
-                  href={`/itDumps/${createSlug(item.name)}`}
+                  href={`/ItDumps/${createSlug(item.name)}`}
                   className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px]"
                 >
                   <div className="h-28 md:h-32 w-full relative">
