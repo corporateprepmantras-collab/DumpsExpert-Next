@@ -10,14 +10,15 @@ import Breadcrumbs from "@/components/public/Breadcrumbs";
 // Helper function to fetch product data
 async function fetchProduct(slug) {
   try {
-    const response = await fetch(`/api/products?slug=${slug}`);
+    const response = await fetch(`/api/products/get-by-slug/${slug}`);
     const data = await response.json();
-    return data.data[0] || null; // Return the first product matching the slug
+    return data.data || null; // ✅ directly return product object
   } catch (error) {
     console.error("Error fetching product:", error);
     return null;
   }
 }
+
 
 // Helper function to fetch all products for related products
 async function fetchAllProducts() {
@@ -96,8 +97,8 @@ console.log("All products:", productData);
           `/api/exams/byslug/${encodeURIComponent(slug)}`
         );
         if (!examRes.ok) throw new Error("Failed to fetch exam details");
-     const examData = await examRes.json();
-setExams(Array.isArray(examData) ? examData : [examData]);
+  const examData = await examRes.json();
+setExams(Array.isArray(examData.data) ? examData.data : []);
 
         console.log("Exam data:", examData);
 
@@ -208,7 +209,28 @@ setExams(Array.isArray(examData) ? examData : [examData]);
   <p className="text-xs md:text-sm">
     Category: <strong>{product.category}</strong>
   </p>
-
+{Array.isArray(exams) && exams.length > 0 && exams.map((exam) => (
+  <div
+    key={exam._id}
+    className=" pt-2"
+  >
+    {/* Info */}
+    <div className="w-full">
+      <p className="font-semibold text-sm md:text-base">
+        Exam Name: {exam.name || "Online Exam"}
+      </p>
+    <p className="text-xs md:text-sm mt-1">
+        Exam Code: <strong>{exam.code ?? "N/A"}</strong> <br />
+         Duration:{" "}
+        <strong>{exam.duration ?? 0} mins</strong>
+      </p>
+      <p className="text-xs md:text-sm">
+        Passing Score: <strong>{exam.passingScore ?? "N/A"}</strong>
+      </p>
+      
+    </div>
+  </div>
+))}
   {/* Ratings */}
   {avgRating && (
     <div className="flex items-center gap-2 flex-wrap">
@@ -277,48 +299,53 @@ setExams(Array.isArray(examData) ? examData : [examData]);
     )}
 
     {/* Online Exam */}
-    {Array.isArray(exams) && exams.length > 0 && exams.map((exam) => (
-      <div
-        key={exam._id}
-        className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4"
-      >
-        {/* Info */}
-        <div className="w-full">
-          <p className="font-semibold text-sm md:text-base">
-            Exam Name: {exam.name || "Online Exam"}
-          </p>
-          <p className="text-blue-600 font-bold text-sm md:text-base">
-            ₹{product.dumpsMrpInr ?? "N/A"}
-            <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
-              ₹{product.dumpsPriceInr ?? "N/A"}
-            </span>
-          </p>
-          <p className="text-xs md:text-sm mt-1">
-            Exam Code: <strong>{exam.code ?? "N/A"}</strong> | Duration:{" "}
-            <strong>{exam.duration ?? 0} mins</strong>
-          </p>
-          <p className="text-xs md:text-sm">
-            Passing Score: <strong>{exam.passingScore ?? "N/A"}</strong>
-          </p>
-        </div>
+{Array.isArray(exams) && exams.length > 0 && exams.map((exam) => (
+  <div
+    key={exam._id}
+    className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4"
+  >
+    {/* Info */}
+    <div className="w-full">
+     
+      <p className="text-blue-600 font-bold text-sm md:text-base">
+        ₹{exam.priceINR ?? "N/A"}
+        <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
+          ₹{exam.mrpINR ?? "N/A"}
+        </span>
+        <span className="text-gray-600 text-xs md:text-sm ml-1">
+          ({calculateDiscount(exam.mrpINR, exam.priceINR)}% off)
+        </span>
+      </p>
+      <p className="text-xs md:text-sm">
+        $<span className="text-blue-400 font-bold ml-1">{exam.priceUSD ?? "N/A"}</span>
+        <span className="text-red-400 font-bold line-through ml-2 text-xs md:text-sm">
+          ${exam.mrpUSD ?? "N/A"}
+        </span>
+        <span className="text-gray-400 font-bold text-xs md:text-sm ml-1">
+          ({calculateDiscount(exam.mrpUSD, exam.priceUSD)}% off)
+        </span>
+      </p>
+    
+    </div>
 
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-          <button
-            onClick={() => router.push(`/exam/sample-instruction/${slug}`)}
-            className="bg-blue-600 text-white px-3 py-2 rounded text-sm w-full sm:w-auto"
-          >
-            Try Online Exam
-          </button>
-          <button
-            onClick={() => handleAddToCart("online")}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm w-full sm:w-auto"
-          >
-            🛒 Add to Cart
-          </button>
-        </div>
-      </div>
-    ))}
+    {/* Buttons */}
+    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+      <button
+        onClick={() => router.push(`/exam/sample-instruction/${slug}`)}
+        className="bg-blue-600 text-white px-3 py-2 rounded text-sm w-full sm:w-auto"
+      >
+        Try Online Exam
+      </button>
+      <button
+        onClick={() => handleAddToCart("online")}
+        className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm w-full sm:w-auto"
+      >
+        🛒 Add to Cart
+      </button>
+    </div>
+  </div>
+))}
+
 
     {/* Combo */}
     {Array.isArray(exams) && exams.length > 0 && exams.map((exam) => (
