@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import "./TestPage.css";
 
@@ -21,16 +21,15 @@ export default function TestPage({ params }) {
   const [autoSubmitTriggered, setAutoSubmitTriggered] = useState(false);
   const [timeLeft, setTimeLeft] = useState("");
   const [exam, setExam] = useState({});
-
+const slug = useParams();
   const router = useRouter();
   //   const { slug } = params; // ✅ App Router slug param
-  const slug = "sdfsdf%20sdfsf";
   // Fetch Questions
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const res = await axios.get(
-          `/api/questions/byProductSlug/${slug}`
+          `/api/questions/product/${slug}`
         );
         const data = res.data;
         console.log("📦 Fetched question data:", data);

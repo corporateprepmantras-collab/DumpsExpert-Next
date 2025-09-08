@@ -29,7 +29,7 @@ export async function GET(req, { params }) {
           message: "Exam not found for this product",
         }),
         {
-          status: 404,
+          status: 500,
           headers: { "Content-Type": "application/json" },
         }
       );

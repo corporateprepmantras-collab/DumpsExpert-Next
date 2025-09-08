@@ -8,18 +8,44 @@ import {
   FaSignOutAlt,
   FaShoppingCart,
   FaFileAlt,
+  FaBars,
+  FaTimes,
 } from "react-icons/fa";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { name: "Dashboard", to: "/dashboard/student/dashboard", icon: <FaUser /> },
-  { name: "My Orders", to: "/dashboard/student/myOrders", icon: <FaShoppingCart /> },
-  { name: "My Courses (PDF)", to: "/dashboard/student/pdfOrders", icon: <FaFileAlt /> },
-  { name: "My Courses (Online Exam)", to: "/dashboard/student/examOrders", icon: <FaFileAlt /> },
-  { name: "Result History Tracking", to: "/dashboard/student/resultTracking", icon: <FaFileAlt /> },
-  { name: "Edit Profile", to: "/dashboard/student/editProfile", icon: <FaUser /> },
-  { name: "Change Password", to: "/dashboard/student/changePassword", icon: <FaUser /> },
+  {
+    name: "My Orders",
+    to: "/dashboard/student/myOrders",
+    icon: <FaShoppingCart />,
+  },
+  {
+    name: "My Courses (PDF)",
+    to: "/dashboard/student/pdfOrders",
+    icon: <FaFileAlt />,
+  },
+  {
+    name: "My Courses (Online Exam)",
+    to: "/dashboard/student/examOrders",
+    icon: <FaFileAlt />,
+  },
+  {
+    name: "Result History Tracking",
+    to: "/dashboard/student/resultTracking",
+    icon: <FaFileAlt />,
+  },
+  {
+    name: "Edit Profile",
+    to: "/dashboard/student/editProfile",
+    icon: <FaUser />,
+  },
+  {
+    name: "Change Password",
+    to: "/dashboard/student/changePassword",
+    icon: <FaUser />,
+  },
   { name: "Logout", to: "/logout", icon: <FaSignOutAlt /> },
 ];
 
@@ -27,7 +53,6 @@ export default function StudentSidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Handle sidebar toggle for mobile
   React.useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) setIsOpen(true);
@@ -40,25 +65,43 @@ export default function StudentSidebar() {
 
   return (
     <>
-      {/* Toggle button for mobile/tablet */}
-      <div className="lg:hidden flex items-center p-2 fixed top-4 left-4 z-50">
-        <button
-          className="bg-blue-600 text-white p-2 rounded-lg shadow-lg focus:outline-none"
-          onClick={() => setIsOpen((v) => !v)}
-        >
-          {isOpen ? "Close" : "Menu"}
-        </button>
-      </div>
-      {/* Overlay for mobile sidebar */}
-      <div
-        className={`fixed inset-0 bg-black/70 z-40 transition-opacity duration-200 ${isOpen ? "block opacity-100" : "hidden opacity-0"} lg:hidden`}
-        onClick={() => setIsOpen(false)}
-      ></div>
-      {/* Sidebar Drawer (mobile/tablet) */}
+      {/* Mobile toggle button */}
+  {/* Mobile toggle button */}
+<div className="lg:hidden fixed top-40 left-4 z-50">
+  <button
+    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg"
+    onClick={() => setIsOpen((v) => !v)}
+  >
+    {isOpen ? (
+      <>
+        <FaTimes className="text-lg" />
+        <span>Close</span>
+      </>
+    ) : (
+      <>
+        <FaBars className="text-lg" />
+        <span>Menu</span>
+      </>
+    )}
+  </button>
+</div>
+
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 pt-20 bg-black/60 z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        ></div>
+      )}
+
+      {/* Mobile Drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-3/4 max-w-xs bg-white shadow-lg z-50 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:hidden flex flex-col pt-16`}
+        className={`fixed top-0 left-0 pt-20 h-full w-4/5 max-w-xs bg-white shadow-lg z-50 transform transition-transform duration-300 lg:hidden  ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        <Card className="w-full h-full p-4 shadow-lg border bg-white">
+        <Card className="w-full h-full p-4 border bg-white shadow-lg overflow-y-auto">
           <h2 className="text-xl font-bold text-center text-blue-600 mb-6">
             🎓 Student Panel
           </h2>
@@ -76,7 +119,7 @@ export default function StudentSidebar() {
                     }`}
                   >
                     <span className="text-lg">{item.icon}</span>
-                    <span>{item.name}</span>
+                    <span className="truncate">{item.name}</span>
                   </Button>
                 </Link>
               );
@@ -85,10 +128,10 @@ export default function StudentSidebar() {
         </Card>
       </aside>
 
-      {/* Sidebar for desktop */}
+      {/* Desktop Sidebar */}
       <div className="hidden lg:block">
-        <Card className="w-68 mt-20 min-h-screen p-4 shadow-lg border bg-white">
-          <h2 className="text-xl font-bold text-center text-blue-600 mb-6">
+        <Card className="w-64 xl:w-72 mt-16 min-h-screen p-4 shadow-lg border bg-white fixed left-0 top-0">
+          <h2 className="text-xl font-bold text-center text-blue-600 mb-6 mt-6">
             🎓 Student Panel
           </h2>
           <nav className="flex flex-col gap-2">
@@ -105,7 +148,7 @@ export default function StudentSidebar() {
                     }`}
                   >
                     <span className="text-lg">{item.icon}</span>
-                    <span>{item.name}</span>
+                    <span className="truncate">{item.name}</span>
                   </Button>
                 </Link>
               );

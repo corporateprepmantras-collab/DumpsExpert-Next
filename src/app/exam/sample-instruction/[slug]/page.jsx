@@ -8,21 +8,26 @@ export default function SampleInstructionsPage() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [exam, setExam] = useState({});
+  const [exam, setExam] = useState(null);
 
   const router = useRouter();
-  const { slug } = useParams(); // ✅ useParams instead of props
+  const { slug } = useParams(); // ✅ dynamic param
 
   useEffect(() => {
     if (!slug) return;
 
     const fetchInstructions = async () => {
       try {
-        const res = await axios.get(`/api/exams/byslug/${encodeURIComponent(slug)}`);
-        const examData = res.data[0];
-        setExam(examData);
+        const res = await axios.get(
+          `/api/exams/byslug/${encodeURIComponent(slug)}`
+        );
+        if (res.data?.data?.length > 0) {
+          setExam(res.data.data[0]); // ✅ access inside "data"
+        } else {
+          setError("No exam found for this slug.");
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Fetch Error:", err);
         setError("Failed to load instructions.");
       } finally {
         setLoading(false);
@@ -49,19 +54,38 @@ export default function SampleInstructionsPage() {
           <p>Loading...</p>
         ) : error ? (
           <p className="text-red-500">{error}</p>
-        ) : (
+        ) : exam ? (
           <>
             <ul className="space-y-2 text-gray-700">
               <p className="font-medium mb-2">
                 📋 Please read the following test instructions carefully:
               </p>
 
-              <li>🧾 <strong>Exam Name:</strong> {exam.name}</li>
-              <li>🆔 <strong>Exam Code:</strong> {exam.code}</li>
-              <li>⏱️ <strong>Sample Duration:</strong> {exam.sampleDuration} minutes</li>
-              <li>✍️ <strong>Marks per Question:</strong> {exam.eachQuestionMark} marks</li>
-              <li>🎯 <strong>Passing Score:</strong> {exam.passingScore}%</li>
+              <li>
+                🧾 <strong>Exam Name:</strong> {exam.name}
+              </li>
+              <li>
+                🆔 <strong>Exam Code:</strong> {exam.code}
+              </li>
+              <li>
+                ⏱️ <strong>Sample Duration:</strong> {exam.sampleDuration}{" "}
+                minutes
+              </li>
+              <li>
+                ✍️ <strong>Marks per Question:</strong> {exam.eachQuestionMark}{" "}
+                marks
+              </li>
+              <li>
+                🎯 <strong>Passing Score:</strong> {exam.passingScore}%
+              </li>
             </ul>
+
+            {exam.sampleInstructions && (
+              <div
+                className="mt-4 p-3 border rounded bg-gray-50 text-sm text-gray-700"
+                dangerouslySetInnerHTML={{ __html: exam.sampleInstructions }}
+              />
+            )}
 
             <div className="flex items-center mt-4">
               <input
@@ -80,12 +104,16 @@ export default function SampleInstructionsPage() {
               onClick={handleStart}
               disabled={!agreed || loading || !!error}
               className={`mt-6 px-6 py-2 text-white rounded ${
-                agreed ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+                agreed
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
             >
               Start Sample Test
             </button>
           </>
+        ) : (
+          <p className="text-gray-500">No instructions available.</p>
         )}
       </div>
     </div>

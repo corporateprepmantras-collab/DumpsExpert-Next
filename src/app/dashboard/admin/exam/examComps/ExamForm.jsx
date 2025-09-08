@@ -271,45 +271,45 @@ const RichTextEditor = ({
   const [linkUrl, setLinkUrl] = useState("");
   const editorRef = useRef(null);
 
-  // Toolbar buttons configuration
+  // Set initial value safely (not on every keystroke)
+  useEffect(() => {
+    if (editorRef.current && value !== editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  // Toolbar buttons
   const toolbarButtons = [
     { format: "bold", icon: "B", title: "Bold" },
     { format: "italic", icon: "I", title: "Italic" },
     { format: "underline", icon: "U", title: "Underline" },
-    { format: "strike", icon: "S", title: "Strikethrough" },
+    { format: "strikeThrough", icon: "S", title: "Strikethrough" },
     { separator: true },
-    { format: "blockquote", icon: "❝", title: "Blockquote" },
-    { format: "code-block", icon: "</>", title: "Code Block" },
+    { format: "formatBlock", value: "blockquote", icon: "❝", title: "Blockquote" },
+    { format: "formatBlock", value: "pre", icon: "</>", title: "Code Block" },
     { separator: true },
     { format: "link", icon: "🔗", title: "Insert Link" },
     { separator: true },
-    { format: "ordered", icon: "1.", title: "Ordered List" },
-    { format: "bullet", icon: "•", title: "Bullet List" },
+    { format: "insertOrderedList", icon: "1.", title: "Ordered List" },
+    { format: "insertUnorderedList", icon: "•", title: "Bullet List" },
     { separator: true },
-    { format: "align", value: "left", icon: "≡", title: "Align Left" },
-    { format: "align", value: "center", icon: "≡", title: "Align Center" },
-    { format: "align", value: "right", icon: "≡", title: "Align Right" },
-    { format: "align", value: "justify", icon: "≡", title: "Justify" },
+    { format: "justifyLeft", icon: "≡", title: "Align Left" },
+    { format: "justifyCenter", icon: "≡", title: "Align Center" },
+    { format: "justifyRight", icon: "≡", title: "Align Right" },
+    { format: "justifyFull", icon: "≡", title: "Justify" },
   ];
 
-  // Handle format changes
+  // Apply formatting
   const handleFormat = (format, value = null) => {
     if (format === "link") {
       setShowLinkInput(true);
       return;
     }
-
-    if (format === "heading") {
-      document.execCommand("formatBlock", false, `<h${value}>`);
-      onChange(editorRef.current.innerHTML);
-      return;
-    }
-
     document.execCommand(format, false, value);
     onChange(editorRef.current.innerHTML);
   };
 
-  // Handle link insertion
+  // Add link
   const handleAddLink = () => {
     if (linkUrl) {
       document.execCommand("createLink", false, linkUrl);
@@ -319,19 +319,18 @@ const RichTextEditor = ({
     setLinkUrl("");
   };
 
-  // Handle editor content changes
+  // Input handler
   const handleInput = () => {
     onChange(editorRef.current.innerHTML);
   };
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden">
+    <div className="border border-gray-300 rounded-lg overflow-hidden relative">
       {/* Toolbar */}
       <div className="bg-gray-100 p-2 flex flex-wrap gap-1 border-b border-gray-300">
-        {/* Headings dropdown */}
         <select
           className="p-1 rounded border mr-1 text-sm"
-          onChange={(e) => handleFormat("heading", e.target.value)}
+          onChange={(e) => handleFormat("formatBlock", `h${e.target.value}`)}
         >
           <option value="">Paragraph</option>
           <option value="1">Heading 1</option>
@@ -342,24 +341,22 @@ const RichTextEditor = ({
           <option value="6">Heading 6</option>
         </select>
 
-        {/* Format buttons */}
-        {toolbarButtons.map((button, index) =>
-          button.separator ? (
-            <div key={index} className="w-px h-6 bg-gray-300 mx-1" />
+        {toolbarButtons.map((btn, i) =>
+          btn.separator ? (
+            <div key={i} className="w-px h-6 bg-gray-300 mx-1" />
           ) : (
             <button
-              key={index}
+              key={i}
               type="button"
-              title={button.title}
-              className={`p-1 rounded min-w-[2rem] text-sm hover:bg-gray-200`}
-              onClick={() => handleFormat(button.format, button.value)}
+              title={btn.title}
+              className="p-1 rounded min-w-[2rem] text-sm hover:bg-gray-200"
+              onClick={() => handleFormat(btn.format, btn.value)}
             >
-              {button.icon}
+              {btn.icon}
             </button>
           )
         )}
 
-        {/* Color pickers */}
         <input
           type="color"
           className="w-8 h-8 p-0 border-0 cursor-pointer"
@@ -374,17 +371,22 @@ const RichTextEditor = ({
         />
       </div>
 
-      {/* Editor content */}
-      <div
-        ref={editorRef}
-        className="p-4 min-h-[200px] focus:outline-none bg-white"
-        contentEditable
-        dangerouslySetInnerHTML={{ __html: value }}
-        onInput={handleInput}
-        placeholder={placeholder}
-      />
+      {/* Editor */}
+      <div className="relative">
+        {(!value || value === "<br>") && (
+          <div className="absolute left-4 top-4 text-gray-400 pointer-events-none select-none">
+            {placeholder}
+          </div>
+        )}
+        <div
+          ref={editorRef}
+          className="p-4 min-h-[200px] focus:outline-none bg-white relative z-10"
+          contentEditable
+          onInput={handleInput}
+        />
+      </div>
 
-      {/* Link input dialog */}
+      {/* Link Modal */}
       {showLinkInput && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded shadow-lg w-80">
@@ -416,3 +418,4 @@ const RichTextEditor = ({
     </div>
   );
 };
+
