@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 const ProductForm = ({ mode }) => {
@@ -548,45 +548,60 @@ const ProductForm = ({ mode }) => {
 };
 
 // Custom Rich Text Editor Component
-const RichTextEditor = ({ value, onChange, placeholder = "Write something...", error = "", label = "Editor" }) => {
+// Custom Rich Text Editor Component
+
+const RichTextEditor = ({
+  value,
+  onChange,
+  placeholder = "Write something...",
+  error = "",
+  label = "Editor",
+}) => {
   const [showLinkInput, setShowLinkInput] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
-  const editorRef = React.useRef(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const editorRef = useRef(null);
 
   // Toolbar buttons configuration
   const toolbarButtons = [
-    { format: 'bold', icon: 'B', title: 'Bold' },
-    { format: 'italic', icon: 'I', title: 'Italic' },
-    { format: 'underline', icon: 'U', title: 'Underline' },
-    { format: 'strike', icon: 'S', title: 'Strikethrough' },
+    { format: "bold", icon: "B", title: "Bold" },
+    { format: "italic", icon: "I", title: "Italic" },
+    { format: "underline", icon: "U", title: "Underline" },
+    { format: "strikeThrough", icon: "S", title: "Strikethrough" },
     { separator: true },
-    { format: 'blockquote', icon: '❝', title: 'Blockquote' },
-    { format: 'code-block', icon: '</>', title: 'Code Block' },
+    { format: "formatBlock", value: "blockquote", icon: "❝", title: "Blockquote" },
+    { format: "formatBlock", value: "pre", icon: "</>", title: "Code Block" },
     { separator: true },
-    { format: 'link', icon: '🔗', title: 'Insert Link' },
+    { format: "link", icon: "🔗", title: "Insert Link" },
     { separator: true },
-    { format: 'ordered', icon: '1.', title: 'Ordered List' },
-    { format: 'bullet', icon: '•', title: 'Bullet List' },
+    { format: "insertOrderedList", icon: "1.", title: "Ordered List" },
+    { format: "insertUnorderedList", icon: "•", title: "Bullet List" },
     { separator: true },
-    { format: 'align', value: 'left', icon: '≡', title: 'Align Left' },
-    { format: 'align', value: 'center', icon: '≡', title: 'Align Center' },
-    { format: 'align', value: 'right', icon: '≡', title: 'Align Right' },
-    { format: 'align', value: 'justify', icon: '≡', title: 'Justify' },
+    { format: "justifyLeft", icon: "≡", title: "Align Left" },
+    { format: "justifyCenter", icon: "≡", title: "Align Center" },
+    { format: "justifyRight", icon: "≡", title: "Align Right" },
+    { format: "justifyFull", icon: "≡", title: "Justify" },
   ];
+
+  // Load initial value into editor
+  useEffect(() => {
+    if (editorRef.current && value !== editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value || "";
+    }
+  }, [value]);
 
   // Handle format changes
   const handleFormat = (format, value = null) => {
-    if (format === 'link') {
+    if (format === "link") {
       setShowLinkInput(true);
       return;
     }
-    
-    if (format === 'heading') {
-      document.execCommand('formatBlock', false, `<h${value}>`);
+
+    if (format === "heading") {
+      document.execCommand("formatBlock", false, `<h${value}>`);
       onChange(editorRef.current.innerHTML);
       return;
     }
-    
+
     document.execCommand(format, false, value);
     onChange(editorRef.current.innerHTML);
   };
@@ -594,11 +609,11 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write something...", e
   // Handle link insertion
   const handleAddLink = () => {
     if (linkUrl) {
-      document.execCommand('createLink', false, linkUrl);
+      document.execCommand("createLink", false, linkUrl);
       onChange(editorRef.current.innerHTML);
     }
     setShowLinkInput(false);
-    setLinkUrl('');
+    setLinkUrl("");
   };
 
   // Handle editor content changes
@@ -607,15 +622,15 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write something...", e
   };
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 relative">
       <label className="block mb-2 font-medium">{label}</label>
-      
+
       {/* Toolbar */}
       <div className="border border-gray-300 rounded-t-lg bg-gray-100 p-2 flex flex-wrap gap-1">
         {/* Headings dropdown */}
-        <select 
+        <select
           className="p-1 rounded border mr-1 text-sm"
-          onChange={(e) => handleFormat('heading', e.target.value)}
+          onChange={(e) => handleFormat("heading", e.target.value)}
         >
           <option value="">Paragraph</option>
           <option value="1">Heading 1</option>
@@ -625,9 +640,9 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write something...", e
           <option value="5">Heading 5</option>
           <option value="6">Heading 6</option>
         </select>
-        
+
         {/* Format buttons */}
-        {toolbarButtons.map((button, index) => (
+        {toolbarButtons.map((button, index) =>
           button.separator ? (
             <div key={index} className="w-px h-6 bg-gray-300 mx-1" />
           ) : (
@@ -635,43 +650,48 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write something...", e
               key={index}
               type="button"
               title={button.title}
-              className={`p-1 rounded min-w-[2rem] text-sm hover:bg-gray-200`}
+              className="p-1 rounded min-w-[2rem] text-sm hover:bg-gray-200"
               onClick={() => handleFormat(button.format, button.value)}
             >
               {button.icon}
             </button>
           )
-        ))}
-        
+        )}
+
         {/* Color pickers */}
         <input
           type="color"
           className="w-8 h-8 p-0 border-0 cursor-pointer"
-          onChange={(e) => handleFormat('foreColor', e.target.value)}
+          onChange={(e) => handleFormat("foreColor", e.target.value)}
           title="Text Color"
         />
         <input
           type="color"
           className="w-8 h-8 p-0 border-0 cursor-pointer"
-          onChange={(e) => handleFormat('backColor', e.target.value)}
+          onChange={(e) => handleFormat("backColor", e.target.value)}
           title="Background Color"
         />
       </div>
-      
+
       {/* Editor content */}
       <div
         ref={editorRef}
-        className="border border-gray-300 border-t-0 rounded-b-lg p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="border border-gray-300 border-t-0 rounded-b-lg p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500 relative"
         contentEditable
-        dangerouslySetInnerHTML={{ __html: value }}
         onInput={handleInput}
-        placeholder={placeholder}
       />
-      
+
+      {/* Placeholder overlay */}
+      {(!value || value === "<br>") && (
+        <div className="absolute left-4 top-[4.5rem] text-gray-400 pointer-events-none select-none">
+          {placeholder}
+        </div>
+      )}
+
       {/* Link input dialog */}
       {showLinkInput && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded shadow-lg">
+          <div className="bg-white p-4 rounded shadow-lg w-96">
             <h3 className="font-medium mb-2">Insert Link</h3>
             <input
               type="url"
@@ -681,13 +701,13 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write something...", e
               onChange={(e) => setLinkUrl(e.target.value)}
             />
             <div className="flex justify-end gap-2">
-              <button 
+              <button
                 className="px-3 py-1 bg-gray-200 rounded"
                 onClick={() => setShowLinkInput(false)}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className="px-3 py-1 bg-blue-500 text-white rounded"
                 onClick={handleAddLink}
               >
@@ -697,13 +717,13 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write something...", e
           </div>
         </div>
       )}
-      
+
       {/* Error message */}
-      {error && (
-        <p className="text-red-500 text-sm mt-1">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
 };
+
+
 
 export default ProductForm;
