@@ -342,7 +342,7 @@ export const authOptions = {
         maxAge: 24 * 60 * 60, // 24 hours
         domain:
           process.env.NODE_ENV === "production"
-            ? "dump-rho.vercel.app"
+            ? "dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -354,7 +354,7 @@ export const authOptions = {
         secure: process.env.NODE_ENV === "production",
         domain:
           process.env.NODE_ENV === "production"
-            ? "dump-rho.vercel.app"
+            ? "dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -367,7 +367,7 @@ export const authOptions = {
         secure: process.env.NODE_ENV === "production",
         domain:
           process.env.NODE_ENV === "production"
-            ? "dump-rho.vercel.app"
+            ? "dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -381,7 +381,7 @@ export const authOptions = {
         maxAge: 900,
         domain:
           process.env.NODE_ENV === "production"
-            ? "dump-rho.vercel.app"
+            ? "dumps-expert-next.vercel.app"
             : undefined,
       },
     },
@@ -395,7 +395,7 @@ export const authOptions = {
         maxAge: 900,
         domain:
           process.env.NODE_ENV === "production"
-            ? "dump-rho.vercel.app"
+            ? "dumps-expert-next.vercel.app"
             : undefined,
       },
     },
