@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Head from "next/head";
-import banner from "../../assets/aboutAssests/AboutBanner.webp"; // Adjust path as needed
+import banner from "../../assets/aboutAssests/AboutBanner.png"; // Adjust path as needed
 
 const AboutUs = () => {
   return (
