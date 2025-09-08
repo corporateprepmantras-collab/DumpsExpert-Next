@@ -6,10 +6,11 @@ import Product from "@/models/productListSchema";
 export async function GET(request, { params }) {
   try {
     await connectMongoDB();
-    const { slug } = await params;
+    const { slug } = params; // no need for await here
 
     console.log("Fetching exams by product slug:", slug);
 
+    // Find product by slug
     const product = await Product.findOne({ slug: decodeURIComponent(slug) });
 
     if (!product) {
@@ -19,14 +20,11 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Fetch ALL exam data for this product
     const exams = await Exam.find({
       productId: product._id,
       status: "published",
-    })
-      .select(
-        "name code duration sampleDuration passingScore eachQuestionMark sampleInstructions"
-      )
-      .lean();
+    }).lean();
 
     if (!exams || exams.length === 0) {
       return NextResponse.json(
@@ -35,7 +33,10 @@ export async function GET(request, { params }) {
       );
     }
 
-    return NextResponse.json(exams, { status: 200 });
+    return NextResponse.json(
+      { message: "Exams retrieved successfully", data: exams },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error in /api/exams/byslug/[slug]:", error);
     return NextResponse.json(
