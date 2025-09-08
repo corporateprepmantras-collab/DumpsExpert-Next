@@ -1,185 +1,146 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation"; 
-import { Calendar, FolderOpen, ChevronLeft, ChevronRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
-export default function ExamDumpsSlider() {
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export default function ProductSlider() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [slidesPerView, setSlidesPerView] = useState(3);
-  const trackRef = useRef(null);
-  const router = useRouter();
+  const [error, setError] = useState(null);
+  const [startIndex, setStartIndex] = useState(0);
+  const [visibleCards, setVisibleCards] = useState(3);
 
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await fetch("/api/products");
         const data = await res.json();
-
-        // ✅ Fix: extract blogs from data.data
-        if (Array.isArray(data)) {
-          setProducts(data);
-        } else if (Array.isArray(data.data)) {
-          setProducts(data.data);
-        } else {
-          throw new Error("Unexpected API response format");
-        }
+        setProducts(Array.isArray(data.data) ? data.data : []);
       } catch (err) {
         console.error("Error fetching products:", err);
         setError("Failed to load products.");
-        setProducts([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchProducts();
   }, []);
 
-  const totalSlides = products.length;
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) =>
-      prev === 0 ? totalSlides - slidesPerView : prev - 1
-    );
-  };
-
-  const handleNext = () => {
-    setCurrentIndex((prev) =>
-      prev >= totalSlides - slidesPerView ? 0 : prev + 1
-    );
-  };
-
+  // Change visible cards count based on screen size
   useEffect(() => {
-    const updateSlidesPerView = () => {
-      if (window.innerWidth < 640) setSlidesPerView(1);
-      else if (window.innerWidth < 1024) setSlidesPerView(2);
-      else setSlidesPerView(4);
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setVisibleCards(1); // Mobile
+      } else {
+        setVisibleCards(3); // Desktop
+      }
     };
-
-    updateSlidesPerView();
-    window.addEventListener("resize", updateSlidesPerView);
-    return () => window.removeEventListener("resize", updateSlidesPerView);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Auto slide every 4s
   useEffect(() => {
-    if (totalSlides > 0) {
-      const interval = setInterval(() => {
-        handleNext();
-      }, 4000);
-      return () => clearInterval(interval);
-    }
-  }, [slidesPerView, totalSlides]);
+    if (!products.length) return;
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [products, startIndex, visibleCards]);
 
-  useEffect(() => {
-    if (trackRef.current) {
-      const offset = (currentIndex * 100) / slidesPerView;
-      trackRef.current.style.transform = `translateX(-${offset}%)`;
-      trackRef.current.style.transition = "transform 0.6s ease-in-out";
-    }
-  }, [currentIndex, slidesPerView]);
+  // Navigation
+  const nextSlide = () =>
+    setStartIndex((prev) =>
+      prev + visibleCards < products.length ? prev + visibleCards : 0
+    );
+
+  const prevSlide = () =>
+    setStartIndex((prev) =>
+      prev - visibleCards >= 0
+        ? prev - visibleCards
+        : Math.max(0, products.length - visibleCards)
+    );
+
+  if (loading) return <p className="text-center">Loading...</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
+  if (!products.length) return <p className="text-center">No products found.</p>;
 
   return (
-    <section className="py-20 dark:bg-gray-900 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold text-center text-gray-800 dark:text-white mb-12">
-          Most Popular IT Certification{" "}
-          <span className="text-orange-500">Dumps</span>
-        </h2>
+    <div className="w-full py-12 flex flex-col items-center">
+      <h2 className="text-2xl md:text-4xl font-bold text-center mb-8">
+        Most Popular IT Certification{" "}
+        <span className="text-orange-500">Dumps</span>
+      </h2>
 
-        {/* States */}
-        {loading && (
-          <p className="text-center text-gray-500 dark:text-gray-400">
-            Loading products...
-          </p>
-        )}
-        {error && (
-          <p className="text-center text-red-500 dark:text-red-400">{error}</p>
-        )}
-
-        {/* Navigation */}
-        {totalSlides > 0 && (
-          <div className="flex justify-between items-center mb-6">
-            <Button variant="outline" size="icon" onClick={handlePrev}>
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleNext}>
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
-
-        {/* Slider */}
-        <div className="relative overflow-hidden">
-          <div
-            ref={trackRef}
-            className="flex"
-            style={{
-              width: `${(totalSlides / slidesPerView) * 100}%`,
-            }}
-          >
-            {products.length > 0 ? (
-              products.map((dump) => (
-                <div
-                  key={dump._id}
-                  style={{ flex: `0 0 ${100 / slidesPerView}%` }}
-                  className="px-2"
-                >
-                  <Card className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
-                    <img
-                      src={dump.imageUrl}
-                      alt={dump.title}
-                      className="h-40 w-full object-cover"
-                    />
-                    <CardContent className="flex flex-col flex-grow p-5">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">
-                        {dump.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        {dump.sapExamCode || "N/A"}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 flex-grow mb-4">
-                        {dump.metaDescription || "No description available."}
-                      </p>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
-                        <Calendar className="w-4 h-4" /> Updated:{" "}
-                        {dump.updatedAt
-                          ? new Date(dump.updatedAt).toLocaleDateString()
-                          : "N/A"}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-1">
-                        <FolderOpen className="w-4 h-4" /> Category:{" "}
-                        {dump.category || "N/A"}
-                      </div>
-
-                      {/* ✅ Route to blog by slug */}
-                      <Button
-                        onClick={() =>
-                          router.push(`/ItDumps/${dump.category}/by-slug/${dump.slug}`)
-                        }
-                        className="mt-auto w-full bg-[#1A2E33] hover:bg-[#19332d] text-white"
-                      >
-                        View More
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))
-            ) : (
-              !loading &&
-              !error && (
-                <p className="text-center text-gray-500 dark:text-gray-400 w-full">
-                  No products available.
-                </p>
-              )
-            )}
-          </div>
-        </div>
+      {/* Buttons */}
+      <div className="flex justify-between gap-4 mb-6">
+        <button
+          onClick={prevSlide}
+          className="bg-white shadow-md rounded-full p-2 hover:bg-gray-200"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="bg-white shadow-md rounded-full p-2 hover:bg-gray-200"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
       </div>
-    </section>
+
+      {/* Cards with Animation */}
+      <div className="relative w-full max-w-6xl overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={startIndex} // re-renders on change
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -100, opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className={`grid gap-6 grid-cols-1 md:grid-cols-${visibleCards}`}
+          >
+            {products
+              .slice(startIndex, startIndex + visibleCards)
+              .map((product) => (
+                <div
+                  key={product._id}
+                  className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
+                >
+                  <img
+                    src={product.imageUrl || "/placeholder.png"}
+                    alt={product.title}
+                    className="h-48 w-full object-cover"
+                  />
+                  <div className="p-4 flex flex-col justify-between flex-1">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {product.sapExamCode || product.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                      {product.Description?.replace(/<[^>]+>/g, "") ||
+                        "No description available."}
+                    </p>
+                    <div className="mt-4">
+                      <p className="text-orange-500 font-bold">
+                        ₹{product.dumpsPriceInr?.trim() || "N/A"}
+                      </p>
+                      {product.dumpsMrpInr && (
+                        <p className="line-through text-sm text-gray-400">
+                          ₹{product.dumpsMrpInr}
+                        </p>
+                      )}
+                    </div>
+                    <button className="mt-4 bg-orange-500 text-white font-medium py-2 px-4 rounded-lg hover:bg-orange-600 transition">
+                      View More
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

@@ -36,16 +36,16 @@ export default function Navbar() {
   const [cartItemCount, setCartItemCount] = useState(0);
 
   // Subscribe to cart changes
-   // Subscribe to cart changes
+  // Subscribe to cart changes
   useEffect(() => {
     // Initial cart count
     setCartItemCount(useCartStore.getState().cartItems.length);
-    
+
     // Subscribe to cart changes
-    const unsubscribe = useCartStore.subscribe(
-      (state) => setCartItemCount(state.cartItems.length)
+    const unsubscribe = useCartStore.subscribe((state) =>
+      setCartItemCount(state.cartItems.length)
     );
-    
+
     return () => unsubscribe();
   }, []);
 
@@ -113,7 +113,12 @@ export default function Navbar() {
       <nav className="bg-white fixed w-full shadow z-50 flex justify-between items-center py-2 lg:px-28 px-4">
         {/* Logo */}
         <Link href="/">
-          <Image src={dumpslogo} alt="dumpsxpert logo" width={150} height={150} />
+          <Image
+            src={dumpslogo}
+            alt="dumpsxpert logo"
+            width={150}
+            height={150}
+          />
         </Link>
 
         {/* Desktop Nav Links */}
@@ -142,9 +147,11 @@ export default function Navbar() {
                     {dropdownData[item.dropdownKey].map((sub, i) => (
                       <li key={i}>
                         <Link
-                          href={`/${item.dropdownKey === "ItDumps" ? "ItDumps" : "blogsPages"}/${sub
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")}`}
+                          href={`/${
+                            item.dropdownKey === "ItDumps"
+                              ? "ItDumps"
+                              : "blogsPages"
+                          }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           {sub}
@@ -183,7 +190,8 @@ export default function Navbar() {
                   <Avatar>
                     <AvatarImage
                       src={
-                        userData?.profileImage || "https://via.placeholder.com/40"
+                        userData?.profileImage ||
+                        "https://via.placeholder.com/40"
                       }
                     />
                     <AvatarFallback>
@@ -207,7 +215,10 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href={getDashboardPath()}>Dashboard</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={handleLogout}
+                >
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -237,24 +248,25 @@ export default function Navbar() {
       {/* Mobile Nav Overlay */}
       <div
         className={`fixed top-0 left-0 h-full w-full bg-black/70 z-40 transition-opacity duration-200 ${
-          isOpen ? 'block opacity-100' : 'hidden opacity-0'
+          isOpen ? "block opacity-100" : "hidden opacity-0"
         } lg:hidden`}
         onClick={() => setIsOpen(false)}
       ></div>
       {/* Mobile Nav Drawer */}
       <aside
         className={`fixed top-0 right-0 h-full w-3/4 max-w-xs bg-white shadow-lg z-50 transform transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+          isOpen ? "translate-x-0" : "translate-x-full"
         } lg:hidden flex flex-col pt-8`}
       >
-        <div className="flex justify-end px-4">
+        <div className="flex justify-end ">
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
             <X size={30} />
           </Button>
         </div>
         <ul className="flex flex-col gap-2 px-6 py-2 font-semibold">
           {navlinks.map((item, index) => {
-            const hasDropdown = item.dropdownKey && dropdownData[item.dropdownKey]?.length > 0;
+            const hasDropdown =
+              item.dropdownKey && dropdownData[item.dropdownKey]?.length > 0;
             return (
               <li key={index} className="relative">
                 <div className="flex items-center justify-between">
@@ -268,7 +280,13 @@ export default function Navbar() {
                   {hasDropdown && (
                     <button
                       className="p-1"
-                      onClick={() => setActiveDropdown(activeDropdown === item.dropdownKey ? null : item.dropdownKey)}
+                      onClick={() =>
+                        setActiveDropdown(
+                          activeDropdown === item.dropdownKey
+                            ? null
+                            : item.dropdownKey
+                        )
+                      }
                     >
                       <span className="text-sm">&#9662;</span>
                     </button>
@@ -279,9 +297,11 @@ export default function Navbar() {
                     {dropdownData[item.dropdownKey].map((sub, i) => (
                       <li key={i}>
                         <Link
-                          href={`/${item.dropdownKey === "ItDumps" ? "ItDumps" : "blogsPages"}/${sub
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")}`}
+                          href={`/${
+                            item.dropdownKey === "ItDumps"
+                              ? "ItDumps"
+                              : "blogsPages"
+                          }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           onClick={() => setIsOpen(false)}
                         >
@@ -297,7 +317,11 @@ export default function Navbar() {
         </ul>
         <div className="flex flex-col gap-3 px-6 mt-4">
           <NavbarSearch hideOnLarge={true} />
-          <Link href="/cart" className="flex items-center gap-2 py-2" onClick={() => setIsOpen(false)}>
+          <Link
+            href="/cart"
+            className="flex items-center gap-2 py-2"
+            onClick={() => setIsOpen(false)}
+          >
             <ShoppingCart />
             <span>Cart</span>
             {cartItemCount > 0 && (
@@ -307,11 +331,19 @@ export default function Navbar() {
             )}
           </Link>
           {status === "authenticated" ? (
-            <Link href={getDashboardPath()} className="py-2" onClick={() => setIsOpen(false)}>
+            <Link
+              href={getDashboardPath()}
+              className="py-2"
+              onClick={() => setIsOpen(false)}
+            >
               Dashboard
             </Link>
           ) : (
-            <Link href="/auth/signin" className="bg-[#113d48] text-white px-4 py-2 rounded-lg hover:bg-indigo-700" onClick={() => setIsOpen(false)}>
+            <Link
+              href="/auth/signin"
+              className="bg-[#113d48] text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+              onClick={() => setIsOpen(false)}
+            >
               Login / Register
             </Link>
           )}

@@ -112,7 +112,7 @@ const WhyChooseSection = () => {
   return (
     <div className="flex flex-col md:flex-row w-full min-h-screen">
       {/* Sticky Left Panel (desktop) / Top header (mobile) */}
-      <div className="sticky-left md:w-1/2 md:sticky md:top-0 h-auto md:h-screen bg-indigo-800 text-white p-6 sm:p-10 flex flex-col justify-center items-center transition-all duration-500">
+      <div className="sticky-left md:w-1/2 md:sticky rounded-2xl md:top-0 h-auto md:h-screen bg-indigo-800 text-white p-6 sm:p-10 flex flex-col justify-center items-center transition-all duration-500">
         <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">
           Why Choose DumpsXpert?
         </h2>

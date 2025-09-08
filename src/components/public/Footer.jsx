@@ -4,18 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaFacebookF, FaLinkedinIn, FaYoutube } from "react-icons/fa";
 import dumpslogo from "../../assets/landingassets/dumplogo.webp";
-// import Button from "../ui/Button";
-// import Input from "../ui/Input";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#1E1E24] text-white text-sm px-4 sm:px-6 lg:px-20 py-10">
+    <footer className="bg-[#1E1E24] overflow-hidden text-white text-sm px-4 sm:px-6 lg:px-20 py-10">
       {/* Top Grid Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 border-b border-gray-600 pb-8">
         {/* Disclaimer */}
-        <div>
+        <div className="overflow-hidden text-ellipsis">
           <p className="font-semibold">Disclaimer :</p>
-          <p className="mt-2">
+          <p className="mt-2 line-clamp-3 sm:line-clamp-none">
             We provide top-quality dumps, practice exams, and study materials
             for various certifications. Join us to ensure success in your IT
             career!
@@ -49,7 +47,8 @@ export default function Footer() {
                 About Us
               </Link>
             </li>
-            <li>
+            {/* Hide extra links on mobile */}
+            <li className="hidden sm:block">
               <Link href="/link-name" className="hover:underline">
                 Link Name
               </Link>
@@ -74,25 +73,17 @@ export default function Footer() {
         </div>
 
         {/* Newsletter */}
-        <div>
+        <div className="hidden sm:block">
           <h3 className="font-semibold mb-2">Subscribe to Our Newsletter</h3>
-          {/* <Input
-            type="email"
-            placeholder="Enter your email"
-            className="w-full px-3 py-2 rounded text-black placeholder-gray-700 bg-white"
-          /> */}
-          {/* <Button className="bg-blue-600 text-white h-10 w-full mt-2 py-2 rounded hover:bg-blue-700">
-            Subscribe
-          </Button> */}
         </div>
       </div>
 
       {/* Bottom Bar */}
       <div className="flex flex-col md:flex-row justify-between items-center text-center text-gray-400 text-xs mt-4 border-t border-gray-600 pt-4 gap-2">
-        <div>
+        <div className="truncate max-w-[250px] sm:max-w-none">
           © 2025 Exam Dump. All Rights Reserved. Designed By Dumpsxpert.Com
         </div>
-        <div className="space-x-4">
+        <div className="space-x-4 hidden sm:block">
           <Link href="/guarantee" className="hover:underline">
             Guarantee
           </Link>
