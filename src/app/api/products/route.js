@@ -28,6 +28,7 @@ async function parseFormData(req) {
 }
 
 // GET /api/products
+// GET /api/products
 export async function GET(req) {
   try {
     await connectMongoDB();
@@ -38,44 +39,42 @@ export async function GET(req) {
     if (id) {
       const product = await Product.findById(id);
       if (!product)
-        return NextResponse.json({ message: "Product not found" }, { status: 404 });
+        return NextResponse.json(
+          { message: "Product not found" },
+          { status: 404 }
+        );
       return NextResponse.json({ data: product });
     }
 
     // Search functionality
     if (searchQuery) {
-      const searchRegex = new RegExp(searchQuery, 'i');
+      const searchRegex = new RegExp(searchQuery, "i");
       const products = await Product.find({
         $or: [
           { title: { $regex: searchRegex } },
           { sapExamCode: { $regex: searchRegex } },
-          { category: { $regex: searchRegex } }
-        ]
-      }).limit(10).lean();
-      
+          { category: { $regex: searchRegex } },
+        ],
+      }).lean();
+
       return NextResponse.json({
         data: products,
-        total: products.length
+        total: products.length,
       });
     }
 
-    // list
-    const page = parseInt(searchParams.get("page")) || 1;
-    const limit = parseInt(searchParams.get("limit")) || 10;
-    const skip = (page - 1) * limit;
-
-    const products = await Product.find().skip(skip).limit(limit).lean();
-    const total = await Product.countDocuments();
-
+    // List all products (no pagination)
+    const products = await Product.find().lean();
     return NextResponse.json({
       data: products,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
+      total: products.length,
     });
   } catch (error) {
     console.error("GET Error:", error);
-    return NextResponse.json({ message: "Server error", error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { message: "Server error", error: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -101,10 +100,16 @@ export async function POST(req) {
     const newProduct = new Product(productData);
     await newProduct.save();
 
-    return NextResponse.json({ message: "Product created successfully", data: newProduct }, { status: 201 });
+    return NextResponse.json(
+      { message: "Product created successfully", data: newProduct },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("POST Error:", error);
-    return NextResponse.json({ message: "Server error", error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { message: "Server error", error: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -114,10 +119,18 @@ export async function PUT(req) {
     await connectMongoDB();
     const data = await parseFormData(req);
     const id = data._id;
-    if (!id) return NextResponse.json({ message: "Product ID is required" }, { status: 400 });
+    if (!id)
+      return NextResponse.json(
+        { message: "Product ID is required" },
+        { status: 400 }
+      );
 
     const existingProduct = await Product.findById(id);
-    if (!existingProduct) return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    if (!existingProduct)
+      return NextResponse.json(
+        { message: "Product not found" },
+        { status: 404 }
+      );
 
     const fileFields = ["image", "samplePdf", "mainPdf"];
     const uploads = {};
@@ -141,12 +154,21 @@ export async function PUT(req) {
     const updateData = { ...data, ...uploads, faqs: data.faqs || [] };
     delete updateData._id;
 
-    const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
-    return NextResponse.json({ message: "Product updated successfully", data: updatedProduct });
+    return NextResponse.json({
+      message: "Product updated successfully",
+      data: updatedProduct,
+    });
   } catch (error) {
     console.error("PUT Error:", error);
-    return NextResponse.json({ message: "Server error", error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { message: "Server error", error: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -156,10 +178,18 @@ export async function DELETE(req) {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    if (!id) return NextResponse.json({ message: "Product ID is required" }, { status: 400 });
+    if (!id)
+      return NextResponse.json(
+        { message: "Product ID is required" },
+        { status: 400 }
+      );
 
     const product = await Product.findById(id);
-    if (!product) return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    if (!product)
+      return NextResponse.json(
+        { message: "Product not found" },
+        { status: 404 }
+      );
 
     // Delete associated files
     const fileFields = ["imageUrl", "samplePdfUrl", "mainPdfUrl"];
@@ -174,6 +204,9 @@ export async function DELETE(req) {
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("DELETE Error:", error);
-    return NextResponse.json({ message: "Server error", error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { message: "Server error", error: error.message },
+      { status: 500 }
+    );
   }
 }
