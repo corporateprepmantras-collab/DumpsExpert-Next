@@ -21,16 +21,15 @@ export default function TestPage({ params }) {
   const [autoSubmitTriggered, setAutoSubmitTriggered] = useState(false);
   const [timeLeft, setTimeLeft] = useState("");
   const [exam, setExam] = useState({});
-const slug = useParams();
   const router = useRouter();
   //   const { slug } = params; // ✅ App Router slug param
   // Fetch Questions
+  const { slug } = useParams(); // ✅ fix
+
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const res = await axios.get(
-          `/api/questions/product/${slug}`
-        );
+        const res = await axios.get(`/api/questions/product/${slug}`);
         const data = res.data;
         console.log("📦 Fetched question data:", data);
 
@@ -52,9 +51,7 @@ const slug = useParams();
   useEffect(() => {
     const fetchExam = async () => {
       try {
-        const res = await axios.get(
-          `/api/exams/byslug/${slug}`
-        );
+        const res = await axios.get(`/api/exams/byslug/${slug}`);
         const fetchedExam = res.data;
         console.log("✅ Exam fetched:", fetchedExam);
         setExam(fetchedExam[0]);
@@ -87,18 +84,21 @@ const slug = useParams();
 
   // Countdown Timer
   useEffect(() => {
+    if (!exam || questions.length === 0) return; // ✅ wait until ready
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleSubmit();
+          handleSubmit(); // now exam + questions are guaranteed
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [exam, questions]); // ✅ depend on both
 
   // Disable copy/paste
   useEffect(() => {
@@ -197,57 +197,59 @@ const slug = useParams();
 
   // Submit Test
   const handleSubmit = async () => {
-    const endTime = new Date();
-    const duration = Math.floor((endTime - startTime) / 1000);
-    const studentId = localStorage.getItem("studentId");
+    if (!exam || questions.length === 0) {
+      console.error("❌ Exam or questions missing, cannot submit");
+      return;
+    }
 
-    let wrongAnswers = 0;
+    let correct = 0,
+      attempted = 0,
+      wrong = 0;
 
     questions.forEach((q) => {
-      const correct = q.correctAnswers?.sort().join(",") || "";
-      const user = (
-        Array.isArray(userAnswers[q._id])
-          ? userAnswers[q._id]
-          : [userAnswers[q._id]]
-      )
-        .sort()
-        .join(",");
-      if (correct !== user) {
-        wrongAnswers++;
+      if (answers[q._id]) {
+        attempted++;
+        if (answers[q._id] === q.correctOption) {
+          correct++;
+        } else {
+          wrong++;
+        }
       }
     });
 
-    const resultData = {
-      studentId,
-      examCode: slug,
-      totalQuestions: questions.length,
-      attempted: Object.keys(userAnswers).length,
-      wrong: wrongAnswers,
-      correct: questions.length - wrongAnswers,
-      percentage: Math.round(
-        ((questions.length - wrongAnswers) / questions.length) * 100
-      ),
-      duration,
-      completedAt: new Date().toISOString(),
-      questions,
-      userAnswers,
+    const totalQuestions = questions.length;
+
+    const payload = {
+      studentId: student?._id, // ✅ ensure student exists
+      examCode: exam.code, // ✅ real exam code
+      examId: exam._id,
+      totalQuestions,
+      attempted,
+      correct,
+      wrong,
+      percentage:
+        totalQuestions > 0 ? ((correct / totalQuestions) * 100).toFixed(2) : 0,
+      duration: exam.sampleDuration * 60 - timeLeft, // ✅ time taken
+      questions: questions.map((q) => ({
+        question: q.text,
+        correctAnswer: q.options.find((o) => o._id === q.correctOption)?.text,
+        selectedAnswer: answers[q._id] || null,
+      })),
+      userAnswers: answers,
     };
 
-    try {
-      const res = await axios.post(
-        "/api/results/save",
-        resultData
-      );
+    console.log("📤 Submitting payload:", payload);
 
-      router.push(
-        `/student/courses-exam/result?attempt=${res.data.attempt || 1}`
-      );
+    try {
+      const res = await fetch("/api/results/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log("✅ Result saved:", data);
     } catch (error) {
-      console.error(
-        "❌ Failed to save result:",
-        error.response?.data || error.message
-      );
-      alert("Failed to save result. Try again.");
+      console.error("❌ Error saving result:", error);
     }
   };
 

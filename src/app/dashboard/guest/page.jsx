@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, User, Lock, ShoppingBag, AlertCircle } from "lucide-react";
+import ExamDumpsSlider from "@/landingpage/ExamDumpsSlider";
 
 export default function GuestDashboard() {
   const { data: session, status } = useSession();
@@ -101,10 +102,8 @@ export default function GuestDashboard() {
       : userData.profileImage || "https://via.placeholder.com/60";
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50 text-gray-900 font-sans">
-      <h1 className="text-3xl font-extrabold mb-6 flex items-center gap-3">
-        <span className="text-indigo-600 text-4xl">📊</span> Dashboard
-      </h1>
+    <div className="p-6 pt-20 min-h-screen bg-gray-50 text-gray-900 font-sans">
+    
 
       <Card className="hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
@@ -151,45 +150,8 @@ export default function GuestDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6 hover:shadow-xl transition-shadow duration-300">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-indigo-600" />
-            Subscription Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center">
-          {userData.subscription === "no" ? (
-            <>
-              <h2 className="text-2xl font-semibold text-red-600 mb-2">
-                No Subscription Found
-              </h2>
-              <p className="text-gray-700 mb-4">
-                You don't have any active subscription yet.
-              </p>
-              <Link href="/dumps">
-                <Button className="bg-indigo-600 hover:bg-indigo-700">
-                  Buy Subscription
-                </Button>
-              </Link>
-            </>
-          ) : (
-            <>
-              <h2 className="text-2xl font-semibold text-green-600 mb-2">
-                Active Subscription
-              </h2>
-              <p className="text-gray-700 mb-4">
-                Your {userData.subscription} subscription is active.
-              </p>
-              <Link href="/subscription">
-                <Button variant="outline" className="border-indigo-600 text-indigo-600 hover:bg-indigo-50">
-                  Manage Subscription
-                </Button>
-              </Link>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            <ExamDumpsSlider />
+      
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 export default function ProductSlider() {
   const [products, setProducts] = useState([]);
@@ -104,40 +105,44 @@ export default function ProductSlider() {
           >
             {products
               .slice(startIndex, startIndex + visibleCards)
-              .map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
-                >
-                  <img
-                    src={product.imageUrl || "/placeholder.png"}
-                    alt={product.title}
-                    className="h-48 w-full object-cover"
-                  />
-                  <div className="p-4 flex flex-col justify-between flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {product.sapExamCode || product.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mt-2 line-clamp-2">
-                      {product.Description?.replace(/<[^>]+>/g, "") ||
-                        "No description available."}
-                    </p>
-                    <div className="mt-4">
-                      <p className="text-orange-500 font-bold">
-                        ₹{product.dumpsPriceInr?.trim() || "N/A"}
+              .map((product) => {
+                const slug = encodeURIComponent(product.slug || product.title); // safe slug
+                return (
+                  <Link
+                    key={product._id}
+                    href={`/ItDumps/sap/by-slug/${slug}`}
+                    className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col hover:shadow-lg transition"
+                  >
+                    <img
+                      src={product.imageUrl || "/placeholder.png"}
+                      alt={product.title}
+                      className="h-48 w-full object-cover"
+                    />
+                    <div className="p-4 flex flex-col justify-between flex-1">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {product.sapExamCode || product.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                        {product.Description?.replace(/<[^>]+>/g, "") ||
+                          "No description available."}
                       </p>
-                      {product.dumpsMrpInr && (
-                        <p className="line-through text-sm text-gray-400">
-                          ₹{product.dumpsMrpInr}
+                      <div className="mt-4">
+                        <p className="text-orange-500 font-bold">
+                          ₹{product.dumpsPriceInr?.trim() || "N/A"}
                         </p>
-                      )}
+                        {product.dumpsMrpInr && (
+                          <p className="line-through text-sm text-gray-400">
+                            ₹{product.dumpsMrpInr}
+                          </p>
+                        )}
+                      </div>
+                      <span className="mt-4 bg-orange-500 text-white text-center font-medium py-2 px-4 rounded-lg hover:bg-orange-600 transition">
+                        View More
+                      </span>
                     </div>
-                    <button className="mt-4 bg-orange-500 text-white font-medium py-2 px-4 rounded-lg hover:bg-orange-600 transition">
-                      View More
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  </Link>
+                );
+              })}
           </motion.div>
         </AnimatePresence>
       </div>

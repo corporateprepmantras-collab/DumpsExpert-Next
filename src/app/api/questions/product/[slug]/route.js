@@ -8,52 +8,48 @@ export async function GET(req, { params }) {
     await connectMongoDB();
     const { slug } = params;
 
+    console.log("🔎 Params:", params);
+
     // Find product by slug
     const product = await Product.findOne({ slug });
     if (!product) {
       return new Response(
         JSON.stringify({ success: false, message: "Product not found" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
+    console.log("✅ Found product:", product);
 
-    // Find exam by sapExamCode
-    const exam = await ExamCode.findOne({ sapExamCode: product.sapExamCode });
-    if (!exam) {
+    // Find ALL exams linked to this product
+    const exams = await ExamCode.find({ productId: product._id });
+    if (!exams || exams.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Exam not found for this product",
+          message: "No exams found for this product",
         }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
+    console.log("✅ Found exams:", exams.length);
 
-    // Fetch questions for the examId, only sample questions
-    const questions = await Question.find({ examId: exam._id, isSample: true });
+    // Collect all examIds
+    const examIds = exams.map((exam) => exam._id);
 
-    console.log("Fetched questions for product:", slug, questions.length);
-    return new Response(JSON.stringify({ success: true, data: questions }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error(
-      "❌ Error fetching questions by product slug:",
-      error.message
+    // Fetch ALL questions for those examIds
+    const questions = await Question.find({ examId: { $in: examIds } });
+
+    console.log("✅ Fetched questions:", questions.length);
+
+    return new Response(
+      JSON.stringify({ success: true, data: questions }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
+  } catch (error) {
+    console.error("❌ Error fetching questions by product slug:", error);
     return new Response(
       JSON.stringify({ success: false, message: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }

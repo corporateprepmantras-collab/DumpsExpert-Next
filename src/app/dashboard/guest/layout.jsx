@@ -1,47 +1,52 @@
-// app/dashboard/guest/layout.jsx
 "use client";
 
-import { AppSidebar } from "@/components/guest/app-sidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
-import { useEffect } from "react";
+import GuestSidebar from "./GuestSidebar";
 
 export default function GuestDashboardLayout({ children }) {
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, error } = useUser();
 
   useEffect(() => {
-    // Redirect if user is not a guest
-    if (!loading && user && user.role !== "guest") {
-      let targetDashboard = "/dashboard/guest";
-      if (user.role === "admin") {
-        targetDashboard = "/dashboard/admin";
-      } else if (user.role === "student" && user.subscription === "yes") {
-        targetDashboard = "/dashboard/student";
+    if (!loading && user) {
+      if (user.role === "admin") router.push("/dashboard/admin");
+      else if (user.role === "student" && user.subscription === "yes") {
+        router.push("/dashboard/student");
       }
-      router.push(targetDashboard);
     }
   }, [loading, user, router]);
 
-  if (loading || !user) return <div className="min-h-screen flex items-center justify-center"><span>Loading...</span></div>;
-
-  if (user.error) {
-    return <div className="min-h-screen flex items-center justify-center text-red-600">{user.error}</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
-  if (user.role !== "guest") {
-    return null; // Prevent rendering until redirect
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600">
+        {error}
+      </div>
+    );
   }
+
+  if (!user || user.role !== "guest") return null;
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex mt-27 w-full relative">
-        <div className="z-[-1]">
-          <AppSidebar />
-        </div>
-        <div className="flex-1">{children}</div>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-screen w-full">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white shadow-md border-r">
+        <GuestSidebar />
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 p-6 bg-gray-50 overflow-y-auto">
+        {children}
+      </main>
+    </div>
   );
 }

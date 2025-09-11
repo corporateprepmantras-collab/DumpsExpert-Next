@@ -1,189 +1,156 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
-import { Doughnut, Bar } from "react-chartjs-2";
+import { Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
-  ArcElement,
   CategoryScale,
   LinearScale,
   BarElement,
+  ArcElement,
   Tooltip,
   Legend,
 } from "chart.js";
-import {
-  FaUsers,
-  FaClipboardList,
-  FaDollarSign,
-  FaNewspaper,
-  FaInbox,
-  FaGraduationCap,
-} from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend
+);
 
-// Stat cards data
-const statCards = [
-  { title: "Total Products", value: 50, icon: FaClipboardList, color: "text-blue-500" },
-  { title: "Total Exams", value: 12, icon: FaGraduationCap, color: "text-purple-500" },
-  { title: "Customers", value: 140, icon: FaUsers, color: "text-green-500" },
-  { title: "Blogs", value: 18, icon: FaNewspaper, color: "text-yellow-500" },
-  { title: "Orders", value: 65, icon: FaClipboardList, color: "text-red-500" },
-  { title: "Sales (INR)", value: "₹85,000", icon: FaDollarSign, color: "text-indigo-500" },
-  { title: "Sales (USD)", value: "$1,000", icon: FaDollarSign, color: "text-pink-500" },
-  { title: "Subscribers", value: 245, icon: FaInbox, color: "text-teal-500" },
-];
+export default function Page() {
+  const router = useRouter();
 
-// Chart data
-const doughnutData = {
-  labels: ["Products", "Exams", "Orders", "Subscribers"],
-  datasets: [
-    {
-      data: [50, 12, 65, 245],
-      backgroundColor: ["#3B82F6", "#8B5CF6", "#EF4444", "#10B981"],
-      borderWidth: 2,
-    },
-  ],
-};
+  // Dummy analytics data
+  const barData = {
+    labels: ["Attempt 1", "Attempt 2", "Attempt 3"],
+    datasets: [
+      {
+        label: "Score %",
+        data: [83, 92, 89],
+        backgroundColor: "#4F46E5",
+        borderRadius: 6,
+      },
+    ],
+  };
 
-const barData = {
-  labels: ["Jan", "Feb", "Mar", "Apr", "May"],
-  datasets: [
-    {
-      label: "Monthly Sales (INR)",
-      data: [10000, 15000, 20000, 18000, 22000],
-      backgroundColor: "#6366F1",
-      borderRadius: 5,
-    },
-  ],
-};
+  const doughnutData = {
+    labels: ["Completed", "Pending"],
+    datasets: [
+      {
+        data: [4, 2],
+        backgroundColor: ["#22C55E", "#EAB308"],
+        borderWidth: 2,
+      },
+    ],
+  };
 
-const doughnutOptions = {
-  maintainAspectRatio: false,
-  cutout: "70%",
-  plugins: { legend: { position: "bottom" } },
-};
-
-const barOptions = {
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-  scales: { y: { beginAtZero: true } },
-};
-
-// Table data
-const orders = [
-  { date: "2025-06-01", number: "#ORD123", gateway: "Razorpay", total: "₹500", status: "Paid", payment: "Confirmed" },
-  { date: "2025-06-02", number: "#ORD124", gateway: "Stripe", total: "₹300", status: "Pending", payment: "Pending" },
-];
-
-const users = [
-  { date: "2025-06-01", name: "Yagyesh", email: "yagyesh@example.com", lastActive: "2025-06-04", spend: "₹500" },
-  { date: "2025-06-03", name: "Ankit", email: "ankit@example.com", lastActive: "2025-06-04", spend: "₹300" },
-];
-
-export default function StudentDashboard() {
   return (
-    <div className="min-h-screen mt-20 bg-gray-50 p-6">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Admin Dashboard</h1>
+    <div className=" min-h-screen bg-gray-50 text-gray-900 font-sans">
+      <h1 className="text-3xl font-extrabold mb-6 flex items-center gap-3">
+        <span className="text-indigo-600 text-4xl">📊</span> Dashboard
+      </h1>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {statCards.map((card, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white p-4 rounded-lg shadow-md flex items-center justify-between hover:shadow-lg transition"
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        {/* Result Chart */}
+        <div className="bg-white h-100 p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+            Result Analytics
+          </h2>
+          <Bar
+            data={barData}
+            height={10}
+            options={{ maintainAspectRatio: false }}
+          />
+        </div>
+
+        {/* Course Completion */}
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center">
+          <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+            Course Completion
+          </h2>
+          <Doughnut data={doughnutData} options={{ cutout: "70%" }} />
+        </div>
+
+        {/* Profile */}
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
+          <img
+            src="https://via.placeholder.com/60"
+            alt="profile"
+            className="w-32 h-32 rounded-full border-4 border-indigo-500 mb-4"
+          />
+          <h3 className="font-bold text-xl mb-1">lorem epsum</h3>
+          <p className="text-gray-500 mb-4">google</p>
+          <div className="flex gap-4 flex-wrap justify-center">
+            <button
+              onClick={() => router.push("/student/edit-profile")}
+              className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+            >
+              Edit Profile
+            </button>
+            <button
+              onClick={() => router.push("/student/change-password")}
+              className="px-4 py-2 rounded-lg bg-yellow-400 text-gray-900 font-medium hover:bg-yellow-500 transition"
+            >
+              Change Password
+            </button>
+            <button
+              onClick={() => router.push("/student/logout")}
+              className="px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Access Cards */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Exams */}
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-2xl">📅</span> Exams
+          </h2>
+          <p className="text-gray-500 mb-4 text-sm">2 upcoming exams</p>
+          <button
+            onClick={() => router.push("/student/courses-exam")}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
           >
-            <div>
-              <p className="text-sm text-gray-500">{card.title}</p>
-              <p className="text-2xl font-bold">{card.value}</p>
-            </div>
-            {card.icon && <card.icon className={`w-10 h-10 ${card.color}`} />}
-          </motion.div>
-        ))}
-      </div>
+            View All Exams
+          </button>
+        </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-          className="bg-white p-6 rounded-lg shadow-md h-[350px]">
-          <h2 className="text-lg font-semibold mb-4">Entity Distribution</h2>
-          <div className="h-[250px]">
-            <Doughnut data={doughnutData} options={doughnutOptions} />
-          </div>
-        </motion.div>
+        {/* My Courses */}
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-2xl">📚</span> Courses
+          </h2>
+          <p className="text-gray-500 mb-4 text-sm">4 active courses</p>
+          <button
+            onClick={() => router.push("/student/courses-pdf")}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+          >
+            View All Courses
+          </button>
+        </div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-          className="bg-white p-6 rounded-lg shadow-md h-[350px]">
-          <h2 className="text-lg font-semibold mb-4">Monthly Sales</h2>
-          <div className="h-[250px]">
-            <Bar data={barData} options={barOptions} />
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Orders Table */}
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-          className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-4">Latest Orders</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-left text-gray-600">
-                <th className="p-2">Date</th>
-                <th className="p-2">Order #</th>
-                <th className="p-2">Gateway</th>
-                <th className="p-2">Total</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Payment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o, i) => (
-                <tr key={i} className="border-t">
-                  <td className="p-2">{o.date}</td>
-                  <td className="p-2">{o.number}</td>
-                  <td className="p-2">{o.gateway}</td>
-                  <td className="p-2">{o.total}</td>
-                  <td className="p-2">{o.status}</td>
-                  <td className="p-2">{o.payment}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </motion.div>
-
-        {/* Users Table */}
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
-          className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-4">Latest Users</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-left text-gray-600">
-                <th className="p-2">Registered</th>
-                <th className="p-2">Name</th>
-                <th className="p-2">Email</th>
-                <th className="p-2">Last Active</th>
-                <th className="p-2">Total Spend</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u, i) => (
-                <tr key={i} className="border-t">
-                  <td className="p-2">{u.date}</td>
-                  <td className="p-2">{u.name}</td>
-                  <td className="p-2">{u.email}</td>
-                  <td className="p-2">{u.lastActive}</td>
-                  <td className="p-2">{u.spend}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </motion.div>
+        {/* Result History */}
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-2xl">📈</span> Results
+          </h2>
+          <p className="text-gray-500 mb-4 text-sm">3 attempts recorded</p>
+          <button
+            onClick={() => router.push("/student/results")}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+          >
+            View All Results
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -12,9 +12,6 @@ import {
   Legend,
 } from "chart.js";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
 
 ChartJS.register(
   CategoryScale,
@@ -25,9 +22,10 @@ ChartJS.register(
   Legend
 );
 
-export default function StudentDashboard() {
+export default function Page() {
   const router = useRouter();
 
+  // Dummy analytics data
   const barData = {
     labels: ["Attempt 1", "Attempt 2", "Attempt 3"],
     datasets: [
@@ -52,117 +50,107 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
-      <h1 className="text-3xl font-bold mb-8 flex items-center gap-3 text-gray-800">
-        <span className="text-indigo-600 text-4xl">📊</span> Student Dashboard
+    <div className="p-6 min-h-screen bg-gray-50 text-gray-900 font-sans">
+      <h1 className="text-3xl font-extrabold mb-6 flex items-center gap-3">
+        <span className="text-indigo-600 text-4xl">📊</span> Dashboard
       </h1>
 
-      {/* Top Section */}
-      <div className="grid md:grid-cols-3 gap-6 mb-10">
-        {/* Result Analytics */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="shadow-md hover:shadow-lg transition duration-300">
-            <CardHeader>
-              <CardTitle className="text-indigo-600">Result Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[200px]">
-                <Bar
-                  data={barData}
-                  options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        {/* Result Chart */}
+        <div className="bg-white h-100 p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+            Result Analytics
+          </h2>
+          <Bar
+            data={barData}
+            height={10}
+            options={{ maintainAspectRatio: false }}
+          />
+        </div>
 
         {/* Course Completion */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="shadow-md hover:shadow-lg transition duration-300 flex flex-col items-center">
-            <CardHeader>
-              <CardTitle className="text-indigo-600">Course Completion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[200px] w-[200px]">
-                <Doughnut data={doughnutData} options={{ cutout: "70%" }} />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center">
+          <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+            Course Completion
+          </h2>
+          <Doughnut data={doughnutData} options={{ cutout: "70%" }} />
+        </div>
 
-        {/* Profile Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <Card className="shadow-md hover:shadow-lg transition duration-300 text-center">
-            <CardContent className="flex flex-col items-center pt-6">
-              <img
-                src="https://via.placeholder.com/100"
-                alt="profile"
-                className="w-28 h-28 rounded-full border-4 border-indigo-500 mb-4"
-              />
-              <h3 className="font-bold text-lg mb-1">John Doe</h3>
-              <p className="text-gray-500 mb-4">john.doe@example.com</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button variant="default" onClick={() => router.push("/student/edit-profile")}>
-                  Edit Profile
-                </Button>
-                <Button variant="secondary" onClick={() => router.push("/student/change-password")}>
-                  Change Password
-                </Button>
-                <Button variant="destructive" onClick={() => router.push("/student/logout")}>
-                  Logout
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {/* Profile */}
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
+          <img
+            src="https://via.placeholder.com/60"
+            alt="profile"
+            className="w-32 h-32 rounded-full border-4 border-indigo-500 mb-4"
+          />
+          <h3 className="font-bold text-xl mb-1">lorem epsum</h3>
+          <p className="text-gray-500 mb-4">google</p>
+          <div className="flex gap-4 flex-wrap justify-center">
+            <button
+              onClick={() => router.push("/student/edit-profile")}
+              className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+            >
+              Edit Profile
+            </button>
+            <button
+              onClick={() => router.push("/student/change-password")}
+              className="px-4 py-2 rounded-lg bg-yellow-400 text-gray-900 font-medium hover:bg-yellow-500 transition"
+            >
+              Change Password
+            </button>
+            <button
+              onClick={() => router.push("/student/logout")}
+              className="px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Access Section */}
+      {/* Quick Access Cards */}
       <div className="grid md:grid-cols-3 gap-6">
-        {[
-          {
-            title: "Exams",
-            icon: "📅",
-            subtitle: "2 upcoming exams",
-            link: "/student/courses-exam",
-          },
-          {
-            title: "Courses",
-            icon: "📚",
-            subtitle: "4 active courses",
-            link: "/student/courses-pdf",
-          },
-          {
-            title: "Results",
-            icon: "📈",
-            subtitle: "3 attempts recorded",
-            link: "/student/results",
-          },
-        ].map((item, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.2 }}
+        {/* Exams */}
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-2xl">📅</span> Exams
+          </h2>
+          <p className="text-gray-500 mb-4 text-sm">2 upcoming exams</p>
+          <button
+            onClick={() => router.push("/student/courses-exam")}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
           >
-            <Card className="shadow-md hover:shadow-lg transition duration-300">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-indigo-600 text-lg">
-                  <span className="text-2xl">{item.icon}</span> {item.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500 mb-4">{item.subtitle}</p>
-                <Button
-                  className="w-full"
-                  onClick={() => router.push(item.link)}
-                >
-                  View {item.title}
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+            View All Exams
+          </button>
+        </div>
+
+        {/* My Courses */}
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-2xl">📚</span> Courses
+          </h2>
+          <p className="text-gray-500 mb-4 text-sm">4 active courses</p>
+          <button
+            onClick={() => router.push("/student/courses-pdf")}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+          >
+            View All Courses
+          </button>
+        </div>
+
+        {/* Result History */}
+        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-2xl">📈</span> Results
+          </h2>
+          <p className="text-gray-500 mb-4 text-sm">3 attempts recorded</p>
+          <button
+            onClick={() => router.push("/student/results")}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+          >
+            View All Results
+          </button>
+        </div>
       </div>
     </div>
   );
