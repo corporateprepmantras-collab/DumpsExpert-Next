@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
-import Content from "@/models/ContactContent2";
+import ContactContent2 from "@/models/ContactContent2";
 
 // POST - Save content
 export async function POST(req) {
@@ -16,12 +16,12 @@ export async function POST(req) {
     await connectMongoDB();
 
     // For this example, we just update or create a single content entry
-    let contentDoc = await Content.findOne();
+    let contentDoc = await ContactContent2.findOne();
     if (contentDoc) {
       contentDoc.html = html;
       await contentDoc.save();
     } else {
-      contentDoc = await Content.create({ html });
+      contentDoc = await ContactContent2.create({ html });
     }
 
     return NextResponse.json({ success: true, data: contentDoc });
@@ -34,7 +34,7 @@ export async function POST(req) {
 export async function GET() {
   try {
     await connectMongoDB();
-    const contentDoc = await Content.findOne();
+    const contentDoc = await ContactContent2.findOne();
     return NextResponse.json(contentDoc || { html: "" });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

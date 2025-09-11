@@ -181,10 +181,21 @@ const sidebarItems = [
           },
         ],
       },
+        {
+        label: "Contact",
+        to: "#",
+        children: [
+          { label: "Contact Message", to: "/dashboard/admin/contact" },
+          { label: "Contact content 1", to: "/dashboard/admin/contact/ContactDataFirst" },
+          { label: "Contact content 1", to: "/dashboard/admin/contact/ContactDataSecond" },
+        ],
+
+      },
       {
         label: "Manage General FAQs",
         to: "/dashboard/admin/generalFaq",
       },
+      
       {
         label: "Content Section 1",
         to: "/dashboard/admin/adminPages/ContentSection1",
