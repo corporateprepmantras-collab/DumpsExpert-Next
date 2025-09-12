@@ -1,11 +1,15 @@
-import mongoose from "mongoose";
+import mongoose, { models, Schema } from "mongoose";
 
-const ContactContent1 = new mongoose.Schema(
+const ContactContent1Schema = new Schema(
   {
     html: { type: String, required: true },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Content1 ||
-  mongoose.model("ContactContent1", ContactContent1);
+// Use existing model if it exists to prevent OverwriteModelError
+const ContactContent1 =
+  models.ContactContent1 ||
+  mongoose.model("ContactContent1", ContactContent1Schema);
+
+export default ContactContent1;

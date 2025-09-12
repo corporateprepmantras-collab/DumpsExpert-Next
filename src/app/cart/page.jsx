@@ -3,12 +3,11 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import instance from "axios";
 import { useRouter } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import useCartStore from "@/store/useCartStore";
 import cartImg from "../../assets/landingassets/emptycart.webp";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import axios from "axios";
 
 const Cart = () => {
@@ -35,7 +34,7 @@ const Cart = () => {
         try {
           const response = await axios.get("/api/user/me");
           setUserId(response.data.id);
-          console.log("Fetched userId from /api/user/me:", response.data.id);
+          console.log("Fetched userId:", response.data.id);
         } catch (error) {
           console.error("Failed to fetch userId:", error);
           toast.error("Failed to fetch user details. Please try again.");
@@ -72,10 +71,12 @@ const Cart = () => {
   const handleQuantityChange = (id, type, operation) => {
     updateQuantity(id, type, operation);
     toast.success(
-      `Quantity ${operation === "inc" ? "increased" : "decreased"} for item`
+      `Quantity ${operation === "inc" ? "increased" : "decreased"}`
     );
   };
 
+  // Apply coupon
+  // Apply coupon
   const handleCoupon = async () => {
     if (!couponCode) {
       setCouponError("Please enter a coupon code");
@@ -84,30 +85,54 @@ const Cart = () => {
     }
 
     try {
-      if (!instance || typeof axios.post !== "function") {
-        throw new Error("Axios instance is not initialized");
-      }
-
       const response = await axios.post("/api/coupons/validate", {
         code: couponCode,
       });
-      const { discount } = response.data.coupon;
+      const coupon = response.data.coupon;
 
-      // Calculate discount amount based on subtotal
-      const discountAmount = (subtotal * discount) / 100;
+      let discountAmount = 0;
+
+      // ✅ Check discountType properly
+      switch (coupon.discountType) {
+        case "percent":
+          discountAmount = (subtotal * coupon.discount) / 100;
+          break;
+
+        case "fixed_inr":
+          discountAmount = coupon.discount; // fixed INR value
+          break;
+
+        case "fixed_usd":
+          // If your cart is only INR, you may need conversion logic here
+          discountAmount = coupon.discount;
+          break;
+
+        default:
+          if (coupon.discount) {
+            discountAmount = coupon.discount;
+          }
+      }
+
+      // ✅ Prevent negative total
+      if (discountAmount > subtotal) {
+        discountAmount = subtotal;
+      }
 
       setDiscount(discountAmount);
-      setCouponError("");
       setCouponApplicable(true);
+      setCouponError("");
       setCouponCode("");
+
       toast.success(
-        `Coupon applied successfully! You saved ₹${discountAmount.toFixed(
-          2
-        )} (${discount}% off)`
+        `Coupon applied! You saved ₹${discountAmount.toFixed(2)} ${
+          coupon.discountType === "percent" ? `(${coupon.discount}% off)` : ""
+        }`
       );
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Failed to apply coupon";
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to apply coupon";
       setCouponError(errorMessage);
       setDiscount(0);
       setCouponApplicable(false);
@@ -115,6 +140,7 @@ const Cart = () => {
     }
   };
 
+  // Handle Razorpay Payment
   const handleRazorpayPayment = async () => {
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
@@ -133,23 +159,17 @@ const Cart = () => {
     }
 
     try {
-      if (!instance || typeof axios.post !== "function") {
-        throw new Error("Axios instance is not initialized");
-      }
-
-      console.log("Initiating Razorpay order creation:", {
-        amount: grandTotal,
-        userId,
-      });
       const orderData = {
         amount: grandTotal,
         currency: "INR",
-        userId, // Include userId for validation
+        userId,
       };
+
       const response = await axios.post(
         "/api/payments/razorpay/create-order",
         orderData
       );
+
       if (!response.data?.id) {
         throw new Error(
           response.data.error || "Failed to create Razorpay order"
@@ -161,15 +181,13 @@ const Cart = () => {
       const options = {
         key:
           process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V",
-        amount: amount,
-        currency: currency,
+        amount,
+        currency,
         order_id: id,
         name: "DumpsExpert",
         description: "Purchase Exam Dumps",
         handler: async (razorpayResponse) => {
           try {
-            console.log("Verifying Razorpay payment:", razorpayResponse);
-            console.log("User ID sent to verify:", userId);
             const paymentVerification = await axios.post(
               "/api/payments/razorpay/verify",
               {
@@ -182,11 +200,6 @@ const Cart = () => {
             );
 
             if (paymentVerification.data.success) {
-              console.log("Creating order with:", {
-                userId,
-                items: cartItems,
-                totalAmount: grandTotal,
-              });
               await axios.post("/api/order", {
                 userId,
                 items: cartItems,
@@ -197,7 +210,7 @@ const Cart = () => {
 
               clearCart();
 
-              // Update session with new user data
+              // Update session
               await update({
                 user: {
                   ...session.user,
@@ -207,51 +220,36 @@ const Cart = () => {
               });
 
               router.push("/dashboard");
-              toast.success("Payment successful! Redirecting to dashboard...");
+              toast.success("Payment successful! Redirecting...");
             } else {
               toast.error(
                 paymentVerification.data.error || "Payment verification failed"
               );
             }
           } catch (error) {
-            console.error("Payment verification error:", {
-              message: error.message,
-              stack: error.stack,
-              response: error.response?.data,
-            });
-            toast.error(
-              error.response?.data?.error || "Payment verification failed"
-            );
+            console.error("Payment verification error:", error);
+            toast.error("Payment verification failed");
           }
         },
-        theme: {
-          color: "#3B82F6",
-        },
+        theme: { color: "#3B82F6" },
         prefill: {
-          email: session.user.email,
-          name: session.user.name,
+          email: session?.user?.email,
+          name: session?.user?.name,
         },
       };
 
-      console.log("Opening Razorpay checkout with options:", options);
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response) => {
-        console.error("Razorpay payment failed:", response.error);
         toast.error(response.error?.description || "Payment failed");
       });
       rzp.open();
       setShowPaymentModal(false);
     } catch (error) {
-      console.error("Payment initiation failed:", {
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data,
-      });
-      const errorMessage =
+      console.error("Payment initiation failed:", error);
+      toast.error(
         error.response?.data?.error ||
-        error.message ||
-        "Failed to initiate payment. Please check if the server is running and try again.";
-      toast.error(errorMessage);
+          "Failed to initiate payment. Please try again."
+      );
     }
   };
 
@@ -267,6 +265,7 @@ const Cart = () => {
       </div>
 
       <div className="flex flex-col items-center lg:flex-row justify-between gap-6 w-full">
+        {/* Cart Items */}
         <div className="w-full lg:w-[65%]">
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center text-center space-y-4">
@@ -351,6 +350,8 @@ const Cart = () => {
             </div>
           )}
         </div>
+
+        {/* Order Summary */}
         <div className="w-full lg:w-[35%] h-96 bg-gray-50 p-6 rounded-xl shadow-md border">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             Order Summary
@@ -417,6 +418,7 @@ const Cart = () => {
         </div>
       </div>
 
+      {/* Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">

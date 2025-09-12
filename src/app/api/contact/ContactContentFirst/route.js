@@ -13,7 +13,7 @@ export async function POST(req) {
       );
     }
 
-    await connectMongoDB();
+    await connectMongoDB(); 
 
     // For this example, we just update or create a single content entry
     let contentDoc = await ContactContent2.findOne();

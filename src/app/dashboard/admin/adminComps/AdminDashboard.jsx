@@ -21,17 +21,44 @@ import {
   FaGraduationCap,
 } from "react-icons/fa";
 
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend
+);
 
 // Stat cards data
 const statCards = [
-  { title: "Total Products", value: 50, icon: FaClipboardList, color: "text-blue-500" },
-  { title: "Total Exams", value: 12, icon: FaGraduationCap, color: "text-purple-500" },
+  {
+    title: "Total Products",
+    value: 50,
+    icon: FaClipboardList,
+    color: "text-blue-500",
+  },
+  {
+    title: "Total Exams",
+    value: 12,
+    icon: FaGraduationCap,
+    color: "text-purple-500",
+  },
   { title: "Customers", value: 140, icon: FaUsers, color: "text-green-500" },
   { title: "Blogs", value: 18, icon: FaNewspaper, color: "text-yellow-500" },
   { title: "Orders", value: 65, icon: FaClipboardList, color: "text-red-500" },
-  { title: "Sales (INR)", value: "₹85,000", icon: FaDollarSign, color: "text-indigo-500" },
-  { title: "Sales (USD)", value: "$1,000", icon: FaDollarSign, color: "text-pink-500" },
+  {
+    title: "Sales (INR)",
+    value: "₹85,000",
+    icon: FaDollarSign,
+    color: "text-indigo-500",
+  },
+  {
+    title: "Sales (USD)",
+    value: "$1,000",
+    icon: FaDollarSign,
+    color: "text-pink-500",
+  },
   { title: "Subscribers", value: 245, icon: FaInbox, color: "text-teal-500" },
 ];
 
@@ -73,18 +100,44 @@ const barOptions = {
 
 // Table data
 const orders = [
-  { date: "2025-06-01", number: "#ORD123", gateway: "Razorpay", total: "₹500", status: "Paid", payment: "Confirmed" },
-  { date: "2025-06-02", number: "#ORD124", gateway: "Stripe", total: "₹300", status: "Pending", payment: "Pending" },
+  {
+    date: "2025-06-01",
+    number: "#ORD123",
+    gateway: "Razorpay",
+    total: "₹500",
+    status: "Paid",
+    payment: "Confirmed",
+  },
+  {
+    date: "2025-06-02",
+    number: "#ORD124",
+    gateway: "Stripe",
+    total: "₹300",
+    status: "Pending",
+    payment: "Pending",
+  },
 ];
 
 const users = [
-  { date: "2025-06-01", name: "Yagyesh", email: "yagyesh@example.com", lastActive: "2025-06-04", spend: "₹500" },
-  { date: "2025-06-03", name: "Ankit", email: "ankit@example.com", lastActive: "2025-06-04", spend: "₹300" },
+  {
+    date: "2025-06-01",
+    name: "Yagyesh",
+    email: "yagyesh@example.com",
+    lastActive: "2025-06-04",
+    spend: "₹500",
+  },
+  {
+    date: "2025-06-03",
+    name: "Ankit",
+    email: "ankit@example.com",
+    lastActive: "2025-06-04",
+    spend: "₹300",
+  },
 ];
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen mt-20 bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <h1 className="text-3xl font-bold mb-8 text-gray-800">Admin Dashboard</h1>
 
       {/* Stat Cards */}
@@ -108,16 +161,24 @@ export default function AdminDashboard() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-          className="bg-white p-6 rounded-lg shadow-md h-[350px]">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white p-6 rounded-lg shadow-md h-[350px]"
+        >
           <h2 className="text-lg font-semibold mb-4">Entity Distribution</h2>
           <div className="h-[250px]">
             <Doughnut data={doughnutData} options={doughnutOptions} />
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-          className="bg-white p-6 rounded-lg shadow-md h-[350px]">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="bg-white p-6 rounded-lg shadow-md h-[350px]"
+        >
           <h2 className="text-lg font-semibold mb-4">Monthly Sales</h2>
           <div className="h-[250px]">
             <Bar data={barData} options={barOptions} />
@@ -128,8 +189,12 @@ export default function AdminDashboard() {
       {/* Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Orders Table */}
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-          className="bg-white p-6 rounded-lg shadow-md">
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white p-6 rounded-lg shadow-md"
+        >
           <h2 className="text-lg font-semibold mb-4">Latest Orders</h2>
           <table className="w-full border-collapse">
             <thead>
@@ -158,8 +223,12 @@ export default function AdminDashboard() {
         </motion.div>
 
         {/* Users Table */}
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
-          className="bg-white p-6 rounded-lg shadow-md">
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-white p-6 rounded-lg shadow-md"
+        >
           <h2 className="text-lg font-semibold mb-4">Latest Users</h2>
           <table className="w-full border-collapse">
             <thead>
