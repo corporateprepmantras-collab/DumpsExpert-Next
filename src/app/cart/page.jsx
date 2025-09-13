@@ -76,7 +76,6 @@ const Cart = () => {
   };
 
   // Apply coupon
-  // Apply coupon
   const handleCoupon = async () => {
     if (!couponCode) {
       setCouponError("Please enter a coupon code");
