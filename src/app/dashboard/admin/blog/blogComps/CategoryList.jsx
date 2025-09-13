@@ -94,7 +94,7 @@ const CategoryList = ({ searchTerm, onCategorySelect }) => {
                   Delete
                 </button>
                 <button
-                  onClick={() => onCategorySelect(category.category)}
+                  onClick={() => onCategorySelect(category)}
                   className="bg-green-500 text-white px-2 py-1 rounded"
                 >
                   View Blogs
