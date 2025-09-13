@@ -146,6 +146,17 @@ const ProductList = () => {
                     >
                       Manage FAQ
                     </button>
+
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/admin/product/reviews/${product._id}`
+                        )
+                      }
+                      className="bg-purple-500 text-white px-2 py-1 rounded text-xs"
+                    >
+                      Manage Reviews
+                    </button>
                   </td>
                 </tr>
               ))

@@ -86,6 +86,16 @@ export default function ProductDetailsPage() {
         // ✅ Fetch product
         const productData = await fetchProduct(slug);
         setProduct(productData);
+        setReviews(productData?.reviews || []);
+        console.log("Product data:", productData);
+        // Calculate avg rating
+        if (productData?.reviews?.length) {
+          const total = productData.reviews.reduce(
+            (sum, r) => sum + r.rating,
+            0
+          );
+          setAvgRating((total / productData.reviews.length).toFixed(1));
+        }
 
         // ✅ Fetch related products
         const allProducts = await fetchAllProducts();
@@ -148,17 +158,22 @@ export default function ProductDetailsPage() {
     link.click();
   };
 
-  const handleAddReview = (e) => {
+  const handleAddReview = async (e) => {
     e.preventDefault();
-    if (!reviewForm.name || !reviewForm.comment || reviewForm.rating === 0)
-      return;
 
-    setReviews([
-      { ...reviewForm, createdAt: new Date().toISOString() },
-      ...reviews,
-    ]);
-    setReviewForm({ name: "", comment: "", rating: 0 });
+    try {
+      const res = await axios.post(`/api/products/get-by-slug/${slug}`, reviewForm);
+
+      if (res.status === 201) {
+        toast.success("Review submitted successfully 🎉");
+        setReviewForm({ name: "", comment: "", rating: "" }); // reset form
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error(error.response?.data?.message || "Failed to submit review ❌");
+    }
   };
+
 
   const toggleAccordion = (index) => {
     setActiveIndex(index === activeIndex ? null : index);
@@ -292,26 +307,28 @@ export default function ProductDetailsPage() {
                 </div>
 
                 {/* Buttons */}
-              {/* Buttons */}
-<div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
-  {product.samplePdfUrl && (
-    <button
-      onClick={() =>
-        handleDownload(product.samplePdfUrl, `${product.title}-Sample.pdf`)
-      }
-      className="bg-gray-800 text-white px-4 py-2 rounded text-sm"
-    >
-      Download Sample
-    </button>
-  )}
-  <button
-    onClick={() => handleAddToCart("regular")}
-    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
-  >
-    🛒 Add to Cart
-  </button>
-</div>
-
+                {/* Buttons */}
+                <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
+                  {product.samplePdfUrl && (
+                    <button
+                      onClick={() =>
+                        handleDownload(
+                          product.samplePdfUrl,
+                          `${product.title}-Sample.pdf`
+                        )
+                      }
+                      className="bg-gray-800 text-white px-4 py-2 rounded text-sm"
+                    >
+                      Download Sample
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleAddToCart("regular")}
+                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                  >
+                    🛒 Add to Cart
+                  </button>
+                </div>
               </div>
             )}
 
@@ -350,21 +367,22 @@ export default function ProductDetailsPage() {
 
                   {/* Buttons */}
                   {/* Buttons */}
-<div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
-  <button
-    onClick={() => router.push(`/exam/sample-instruction/${slug}`)}
-    className="bg-blue-600 text-white px-3 py-2 rounded text-sm"
-  >
-    Try Online Exam
-  </button>
-  <button
-    onClick={() => handleAddToCart("online")}
-    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
-  >
-    🛒 Add to Cart
-  </button>
-</div>
-
+                  <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
+                    <button
+                      onClick={() =>
+                        router.push(`/exam/sample-instruction/${slug}`)
+                      }
+                      className="bg-blue-600 text-white px-3 py-2 rounded text-sm"
+                    >
+                      Try Online Exam
+                    </button>
+                    <button
+                      onClick={() => handleAddToCart("online")}
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                    >
+                      🛒 Add to Cart
+                    </button>
+                  </div>
                 </div>
               ))}
 
@@ -399,16 +417,15 @@ export default function ProductDetailsPage() {
                   </div>
 
                   {/* Button */}
-                 {/* Button */}
-<div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
-  <button
-    onClick={() => handleAddToCart("combo")}
-    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
-  >
-    🛒 Add to Cart
-  </button>
-</div>
-
+                  {/* Button */}
+                  <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
+                    <button
+                      onClick={() => handleAddToCart("combo")}
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                    >
+                      🛒 Add to Cart
+                    </button>
+                  </div>
                 </div>
               ))}
           </div>

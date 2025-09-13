@@ -11,7 +11,7 @@ const CategoryPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-
+    const router = useRouter();
   const handleSaveCategory = async (formData, id) => {
     try {
       const url = id ? `/api/blog-categories/${id}` : '/api/blog-categories';
@@ -47,8 +47,8 @@ const CategoryPage = () => {
 
   const handleCategorySelect = (category) => {
     // Navigate to blog page with category filter
-    const router = useRouter();
-    router.push(`/dashboard/admin/blog/${category.id}`);
+  console.log(category)
+    router.push(`/dashboard/admin/blog/${category._id}`);
   };
 
   return (
