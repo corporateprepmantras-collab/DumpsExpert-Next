@@ -7,7 +7,7 @@ import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
 import { useSession } from "next-auth/react";
-
+import axios from "axios";
 // Helper function to fetch product data
 async function fetchProduct(slug) {
   try {
@@ -40,9 +40,10 @@ export default function ProductDetailsPage() {
   const [exams, setExams] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({
-    name: "",
+    customer: "",
     comment: "",
     rating: 0,
+    status: "Publish",
   });
   const [avgRating, setAvgRating] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -144,32 +145,32 @@ export default function ProductDetailsPage() {
         console.log("Exam data:", examData);
 
         // ✅ Mock reviews
-        const mockReviews = [
-          {
-            name: "Amit",
-            comment: "Very helpful dumps! Cleared my exam in one go.",
-            rating: 5,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            name: "Priya",
-            comment: "Good content but could be more detailed.",
-            rating: 4,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            name: "John",
-            comment: "Excellent support and real questions.",
-            rating: 5,
-            createdAt: new Date().toISOString(),
-          },
-        ];
-        setReviews(mockReviews);
+        // const mockReviews = [
+        //   {
+        //     name: "Amit",
+        //     comment: "Very helpful dumps! Cleared my exam in one go.",
+        //     rating: 5,
+        //     createdAt: new Date().toISOString(),
+        //   },
+        //   {
+        //     name: "Priya",
+        //     comment: "Good content but could be more detailed.",
+        //     rating: 4,
+        //     createdAt: new Date().toISOString(),
+        //   },
+        //   {
+        //     name: "John",
+        //     comment: "Excellent support and real questions.",
+        //     rating: 5,
+        //     createdAt: new Date().toISOString(),
+        //   },
+        // ];
+        // setReviews(mockReviews);
 
-        if (mockReviews.length > 0) {
-          const total = mockReviews.reduce((sum, r) => sum + r.rating, 0);
-          setAvgRating((total / mockReviews.length).toFixed(1));
-        }
+        // if (mockReviews.length > 0) {
+        //   const total = mockReviews.reduce((sum, r) => sum + r.rating, 0);
+        //   setAvgRating((total / mockReviews.length).toFixed(1));
+        // }
       } catch (err) {
         console.error("Error loading product/exam data:", err);
       }
@@ -198,7 +199,7 @@ export default function ProductDetailsPage() {
 
       if (res.status === 201) {
         toast.success("Review submitted successfully 🎉");
-        setReviewForm({ name: "", comment: "", rating: "" }); // reset form
+        setReviewForm({ customer: "", comment: "", rating: "",status:"Publish" }); // reset form
       }
     } catch (error) {
       console.error("Error submitting review:", error);
@@ -563,7 +564,7 @@ function ReviewsSection({
                     />
                   ))}
                 </div>
-                <p className="font-medium">{r.name}</p>
+                <p className="font-medium">{r.customer}</p>
                 <p className="text-gray-600 text-sm">{r.comment}</p>
                 <p className="text-xs text-gray-400">
                   {new Date(r.createdAt).toLocaleDateString()}
@@ -577,9 +578,9 @@ function ReviewsSection({
         <h2 className="text-xl font-semibold mb-4">Write a Review</h2>
         <form className="grid gap-3" onSubmit={handleAddReview}>
           <input
-            value={reviewForm.name}
+            value={reviewForm.customer}
             onChange={(e) =>
-              setReviewForm({ ...reviewForm, name: e.target.value })
+              setReviewForm({ ...reviewForm, customer: e.target.value })
             }
             placeholder="Your name"
             className="border p-3 rounded w-full"

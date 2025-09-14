@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Product from "@/models/productListSchema";
-import Review from "@/models/Review";
+// import Review from "@/models/Review";
 import { uploadToCloudinaryfile, deleteFromCloudinary } from "@/lib/cloudinary";
 
 // Helper to parse FormData
@@ -38,14 +38,14 @@ export async function GET(req) {
     const searchQuery = searchParams.get("q");
 
     if (id) {
-      const product = await Product.findById(id).lean();
-      const reviews = await Review.find({ productId: id });
-      if (!product)
-        return NextResponse.json(
-          { message: "Product not found" },
-          { status: 404 }
-        );
-        product.reviews = reviews;
+      const product = await Product.findById(id);
+      // const reviews = await Review.find({ productId: id });
+      // if (!product)
+      //   return NextResponse.json(
+      //     { message: "Product not found" },
+      //     { status: 404 }
+      //   );
+      //   product.reviews = reviews;
       return NextResponse.json({ data: product });
     }
 
