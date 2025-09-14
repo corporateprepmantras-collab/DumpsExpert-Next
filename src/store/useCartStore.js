@@ -51,14 +51,6 @@ let useCartStoreBase = (set, get) => ({
 
   addToCart: async (item) => {
     console.log("Incoming Item:", item);
-    
-    // Check if user is logged in
-    const { isLoggedIn } = get();
-    if (!isLoggedIn) {
-      // Return false to indicate login required
-      return { success: false, message: "Please login or create an account to add items to cart" };
-    }
-    
     const existing = get().cartItems.find(
       (i) => i._id === item._id && i.type === item.type
     );
@@ -78,13 +70,14 @@ let useCartStoreBase = (set, get) => ({
     }
     
     // Sync with server if logged in
-    try {
-      await axios.post("/api/cart/item", item);
-    } catch (error) {
-      console.error("Failed to sync cart item with server:", error);
+    const { isLoggedIn } = get();
+    if (isLoggedIn) {
+      try {
+        await axios.post("/api/cart/item", item);
+      } catch (error) {
+        console.error("Failed to sync cart item with server:", error);
+      }
     }
-    
-    return { success: true };
   },
 
   removeFromCart: async (id, type) => {
