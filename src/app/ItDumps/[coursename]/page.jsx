@@ -103,7 +103,7 @@ export default function CategoryPage() {
                     <th className="px-4 py-3">{coursename} Exam Code</th>
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Price</th>
-                    <th className="px-4 py-3">Details</th>
+                    <th className=" min-w-40 px-4 py-3">Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -171,7 +171,7 @@ export default function CategoryPage() {
                   <div className="absolute bottom-4 left-4 right-4">
                     <Link
                       href={`/ItDumps/${coursename}/by-slug/${product.slug}`}
-                      className="block w-full bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow"
+                      className="block min-w-40 w-full bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow"
                     >
                       See Details
                     </Link>
