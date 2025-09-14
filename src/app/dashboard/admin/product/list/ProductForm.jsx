@@ -607,14 +607,32 @@ const RichTextEditor = ({
   };
 
   // Handle link insertion
-  const handleAddLink = () => {
-    if (linkUrl) {
-      document.execCommand("createLink", false, linkUrl);
-      onChange(editorRef.current.innerHTML);
-    }
-    setShowLinkInput(false);
-    setLinkUrl("");
-  };
+// Handle link insertion
+const handleAddLink = () => {
+  if (!linkUrl) return;
+
+  const selection = window.getSelection();
+  if (!selection || selection.toString().trim() === "") {
+    alert("Please select some text to hyperlink");
+    return;
+  }
+
+  // Insert link
+  document.execCommand("createLink", false, linkUrl);
+
+  // Force links to open in new tab + styling
+  const anchors = editorRef.current.querySelectorAll("a");
+  anchors.forEach((a) => {
+    a.setAttribute("target", "_blank");  // open in new tab
+    a.setAttribute("rel", "noopener noreferrer"); // security best practice
+    a.style.color = "blue";  // hyperlink blue
+    a.style.textDecoration = "underline"; // underline like real links
+  });
+
+  onChange(editorRef.current.innerHTML);
+  setShowLinkInput(false);
+  setLinkUrl("");
+};
 
   // Handle editor content changes
   const handleInput = () => {
@@ -674,12 +692,13 @@ const RichTextEditor = ({
       </div>
 
       {/* Editor content */}
-      <div
-        ref={editorRef}
-        className="border border-gray-300 border-t-0 rounded-b-lg p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500 relative"
-        contentEditable
-        onInput={handleInput}
-      />
+<div
+  ref={editorRef}
+  className="rich-editor border border-gray-300 border-t-0 rounded-b-lg p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500 relative 
+             [&_a]:text-blue-600 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-800 [&_a:visited]:text-purple-600"
+  contentEditable
+  onInput={handleInput}
+/>
 
       {/* Placeholder overlay */}
       {(!value || value === "<br>") && (
