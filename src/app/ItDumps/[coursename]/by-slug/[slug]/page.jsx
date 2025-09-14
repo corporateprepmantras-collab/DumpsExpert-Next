@@ -76,7 +76,17 @@ export default function ProductDetailsPage() {
         item.price = product.dumpsPriceInr || product.dumpsPriceUsd;
     }
 
-    useCartStore.getState().addToCart(item);
+    const result = useCartStore.getState().addToCart(item);
+    
+    if (!result.success) {
+      toast.error(result.message);
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        router.push('/auth/signin');
+      }, 1500);
+      return;
+    }
+    
     toast.success(`Added ${item.title} to cart!`);
   };
 

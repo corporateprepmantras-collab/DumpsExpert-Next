@@ -38,6 +38,7 @@ export async function POST(request) {
           code: coupon.code,
           discount: coupon.discount,
           name: coupon.name,
+          discountType: coupon.discountType || "percentage", // Include discountType in response
         },
       },
       { status: 200 }

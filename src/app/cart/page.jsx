@@ -56,6 +56,17 @@ const Cart = () => {
     };
   }, []);
 
+  // Add this to the existing useEffect section in the Cart component
+  
+  // Initialize login status in cart store
+  useEffect(() => {
+    if (status === "authenticated") {
+      useCartStore.getState().setLoginStatus(true);
+    } else if (status === "unauthenticated") {
+      useCartStore.getState().setLoginStatus(false);
+    }
+  }, [status]);
+
   const subtotal = cartItems.reduce(
     (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
     0
@@ -91,25 +102,13 @@ const Cart = () => {
 
       let discountAmount = 0;
 
-      // ✅ Check discountType properly
-      switch (coupon.discountType) {
-        case "percent":
-          discountAmount = (subtotal * coupon.discount) / 100;
-          break;
-
-        case "fixed_inr":
-          discountAmount = coupon.discount; // fixed INR value
-          break;
-
-        case "fixed_usd":
-          // If your cart is only INR, you may need conversion logic here
-          discountAmount = coupon.discount;
-          break;
-
-        default:
-          if (coupon.discount) {
-            discountAmount = coupon.discount;
-          }
+      // Always use percentage-based discount calculation
+      if (coupon.discountType === "percentage" || !coupon.discountType) {
+        discountAmount = (subtotal * coupon.discount) / 100;
+      } else if (coupon.discountType === "fixed_inr" || coupon.discountType === "fixed_usd") {
+        // Convert fixed amounts to percentage
+        const percentage = (coupon.discount / subtotal) * 100;
+        discountAmount = (subtotal * percentage) / 100;
       }
 
       // ✅ Prevent negative total
@@ -123,9 +122,10 @@ const Cart = () => {
       setCouponCode("");
 
       toast.success(
-        `Coupon applied! You saved ₹${discountAmount.toFixed(2)} ${
-          coupon.discountType === "percent" ? `(${coupon.discount}% off)` : ""
-        }`
+        `Coupon applied! You saved ₹${discountAmount.toFixed(2)} (${(
+          (discountAmount / subtotal) *
+          100
+        ).toFixed(2)}% off)`
       );
     } catch (error) {
       const errorMessage =
