@@ -207,9 +207,12 @@ const Cart = () => {
     }
 
     try {
+      // Define the currency variable before using it
+      const paymentCurrency = currency; // Store the selected currency in a local variable
+      
       const orderData = {
-        amount: grandTotal,
-        currency: currency, // Use selected currency
+        amount: paymentCurrency === "INR" ? grandTotal : convertCurrency(grandTotal, "USD", "INR"),
+        currency: "INR", // Razorpay requires INR for Indian merchants
         userId,
       };
 
@@ -224,13 +227,13 @@ const Cart = () => {
         );
       }
 
-      const { id, amount, currency } = response.data;
+      const { id, amount } = response.data;
 
       const options = {
         key:
           process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V",
         amount,
-        currency,
+        currency: "INR", // Always use INR for Razorpay
         order_id: id,
         name: "DumpsExpert",
         description: "Purchase Exam Dumps",
@@ -367,7 +370,27 @@ const Cart = () => {
                     key={`${item._id}-${item.type}`}
                     className="flex items-center justify-between bg-white border p-4 rounded-lg shadow-sm"
                   >
-                    {/* ... item details ... */}
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleQuantityChange(item._id, item.type, Math.max(1, (item.quantity || 1) - 1))}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full"
+                        >
+                          -
+                        </button>
+                        <span className="text-gray-800">{item.quantity || 1}</span>
+                        <button
+                          onClick={() => handleQuantityChange(item._id, item.type, (item.quantity || 1) + 1)}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="font-medium text-gray-800">{item.title || item.name}</h3>
+                        <p className="text-sm text-gray-500">{item.type} - {item.examCode}</p>
+                      </div>
+                    </div>
                     <div className="text-right space-y-2">
                       <p className="text-lg font-semibold">
                         {currency === "INR" ? "₹" : "$"}{(itemPrice * (item.quantity || 1)).toFixed(2)}
