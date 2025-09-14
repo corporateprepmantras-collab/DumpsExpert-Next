@@ -6,6 +6,7 @@ import { FaCheckCircle, FaChevronRight, FaStar, FaUser } from "react-icons/fa";
 import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
+import { useSession } from "next-auth/react";
 
 // Helper function to fetch product data
 async function fetchProduct(slug) {
@@ -34,6 +35,7 @@ async function fetchAllProducts() {
 export default function ProductDetailsPage() {
   const { slug } = useParams();
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [product, setProduct] = useState(null);
   const [exams, setExams] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -46,8 +48,26 @@ export default function ProductDetailsPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
 
+  // Initialize login status in cart store
+  useEffect(() => {
+    if (status === "authenticated") {
+      useCartStore.getState().setLoginStatus(true);
+    } else if (status === "unauthenticated") {
+      useCartStore.getState().setLoginStatus(false);
+    }
+  }, [status]);
+
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
+
+    // Check authentication status directly before adding to cart
+    if (status !== "authenticated") {
+      toast.error("Please login to add items to cart");
+      setTimeout(() => {
+        router.push('/auth/signin');
+      }, 1500);
+      return;
+    }
 
     let item = {
       ...product,
@@ -76,7 +96,19 @@ export default function ProductDetailsPage() {
         item.price = product.dumpsPriceInr || product.dumpsPriceUsd;
     }
 
-    useCartStore.getState().addToCart(item);
+    const result = useCartStore.getState().addToCart(item);
+    
+    if (!result.success) {
+      toast.error(result.message);
+      // Only redirect if it's specifically an authentication issue
+      if (result.message.toLowerCase().includes("login")) {
+        setTimeout(() => {
+          router.push('/auth/signin');
+        }, 1500);
+      }
+      return;
+    }
+    
     toast.success(`Added ${item.title} to cart!`);
   };
 

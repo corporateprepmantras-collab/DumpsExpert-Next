@@ -10,6 +10,19 @@ import cartImg from "../../assets/landingassets/emptycart.webp";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 
+// Currency conversion utility
+const convertCurrency = (amount, fromCurrency, toCurrency, conversionRate = 83) => {
+  if (fromCurrency === toCurrency) return amount;
+  
+  if (fromCurrency === "INR" && toCurrency === "USD") {
+    return amount / conversionRate;
+  } else if (fromCurrency === "USD" && toCurrency === "INR") {
+    return amount * conversionRate;
+  }
+  
+  return amount;
+};
+
 const Cart = () => {
   const { data: session, status, update } = useSession();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -19,6 +32,8 @@ const Cart = () => {
   const [couponApplicable, setCouponApplicable] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [currency, setCurrency] = useState("INR"); // Default currency
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   const cartItems = useCartStore((state) => state.cartItems);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
@@ -56,10 +71,34 @@ const Cart = () => {
     };
   }, []);
 
+  // Add this to the existing useEffect section in the Cart component
+  
+  // Initialize login status in cart store
+  useEffect(() => {
+    if (status === "authenticated") {
+      useCartStore.getState().setLoginStatus(true);
+    } else if (status === "unauthenticated") {
+      useCartStore.getState().setLoginStatus(false);
+    }
+  }, [status]);
+
+  // Calculate subtotal based on selected currency
   const subtotal = cartItems.reduce(
-    (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
+    (acc, item) => {
+      const itemPrice = currency === "INR" 
+        ? (item.price || 0) 
+        : convertCurrency(item.price || 0, "INR", "USD");
+      return acc + itemPrice * (item.quantity || 1);
+    },
     0
   );
+
+  // Recalculate discount when currency changes or when a coupon is applied
+  useEffect(() => {
+    if (appliedCoupon) {
+      handleCouponWithType(appliedCoupon);
+    }
+  }, [currency, appliedCoupon]);
 
   const grandTotal = subtotal - discount;
 
@@ -75,7 +114,7 @@ const Cart = () => {
     );
   };
 
-  // Apply coupon
+  // Apply coupon with currency handling
   const handleCoupon = async () => {
     if (!couponCode) {
       setCouponError("Please enter a coupon code");
@@ -88,45 +127,11 @@ const Cart = () => {
         code: couponCode,
       });
       const coupon = response.data.coupon;
-
-      let discountAmount = 0;
-
-      // ✅ Check discountType properly
-      switch (coupon.discountType) {
-        case "percent":
-          discountAmount = (subtotal * coupon.discount) / 100;
-          break;
-
-        case "fixed_inr":
-          discountAmount = coupon.discount; // fixed INR value
-          break;
-
-        case "fixed_usd":
-          // If your cart is only INR, you may need conversion logic here
-          discountAmount = coupon.discount;
-          break;
-
-        default:
-          if (coupon.discount) {
-            discountAmount = coupon.discount;
-          }
-      }
-
-      // ✅ Prevent negative total
-      if (discountAmount > subtotal) {
-        discountAmount = subtotal;
-      }
-
-      setDiscount(discountAmount);
-      setCouponApplicable(true);
+      setAppliedCoupon(coupon);
+      handleCouponWithType(coupon);
+      
       setCouponError("");
       setCouponCode("");
-
-      toast.success(
-        `Coupon applied! You saved ₹${discountAmount.toFixed(2)} ${
-          coupon.discountType === "percent" ? `(${coupon.discount}% off)` : ""
-        }`
-      );
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
@@ -135,11 +140,55 @@ const Cart = () => {
       setCouponError(errorMessage);
       setDiscount(0);
       setCouponApplicable(false);
+      setAppliedCoupon(null);
       toast.error(errorMessage);
     }
   };
 
-  // Handle Razorpay Payment
+  // Handle coupon discount calculation based on currency
+  const handleCouponWithType = (coupon) => {
+    let discountAmount = 0;
+
+    switch (coupon.discountType) {
+      case "percentage":
+        discountAmount = (subtotal * coupon.discount) / 100;
+        break;
+
+      case "fixed_inr":
+        discountAmount = currency === "INR" 
+          ? coupon.discount 
+          : convertCurrency(coupon.discount, "INR", "USD");
+        break;
+
+      case "fixed_usd":
+        discountAmount = currency === "USD" 
+          ? coupon.discount 
+          : convertCurrency(coupon.discount, "USD", "INR");
+        break;
+
+      default:
+        if (coupon.discount) {
+          discountAmount = coupon.discount;
+        }
+    }
+
+    // Prevent negative total
+    if (discountAmount > subtotal) {
+      discountAmount = subtotal;
+    }
+
+    setDiscount(discountAmount);
+    setCouponApplicable(true);
+
+    const currencySymbol = currency === "INR" ? "₹" : "$";
+    toast.success(
+      `Coupon applied! You saved ${currencySymbol}${discountAmount.toFixed(2)} ${
+        coupon.discountType === "percentage" ? `(${coupon.discount}% off)` : ""
+      }`
+    );
+  };
+
+  // Handle Razorpay Payment with currency support
   const handleRazorpayPayment = async () => {
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
@@ -158,9 +207,12 @@ const Cart = () => {
     }
 
     try {
+      // Define the currency variable before using it
+      const paymentCurrency = currency; // Store the selected currency in a local variable
+      
       const orderData = {
-        amount: grandTotal,
-        currency: "INR",
+        amount: paymentCurrency === "INR" ? grandTotal : convertCurrency(grandTotal, "USD", "INR"),
+        currency: "INR", // Razorpay requires INR for Indian merchants
         userId,
       };
 
@@ -175,13 +227,13 @@ const Cart = () => {
         );
       }
 
-      const { id, amount, currency } = response.data;
+      const { id, amount } = response.data;
 
       const options = {
         key:
           process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V",
         amount,
-        currency,
+        currency: "INR", // Always use INR for Razorpay
         order_id: id,
         name: "DumpsExpert",
         description: "Purchase Exam Dumps",
@@ -263,6 +315,24 @@ const Cart = () => {
         <h2 className="text-4xl font-bold text-gray-800">Your Cart</h2>
       </div>
 
+      {/* Currency Toggle */}
+      <div className="flex justify-center mb-6">
+        <div className="bg-white rounded-lg shadow-sm border p-2 inline-flex">
+          <button
+            onClick={() => setCurrency("INR")}
+            className={`px-4 py-2 rounded-md ${currency === "INR" ? "bg-blue-600 text-white" : "bg-gray-100"}`}
+          >
+            ₹ INR
+          </button>
+          <button
+            onClick={() => setCurrency("USD")}
+            className={`px-4 py-2 rounded-md ${currency === "USD" ? "bg-blue-600 text-white" : "bg-gray-100"}`}
+          >
+            $ USD
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-col items-center lg:flex-row justify-between gap-6 w-full">
         {/* Cart Items */}
         <div className="w-full lg:w-[65%]">
@@ -289,63 +359,52 @@ const Cart = () => {
             </div>
           ) : (
             <div className="space-y-4 w-full max-h-[565px] overflow-y-auto pr-2">
-              {cartItems.map((item) => (
-                <div
-                  key={`${item._id}-${item.type}`}
-                  className="flex items-center justify-between bg-white border p-4 rounded-lg shadow-sm"
-                >
-                  <div className="flex items-center gap-4">
-                    <Image
-                      src={item.imageUrl || "https://via.placeholder.com/100"}
-                      alt={item.title || "Product Image"}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 object-cover rounded-lg border"
-                    />
-                    <div>
-                      <h4 className="text-lg font-semibold">
-                        {item.title || "Unknown Product"}
-                      </h4>
-                      <p className="text-sm text-gray-500 capitalize">
-                        {item.type || "Unknown"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
+              {cartItems.map((item) => {
+                // Convert item price based on selected currency
+                const itemPrice = currency === "INR" 
+                  ? (item.price || 0) 
+                  : convertCurrency(item.price || 0, "INR", "USD");
+                
+                return (
+                  <div
+                    key={`${item._id}-${item.type}`}
+                    className="flex items-center justify-between bg-white border p-4 rounded-lg shadow-sm"
+                  >
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="flex items-center space-x-2">
                         <button
-                          onClick={() =>
-                            handleQuantityChange(item._id, item.type, "dec")
-                          }
-                          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                          disabled={item.quantity <= 1}
+                          onClick={() => handleQuantityChange(item._id, item.type, Math.max(1, (item.quantity || 1) - 1))}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full"
                         >
-                          −
+                          -
                         </button>
-                        <span className="px-3 py-1 border rounded bg-white">
-                          {item.quantity || 1}
-                        </span>
+                        <span className="text-gray-800">{item.quantity || 1}</span>
                         <button
-                          onClick={() =>
-                            handleQuantityChange(item._id, item.type, "inc")
-                          }
-                          className="px-3 py-1 bg-gray-200 rounded"
+                          onClick={() => handleQuantityChange(item._id, item.type, (item.quantity || 1) + 1)}
+                          className="w-6 h-6 flex items-center justify-center bg-gray-200 rounded-full"
                         >
                           +
                         </button>
                       </div>
+                      <div className="ml-4">
+                        <h3 className="font-medium text-gray-800">{item.title || item.name}</h3>
+                        <p className="text-sm text-gray-500">{item.type} - {item.examCode}</p>
+                      </div>
+                    </div>
+                    <div className="text-right space-y-2">
+                      <p className="text-lg font-semibold">
+                        {currency === "INR" ? "₹" : "$"}{(itemPrice * (item.quantity || 1)).toFixed(2)}
+                      </p>
+                      <button
+                        onClick={() => handleDelete(item._id, item.type)}
+                        className="text-red-500 text-sm hover:underline"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
-                  <div className="text-right space-y-2">
-                    <p className="text-lg font-semibold">
-                      ₹{(item.price || 0) * (item.quantity || 1)}
-                    </p>
-                    <button
-                      onClick={() => handleDelete(item._id, item.type)}
-                      className="text-red-500 text-sm hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -358,20 +417,20 @@ const Cart = () => {
 
           <div className="text-gray-700 space-y-2 text-sm">
             <p>
-              Total (MRP): <span className="float-right">₹{subtotal || 0}</span>
+              Total (MRP): <span className="float-right">{currency === "INR" ? "₹" : "$"}{subtotal.toFixed(2) || 0}</span>
             </p>
             <p>
-              Subtotal: <span className="float-right">₹{subtotal || 0}</span>
+              Subtotal: <span className="float-right">{currency === "INR" ? "₹" : "$"}{subtotal.toFixed(2) || 0}</span>
             </p>
             <p>
               Discount:{" "}
               <span className="float-right text-green-600">
-                ₹{discount.toFixed(2) || 0}
+                {currency === "INR" ? "₹" : "$"}{discount.toFixed(2) || 0}
               </span>
             </p>
             {couponApplicable && (
               <p className="text-green-600 text-sm">
-                Coupon applied! You saved ₹{discount.toFixed(2)}
+                Coupon applied! You saved {currency === "INR" ? "₹" : "$"}{discount.toFixed(2)}
               </p>
             )}
           </div>
@@ -399,7 +458,7 @@ const Cart = () => {
           <p className="font-medium text-lg">
             Grand Total:{" "}
             <span className="float-right text-green-600">
-              ₹{grandTotal || 0}
+              {currency === "INR" ? "₹" : "$"}{grandTotal.toFixed(2) || 0}
             </span>
           </p>
 
@@ -417,12 +476,12 @@ const Cart = () => {
         </div>
       </div>
 
-      {/* Payment Modal */}
+      {/* Payment Modal with currency selection */}
       {showPaymentModal && (
         <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
             <h3 className="text-xl font-semibold text-center">
-              Select Payment Method
+              Select Payment Method ({currency === "INR" ? "₹" : "$"}{grandTotal.toFixed(2)})
             </h3>
 
             <button
@@ -436,7 +495,7 @@ const Cart = () => {
                 height={40}
                 className="w-20 h-10"
               />
-              Pay with Razorpay
+              Pay with Razorpay ({currency})
             </button>
 
             <button

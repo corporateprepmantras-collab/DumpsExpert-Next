@@ -145,17 +145,23 @@ const CouponManagement = () => {
     return now >= startDate && now <= endDate;
   };
 
-  // 🟢 Calculate discount amount
+  // 🟢 Calculate discount amount - always use percentage logic
   const calculateDiscount = (coupon, subtotal) => {
     let discountAmount = 0;
+    let percentage = 0;
+    
     if (coupon.discountType === "percentage") {
-      discountAmount = (subtotal * coupon.discount) / 100;
-    } else if (coupon.discountType === "fixed_inr") {
-      discountAmount = coupon.discount;
-    } else if (coupon.discountType === "fixed_usd") {
-      discountAmount = coupon.discount; // 🔄 convert to INR if needed
+      percentage = coupon.discount;
+    } else if (coupon.discountType === "fixed_inr" || coupon.discountType === "fixed_usd") {
+      // Convert fixed amount to equivalent percentage
+      percentage = (coupon.discount / subtotal) * 100;
     }
-    return discountAmount;
+    
+    discountAmount = (subtotal * percentage) / 100;
+    return {
+      amount: discountAmount,
+      percentage: percentage.toFixed(2)
+    };
   };
 
   return (
@@ -230,8 +236,15 @@ const CouponManagement = () => {
                   <td className="px-6 py-4">{coupon.maxUseLimit}</td>
                   <td className="px-6 py-4">{formatDate(coupon.startDate)}</td>
                   <td className="px-6 py-4">{formatDate(coupon.endDate)}</td>
-                  <td className="px-6 py-4 text-green-700 font-semibold">
-                    -₹{calculateDiscount(coupon, subtotal)}
+                  <td className="px-6 py-4">
+                    {(() => {
+                      const discount = calculateDiscount(coupon, subtotal);
+                      return (
+                        <>
+                          ₹{discount.amount.toFixed(2)} ({discount.percentage}%)
+                        </>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 space-x-3">
                     <button
