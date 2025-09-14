@@ -84,7 +84,7 @@ const users = [
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen mt-20 bg-gray-50 p-6">
+    <div className="min-h-screen  bg-gray-50 p-6">
       <h1 className="text-3xl font-bold mb-8 text-gray-800">Admin Dashboard</h1>
 
       {/* Stat Cards */}
