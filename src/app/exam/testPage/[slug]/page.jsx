@@ -27,7 +27,7 @@ export default function TestPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const res = await fetch(`/api/questions/product/${slug}`);
+        const res = await fetch(`/api/questions/byExam/${exam._id}`);
         const data = await res.json();
         if (!data.success || !Array.isArray(data.data)) {
           throw new Error("Invalid question format");
@@ -43,16 +43,30 @@ export default function TestPage() {
   }, [slug]);
 
   // ✅ Fetch Exam Info
+  // ✅ Fetch Exam Info First
   useEffect(() => {
     const fetchExam = async () => {
       try {
         const res = await fetch(`/api/exams/byslug/${slug}`);
         const data = await res.json();
-        setExam(data[0] || {});
+        const examData = data[0] || {};
+        setExam(examData);
+
+        // ✅ Once exam is found, fetch questions using examId
+        if (examData?._id) {
+          const qRes = await fetch(`/api/questions/byExam/${examData._id}`);
+          const qData = await qRes.json();
+          if (qData.success && Array.isArray(qData.data)) {   
+            setQuestions(qData.data);
+          } else {
+            setQuestions([]);
+          }
+        }
       } catch (error) {
-        console.error("❌ Failed to fetch exam:", error);
+        console.error("❌ Failed to fetch exam or questions:", error);
       }
     };
+
     if (slug) fetchExam();
   }, [slug]);
 

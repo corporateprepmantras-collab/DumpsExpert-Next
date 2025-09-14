@@ -25,7 +25,7 @@ export default async function HomePage() {
   // ✅ Use a proper production URL from env
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL ||
-    "https://https://dumps-expert-next.vercel.app";
+    "https://dumps-expert-next.vercel.app";
 
   // fetch categories
   const categoriesRes = await fetch(`${baseUrl}/api/blogs/blog-categories`, {
