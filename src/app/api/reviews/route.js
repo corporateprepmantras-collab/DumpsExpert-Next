@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
-import {connectMongoDB} from "../../../lib/mongo";
+import { connectMongoDB } from "../../../lib/mongo";
 import Review from "../../../models/Review";
 
+// GET all reviews OR reviews by productId
 export async function GET(req) {
   await connectMongoDB();
   const { searchParams } = new URL(req.url);
   const productId = searchParams.get("productId");
 
-  if (!productId) {
-    return NextResponse.json(
-      { success: false, message: "ProductId required" },
-      { status: 400 }
-    );
+  let reviews;
+  if (productId) {
+    // Get reviews of a specific product
+    reviews = await Review.find({ productId }).sort({ createdAt: -1 });
+  } else {
+    // Get all reviews
+    reviews = await Review.find().sort({ createdAt: -1 });
   }
 
-  const reviews = await Review.find({ productId }).sort({ createdAt: -1 });
-  console.log(reviews)
   return NextResponse.json({ success: true, data: reviews });
 }
 
+// POST create review
 export async function POST(req) {
   await connectMongoDB();
   const body = await req.json();
