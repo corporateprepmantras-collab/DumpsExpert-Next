@@ -35,24 +35,26 @@ export async function PUT(request, { params }) {
         { status: 404 }
       );
     }
-  
-      const slug = formData.get("slug");
-  
-      // Slug Regex Validation
-      const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-      if (!slugRegex.test(slug)) {
-        return NextResponse.json(
-          { error: "Invalid slug format. Use only lowercase letters, numbers, and hyphens." },
-          { status: 400 }
-        );
-      }
+
     const formData = await request.formData();
     const image = formData.get("image");
- 
+    const slug = formData.get("slug");
+
+    // Slug Regex Validation
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!slugRegex.test(slug)) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid slug format. Use only lowercase letters, numbers, and hyphens.",
+        },
+        { status: 400 }
+      );
+    }
     let updateData = {
       sectionName: formData.get("sectionName"),
       slug,
-      language:formData.get("language"),
+      language: formData.get("language"),
       category: formData.get("category"),
       metaTitle: formData.get("metaTitle"),
       metaKeywords: formData.get("metaKeywords"),
