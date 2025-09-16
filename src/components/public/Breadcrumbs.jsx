@@ -14,14 +14,12 @@ import {
 export default function Breadcrumbs() {
   const pathname = usePathname();
 
-  // Skip array - jo words skip karne hai unhe yahan likho
+  // Skip array - jo words sirf dikhane se skip karne hai
   const skipSegments = ["by-slug"];
 
-  // Segments filter karte waqt skip ko hata do
   const segments = pathname
     .split("/")
-    .filter(Boolean)
-    .filter((segment) => !skipSegments.includes(segment));
+    .filter(Boolean);
 
   const buildHref = (index) =>
     "/" + segments.slice(0, index + 1).join("/");
@@ -34,18 +32,24 @@ export default function Breadcrumbs() {
             <Link href="/" className="text-black">Home</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
-        {segments.map((segment, index) => (
-          <div key={index} className="flex items-center text-black">
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href={buildHref(index)} className="capitalize">
-                  {decodeURIComponent(segment.replace(/-/g, " "))}
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </div>
-        ))}
+        {segments.map((segment, index) => {
+          if (skipSegments.includes(segment)) {
+            // Skip dikhana, but path intact rahe
+            return null;
+          }
+          return (
+            <div key={index} className="flex items-center text-black">
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={buildHref(index)} className="capitalize">
+                    {decodeURIComponent(segment.replace(/-/g, " "))}
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+            </div>
+          );
+        })}
       </BreadcrumbList>
     </Breadcrumb>
   );
