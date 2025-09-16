@@ -350,14 +350,14 @@ export default function ProductDetailsPage() {
                           `${product.title}-Sample.pdf`
                         )
                       }
-                      className="bg-gray-800 text-white px-4 py-2 rounded text-sm"
+                      className="w-full bg-gray-800 cursor-pointer text-white px-4 py-2 rounded text-sm"
                     >
                       Download Sample
                     </button>
                   )}
                   <button
                     onClick={() => handleAddToCart("regular")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                    className="w-full bg-gradient-to-r cursor-pointer from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
                   >
                     🛒 Add to Cart
                   </button>

@@ -175,10 +175,10 @@ const sidebarItems = [
             label: "Category",
             to: "/dashboard/admin/blog/category",
           },
-                  {
-            label: "Posts",
-            to: "/dashboard/admin/blog",
-          },
+          //         {
+          //   label: "Posts",
+          //   to: "/dashboard/admin/blog",
+          // },
         ],
       },
         {

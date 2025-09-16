@@ -44,7 +44,7 @@ export async function POST(request, { params }) {
     const review = await request.json();
 
     // Validate request body
-    if (!review || !review.customer || !review.comment || !review.rating) {
+    if (!review || !review.customer || !review.comment || !review.rating || !review.status) {
       return NextResponse.json(
         { message: "Invalid request body" },
         { status: 400 }
@@ -65,6 +65,7 @@ export async function POST(request, { params }) {
       customer: review.customer,
       comment: review.comment,
       rating: review.rating,
+      status: review.status,
     });
     console.log(newReview);
 
@@ -74,7 +75,7 @@ export async function POST(request, { params }) {
       { message: "Review created successfully", data: newReview },
       { status: 201 }
     );
-  } catch (error) { 
+  } catch (error) {
     return NextResponse.json(
       { message: "Failed to create review for slug", error: error.message },
       { status: 500 }

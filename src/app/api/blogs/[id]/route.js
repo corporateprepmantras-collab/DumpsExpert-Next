@@ -3,19 +3,20 @@ import { connectMongoDB } from "@/lib/mongo";
 import Blog from "@/models/blogSchema";
 import { uploadToCloudinaryBlog, deleteFromCloudinary } from "@/lib/cloudinary";
 
-export async function GET(request,  context) {
+export async function GET(req) {
+  await connectDB();
+
+  const { searchParams } = new URL(req.url);
+  const category = searchParams.get("category");
+
   try {
-    const { params } = await context;
-    await connectMongoDB();
-    const blog = await Blog.findById({ _id: params.id });
+    let query = {};
+    if (category) query.category = category;
 
-    if (!blog) {
-      return NextResponse.json({ error: "Blog not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ data: blog });
+    const blogs = await Blog.find(query).populate("category", "sectionName category");
+    return NextResponse.json({ success: true, data: blogs });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
