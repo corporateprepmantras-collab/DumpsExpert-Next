@@ -15,9 +15,9 @@ import ContentDumpsSecond from "@/landingpage/ContentBoxSecond";
 import Testimonial from "@/landingpage/Testimonial";
 
 export const metadata = {
-  title: "Dumpsxpert – #1 IT Exam Dumps Provider",
+  title: "Prepmantras – #1 IT Exam Prep Provider",
   description:
-    "Pass your IT certifications in first attempt with trusted exam dumps, practice tests & PDF guides by Dumpsxpert.",
+    "Pass your IT certifications in first attempt with trusted exam Prep, practice tests & PDF guides by Prepmantras.",
 };
 
 // Server Component
@@ -59,13 +59,13 @@ export default async function HomePage() {
             <span className="text-[#13677c]">On the First Try</span>
           </h1>
           <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6">
-            Dumpsxpert offers industry-validated study materials, real exam
-            dumps, and browser-based practice tests to help you get certified
+            Prepmantras offers industry-validated study materials, real exam
+            Prep, and browser-based practice tests to help you get certified
             faster — and smarter.
           </p>
           <ul className="space-y-3 text-gray-700 mb-6 text-sm sm:text-base">
             {[
-              "100% Verified & Up-to-Date Dumps",
+              "100% Verified & Up-to-Date Prepmantras",
               "100% Money Back Guarantee",
               "24/7 Expert Support",
               "Free Updates for 3 Months",
@@ -99,7 +99,7 @@ export default async function HomePage() {
       {/* Popular Dumps */}
       <section className="py-16 px-4 md:px-12">
         <h2 className="text-3xl font-bold text-center mb-10">
-          Top Trending Certification Dumps
+          Top Trending Certification Prep
         </h2>
         <div className="flex flex-wrap justify-center gap-3 mb-10">
           {dumps.length > 0 ? (

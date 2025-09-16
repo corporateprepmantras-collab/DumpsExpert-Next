@@ -14,9 +14,14 @@ import {
 export default function Breadcrumbs() {
   const pathname = usePathname();
 
+  // Skip array - jo words skip karne hai unhe yahan likho
+  const skipSegments = ["by-slug"];
+
+  // Segments filter karte waqt skip ko hata do
   const segments = pathname
     .split("/")
-    .filter(Boolean); 
+    .filter(Boolean)
+    .filter((segment) => !skipSegments.includes(segment));
 
   const buildHref = (index) =>
     "/" + segments.slice(0, index + 1).join("/");
@@ -34,7 +39,7 @@ export default function Breadcrumbs() {
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={buildHref(index)} className="capitalize ">
+                <Link href={buildHref(index)} className="capitalize">
                   {decodeURIComponent(segment.replace(/-/g, " "))}
                 </Link>
               </BreadcrumbLink>

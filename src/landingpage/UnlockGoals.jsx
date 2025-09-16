@@ -24,7 +24,7 @@ const cardData = [
     icon: downloadable,
     title: "Downloadable PDF with Questions & Answers",
     description:
-      "The Dumpsxpert provides 100% original and verified updated IT Certification Dumps for all exams.",
+      "The Prepmantras provides 100% original and verified updated IT Certification Prep for all exams.",
   },
   {
     icon: affordable,
@@ -52,21 +52,21 @@ const cardData = [
   },
   {
     icon: validDumps,
-    title: "100% Valid IT Exam Dumps",
+    title: "100% Valid IT Exam Prep",
     description:
-      "Dumpsxpert provides 100% valid IT exam questions and answers for certification success.",
+      "Prepmantras provides 100% valid IT exam questions and answers for certification success.",
   },
   {
     icon: freesample,
     title: "Free Sample",
     description:
-      "You can try our dumps for free before purchasing. Get a sample to check quality.",
+      "You can try our Prepmantras for free before purchasing. Get a sample to check quality.",
   },
   {
     icon: specialDiscount,
     title: "Special Discount Offer",
     description:
-      "Enjoy limited-time discounts on top-selling certification dumps. Don’t miss out!",
+      "Enjoy limited-time discounts on top-selling certification Prep. Don’t miss out!",
   },
 ];
 
@@ -114,7 +114,7 @@ const WhyChooseSection = () => {
       {/* Sticky Left Panel (desktop) / Top header (mobile) */}
       <div className="sticky-left md:w-1/2 md:sticky rounded-2xl md:top-0 h-auto md:h-screen bg-indigo-800 text-white p-6 sm:p-10 flex flex-col justify-center items-center transition-all duration-500">
         <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">
-          Why Choose DumpsXpert?
+          Why Choose Prepmantras?
         </h2>
         <p className="text-base sm:text-lg text-center text-white/90">
           Unlock your potential with our premium resources. <br />

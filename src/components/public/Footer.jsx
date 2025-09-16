@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaFacebookF, FaLinkedinIn, FaYoutube } from "react-icons/fa";
-import dumpslogo from "../../assets/landingassets/dumplogo.webp";
+import dumpslogo from "../../assets/logo/premantras_logo.png";
 
 export default function Footer() {
   return (
@@ -22,8 +22,8 @@ export default function Footer() {
             src={dumpslogo}
             alt="DumpsXpert Logo"
             className="mt-4"
-            width={130}
-            height={40}
+            width={250}
+            height={250}
             placeholder="blur"
           />
         </div>

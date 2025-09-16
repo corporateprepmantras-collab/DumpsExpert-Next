@@ -30,16 +30,16 @@ const AboutUs = () => {
           <div className="lg:w-1/2 space-y-6">
             <h2 className="text-3xl font-bold text-gray-800">About Us</h2>
             <p className="text-gray-600">
-              Welcome to DumpsXpert.com – your ultimate destination for reliable, accurate, and verified IT certification exam resources.
+              Welcome to Prepmantras.com – your ultimate destination for reliable, accurate, and verified IT certification exam resources.
             </p>
             <p className="text-gray-600">
-              We specialize in providing top-quality SAP exam dumps and an extensive collection of IT exam dumps to help professionals achieve their career goals with confidence.
+              We specialize in providing top-quality SAP exam Prep and an extensive collection of IT exam Prep to help professionals achieve their career goals with confidence.
             </p>
 
-            <h3 className="text-2xl font-semibold text-gray-800 mt-6">Why Choose DumpsXpert?</h3>
+            <h3 className="text-2xl font-semibold text-gray-800 mt-6">Why Choose Prepmantras?</h3>
             <ul className="list-disc pl-5 text-gray-600 space-y-2">
               <li>
-                SAP Examdumps – Our Specialty! When it comes to SAP exam dumps, DumpsXpert leads the way.
+                SAP Examdumps – Our Specialty! When it comes to SAP exam Prep, Prepmantras leads the way.
               </li>
               <li>
                 We provide expertly crafted and regularly updated SAP certification exam files that cover a wide range of certifications.
