@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import RichTextEditor from "@/components/public/RichTextEditor";
+
 
 const BlogPage = () => {
   const { categoryId } = useParams();
@@ -213,18 +215,12 @@ const BlogPage = () => {
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  Content
-                </label>
-                <textarea
-                  name="content"
-                  placeholder="Content"
-                  value={form.content}
-                  onChange={handleChange}
-                  className="border p-2 rounded w-full"
-                  rows={4}
-                  required
-                />
+        <RichTextEditor
+          label="Content"
+          value={form.content}
+          onChange={(value) => setForm(prev => ({ ...prev, content: value }))}
+          error={""}
+        />
               </div>
 
               {/* Slug */}
