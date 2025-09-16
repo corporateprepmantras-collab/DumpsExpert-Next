@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Head from "next/head";
 import banner from "../../assets/aboutAssests/AboutBanner.png"; // Adjust path as needed
-
+import ExamDumpsSlider from "@/landingpage/ExamDumpsSlider";
+import AboutContentSection from "./AboutContentSection";
 const AboutUs = () => {
   return (
     <>
@@ -52,7 +53,11 @@ const AboutUs = () => {
             </ul>
           </div>
         </div>
+        
       </div>
+                    <ExamDumpsSlider />
+
+<AboutContentSection></AboutContentSection>
     </>
   );
 };

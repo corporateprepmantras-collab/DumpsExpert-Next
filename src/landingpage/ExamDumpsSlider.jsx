@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-
+    
 export default function ProductSlider() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);

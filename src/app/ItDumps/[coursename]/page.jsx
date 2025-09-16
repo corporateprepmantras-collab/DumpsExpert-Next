@@ -102,7 +102,7 @@ export default function CategoryPage() {
                   <tr>
                     <th className="px-4 py-3">{coursename} Exam Code</th>
                     <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Price</th>
+                    <th className="px-4 min-w-60 py-3">Price</th>
                     <th className=" min-w-40 px-4 py-3">Details</th>
                   </tr>
                 </thead>
