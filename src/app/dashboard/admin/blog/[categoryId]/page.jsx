@@ -22,7 +22,7 @@ const BlogPage = () => {
 
   const [form, setForm] = useState({
     title: "",
-    content: "",
+    content: " ",
     slug: "",
     imageFile: null,
     status: "unpublish",
@@ -35,6 +35,7 @@ const BlogPage = () => {
   const fetchBlogs = async () => {
     try {
       const res = await axios.get(`/api/blogs?category=${categoryId}`);
+      console.log(res.data.data)
       setBlogs(res.data.data || []);
     } catch (error) {
       toast.error("Failed to fetch blogs");
@@ -68,7 +69,7 @@ const BlogPage = () => {
   const resetForm = () => {
     setForm({
       title: "",
-      content: "",
+      content: " ",
       slug: "",
       imageFile: null,
       status: "unpublish",
@@ -153,7 +154,7 @@ const BlogPage = () => {
   return (
     <div className="p-6 space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
-      <h1 className="text-2xl font-bold">Blogs for Category {categoryId}</h1>
+      <h1 className="text-2xl font-bold">Blogs for Category {blogs[0]?.category?.category}</h1>
 
       {/* Search */}
       <input
@@ -217,6 +218,7 @@ const BlogPage = () => {
               <div>
         <RichTextEditor
           label="Content"
+          name="content"
           value={form.content}
           onChange={(value) => setForm(prev => ({ ...prev, content: value }))}
           error={""}

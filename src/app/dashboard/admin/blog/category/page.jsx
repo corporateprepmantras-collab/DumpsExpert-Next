@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import toast, { Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
@@ -13,13 +12,14 @@ const CategoryPage = () => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isAdd, setIsAdd] = useState(false);
-  const [preview, setPreview] =
-    useState (categories?.imageUrl || null);
+  const [preview, setPreview] = useState(categories?.imageUrl || null);
   const [imageFile, setImageFile] = useState(null);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
     sectionName: "",
+    slug: "",
+    language: "",
     category: "",
     metaTitle: "",
     metaKeywords: "",
@@ -64,7 +64,7 @@ const CategoryPage = () => {
       metaKeywords: category.metaKeywords,
       metaDescription: category.metaDescription,
     });
-    setPreview(categories?.imageUrl)
+    setPreview(categories?.imageUrl);
     setImageFile(null);
     setOpenModal(true);
   };
@@ -74,6 +74,8 @@ const CategoryPage = () => {
     setSelectedCategory(null);
     setFormData({
       sectionName: "",
+      slug: "",
+      language: "",
       category: "",
       metaTitle: "",
       metaKeywords: "",
@@ -126,7 +128,7 @@ const CategoryPage = () => {
 
   return (
     <div className="container flex flex-col items-center mx-auto p-4">
-      <ToastContainer />
+      <Toaster richColors position="top-right" />
       <h1 className="text-xl font-bold mb-4">Category Management</h1>
 
       <div className="flex justify-between w-full mb-4">
@@ -225,6 +227,32 @@ const CategoryPage = () => {
                 value={formData.category}
                 onChange={(e) =>
                   setFormData({ ...formData, category: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              {/* language */}
+              <select
+                name="language"
+                id="language"
+                value={formData.language} // controlled component
+                onChange={(e) =>
+                  setFormData({ ...formData, language: e.target.value })
+                }
+              >
+                <option value="">Languages</option>
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+              </select>
+
+              {/* Slug */}
+              <input
+                type="text"
+                placeholder="Slug"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData({ ...formData, slug: e.target.value })
                 }
                 className="border p-2 rounded"
               />

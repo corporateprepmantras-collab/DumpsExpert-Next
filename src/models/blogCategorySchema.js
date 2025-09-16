@@ -10,6 +10,18 @@ const blogCategorySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+      language: {
+      type: String,
+      required: true,
+      trim: true,
+      enum: ['en', 'es', 'fr','hi'],
+    },
+    slug: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
   imageUrl: {
     type: String,
     required: true,

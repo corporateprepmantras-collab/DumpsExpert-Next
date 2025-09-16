@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Blog from "@/models/blogSchema";
+import blogCategorySchema from "@/models/blogCategorySchema";
 import { uploadToCloudinaryBlog, deleteFromCloudinary } from "@/lib/cloudinary";
 
 export async function GET(req) {
@@ -13,7 +14,8 @@ export async function GET(req) {
     let query = {};
     if (category) query.category = category;
 
-    const blogs = await Blog.find(query).populate("category", "sectionName category");
+    const blogs = await Blog.find(query).populate("category");
+    console.log(blogs)
     return NextResponse.json({ success: true, data: blogs });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -31,12 +33,23 @@ export async function PUT(request, context) {
       return NextResponse.json({ error: "Blog not found" }, { status: 404 });
     }
 
+
     const formData = await request.formData();
     const image = formData.get("image");
+      const slug = formData.get("slug");
 
+    // Slug Regex Validation
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!slugRegex.test(slug)) {
+      return NextResponse.json(
+        { error: "Invalid slug format. Use only lowercase letters, numbers, and hyphens." },
+        { status: 400 }
+      );
+    }
     let updateData = {
       title: formData.get("title"),
       content: formData.get("content"),
+      slug,
       category: formData.get("category"),
       status: formData.get("status"),
       metaTitle: formData.get("metaTitle"),

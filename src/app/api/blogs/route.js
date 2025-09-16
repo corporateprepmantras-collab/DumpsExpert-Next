@@ -28,10 +28,11 @@ export async function GET(request) {
       ];
     }
 
-    const blogs = await Blog.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+const blogs = await Blog.find(query)
+  .populate("category", "sectionName category") // yahan populate laga rahe hain
+  .sort({ createdAt: -1 })
+  .skip(skip)
+  .limit(limit);
 
     const total = await Blog.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
