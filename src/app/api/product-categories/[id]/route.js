@@ -7,7 +7,7 @@ export async function PUT(req, { params }) {
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = await params;
     const formData = await req.formData();
 
     const name = formData.get("name");
@@ -61,7 +61,7 @@ export async function DELETE(req, { params }) {
   try {
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     const category = await ProductCategory.findById(id);
 

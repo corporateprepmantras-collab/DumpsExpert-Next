@@ -24,7 +24,7 @@ export async function GET(req) {
 
 export async function PUT(request, context) {
   try {
-    const { params } = context;
+    const { params } = await context;
     await connectMongoDB();
 
     const blog = await Blog.findById({ _id: params.id });
@@ -80,7 +80,7 @@ export async function PUT(request, context) {
 
 export async function DELETE(request, context) {
   try {
-    const { params } = context;
+    const { params } = await context;
     await connectMongoDB();
     const blog = await Blog.findById({ _id: params.id });
 

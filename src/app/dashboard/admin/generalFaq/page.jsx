@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { FaTrash, FaPlus } from "react-icons/fa";
+import toast, { Toaster } from "react-hot-toast";
 
 const AdminGeneralFAQs = () => {
   const [faqs, setFaqs] = useState([]);
@@ -41,8 +42,10 @@ const AdminGeneralFAQs = () => {
       const res = await axios.post("/api/general-faqs", form, {
         withCredentials: true,
       });
+
       setFaqs((prev) => [...prev, res.data]);
       setForm({ question: "", answer: "" });
+      toast.success("FAQ Add successfully");
     } catch (error) {
       console.error("Error adding FAQ:", error);
     } finally {
@@ -53,11 +56,13 @@ const AdminGeneralFAQs = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this FAQ?")) return;
     try {
-      await axios.delete(`http://${process.env.NEXT_PUBLIC_BASE_URL}/api/general-faqs/${id}`, {
+      await axios.delete(`/api/general-faqs/${id}`, {
         withCredentials: true,
       });
       setFaqs((prev) => prev.filter((faq) => faq._id !== id));
+      toast.success("Delete Successfully");
     } catch (error) {
+      toast.error("Interval server error");
       console.error("Error deleting FAQ:", error);
     }
   };
@@ -68,6 +73,7 @@ const AdminGeneralFAQs = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+            <Toaster position="top-right" reverseOrder={false} />
       <h1 className="text-2xl font-bold mb-6 text-center">
         Manage General FAQs
       </h1>

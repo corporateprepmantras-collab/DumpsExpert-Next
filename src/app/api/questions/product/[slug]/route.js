@@ -6,7 +6,7 @@ import Question from "@/models/questionSchema";
 export async function GET(req, { params }) {
   try {
     await connectMongoDB();
-    const { slug } = params;
+    const { slug } = await params;
 
     console.log("🔎 Params:", params);
 

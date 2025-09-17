@@ -8,7 +8,7 @@ import Review from "@/models/Review";
 export async function GET(request, { params }) {
   try {
     await connectMongoDB();
-    const { slug } = params;
+    const { slug } = await params;
 
     console.log("Fetching exams by product slug:", slug);
 

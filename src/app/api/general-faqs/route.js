@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectMongoDB } from "@/lib/mongo";
-
+import GeneralFAQ from "@/models/generalFAQ";
 // ---------- DB Connection ----------
 
-// ---------- Mongoose Model ----------
-const faqSchema = new mongoose.Schema(
-  {
-    question: { type: String, required: true, trim: true },
-    answer: { type: String, required: true, trim: true },
-  },
-  { timestamps: true }
-);
-
-const GeneralFAQ = mongoose.models.GeneralFAQ || mongoose.model("GeneralFAQ", faqSchema);
 
 // ---------- GET: Fetch all FAQs ----------
 export async function GET() {

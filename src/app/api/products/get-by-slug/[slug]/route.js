@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   try {
     await connectMongoDB();
-    const { slug } = params;
+    const { slug } = await params;
     const review = await request.json();
 
     // Validate request body

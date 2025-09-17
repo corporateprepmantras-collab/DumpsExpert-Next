@@ -11,7 +11,7 @@ cloudinary.config({
 
 // ✅ Get all questions by examId
 export async function GET(request, { params }) {
-  const { examId } = params;
+  const { examId } = await params;
   try {
     await connectMongoDB();
     const questions = await Question.find({ examId });
@@ -32,7 +32,7 @@ export async function GET(request, { params }) {
 
 // ✅ Add new question
 export async function POST(request, { params }) {
-  const { examId } = params;
+  const { examId } = await params;
   try {
     await connectMongoDB();
     
@@ -163,7 +163,7 @@ export async function PUT(request, { params }) {
 
 // ✅ Delete question
 export async function DELETE(request, { params }) {
-  const { examId } = params;
+  const { examId } = await params;
   try {
     await connectMongoDB();
     

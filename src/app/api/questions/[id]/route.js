@@ -6,7 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 export async function GET(request, { params }) {
   try {
     // Extract question ID from parameters
-    const { id } = params;
+    const { id } = await params;
     
     // Check if ID is provided
     if (!id) {
@@ -47,7 +47,7 @@ export async function GET(request, { params }) {
 // ✅ Update a question by ID
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!id) {
       return NextResponse.json(
@@ -121,7 +121,7 @@ export async function PUT(request, { params }) {
 // ✅ Delete a question by ID
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!id) {
       return NextResponse.json(
