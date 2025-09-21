@@ -1,8 +1,5 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose"
 
-if (mongoose.models.Order) {
-  delete mongoose.models.Order;
-}
 
 const orderSchema = new mongoose.Schema({
   orderNumber: {

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import dumpslogo from "../../assets/landingassets/dumplogo.webp";
+import dumpslogo from "../../assets/logo/premantras_logo.png";
 import NavbarSearch from "./NavbarSearch";
 import { ShoppingCart, Menu, X } from "lucide-react";
 import {
@@ -120,8 +120,8 @@ export default function Navbar() {
           <Image
             src={dumpslogo}
             alt="dumpsxpert logo"
-            width={150}
-            height={150}
+            width={250}
+            height={250}
           />
         </Link>
 

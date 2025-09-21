@@ -1,92 +1,324 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import CategoryList from '../blogComps/CategoryList';
-import CategoryModal from '../blogComps/CategoryModal';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const CategoryPage = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-    const router = useRouter();
-  const handleSaveCategory = async (formData, id) => {
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isAdd, setIsAdd] = useState(false);
+  const [preview, setPreview] = useState(categories?.imageUrl || null);
+  const [imageFile, setImageFile] = useState(null);
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    sectionName: "",
+    slug: "",
+    language: "",
+    category: "",
+    metaTitle: "",
+    metaKeywords: "",
+    metaDescription: "",
+  });
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoading(true);
     try {
-      const url = id ? `/api/blog-categories/${id}` : '/api/blog-categories';
-      const method = id ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        body: formData,
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        // Refresh the category list
-        window.location.reload();
-      } else {
-        throw new Error(data.error);
-      }
+      const res = await axios.get("/api/blog-categories");
+      setCategories(res.data.data);
     } catch (error) {
-      throw new Error(error.message);
+      console.error(error.message);
+      toast.error("Failed to fetch categories");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure to delete this category?")) return;
+    try {
+      await axios.delete(`/api/blog-categories/${id}`);
+      toast.success("Category deleted");
+      setCategories(categories.filter((c) => c._id !== id));
+    } catch (err) {
+      toast.error("Failed to delete category");
     }
   };
 
   const handleEdit = (category) => {
-    setEditingCategory(category);
-    setIsModalOpen(true);
+    setIsAdd(false);
+    setSelectedCategory(category);
+    setFormData({
+      sectionName: category.sectionName,
+      category: category.category,
+      metaTitle: category.metaTitle,
+      metaKeywords: category.metaKeywords,
+      metaDescription: category.metaDescription,
+    });
+    setPreview(categories?.imageUrl);
+    setImageFile(null);
+    setOpenModal(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingCategory(null);
+  const handleAdd = () => {
+    setIsAdd(true);
+    setSelectedCategory(null);
+    setFormData({
+      sectionName: "",
+      slug: "",
+      language: "",
+      category: "",
+      metaTitle: "",
+      metaKeywords: "",
+      metaDescription: "",
+    });
+    setImageFile(null);
+    setOpenModal(true);
   };
 
-  const handleCategorySelect = (category) => {
-    // Navigate to blog page with category filter
-  console.log(category)
-    router.push(`/dashboard/admin/blog/${category._id}`);
+  const handleSubmit = async () => {
+    try {
+      const data = new FormData();
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key]);
+      });
+      if (imageFile) {
+        data.append("image", imageFile); // backend pe multer ya cloudinary handle karega
+      }
+
+      let res;
+      if (isAdd) {
+        res = await axios.post("/api/blog-categories", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        toast.success("Category added");
+        setCategories([...categories, res.data.data]);
+      } else {
+        res = await axios.put(
+          `/api/blog-categories/${selectedCategory._id}`,
+          data,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        toast.success("Category updated");
+        setCategories(
+          categories.map((c) =>
+            c._id === selectedCategory._id ? res.data.data : c
+          )
+        );
+      }
+      setOpenModal(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save category");
+    }
   };
+
+  const filtered = categories.filter((p) =>
+    p.category.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="container mx-auto p-4">
-      <ToastContainer />
-      
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Category Management</h1>
+    <div className="container flex flex-col items-center mx-auto p-4">
+      <Toaster richColors position="top-right" />
+      <h1 className="text-xl font-bold mb-4">Category Management</h1>
+
+      <div className="flex justify-between w-full mb-4">
+        <input
+          type="text"
+          className="border p-2 rounded w-1/2"
+          placeholder="Search category..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={handleAdd}
         >
-          Add New Category
+          + Add Category
         </button>
       </div>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search categories..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-      </div>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <table className="border w-full">
+          <thead>
+            <tr>
+              <th className="border p-2">ID</th>
+              <th className="border p-2">Image</th>
+              <th className="border p-2">Section Name</th>
+              <th className="border p-2">Category</th>
+              <th className="border p-2">Meta Title</th>
+              <th className="border p-2">Meta Keywords</th>
+              <th className="border p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((category, i) => (
+              <tr key={category._id} className="text-center">
+                <td className="border p-2">{i + 1}</td>
+                <td className="border p-2">
+                  <img
+                    src={category.imageUrl}
+                    alt={category.category}
+                    className="h-12 w-12 object-cover mx-auto"
+                  />
+                </td>
+                <td className="border p-2">{category.sectionName}</td>
+                <td className="border p-2">{category.category}</td>
+                <td className="border p-2">{category.metaTitle}</td>
+                <td className="border p-2">{category.metaKeywords}</td>
+                <td className="border p-2 flex gap-2 justify-center">
+                  <button
+                    className="bg-yellow-500 text-white px-2 py-1 rounded"
+                    onClick={() => handleEdit(category)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="bg-red-500 text-white px-2 py-1 rounded"
+                    onClick={() => handleDelete(category._id)}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="bg-green-500 text-white px-2 py-1 rounded"
+                    onClick={() =>
+                      router.push(`/dashboard/admin/blog/${category._id}`)
+                    }
+                  >
+                    View Blogs
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
-      <CategoryList 
-        searchTerm={searchTerm}
-        onEdit={handleEdit}
-        onCategorySelect={handleCategorySelect}
-      />
+      {openModal && (
+        <div className="fixed inset-0 flex items-center justify-center">
+          <div className="bg-white p-6 rounded shadow-lg w-96">
+            <h2 className="text-lg font-bold mb-4">
+              {isAdd ? "Add Category" : "Edit Category"}
+            </h2>
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                placeholder="Section Name"
+                value={formData.sectionName}
+                onChange={(e) =>
+                  setFormData({ ...formData, sectionName: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Category"
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              {/* language */}
+              <select
+                name="language"
+                id="language"
+                value={formData.language} // controlled component
+                onChange={(e) =>
+                  setFormData({ ...formData, language: e.target.value })
+                }
+              >
+                <option value="">Languages</option>
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+              </select>
 
-      <CategoryModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        category={editingCategory}
-        onSave={handleSaveCategory}
-      />
+              {/* Slug */}
+              <input
+                type="text"
+                placeholder="Slug"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData({ ...formData, slug: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+
+              {/* 👇 File input for image */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files[0])}
+                className="border p-2 rounded"
+              />
+              {preview && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Preview:</p>
+                  <img
+                    src={preview}
+                    alt="Selected"
+                    className="w-32 h-32 object-cover rounded border"
+                  />
+                </div>
+              )}
+
+              <input
+                type="text"
+                placeholder="Meta Title"
+                value={formData.metaTitle}
+                onChange={(e) =>
+                  setFormData({ ...formData, metaTitle: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Meta Keywords"
+                value={formData.metaKeywords}
+                onChange={(e) =>
+                  setFormData({ ...formData, metaKeywords: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+              <textarea
+                placeholder="Meta Description"
+                value={formData.metaDescription}
+                onChange={(e) =>
+                  setFormData({ ...formData, metaDescription: e.target.value })
+                }
+                className="border p-2 rounded"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="bg-gray-500 text-white px-4 py-2 rounded"
+                onClick={() => setOpenModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+                onClick={handleSubmit}
+              >
+                {isAdd ? "Add" : "Update"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

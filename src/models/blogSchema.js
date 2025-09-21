@@ -10,8 +10,15 @@ const blogSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  category: {
+    slug: {
     type: String,
+    required: true,
+    trim: true,
+    unique: true
+  },
+  category: {
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"BlogCategory",
     required: true,
   },
   imageUrl: {

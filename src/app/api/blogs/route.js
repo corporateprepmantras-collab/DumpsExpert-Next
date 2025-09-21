@@ -28,10 +28,11 @@ export async function GET(request) {
       ];
     }
 
-    const blogs = await Blog.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+const blogs = await Blog.find(query)
+  .populate("category", "sectionName category") // yahan populate laga rahe hain
+  .sort({ createdAt: -1 })
+  .skip(skip)
+  .limit(limit);
 
     const total = await Blog.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
@@ -47,6 +48,7 @@ export async function GET(request) {
   }
 }
 
+
 export async function POST(request) {
   try {
     await connectMongoDB();
@@ -58,12 +60,24 @@ export async function POST(request) {
       return NextResponse.json({ error: "Image is required" }, { status: 400 });
     }
 
+    const slug = formData.get("slug");
+
+    // Slug Regex Validation
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!slugRegex.test(slug)) {
+      return NextResponse.json(
+        { error: "Invalid slug format. Use only lowercase letters, numbers, and hyphens." },
+        { status: 400 }
+      );
+    }
+
     const uploadResult = await uploadToCloudinaryBlog(image);
 
     const blogData = {
       title: formData.get("title"),
       content: formData.get("content"),
       category: formData.get("category"),
+      slug,
       imageUrl: uploadResult.secure_url,
       imagePublicId: uploadResult.public_id,
       status: formData.get("status"),

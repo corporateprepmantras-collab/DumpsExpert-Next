@@ -44,11 +44,23 @@ export async function POST(request) {
       );
     }
     
+    const slug = formData.get("slug");
+
+    // Slug Regex Validation
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!slugRegex.test(slug)) {
+      return NextResponse.json(
+        { error: "Invalid slug format. Use only lowercase letters, numbers, and hyphens." },
+        { status: 400 }
+      );
+    }
     const uploadResult = await uploadToCloudinaryBlog(image);
     
     const categoryData = {
       sectionName: formData.get('sectionName'),
       category: formData.get('category'),
+      language:formData.get('language'),
+      slug,
       imageUrl: uploadResult.secure_url,
       imagePublicId: uploadResult.public_id,
       metaTitle: formData.get('metaTitle'),

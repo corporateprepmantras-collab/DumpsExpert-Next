@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import axios from "axios";
 import "./TestPage.css";
 
 const stripHtml = (html) => {
@@ -10,7 +11,7 @@ const stripHtml = (html) => {
   return div.textContent || div.innerText || "";
 };
 
-export default function TestPage() {
+export default function TestPage({ params }) {
   const [questions, setQuestions] = useState([]);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -21,17 +22,21 @@ export default function TestPage() {
   const [timeLeft, setTimeLeft] = useState("");
   const [exam, setExam] = useState({});
   const router = useRouter();
-  const { slug } = useParams();
+  //   const { slug } = params; // ✅ App Router slug param
+  // Fetch Questions
+  const { slug } = useParams(); // ✅ fix
 
-  // ✅ Fetch Questions
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const res = await fetch(`/api/questions/product/${slug}`);
-        const data = await res.json();
+        const res = await axios.get(`/api/questions/product/${slug}`);
+        const data = res.data;
+        console.log("📦 Fetched question data:", data);
+
         if (!data.success || !Array.isArray(data.data)) {
           throw new Error("Invalid question format");
         }
+
         setQuestions(data.data);
       } catch (err) {
         console.error("❌ Failed to fetch questions:", err);
@@ -42,53 +47,60 @@ export default function TestPage() {
     if (slug) fetchQuestions();
   }, [slug]);
 
-  // ✅ Fetch Exam Info
+  // Fetch Exam Info
   useEffect(() => {
     const fetchExam = async () => {
       try {
-        const res = await fetch(`/api/exams/byslug/${slug}`);
-        const data = await res.json();
-        setExam(data[0] || {});
+        const res = await axios.get(`/api/exams/byslug/${slug}`);
+        const fetchedExam = res.data;
+        console.log("✅ Exam fetched:", fetchedExam);
+        setExam(fetchedExam[0]);
       } catch (error) {
         console.error("❌ Failed to fetch exam:", error);
       }
     };
-    if (slug) fetchExam();
+
+    if (slug) {
+      console.log("🧪 slug:", slug);
+      fetchExam();
+    }
   }, [slug]);
 
-  // ✅ Set Timer when exam is loaded
+  // Set timer
   useEffect(() => {
-    if (exam?.sampleDuration) {
-      setTimeLeft(exam.sampleDuration * 60);
+    if (exam && Object.keys(exam).length > 0) {
+      console.log("✅ Updated exam state:", exam);
+      console.log("timer", exam.sampleDuration);
+      setTimeLeft(exam.sampleDuration * 60); // seconds
     }
-  }, [exam]);
-  console.log("Exam duration:", exam.sampleDuration);
-  // ✅ Auto Submit
-  // useEffect(() => {
-  //   if (autoSubmitTriggered && questions.length > 0) {
-  //     handleSubmit();
-  //   }
-  // }, [autoSubmitTriggered, questions]);
+  }, [exam, slug]);
 
-  // ✅ Countdown Timer
+  // Auto submit trigger
   useEffect(() => {
-    if (!exam || questions.length === 0) return;
+    if (autoSubmitTriggered && questions.length > 0) {
+      handleSubmit();
+    }
+  }, [autoSubmitTriggered, questions]);
 
-    // const timer = setInterval(() => {
-    //   setTimeLeft((prev) => {
-    //     if (prev <= 1) {
-    //       clearInterval(timer);
-    //       handleSubmit();
-    //       return 0;
-    //     }
-    //     return prev - 1;
-    //   });
-    // }, 1000);
+  // Countdown Timer
+  useEffect(() => {
+    if (!exam || questions.length === 0) return; // ✅ wait until ready
 
-    // return () => clearInterval(timer);
-  }, [exam, questions]);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmit(); // now exam + questions are guaranteed
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-  // ✅ Restrictions
+    return () => clearInterval(timer);
+  }, [exam, questions]); // ✅ depend on both
+
+  // Disable copy/paste
   useEffect(() => {
     const blockAction = (e) => {
       e.preventDefault();
@@ -104,6 +116,7 @@ export default function TestPage() {
     };
   }, []);
 
+  // Disable right-click
   useEffect(() => {
     const disableRightClick = (e) => {
       e.preventDefault();
@@ -113,6 +126,7 @@ export default function TestPage() {
     return () => document.removeEventListener("contextmenu", disableRightClick);
   }, []);
 
+  // Restrict tab switching
   useEffect(() => {
     let blurCount = 0;
     const handleVisibilityChange = () => {
@@ -131,7 +145,7 @@ export default function TestPage() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // ✅ Handle Answer
+  // Handle Answer Selection
   const handleAnswer = (qId, option) => {
     const question = questions.find((q) => q._id === qId);
     const isCheckbox = question?.questionType === "checkbox";
@@ -146,6 +160,7 @@ export default function TestPage() {
       } else {
         updated = option;
       }
+
       setUserAnswers((ua) => ({ ...ua, [qId]: updated }));
       return { ...prev, [qId]: updated };
     });
@@ -153,15 +168,18 @@ export default function TestPage() {
     setStatusMap((prev) => ({ ...prev, [qId]: "Answered" }));
   };
 
-  // ✅ Helpers
-  const markReview = (qId) =>
+  // Mark for Review
+  const markReview = (qId) => {
     setStatusMap((prev) => ({ ...prev, [qId]: "Review" }));
+  };
 
+  // Skip Question
   const skip = (qId) => {
     setStatusMap((prev) => ({ ...prev, [qId]: "Skipped" }));
     setCurrent((prev) => (prev + 1) % questions.length);
   };
 
+  // Go to Question
   const goToQuestion = (index) => {
     setCurrent(index);
     const qId = questions[index]._id;
@@ -170,66 +188,72 @@ export default function TestPage() {
     }
   };
 
+  // Format Timer
   const formatTime = (sec) => {
     const min = String(Math.floor(sec / 60)).padStart(2, "0");
     const secStr = String(sec % 60).padStart(2, "0");
     return `${min}:${secStr}`;
   };
 
-  // ✅ Submit
+  // Submit Test
   const handleSubmit = async () => {
-    const endTime = new Date();
-    const duration = Math.floor((endTime - startTime) / 1000);
-    const studentId = localStorage.getItem("studentId");
+    if (!exam || questions.length === 0) {
+      console.error("❌ Exam or questions missing, cannot submit");
+      return;
+    }
 
-    let wrongAnswers = 0;
+    let correct = 0,
+      attempted = 0,
+      wrong = 0;
 
     questions.forEach((q) => {
-      const correct = q.correctAnswers?.sort().join(",") || "";
-      const user = (
-        Array.isArray(userAnswers[q._id])
-          ? userAnswers[q._id]
-          : [userAnswers[q._id]]
-      )
-        .sort()
-        .join(",");
-      if (correct !== user) wrongAnswers++;
+      if (answers[q._id]) {
+        attempted++;
+        if (answers[q._id] === q.correctOption) {
+          correct++;
+        } else {
+          wrong++;
+        }
+      }
     });
 
-    const resultData = {
-      studentId,
-      examCode: exam?.code || slug,
-      examId: exam?._id,
-      totalQuestions: questions.length,
-      attempted: Object.keys(userAnswers).length,
-      wrong: wrongAnswers,
-      correct: questions.length - wrongAnswers,
-      percentage: Math.round(
-        ((questions.length - wrongAnswers) / questions.length) * 100
-      ),
-      duration,
-      completedAt: new Date().toISOString(),
-      questions: questions.map((q) => q._id),
-      userAnswers,
+    const totalQuestions = questions.length;
+
+    const payload = {
+      studentId: student?._id, // ✅ ensure student exists
+      examCode: exam.code, // ✅ real exam code
+      examId: exam._id,
+      totalQuestions,
+      attempted,
+      correct,
+      wrong,
+      percentage:
+        totalQuestions > 0 ? ((correct / totalQuestions) * 100).toFixed(2) : 0,
+      duration: exam.sampleDuration * 60 - timeLeft, // ✅ time taken
+      questions: questions.map((q) => ({
+        question: q.text,
+        correctAnswer: q.options.find((o) => o._id === q.correctOption)?.text,
+        selectedAnswer: answers[q._id] || null,
+      })),
+      userAnswers: answers,
     };
+
+    console.log("📤 Submitting payload:", payload);
 
     try {
       const res = await fetch("/api/results/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(resultData),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       console.log("✅ Result saved:", data);
-
-      router.push("/student/courses-exam/result");
     } catch (error) {
-      console.error("❌ Failed to save result:", error);
-      alert("Failed to save result. Try again.");
+      console.error("❌ Error saving result:", error);
     }
   };
 
-  // ✅ Loading
+  // Loading state
   if (!questions?.length) {
     return <div className="text-center p-6">Loading questions...</div>;
   }
@@ -239,7 +263,6 @@ export default function TestPage() {
 
   return (
     <div className="app-container">
-      {/* Question Area */}
       <div className="question-area">
         <h3 className="heading">Question</h3>
         <div className="mb-2">
@@ -309,7 +332,6 @@ export default function TestPage() {
         </div>
       </div>
 
-      {/* Sidebar */}
       <div className="sidebar">
         <h2 className="font-semibold mb-2">All Questions</h2>
         <div className="questions-grid grid grid-cols-5 gap-2">

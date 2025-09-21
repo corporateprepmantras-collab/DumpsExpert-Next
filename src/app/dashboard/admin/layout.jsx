@@ -47,7 +47,7 @@ export default function AdminLayout({ children }) {
       >
         <AdminSidebar />
       </div>
-      <div className={`transition-all duration-300 ${sidebarWidth} mt-20 p-6`}>
+      <div className={`transition-all duration-300 ${sidebarWidth} mt-20 p-2`}>
         {children}
       </div>
     </div>

@@ -1,0 +1,196 @@
+import { useEffect, useRef, useState } from "react";
+
+const RichTextEditor = ({
+  value,
+  onChange,
+  // placeholder = "Write something...",
+  error = "",
+  label = "Editor",
+}) => {
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const editorRef = useRef(null);
+
+  // Toolbar buttons configuration
+  const toolbarButtons = [
+    { format: "bold", icon: "B", title: "Bold" },
+    { format: "italic", icon: "I", title: "Italic" },
+    { format: "underline", icon: "U", title: "Underline" },
+    { format: "strikeThrough", icon: "S", title: "Strikethrough" },
+    { separator: true },
+    { format: "formatBlock", value: "blockquote", icon: "❝", title: "Blockquote" },
+    { format: "formatBlock", value: "pre", icon: "</>", title: "Code Block" },
+    { separator: true },
+    { format: "link", icon: "🔗", title: "Insert Link" },
+    { separator: true },
+    { format: "insertOrderedList", icon: "1.", title: "Ordered List" },
+    { format: "insertUnorderedList", icon: "•", title: "Bullet List" },
+    { separator: true },
+    { format: "justifyLeft", icon: "≡", title: "Align Left" },
+    { format: "justifyCenter", icon: "≡", title: "Align Center" },
+    { format: "justifyRight", icon: "≡", title: "Align Right" },
+    { format: "justifyFull", icon: "≡", title: "Justify" },
+  ];
+
+  // Load initial value into editor
+  useEffect(() => {
+    if (editorRef.current && value !== editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  // Handle format changes
+  const handleFormat = (format, value = null) => {
+    if (format === "link") {
+      setShowLinkInput(true);
+      return;
+    }
+
+    if (format === "heading") {
+      document.execCommand("formatBlock", false, `<h${value}>`);
+      onChange(editorRef.current.innerHTML);
+      return;
+    }
+
+    document.execCommand(format, false, value);
+    onChange(editorRef.current.innerHTML);
+  };
+
+  // Handle link insertion
+// Handle link insertion
+const handleAddLink = () => {
+  if (!linkUrl) return;
+
+  const selection = window.getSelection();
+  if (!selection || selection.toString().trim() === "") {
+    alert("Please select some text to hyperlink");
+    return;
+  }
+
+  // Insert link
+  document.execCommand("createLink", false, linkUrl);
+
+  // Force links to open in new tab + styling
+  const anchors = editorRef.current.querySelectorAll("a");
+  anchors.forEach((a) => {
+    a.setAttribute("target", "_blank");  // open in new tab
+    a.setAttribute("rel", "noopener noreferrer"); // security best practice
+    a.style.color = "blue";  // hyperlink blue
+    a.style.textDecoration = "underline"; // underline like real links
+  });
+
+  onChange(editorRef.current.innerHTML);
+  setShowLinkInput(false);
+  setLinkUrl("");
+};
+
+  // Handle editor content changes
+  const handleInput = () => {
+    onChange(editorRef.current.innerHTML);
+  };
+
+  return (
+    <div className="mb-6 relative">
+      <label className="block mb-2 font-medium">{label}</label>
+
+      {/* Toolbar */}
+      <div className="border border-gray-300 rounded-t-lg bg-gray-100 p-2 flex flex-wrap gap-1">
+        {/* Headings dropdown */}
+        <select
+          className="p-1 rounded border mr-1 text-sm"
+          onChange={(e) => handleFormat("heading", e.target.value)}
+        >
+          <option value="">Paragraph</option>
+          <option value="1">Heading 1</option>
+          <option value="2">Heading 2</option>
+          <option value="3">Heading 3</option>
+          <option value="4">Heading 4</option>
+          <option value="5">Heading 5</option>
+          <option value="6">Heading 6</option>
+        </select>
+
+        {/* Format buttons */}
+        {toolbarButtons.map((button, index) =>
+          button.separator ? (
+            <div key={index} className="w-px h-6 bg-gray-300 mx-1" />
+          ) : (
+            <button
+              key={index}
+              type="button"
+              title={button.title}
+              className="p-1 rounded min-w-[2rem] text-sm hover:bg-gray-200"
+              onClick={() => handleFormat(button.format, button.value)}
+            >
+              {button.icon}
+            </button>
+          )
+        )}
+
+        {/* Color pickers */}
+        <input
+          type="color"
+          className="w-8 h-8 p-0 border-0 cursor-pointer"
+          onChange={(e) => handleFormat("foreColor", e.target.value)}
+          title="Text Color"
+        />
+        <input
+          type="color"
+          className="w-8 h-8 p-0 border-0 cursor-pointer"
+          onChange={(e) => handleFormat("backColor", e.target.value)}
+          title="Background Color"
+        />
+      </div>
+
+      {/* Editor content */}
+<div
+  ref={editorRef}
+  className="rich-editor border border-gray-300 border-t-0 rounded-b-lg p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500 relative 
+             [&_a]:text-blue-600 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-800 [&_a:visited]:text-purple-600"
+  contentEditable
+  onInput={handleInput}
+/>
+
+      {/* Placeholder overlay */}
+      {/* {(!value || value === "<br>") && (
+        <div className="absolute left-4 top-[6rem] text-gray-400 pointer-events-none select-none">
+          {placeholder}
+        </div>
+      )} */}
+
+      {/* Link input dialog */}
+      {showLinkInput && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded shadow-lg w-96">
+            <h3 className="font-medium mb-2">Insert Link</h3>
+            <input
+              type="url"
+              className="border p-2 w-full mb-2"
+              placeholder="https://example.com"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-3 py-1 bg-gray-200 rounded"
+                onClick={() => setShowLinkInput(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1 bg-blue-500 text-white rounded"
+                onClick={handleAddLink}
+              >
+                Insert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+    </div>
+  );
+};
+
+export default RichTextEditor;
