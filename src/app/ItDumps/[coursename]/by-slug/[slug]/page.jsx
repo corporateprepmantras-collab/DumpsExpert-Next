@@ -207,7 +207,6 @@ export default function ProductDetailsPage() {
     }
   };
 
-
   const toggleAccordion = (index) => {
     setActiveIndex(index === activeIndex ? null : index);
   };
