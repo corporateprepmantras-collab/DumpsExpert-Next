@@ -143,8 +143,10 @@ export async function PATCH(request) {
       );
     }
 
-    const { productId, type, operation } = await request.json();
-    if (!productId || !type || !operation) {
+    const { productId, type, operation, quantity } = await request.json();
+    
+    // Allow direct quantity update or increment/decrement operations
+    if (!productId || !type || (!operation && quantity === undefined)) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -180,8 +182,11 @@ export async function PATCH(request) {
       );
     }
     
-    // Update quantity based on operation
-    if (operation === 'inc') {
+    // Update quantity based on operation or direct quantity
+    if (quantity !== undefined) {
+      // Direct quantity update (must be at least 1)
+      cart.items[itemIndex].quantity = Math.max(1, quantity);
+    } else if (operation === 'inc') {
       cart.items[itemIndex].quantity += 1;
     } else if (operation === 'dec') {
       cart.items[itemIndex].quantity = Math.max(1, cart.items[itemIndex].quantity - 1);
@@ -192,7 +197,8 @@ export async function PATCH(request) {
 
     return NextResponse.json({ 
       success: true, 
-      items: cart.items 
+      items: cart.items,
+      totalQuantity: cart.items.reduce((total, item) => total + item.quantity, 0)
     });
   } catch (error) {
     console.error("Error updating item quantity:", error);

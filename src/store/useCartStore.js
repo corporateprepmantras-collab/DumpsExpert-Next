@@ -7,6 +7,12 @@ let useCartStoreBase = (set, get) => ({
   isLoading: false,
   isLoggedIn: false,
   lastSynced: null,
+  totalQuantity: 0, // New state to track total quantity
+
+  // Calculate total quantity
+  calculateTotalQuantity: (items) => {
+    return items.reduce((total, item) => total + (item.quantity || 1), 0);
+  },
 
   // Set login status
   setLoginStatus: (status) => {
@@ -34,12 +40,16 @@ let useCartStoreBase = (set, get) => ({
       if (localItems.length > 0 && (get().lastSynced === null)) {
         // First sync after login - push local items to server
         await axios.post("/api/cart", { items: localItems });
-        set({ lastSynced: new Date() });
+        set({ 
+          lastSynced: new Date(),
+          totalQuantity: get().calculateTotalQuantity(localItems)
+        });
       } else {
         // Regular sync - use server items
         set({ 
           cartItems: serverItems,
-          lastSynced: new Date()
+          lastSynced: new Date(),
+          totalQuantity: get().calculateTotalQuantity(serverItems)
         });
       }
     } catch (error) {
@@ -55,19 +65,21 @@ let useCartStoreBase = (set, get) => ({
       (i) => i._id === item._id && i.type === item.type
     );
     
+    let updatedItems;
     if (existing) {
-      set({
-        cartItems: get().cartItems.map((i) =>
-          i._id === item._id && i.type === item.type
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
-        ),
-      });
+      updatedItems = get().cartItems.map((i) =>
+        i._id === item._id && i.type === item.type
+          ? { ...i, quantity: i.quantity + 1 }
+          : i
+      );
     } else {
-      set({
-        cartItems: [...get().cartItems, { ...item, quantity: 1 }],
-      });
+      updatedItems = [...get().cartItems, { ...item, quantity: 1 }];
     }
+    
+    set({
+      cartItems: updatedItems,
+      totalQuantity: get().calculateTotalQuantity(updatedItems)
+    });
     
     // Sync with server if logged in
     const { isLoggedIn } = get();
