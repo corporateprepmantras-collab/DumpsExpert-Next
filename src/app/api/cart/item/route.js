@@ -36,6 +36,11 @@ export async function POST(request) {
     let result;
     
     if (existingCart) {
+      // Find the item in the cart
+      const cartItem = existingCart.items.find(
+        i => i.productId.toString() === item._id && i.type === item.type
+      );
+      
       // Update quantity if item exists
       result = await Cart.findOneAndUpdate(
         { 
@@ -44,8 +49,12 @@ export async function POST(request) {
           'items.type': item.type 
         },
         { 
-          $inc: { 'items.$.quantity': 1 },
-          lastUpdated: new Date()
+          $set: { 
+            'items.$.quantity': item.quantity || (cartItem ? cartItem.quantity + 1 : 1),
+            'items.$.price': item.price || cartItem.price,
+            'items.$.title': item.title || cartItem.title,
+            lastUpdated: new Date()
+          }
         },
         { new: true }
       );
@@ -55,7 +64,7 @@ export async function POST(request) {
         productId: item._id,
         title: item.title,
         price: item.price,
-        quantity: 1,
+        quantity: item.quantity || 1,
         type: item.type,
         imageUrl: item.imageUrl,
         samplePdfUrl: item.samplePdfUrl,
@@ -110,14 +119,36 @@ export async function DELETE(request) {
     await connectMongoDB();
     const userId = session.user.id;
     
+    // Log the deletion attempt
+    console.log(`Attempting to delete item: ${productId} of type ${type} for user ${userId}`);
+    
+    // Find the cart first to verify the item exists
+    const cart = await Cart.findOne({
+      user: userId,
+      'items.productId': productId,
+      'items.type': type
+    });
+    
+    if (!cart) {
+      console.log(`Cart or item not found for user ${userId}`);
+      return NextResponse.json({ 
+        success: false, 
+        error: "Item not found in cart",
+        items: []
+      }, { status: 404 });
+    }
+    
+    // Perform the deletion
     const result = await Cart.findOneAndUpdate(
       { user: userId },
       { 
-        $pull: { items: { productId, type } },
+        $pull: { items: { productId: productId, type: type } },
         lastUpdated: new Date()
       },
       { new: true }
     );
+    
+    console.log(`Item deleted, remaining items: ${result?.items?.length || 0}`);
 
     return NextResponse.json({ 
       success: true, 

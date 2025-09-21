@@ -7,7 +7,7 @@ let useCartStoreBase = (set, get) => ({
   isLoading: false,
   isLoggedIn: false,
   lastSynced: null,
-  totalQuantity: 0, // New state to track total quantity
+  totalQuantity: 0, // Added to track total quantity
 
   // Calculate total quantity
   calculateTotalQuantity: (items) => {
@@ -41,6 +41,7 @@ let useCartStoreBase = (set, get) => ({
         // First sync after login - push local items to server
         await axios.post("/api/cart", { items: localItems });
         set({ 
+          cartItems: localItems,
           lastSynced: new Date(),
           totalQuantity: get().calculateTotalQuantity(localItems)
         });
@@ -60,7 +61,7 @@ let useCartStoreBase = (set, get) => ({
   },
 
   addToCart: async (item) => {
-    console.log("Incoming Item:", item);
+    console.log("Adding item to cart:", item);
     const existing = get().cartItems.find(
       (i) => i._id === item._id && i.type === item.type
     );
@@ -69,12 +70,48 @@ let useCartStoreBase = (set, get) => ({
     if (existing) {
       updatedItems = get().cartItems.map((i) =>
         i._id === item._id && i.type === item.type
-          ? { ...i, quantity: i.quantity + 1 }
+          ? { ...i, quantity: (i.quantity || 1) + 1 }
           : i
       );
     } else {
       updatedItems = [...get().cartItems, { ...item, quantity: 1 }];
     }
+    
+    // Update local state first
+    set({
+      cartItems: updatedItems,
+      totalQuantity: get().calculateTotalQuantity(updatedItems)
+    });
+    
+    // Sync with server if logged in
+    const { isLoggedIn } = get();
+    if (isLoggedIn) {
+      try {
+        // Send the complete item with quantity
+        const itemToSend = existing 
+          ? { ...item, quantity: (existing.quantity || 1) + 1 }
+          : { ...item, quantity: 1 };
+          
+        const response = await axios.post("/api/cart/item", itemToSend);
+        
+        // Update state with server response to ensure sync
+        if (response.data && response.data.items) {
+          set({ 
+            cartItems: response.data.items,
+            totalQuantity: get().calculateTotalQuantity(response.data.items)
+          });
+        }
+      } catch (error) {
+        console.error("Failed to sync cart item with server:", error);
+      }
+    }
+  },
+
+  removeFromCart: async (id, type) => {
+    // Update local state first
+    const updatedItems = get().cartItems.filter(
+      (item) => !(item._id === id && item.type === type)
+    );
     
     set({
       cartItems: updatedItems,
@@ -85,25 +122,15 @@ let useCartStoreBase = (set, get) => ({
     const { isLoggedIn } = get();
     if (isLoggedIn) {
       try {
-        await axios.post("/api/cart/item", item);
-      } catch (error) {
-        console.error("Failed to sync cart item with server:", error);
-      }
-    }
-  },
-
-  removeFromCart: async (id, type) => {
-    set({
-      cartItems: get().cartItems.filter(
-        (item) => !(item._id === id && item.type === type)
-      ),
-    });
-    
-    // Sync with server if logged in
-    const { isLoggedIn } = get();
-    if (isLoggedIn) {
-      try {
-        await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
+        const response = await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
+        
+        // Update state with server response to ensure sync
+        if (response.data && response.data.items) {
+          set({ 
+            cartItems: response.data.items,
+            totalQuantity: get().calculateTotalQuantity(response.data.items)
+          });
+        }
       } catch (error) {
         console.error("Failed to remove cart item from server:", error);
       }
@@ -111,24 +138,36 @@ let useCartStoreBase = (set, get) => ({
   },
 
   updateQuantity: async (id, type, operation) => {
+    // Update local state first
+    const updatedItems = get().cartItems.map((item) => {
+      if (item._id === id && item.type === type) {
+        const updatedQty =
+          operation === "inc"
+            ? (item.quantity || 1) + 1
+            : Math.max(1, (item.quantity || 1) - 1);
+        return { ...item, quantity: updatedQty };
+      }
+      return item;
+    });
+    
     set({
-      cartItems: get().cartItems.map((item) => {
-        if (item._id === id && item.type === type) {
-          const updatedQty =
-            operation === "inc"
-              ? item.quantity + 1
-              : Math.max(1, item.quantity - 1);
-          return { ...item, quantity: updatedQty };
-        }
-        return item;
-      }),
+      cartItems: updatedItems,
+      totalQuantity: get().calculateTotalQuantity(updatedItems)
     });
     
     // Sync with server if logged in
     const { isLoggedIn } = get();
     if (isLoggedIn) {
       try {
-        await axios.patch("/api/cart/item", { productId: id, type, operation });
+        const response = await axios.patch("/api/cart/item", { productId: id, type, operation });
+        
+        // Update state with server response to ensure sync
+        if (response.data && response.data.items) {
+          set({ 
+            cartItems: response.data.items,
+            totalQuantity: get().calculateTotalQuantity(response.data.items)
+          });
+        }
       } catch (error) {
         console.error("Failed to update cart item on server:", error);
       }
@@ -136,7 +175,10 @@ let useCartStoreBase = (set, get) => ({
   },
 
   clearCart: async () => {
-    set({ cartItems: [] });
+    set({ 
+      cartItems: [],
+      totalQuantity: 0
+    });
     
     // Sync with server if logged in
     const { isLoggedIn } = get();
@@ -165,6 +207,12 @@ export const getCartTotal = () =>
       (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
       0
     );
+
+// Selector: Total Quantity
+export const getCartQuantity = () => {
+  const items = useCartStore.getState().cartItems;
+  return items.reduce((total, item) => total + (item.quantity || 1), 0);
+};
 
 // Selector: Has in cart
 export const hasInCart = (id, type) => {
