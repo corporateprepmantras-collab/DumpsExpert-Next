@@ -7,7 +7,8 @@ let useCartStoreBase = (set, get) => ({
   isLoading: false,
   isLoggedIn: false,
   lastSynced: null,
-  totalQuantity: 0, // Added to track total quantity
+  totalQuantity: 0,
+  syncError: null, // Add this to track sync errors
 
   // Calculate total quantity
   calculateTotalQuantity: (items) => {
@@ -23,12 +24,13 @@ let useCartStoreBase = (set, get) => ({
   },
 
   // Sync cart with server
+  // Modify syncWithServer to handle errors better
   syncWithServer: async () => {
     const { isLoggedIn } = get();
     if (!isLoggedIn) return;
 
     try {
-      set({ isLoading: true });
+      set({ isLoading: true, syncError: null });
       
       // Get server cart
       const response = await axios.get("/api/cart");
@@ -43,18 +45,21 @@ let useCartStoreBase = (set, get) => ({
         set({ 
           cartItems: localItems,
           lastSynced: new Date(),
-          totalQuantity: get().calculateTotalQuantity(localItems)
+          totalQuantity: get().calculateTotalQuantity(localItems),
+          syncError: null
         });
       } else {
         // Regular sync - use server items
         set({ 
           cartItems: serverItems,
           lastSynced: new Date(),
-          totalQuantity: get().calculateTotalQuantity(serverItems)
+          totalQuantity: get().calculateTotalQuantity(serverItems),
+          syncError: null
         });
       }
     } catch (error) {
       console.error("Failed to sync cart with server:", error);
+      set({ syncError: "Failed to sync with server" });
     } finally {
       set({ isLoading: false });
     }
@@ -126,6 +131,7 @@ let useCartStoreBase = (set, get) => ({
     if (isLoggedIn) {
       try {
         console.log(`Removing item: id=${id}, type=${type}`);
+        // Fix the API endpoint URL format
         const response = await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
         
         // Update state with server response to ensure sync
@@ -173,7 +179,12 @@ let useCartStoreBase = (set, get) => ({
     if (isLoggedIn) {
       try {
         console.log(`Updating quantity: id=${id}, type=${type}, operation=${operation}`);
-        const response = await axios.patch("/api/cart/item", { productId: id, type, operation });
+        // Fix the API call to match the server's expected format
+        const response = await axios.patch("/api/cart/item", { 
+          productId: id, 
+          type, 
+          operation 
+        });
         
         // Update state with server response to ensure sync
         if (response.data && response.data.items) {
@@ -192,6 +203,16 @@ let useCartStoreBase = (set, get) => ({
         // You could also show a notification to the user here
       }
     }
+  },
+
+  // Add a method to clear local storage persistence
+  clearLocalStorage: () => {
+    localStorage.removeItem("cart-storage");
+    set({ 
+      cartItems: [],
+      totalQuantity: 0,
+      lastSynced: null
+    });
   },
 
   clearCart: async () => {
@@ -215,6 +236,12 @@ let useCartStoreBase = (set, get) => ({
 // Wrap state in persist
 useCartStoreBase = persist(useCartStoreBase, {
   name: "cart-storage",
+  partialize: (state) => ({
+    // Only persist these fields
+    cartItems: state.cartItems,
+    totalQuantity: state.totalQuantity,
+    lastSynced: state.lastSynced
+  }),
 });
 
 const useCartStore = create(useCartStoreBase);
