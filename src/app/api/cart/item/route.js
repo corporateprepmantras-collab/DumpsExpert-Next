@@ -119,10 +119,31 @@ export async function DELETE(request) {
     await connectMongoDB();
     const userId = session.user.id;
     
-    // Log the deletion attempt
-    console.log(`Attempting to delete item: ${productId} of type ${type} for user ${userId}`);
+    console.log(`Deleting item: ${productId} of type ${type} for user ${userId}`);
     
-    // Remove the item without checking if it exists first
+    // Find the cart first to check if the item exists
+    const cart = await Cart.findOne({ user: userId });
+    
+    if (!cart) {
+      return NextResponse.json({ 
+        success: true, 
+        items: [] 
+      });
+    }
+    
+    // Check if item exists in cart
+    const itemExists = cart.items.some(
+      item => item.productId.toString() === productId && item.type === type
+    );
+    
+    if (!itemExists) {
+      return NextResponse.json({
+        success: true,
+        items: cart.items
+      });
+    }
+    
+    // Remove the item
     const result = await Cart.findOneAndUpdate(
       { user: userId },
       { 
@@ -131,14 +152,6 @@ export async function DELETE(request) {
       },
       { new: true }
     );
-    
-    if (!result) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Cart not found",
-        items: []
-      }, { status: 404 });
-    }
     
     console.log(`Item deleted, remaining items: ${result?.items?.length || 0}`);
 

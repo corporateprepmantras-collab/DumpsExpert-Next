@@ -24,7 +24,6 @@ let useCartStoreBase = (set, get) => ({
   },
 
   // Sync cart with server
-  // Modify syncWithServer to handle errors better
   syncWithServer: async () => {
     const { isLoggedIn } = get();
     if (!isLoggedIn) return;
@@ -36,30 +35,19 @@ let useCartStoreBase = (set, get) => ({
       const response = await axios.get("/api/cart");
       const serverItems = response.data.items || [];
       
-      // Merge with local cart if needed
-      const localItems = get().cartItems;
+      // Always use server items as source of truth
+      set({ 
+        cartItems: serverItems,
+        lastSynced: new Date(),
+        totalQuantity: get().calculateTotalQuantity(serverItems),
+        syncError: null
+      });
       
-      if (localItems.length > 0 && (get().lastSynced === null)) {
-        // First sync after login - push local items to server
-        await axios.post("/api/cart", { items: localItems });
-        set({ 
-          cartItems: localItems,
-          lastSynced: new Date(),
-          totalQuantity: get().calculateTotalQuantity(localItems),
-          syncError: null
-        });
-      } else {
-        // Regular sync - use server items
-        set({ 
-          cartItems: serverItems,
-          lastSynced: new Date(),
-          totalQuantity: get().calculateTotalQuantity(serverItems),
-          syncError: null
-        });
-      }
+      return serverItems;
     } catch (error) {
       console.error("Failed to sync cart with server:", error);
       set({ syncError: "Failed to sync with server" });
+      throw error; // Re-throw to allow error handling in components
     } finally {
       set({ isLoading: false });
     }
@@ -113,11 +101,11 @@ let useCartStoreBase = (set, get) => ({
   },
 
   removeFromCart: async (id, type) => {
-    // Store original items for rollback if needed
+    const { isLoggedIn } = get();
     const originalItems = [...get().cartItems];
     
-    // Update local state first
-    const updatedItems = get().cartItems.filter(
+    // Optimistic UI update
+    const updatedItems = originalItems.filter(
       (item) => !(item._id === id && item.type === type)
     );
     
@@ -126,82 +114,79 @@ let useCartStoreBase = (set, get) => ({
       totalQuantity: get().calculateTotalQuantity(updatedItems)
     });
     
-    // Sync with server if logged in
-    const { isLoggedIn } = get();
-    if (isLoggedIn) {
-      try {
-        console.log(`Removing item: id=${id}, type=${type}`);
-        // Fix the API endpoint URL format
-        const response = await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
-        
-        // Update state with server response to ensure sync
-        if (response.data && response.data.items) {
-          set({ 
-            cartItems: response.data.items,
-            totalQuantity: get().calculateTotalQuantity(response.data.items)
-          });
-        }
-      } catch (error) {
-        console.error("Failed to remove cart item from server:", error);
-        // Rollback to original state if server sync fails
-        set({
-          cartItems: originalItems,
-          totalQuantity: get().calculateTotalQuantity(originalItems)
+    if (!isLoggedIn) return;
+    
+    try {
+      const response = await axios.delete(`/api/cart/item`, {
+        params: { id, type }
+      });
+      
+      // Update with server response
+      if (response.data?.items) {
+        set({ 
+          cartItems: response.data.items,
+          totalQuantity: get().calculateTotalQuantity(response.data.items)
         });
-        // You could also show a notification to the user here
       }
+      return response.data?.items || updatedItems;
+    } catch (error) {
+      console.error("Failed to remove item:", error);
+      // Revert on error
+      set({
+        cartItems: originalItems,
+        totalQuantity: get().calculateTotalQuantity(originalItems)
+      });
+      throw error; // Re-throw to allow error handling in components
     }
   },
 
   updateQuantity: async (id, type, operation) => {
-    // Store original items for rollback if needed
+    const { isLoggedIn } = get();
     const originalItems = [...get().cartItems];
     
-    // Update local state first
-    const updatedItems = get().cartItems.map((item) => {
+    // Calculate new quantity
+    const updatedItems = originalItems.map((item) => {
       if (item._id === id && item.type === type) {
-        const updatedQty =
-          operation === "inc"
-            ? (item.quantity || 1) + 1
-            : Math.max(1, (item.quantity || 1) - 1);
-        return { ...item, quantity: updatedQty };
+        const newQty = operation === "inc"
+          ? (item.quantity || 1) + 1
+          : Math.max(1, (item.quantity || 1) - 1);
+        return { ...item, quantity: newQty };
       }
       return item;
     });
     
+    // Optimistic UI update
     set({
       cartItems: updatedItems,
       totalQuantity: get().calculateTotalQuantity(updatedItems)
     });
     
-    // Sync with server if logged in
-    const { isLoggedIn } = get();
-    if (isLoggedIn) {
-      try {
-        console.log(`Updating quantity: id=${id}, type=${type}, operation=${operation}`);
-        // Fix the API call to match the server's expected format
-        const response = await axios.patch("/api/cart/item", { 
-          productId: id, 
-          type, 
-          operation 
+    if (!isLoggedIn) return;
+    
+    try {
+      const response = await axios.patch("/api/cart/item", { 
+        productId: id, 
+        type, 
+        operation,
+        quantity: updatedItems.find(i => i._id === id && i.type === type)?.quantity
+      });
+      
+      // Update with server response
+      if (response.data?.items) {
+        set({ 
+          cartItems: response.data.items,
+          totalQuantity: get().calculateTotalQuantity(response.data.items)
         });
-        
-        // Update state with server response to ensure sync
-        if (response.data && response.data.items) {
-          set({ 
-            cartItems: response.data.items,
-            totalQuantity: get().calculateTotalQuantity(response.data.items)
-          });
-        }
-      } catch (error) {
-        console.error("Failed to update cart item on server:", error);
-        // Rollback to original state if server sync fails
-        set({
-          cartItems: originalItems,
-          totalQuantity: get().calculateTotalQuantity(originalItems)
-        });
-        // You could also show a notification to the user here
       }
+      return response.data?.items || updatedItems;
+    } catch (error) {
+      console.error("Failed to update quantity:", error);
+      // Revert on error
+      set({
+        cartItems: originalItems,
+        totalQuantity: get().calculateTotalQuantity(originalItems)
+      });
+      throw error; // Re-throw to allow error handling in components
     }
   },
 

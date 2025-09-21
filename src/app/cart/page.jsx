@@ -35,10 +35,14 @@ const Cart = () => {
   const [currency, setCurrency] = useState("INR"); // Default currency
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  const cartItems = useCartStore((state) => state.cartItems);
-  const removeFromCart = useCartStore((state) => state.removeFromCart);
-  const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const clearCart = useCartStore((state) => state.clearCart);
+  const { cartItems, removeFromCart, updateQuantity, clearCart, syncWithServer, isLoggedIn } = useCartStore();
+  
+  // Sync cart when component mounts and when auth status changes
+  useEffect(() => {
+    if (isLoggedIn) {
+      syncWithServer();
+    }
+  }, [isLoggedIn, syncWithServer]);
 
   const router = useRouter();
 
@@ -100,11 +104,16 @@ const Cart = () => {
     }
   }, [currency, appliedCoupon]);
 
-  const grandTotal = subtotal - discount;
+  const grandTotal = subtotal // Handle remove from cart
 
-  const handleDelete = (id, type) => {
-    removeFromCart(id, type);
-    toast.success("Item removed from cart");
+  const handleRemoveFromCart = async (id, type) => {
+    try {
+      await removeFromCart(id, type);
+      toast.success("Item removed from cart");
+    } catch (error) {
+      console.error("Failed to remove item:", error);
+      toast.error("Failed to remove item from cart");
+    }
   };
 
   const handleQuantityChange = (id, type, operation) => {
