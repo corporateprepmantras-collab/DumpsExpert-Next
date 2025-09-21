@@ -108,6 +108,9 @@ let useCartStoreBase = (set, get) => ({
   },
 
   removeFromCart: async (id, type) => {
+    // Store original items for rollback if needed
+    const originalItems = [...get().cartItems];
+    
     // Update local state first
     const updatedItems = get().cartItems.filter(
       (item) => !(item._id === id && item.type === type)
@@ -122,6 +125,7 @@ let useCartStoreBase = (set, get) => ({
     const { isLoggedIn } = get();
     if (isLoggedIn) {
       try {
+        console.log(`Removing item: id=${id}, type=${type}`);
         const response = await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
         
         // Update state with server response to ensure sync
@@ -133,11 +137,20 @@ let useCartStoreBase = (set, get) => ({
         }
       } catch (error) {
         console.error("Failed to remove cart item from server:", error);
+        // Rollback to original state if server sync fails
+        set({
+          cartItems: originalItems,
+          totalQuantity: get().calculateTotalQuantity(originalItems)
+        });
+        // You could also show a notification to the user here
       }
     }
   },
 
   updateQuantity: async (id, type, operation) => {
+    // Store original items for rollback if needed
+    const originalItems = [...get().cartItems];
+    
     // Update local state first
     const updatedItems = get().cartItems.map((item) => {
       if (item._id === id && item.type === type) {
@@ -159,6 +172,7 @@ let useCartStoreBase = (set, get) => ({
     const { isLoggedIn } = get();
     if (isLoggedIn) {
       try {
+        console.log(`Updating quantity: id=${id}, type=${type}, operation=${operation}`);
         const response = await axios.patch("/api/cart/item", { productId: id, type, operation });
         
         // Update state with server response to ensure sync
@@ -170,6 +184,12 @@ let useCartStoreBase = (set, get) => ({
         }
       } catch (error) {
         console.error("Failed to update cart item on server:", error);
+        // Rollback to original state if server sync fails
+        set({
+          cartItems: originalItems,
+          totalQuantity: get().calculateTotalQuantity(originalItems)
+        });
+        // You could also show a notification to the user here
       }
     }
   },
