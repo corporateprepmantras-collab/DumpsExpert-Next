@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import * as XLSX from 'xlsx';
 
 const OrdersAll = () => {
   const [orders, setOrders] = useState([]);
@@ -14,6 +15,7 @@ const OrdersAll = () => {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -47,6 +49,20 @@ const OrdersAll = () => {
       }
     } finally {
       setLoading(false);
+    }}
+  const handleSelectAll = () => {
+    if (selectedOrders.length === paginatedOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(paginatedOrders.map(order => order._id));
+    }
+  };
+
+  const handleSelectAllFiltered = () => {
+    if (selectedOrders.length === filteredOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(filteredOrders.map(order => order._id));
     }
   };
 
@@ -88,11 +104,79 @@ const OrdersAll = () => {
     });
   };
 
-  const handleSelectAll = () => {
-    if (selectedOrders.length === paginatedOrders.length) {
-      setSelectedOrders([]);
-    } else {
-      setSelectedOrders(paginatedOrders.map(order => order._id));
+  const handleExportOrders = async () => {
+    try {
+      setIsExporting(true);
+
+      // Get orders to export (selected orders or all filtered orders if none selected)
+      const ordersToExport = selectedOrders.length > 0 
+        ? orders.filter(order => selectedOrders.includes(order._id))
+        : filteredOrders;
+
+      if (ordersToExport.length === 0) {
+        alert("No orders to export");
+        return;
+      }
+
+      // Prepare data for Excel
+      const excelData = ordersToExport.map((order, index) => ({
+        'S.No': index + 1,
+        'Order Number': order.orderNumber || 'N/A',
+        'Customer Name': order.user?.name || 'N/A',
+        'Customer Email': order.user?.email || 'N/A',
+        'Total Amount': `₹${order.totalAmount?.toFixed(2) || '0.00'}`,
+        'Payment Method': order.paymentMethod || 'N/A',
+        'Payment ID': order.paymentId || 'N/A',
+        'Status': order.status || 'N/A',
+        'Purchase Date': new Date(order.purchaseDate || order.createdAt).toLocaleDateString(),
+        'Currency': order.currency || 'INR',
+        'Total Courses': order.courseDetails?.length || 0,
+        'Course Names': order.courseDetails?.map(c => c.name).join(', ') || 'N/A',
+        'Course Prices': order.courseDetails?.map(c => `₹${c.price?.toFixed(2)}`).join(', ') || 'N/A',
+        'SAP Exam Codes': order.courseDetails?.map(c => c.sapExamCode || 'N/A').join(', '),
+        'Categories': order.courseDetails?.map(c => c.category || 'N/A').join(', '),
+        'SKUs': order.courseDetails?.map(c => c.sku || 'N/A').join(', ')
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Auto-size columns
+      const colWidths = [];
+      const headers = Object.keys(excelData[0] || {});
+      
+      headers.forEach((header, i) => {
+        const maxLength = Math.max(
+          header.length,
+          ...excelData.map(row => String(row[header] || '').length)
+        );
+        colWidths[i] = { wch: Math.min(maxLength + 2, 50) };
+      });
+      
+      ws['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+
+      // Generate filename with current date
+      const currentDate = new Date().toISOString().split('T')[0];
+      const filename = selectedOrders.length > 0 
+        ? `selected_orders_${currentDate}.xlsx`
+        : `all_orders_${currentDate}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+
+      // Show success message
+      const exportedCount = ordersToExport.length;
+      alert(`Successfully exported ${exportedCount} order(s) to ${filename}`);
+      
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export orders. Please try again.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -115,7 +199,7 @@ const OrdersAll = () => {
     if (endDate && isWithinDate) {
       isWithinDate = orderDate <= new Date(endDate);
     }
-//updated sruff
+
     return (
       isWithinDate &&
       (orderNumber.includes(query) ||
@@ -187,20 +271,55 @@ const OrdersAll = () => {
         </div>
       </div>
 
-      {/* Delete Actions */}
-      {selectedOrders.length > 0 && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <div className="flex justify-between items-center">
-            <span className="text-red-700">
-              {selectedOrders.length} order(s) selected
-            </span>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete Selected"}
-            </button>
+      {/* Action Buttons */}
+      {(selectedOrders.length > 0 || filteredOrders.length > 0) && (
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
+          <div className="flex flex-wrap gap-3 items-center justify-between">
+            <div className="flex flex-wrap gap-3 items-center">
+              {selectedOrders.length > 0 && (
+                <span className="text-gray-700 font-medium">
+                  {selectedOrders.length} order(s) selected
+                </span>
+              )}
+              
+              {filteredOrders.length > selectedOrders.length && selectedOrders.length > 0 && (
+                <button
+                  onClick={handleSelectAllFiltered}
+                  className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                >
+                  Select All Filtered ({filteredOrders.length})
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleExportOrders}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    📊 Export {selectedOrders.length > 0 ? 'Selected' : 'All'}
+                  </>
+                )}
+              </button>
+
+              {selectedOrders.length > 0 && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Delete Selected"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -362,7 +481,7 @@ const OrdersAll = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0  flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
             <p className="text-gray-600 mb-6">
