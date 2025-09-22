@@ -14,18 +14,19 @@ export default function SignIn() {
   const { data: session } = useSession(); // ✅ useSession hook
 
   // ✅ Handle redirect after login using useEffect
-useEffect(() => {
-  if (session?.user) {
-    const { role, subscription } = session.user;
+  useEffect(() => {
+    if (session?.user) {
+      const { role, subscription } = session.user;
 
-    let target = "/dashboard/guest";
-    if (role === "admin") target = "/dashboard/admin";
-    else if (role === "student" && subscription === "yes") target = "/dashboard/student";
+      let target = "/dashboard/guest";
+      if (role === "admin") target = "/dashboard/admin";
+      else if (role === "student" && subscription === "yes") target = "/dashboard/student";
 
-    const timer = setTimeout(() => router.push(target), 800);
-    return () => clearTimeout(timer);
-  }
-}, [session, router]);
+      const timer = setTimeout(() => router.push(target), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [session, router]);
+
   const handleEmailSignIn = async (e) => {
     e.preventDefault();
     setError("");
@@ -56,15 +57,15 @@ useEffect(() => {
     }
   };
 
-const handleOAuthSignIn = async (provider) => {
-  setError("");
-  try {
-    await signIn(provider); // redirect true (default), page will reload & session updates
-  } catch (err) {
-    setError("OAuth sign-in failed");
-    console.error(err);
-  }
-};
+  const handleOAuthSignIn = async (provider) => {
+    setError("");
+    try {
+      await signIn(provider); // redirect true (default), page will reload & session updates
+    } catch (err) {
+      setError("OAuth sign-in failed");
+      console.error(err);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -92,6 +93,17 @@ const handleOAuthSignIn = async (provider) => {
               required
             />
           </div>
+          
+          {/* Forgot Password Link */}
+          <div className="mb-4 text-right">
+            <Link 
+              href="/auth/forgot-password" 
+              className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+          
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
@@ -114,7 +126,7 @@ const handleOAuthSignIn = async (provider) => {
           </button>
         </div>
         <p className="mt-4 text-center">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <Link href="/auth/signup" className="text-blue-500 hover:underline">
             Sign Up
           </Link>
