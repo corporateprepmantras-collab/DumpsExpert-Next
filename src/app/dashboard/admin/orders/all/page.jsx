@@ -58,7 +58,7 @@ const OrdersAll = () => {
     if (endDate && isWithinDate) {
       isWithinDate = orderDate <= new Date(endDate);
     }
-
+//updated sruff
     return (
       isWithinDate &&
       (orderNumber.includes(query) ||
