@@ -36,6 +36,11 @@ export async function POST(request) {
     let result;
     
     if (existingCart) {
+      // Find the item in the cart
+      const cartItem = existingCart.items.find(
+        i => i.productId.toString() === item._id && i.type === item.type
+      );
+      
       // Update quantity if item exists
       result = await Cart.findOneAndUpdate(
         { 
@@ -44,8 +49,12 @@ export async function POST(request) {
           'items.type': item.type 
         },
         { 
-          $inc: { 'items.$.quantity': 1 },
-          lastUpdated: new Date()
+          $set: { 
+            'items.$.quantity': item.quantity || (cartItem ? cartItem.quantity + 1 : 1),
+            'items.$.price': item.price || cartItem.price,
+            'items.$.title': item.title || cartItem.title,
+            lastUpdated: new Date()
+          }
         },
         { new: true }
       );
@@ -55,7 +64,7 @@ export async function POST(request) {
         productId: item._id,
         title: item.title,
         price: item.price,
-        quantity: 1,
+        quantity: item.quantity || 1,
         type: item.type,
         imageUrl: item.imageUrl,
         samplePdfUrl: item.samplePdfUrl,
@@ -110,14 +119,41 @@ export async function DELETE(request) {
     await connectMongoDB();
     const userId = session.user.id;
     
+    console.log(`Deleting item: ${productId} of type ${type} for user ${userId}`);
+    
+    // Find the cart first to check if the item exists
+    const cart = await Cart.findOne({ user: userId });
+    
+    if (!cart) {
+      return NextResponse.json({ 
+        success: true, 
+        items: [] 
+      });
+    }
+    
+    // Check if item exists in cart
+    const itemExists = cart.items.some(
+      item => item.productId.toString() === productId && item.type === type
+    );
+    
+    if (!itemExists) {
+      return NextResponse.json({
+        success: true,
+        items: cart.items
+      });
+    }
+    
+    // Remove the item
     const result = await Cart.findOneAndUpdate(
       { user: userId },
       { 
-        $pull: { items: { productId, type } },
+        $pull: { items: { productId: productId, type: type } },
         lastUpdated: new Date()
       },
       { new: true }
     );
+    
+    console.log(`Item deleted, remaining items: ${result?.items?.length || 0}`);
 
     return NextResponse.json({ 
       success: true, 
@@ -143,10 +179,15 @@ export async function PATCH(request) {
       );
     }
 
-    const { productId, type, operation } = await request.json();
-    if (!productId || !type || !operation) {
+    const body = await request.json();
+    const { productId, type, operation, quantity } = body;
+    
+    console.log("PATCH request received:", { productId, type, operation, quantity });
+    
+    // Allow direct quantity update or increment/decrement operations
+    if (!productId || !type || (!operation && quantity === undefined)) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields", received: body },
         { status: 400 }
       );
     }
@@ -154,50 +195,85 @@ export async function PATCH(request) {
     await connectMongoDB();
     const userId = session.user.id;
     
-    // Find the cart and the specific item
-    const cart = await Cart.findOne({ 
-      user: userId,
-      'items.productId': productId,
-      'items.type': type
-    });
+    // Find the cart directly and update the item
+    let updateOperation;
     
-    if (!cart) {
-      return NextResponse.json(
-        { error: "Item not found in cart" },
-        { status: 404 }
+    if (quantity !== undefined) {
+      // Direct quantity update (must be at least 1)
+      updateOperation = {
+        $set: { 
+          'items.$.quantity': Math.max(1, quantity),
+          lastUpdated: new Date()
+        }
+      };
+    } else if (operation === 'inc') {
+      updateOperation = {
+        $inc: { 'items.$.quantity': 1 },
+        $set: { lastUpdated: new Date() }
+      };
+    } else if (operation === 'dec') {
+      // Find the current item to check its quantity
+      const cart = await Cart.findOne({
+        user: userId,
+        'items.productId': productId,
+        'items.type': type
+      });
+      
+      if (!cart) {
+        return NextResponse.json(
+          { error: "Item not found in cart" },
+          { status: 404 }
+        );
+      }
+      
+      const item = cart.items.find(
+        i => i.productId.toString() === productId && i.type === type
       );
+      
+      if (!item) {
+        return NextResponse.json(
+          { error: "Item not found in cart" },
+          { status: 404 }
+        );
+      }
+      
+      // Ensure quantity doesn't go below 1
+      const newQuantity = Math.max(1, item.quantity - 1);
+      
+      updateOperation = {
+        $set: { 
+          'items.$.quantity': newQuantity,
+          lastUpdated: new Date()
+        }
+      };
     }
     
-    // Find the item and update its quantity
-    const itemIndex = cart.items.findIndex(
-      item => item.productId.toString() === productId && item.type === type
+    const result = await Cart.findOneAndUpdate(
+      { 
+        user: userId,
+        'items.productId': productId,
+        'items.type': type 
+      },
+      updateOperation,
+      { new: true }
     );
     
-    if (itemIndex === -1) {
+    if (!result) {
       return NextResponse.json(
         { error: "Item not found in cart" },
         { status: 404 }
       );
     }
-    
-    // Update quantity based on operation
-    if (operation === 'inc') {
-      cart.items[itemIndex].quantity += 1;
-    } else if (operation === 'dec') {
-      cart.items[itemIndex].quantity = Math.max(1, cart.items[itemIndex].quantity - 1);
-    }
-    
-    cart.lastUpdated = new Date();
-    await cart.save();
 
     return NextResponse.json({ 
       success: true, 
-      items: cart.items 
+      items: result.items,
+      totalQuantity: result.items.reduce((total, item) => total + item.quantity, 0)
     });
   } catch (error) {
     console.error("Error updating item quantity:", error);
     return NextResponse.json(
-      { error: "Failed to update item quantity" },
+      { error: "Failed to update item quantity", message: error.message },
       { status: 500 }
     );
   }

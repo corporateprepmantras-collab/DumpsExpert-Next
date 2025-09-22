@@ -35,15 +35,19 @@ export default function Navbar() {
   const [dropdownData, setDropdownData] = useState({ ItDumps: [], blogs: [] });
   const [cartItemCount, setCartItemCount] = useState(0);
 
-  // Subscribe to cart changes
-  // Subscribe to cart changes
+  // Subscribe to cart changes - Updated to count total quantity
   useEffect(() => {
-    // Initial cart count
-    setCartItemCount(useCartStore.getState().cartItems.length);
+    // Calculate total quantity function
+    const calculateTotalQuantity = (items) => {
+      return items.reduce((total, item) => total + (item.quantity || 1), 0);
+    };
+    
+    // Initial cart count - total quantity
+    setCartItemCount(calculateTotalQuantity(useCartStore.getState().cartItems));
 
     // Subscribe to cart changes
     const unsubscribe = useCartStore.subscribe((state) =>
-      setCartItemCount(state.cartItems.length)
+      setCartItemCount(calculateTotalQuantity(state.cartItems))
     );
 
     return () => unsubscribe();
