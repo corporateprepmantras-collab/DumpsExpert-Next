@@ -9,8 +9,11 @@ const OrdersAll = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [startDate, setStartDate] = useState(""); // Date filter start
-  const [endDate, setEndDate] = useState("");     // Date filter end
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedOrders, setSelectedOrders] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -26,6 +29,8 @@ const OrdersAll = () => {
         withCredentials: true,
       });
 
+      console.log("API Response:", res.data);
+
       if (res.data && res.data.orders) {
         setOrders(res.data.orders);
       } else {
@@ -33,9 +38,61 @@ const OrdersAll = () => {
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error);
-      setError("Failed to fetch orders. Please try again.");
+      if (error.response?.status === 401) {
+        setError("Please log in to view orders.");
+      } else if (error.response?.status === 403) {
+        setError("You don't have permission to view orders.");
+      } else {
+        setError("Failed to fetch orders. Please try again.");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteOrders = async () => {
+    try {
+      setIsDeleting(true);
+      
+      const response = await axios.delete("/api/order", {
+        data: { orderIds: selectedOrders },
+        withCredentials: true,
+      });
+
+      if (response.data.success) {
+        // Remove deleted orders from state
+        setOrders(prevOrders => 
+          prevOrders.filter(order => !selectedOrders.includes(order._id))
+        );
+        setSelectedOrders([]);
+        setShowDeleteConfirm(false);
+        
+        // Show success message
+        alert(`${response.data.deletedCount} order(s) deleted successfully`);
+      }
+    } catch (error) {
+      console.error("Failed to delete orders:", error);
+      alert("Failed to delete orders. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSelectOrder = (orderId) => {
+    setSelectedOrders(prev => {
+      if (prev.includes(orderId)) {
+        return prev.filter(id => id !== orderId);
+      } else {
+        return [...prev, orderId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedOrders.length === paginatedOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(paginatedOrders.map(order => order._id));
     }
   };
 
@@ -77,6 +134,7 @@ const OrdersAll = () => {
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
+      setSelectedOrders([]); // Clear selection when changing pages
     }
   };
 
@@ -122,11 +180,30 @@ const OrdersAll = () => {
           <button
             onClick={fetchOrders}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            disabled={loading}
           >
-            Refresh
+            {loading ? "Loading..." : "Refresh"}
           </button>
         </div>
       </div>
+
+      {/* Delete Actions */}
+      {selectedOrders.length > 0 && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex justify-between items-center">
+            <span className="text-red-700">
+              {selectedOrders.length} order(s) selected
+            </span>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Selected"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-8">Loading orders...</div>
@@ -138,6 +215,14 @@ const OrdersAll = () => {
             <table className="w-full table-auto border border-gray-300">
               <thead>
                 <tr className="bg-gray-100 text-left">
+                  <th className="px-4 py-2 border">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrders.length === paginatedOrders.length && paginatedOrders.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4"
+                    />
+                  </th>
                   <th className="px-4 py-2 border">Order #</th>
                   <th className="px-4 py-2 border">Customer</th>
                   <th className="px-4 py-2 border">Email</th>
@@ -152,6 +237,14 @@ const OrdersAll = () => {
                   paginatedOrders.map((order) => (
                     <tr key={order._id} className="hover:bg-gray-50">
                       <td className="px-4 py-2 border">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.includes(order._id)}
+                          onChange={() => handleSelectOrder(order._id)}
+                          className="w-4 h-4"
+                        />
+                      </td>
+                      <td className="px-4 py-2 border">
                         {order.orderNumber || "N/A"}
                       </td>
                       <td className="px-4 py-2 border">
@@ -162,7 +255,7 @@ const OrdersAll = () => {
                       </td>
                       <td className="px-4 py-2 border">
                         {order.courseDetails?.map((c, idx) => (
-                          <div key={idx} className="mb-1">
+                          <div key={idx} className="mb-1 text-sm">
                             {c.name} - ₹{c.price?.toFixed(2)}
                           </div>
                         ))}
@@ -195,7 +288,7 @@ const OrdersAll = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan="7"
+                      colSpan="8"
                       className="text-center py-4 text-gray-500"
                     >
                       No orders found
@@ -265,6 +358,35 @@ const OrdersAll = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0  flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete {selectedOrders.length} order(s)? 
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteOrders}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -189,30 +189,30 @@ export async function GET(request) {
           { status: 400 }
         );
       }
-      const targetUser = await UserInfo.findOne({ authUserId: userId });
-      if (!targetUser) {
-        console.error("User not found for query:", userId);
-        return NextResponse.json({ error: "User not found" }, { status: 400 });
-      }
       query.user = userId;
     }
 
+    // Fixed populate path - use the collection name directly
     const orders = await Order.find(query)
-      .populate("user", "name email")
-      .populate("courseDetails.courseId", "title")
+      .populate({
+        path: 'user',
+        select: 'name email',
+        model: 'authUsers'
+      })
       .sort({ purchaseDate: -1 })
       .lean();
-
-    if (!orders || orders.length === 0) {
-      console.log("No orders found", { userId: userId || "all" });
-      return NextResponse.json({ orders: [] });
-    }
 
     console.log("Orders retrieved:", {
       count: orders.length,
       userId: userId || "all",
+      sampleOrder: orders[0] ? {
+        id: orders[0]._id,
+        user: orders[0].user,
+        orderNumber: orders[0].orderNumber
+      } : null
     });
-    return NextResponse.json({ orders });
+
+    return NextResponse.json({ orders: orders || [] });
   } catch (error) {
     console.error("Order retrieval failed:", {
       error: error.message,
@@ -220,6 +220,75 @@ export async function GET(request) {
     });
     return NextResponse.json(
       { error: `Order retrieval failed: ${error.message}` },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE method for deleting orders
+export async function DELETE(request) {
+  try {
+    console.log("Route hit: /api/order [DELETE]");
+    await connectMongoDB();
+
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized: Please log in" },
+        { status: 401 }
+      );
+    }
+
+    const user = await UserInfo.findOne({ authUserId: session.user.id });
+    if (!user || user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Forbidden: Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    const { orderIds } = await request.json();
+
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      return NextResponse.json(
+        { error: "Invalid order IDs provided" },
+        { status: 400 }
+      );
+    }
+
+    // Validate all order IDs
+    for (const orderId of orderIds) {
+      if (!mongoose.Types.ObjectId.isValid(orderId)) {
+        return NextResponse.json(
+          { error: `Invalid order ID format: ${orderId}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const result = await Order.deleteMany({ 
+      _id: { $in: orderIds.map(id => new mongoose.Types.ObjectId(id)) }
+    });
+
+    console.log("Orders deleted:", {
+      deletedCount: result.deletedCount,
+      orderIds
+    });
+
+    return NextResponse.json({
+      success: true,
+      deletedCount: result.deletedCount,
+      message: `${result.deletedCount} order(s) deleted successfully`
+    });
+
+  } catch (error) {
+    console.error("Order deletion failed:", {
+      error: error.message,
+      stack: error.stack,
+    });
+    return NextResponse.json(
+      { error: `Order deletion failed: ${error.message}` },
       { status: 500 }
     );
   }
