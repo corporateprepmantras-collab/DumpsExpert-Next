@@ -17,7 +17,9 @@ export default function GeneralFAQs() {
     const fetchFaqs = async () => {
       try {
         const res = await axios.get("/api/general-faqs");
-        setFaqs(Array.isArray(res.data) ? res.data : []);
+        const data = Array.isArray(res.data) ? [...res.data].reverse() : [];
+
+        setFaqs(data);
       } catch (error) {
         console.error("Error fetching FAQs:", error);
         setFaqs([]);
