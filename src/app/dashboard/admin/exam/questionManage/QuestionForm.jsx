@@ -626,3 +626,305 @@ const QuestionForm = () => {
 
 // Export component
 export default QuestionForm;
+
+
+// "use client";
+// import { useState } from "react";
+
+// export default function QuestionForm() {
+//   const [questionType, setQuestionType] = useState("radio");
+//   const [questionText, setQuestionText] = useState("");
+//   const [options, setOptions] = useState(["", "", "", ""]);
+//   const [correctAnswers, setCorrectAnswers] = useState([]);
+
+//   // For match-the-following
+//   const [leftItems, setLeftItems] = useState([""]);
+//   const [rightOptions, setRightOptions] = useState([""]);
+//   const [matchAnswers, setMatchAnswers] = useState({}); // {leftIndex: rightValue}
+
+//   // Student attempt
+//   const [studentAnswers, setStudentAnswers] = useState({});
+//   const [result, setResult] = useState(null);
+
+//   // Admin option input
+//   const handleOptionChange = (index, value) => {
+//     const updated = [...options];
+//     updated[index] = value;
+//     setOptions(updated);
+//   };
+
+//   // Admin correct answer selection
+//   const handleCorrectAnswer = (value) => {
+//     if (questionType === "radio") {
+//       setCorrectAnswers([value]);
+//     } else if (questionType === "checkbox") {
+//       setCorrectAnswers((prev) =>
+//         prev.includes(value)
+//           ? prev.filter((ans) => ans !== value)
+//           : [...prev, value]
+//       );
+//     }
+//   };
+
+//   // Left and Right input
+//   const handleLeftChange = (index, value) => {
+//     const updated = [...leftItems];
+//     updated[index] = value;
+//     setLeftItems(updated);
+//   };
+
+//   const handleRightChange = (index, value) => {
+//     const updated = [...rightOptions];
+//     updated[index] = value;
+//     setRightOptions(updated);
+//   };
+
+//   // Admin sets correct match
+//   const handleMatchAnswer = (leftIndex, rightValue) => {
+//     setMatchAnswers((prev) => ({ ...prev, [leftIndex]: rightValue }));
+//   };
+
+//   // Add more inputs
+//   const addLeftItem = () => setLeftItems([...leftItems, ""]);
+//   const addRightOption = () => setRightOptions([...rightOptions, ""]);
+
+//   // Student attempt handlers
+//   const handleStudentAnswer = (value) => {
+//     if (questionType === "radio") {
+//       setStudentAnswers({ 0: value });
+//     } else if (questionType === "checkbox") {
+//       setStudentAnswers((prev) => {
+//         const current = prev[0] || [];
+//         return {
+//           ...prev,
+//           0: current.includes(value)
+//             ? current.filter((v) => v !== value)
+//             : [...current, value],
+//         };
+//       });
+//     }
+//   };
+
+//   const handleStudentMatch = (leftIndex, rightValue) => {
+//     setStudentAnswers((prev) => ({ ...prev, [leftIndex]: rightValue }));
+//   };
+
+//   // Evaluate student answers
+//   // Evaluate student answers
+// const evaluateAnswers = () => {
+//   let isCorrect = false;
+
+//   if (questionType === "radio" || questionType === "checkbox") {
+//     const studentAns = studentAnswers[0] || [];
+//     const correct = questionType === "radio" ? correctAnswers[0] : correctAnswers;
+
+//     if (questionType === "radio") {
+//       isCorrect = studentAns === correct;
+//     } else {
+//       const sameLength = studentAns.length === correct.length;
+//       const sameValues = studentAns.every((a) => correct.includes(a));
+//       isCorrect = sameLength && sameValues;
+//     }
+//   } else if (questionType === "match") {
+//     const total = leftItems.length;
+//     let correctCount = 0;
+
+//     leftItems.forEach((_, i) => {
+//       if (studentAnswers[i] && studentAnswers[i] === matchAnswers[i]) {
+//         correctCount++;
+//       }
+//     });
+
+//     isCorrect = correctCount === total; // ✅ full correct only
+//   }
+
+//   setResult(isCorrect ? "✅ Correct" : "❌ Incorrect");
+// };
+
+
+//   return (
+//     <div className="p-6 max-w-3xl mx-auto bg-white shadow rounded">
+//       <h2 className="text-xl font-bold mb-4">Add Question</h2>
+
+//       {/* Question Type */}
+//       <label className="block mb-2 font-semibold">Question Type</label>
+//       <select
+//         className="border rounded p-2 mb-4 w-full"
+//         value={questionType}
+//         onChange={(e) => {
+//           setQuestionType(e.target.value);
+//           setCorrectAnswers([]);
+//           setMatchAnswers({});
+//         }}
+//       >
+//         <option value="radio">Radio (Single Choice)</option>
+//         <option value="checkbox">Checkbox (Multiple Choice)</option>
+//         <option value="match">Match the Following</option>
+//       </select>
+
+//       {/* Question Text */}
+//       <label className="block mb-2 font-semibold">Question</label>
+//       <input
+//         type="text"
+//         className="border rounded p-2 mb-4 w-full"
+//         value={questionText}
+//         onChange={(e) => setQuestionText(e.target.value)}
+//         placeholder="Enter question"
+//       />
+
+//       {/* Options (Admin) */}
+//       {(questionType === "radio" || questionType === "checkbox") && (
+//         <div>
+//           <h3 className="font-semibold mb-2">Options</h3>
+//           {options.map((opt, index) => (
+//             <div key={index} className="flex items-center gap-2 mb-2">
+//               <input
+//                 type="text"
+//                 className="border rounded p-2 flex-1"
+//                 value={opt}
+//                 onChange={(e) => handleOptionChange(index, e.target.value)}
+//                 placeholder={`Option ${index + 1}`}
+//               />
+//               <input
+//                 type={questionType === "radio" ? "radio" : "checkbox"}
+//                 name="correct"
+//                 checked={correctAnswers.includes(opt)}
+//                 onChange={() => handleCorrectAnswer(opt)}
+//               />
+//               <span className="text-sm">Correct</span>
+//             </div>
+//           ))}
+//         </div>
+//       )}
+
+//       {/* Match (Admin) */}
+//       {questionType === "match" && (
+//         <div>
+//           <h3 className="font-semibold mb-2">Match the Following</h3>
+
+//           {/* Right side */}
+//           <h4 className="font-medium">Right Side Options</h4>
+//           {rightOptions.map((opt, index) => (
+//             <input
+//               key={index}
+//               type="text"
+//               className="border rounded p-2 mb-2 w-full"
+//               value={opt}
+//               onChange={(e) => handleRightChange(index, e.target.value)}
+//               placeholder={`Right Option ${index + 1}`}
+//             />
+//           ))}
+//           <button
+//             type="button"
+//             className="bg-gray-200 px-3 py-1 rounded mb-4"
+//             onClick={addRightOption}
+//           >
+//             + Add Right Option
+//           </button>
+
+//           {/* Left side */}
+//           <h4 className="font-medium">Left Side Items</h4>
+//           {leftItems.map((left, index) => (
+//             <div key={index} className="flex gap-2 mb-2">
+//               <input
+//                 type="text"
+//                 className="border rounded p-2 w-1/2"
+//                 value={left}
+//                 onChange={(e) => handleLeftChange(index, e.target.value)}
+//                 placeholder={`Left Item ${index + 1}`}
+//               />
+//               <select
+//                 className="border rounded p-2 w-1/2"
+//                 value={matchAnswers[index] || ""}
+//                 onChange={(e) => handleMatchAnswer(index, e.target.value)}
+//               >
+//                 <option value="">Correct Match</option>
+//                 {rightOptions.map((opt, i) => (
+//                   <option key={i} value={opt}>
+//                     {opt}
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+//           ))}
+//           <button
+//             type="button"
+//             className="bg-gray-300 px-4 py-2 rounded"
+//             onClick={addLeftItem}
+//           >
+//             + Add Left Item
+//           </button>
+//         </div>
+//       )}
+
+//       {/* ---- Student Attempt ---- */}
+//       <div className="mt-8 border-t pt-4">
+//         <h3 className="font-semibold mb-2">Student Attempt</h3>
+//         <p className="mb-2">{questionText}</p>
+
+//         {questionType === "radio" &&
+//           options.map((opt, i) => (
+//             <label key={i} className="block">
+//               <input
+//                 type="radio"
+//                 name="studentRadio"
+//                 className="mr-2"
+//                 value={opt}
+//                 checked={studentAnswers[0] === opt}
+//                 onChange={(e) => handleStudentAnswer(e.target.value)}
+//               />
+//               {opt}
+//             </label>
+//           ))}
+
+//         {questionType === "checkbox" &&
+//           options.map((opt, i) => (
+//             <label key={i} className="block">
+//               <input
+//                 type="checkbox"
+//                 className="mr-2"
+//                 value={opt}
+//                 checked={(studentAnswers[0] || []).includes(opt)}
+//                 onChange={() => handleStudentAnswer(opt)}
+//               />
+//               {opt}
+//             </label>
+//           ))}
+
+//         {questionType === "match" &&
+//           leftItems.map((left, i) => (
+//             <div key={i} className="flex items-center gap-2 mb-2">
+//               <span className="w-1/2">{left}</span>
+//               <select
+//                 className="border rounded p-2 w-1/2"
+//                 value={studentAnswers[i] || ""}
+//                 onChange={(e) => handleStudentMatch(i, e.target.value)}
+//               >
+//                 <option value="">Select</option>
+//                 {rightOptions.map((opt, j) => (
+//                   <option key={j} value={opt}>
+//                     {opt}
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+//           ))}
+
+//         <button
+//           type="button"
+//           onClick={evaluateAnswers}
+//           className="bg-green-500 text-white px-6 py-2 rounded mt-4"
+//         >
+//           Submit Answer
+//         </button>
+
+//     {result && (
+//   <p className="mt-4 font-semibold text-blue-600">
+//     Result: {result}
+//   </p>
+// )}
+
+//       </div>
+//     </div>
+//   );
+// }
