@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Doughnut, Bar } from "react-chartjs-2";
 import {
@@ -30,112 +30,96 @@ ChartJS.register(
   Legend
 );
 
-// Stat cards data
-const statCards = [
-  {
-    title: "Total Products",
-    value: 50,
-    icon: FaClipboardList,
-    color: "text-blue-500",
-  },
-  {
-    title: "Total Exams",
-    value: 12,
-    icon: FaGraduationCap,
-    color: "text-purple-500",
-  },
-  { title: "Customers", value: 140, icon: FaUsers, color: "text-green-500" },
-  { title: "Blogs", value: 18, icon: FaNewspaper, color: "text-yellow-500" },
-  { title: "Orders", value: 65, icon: FaClipboardList, color: "text-red-500" },
-  {
-    title: "Sales (INR)",
-    value: "₹85,000",
-    icon: FaDollarSign,
-    color: "text-indigo-500",
-  },
-  {
-    title: "Sales (USD)",
-    value: "$1,000",
-    icon: FaDollarSign,
-    color: "text-pink-500",
-  },
-  { title: "Subscribers", value: 245, icon: FaInbox, color: "text-teal-500" },
-];
-
-// Chart data
-const doughnutData = {
-  labels: ["Products", "Exams", "Orders", "Subscribers"],
-  datasets: [
-    {
-      data: [50, 12, 65, 245],
-      backgroundColor: ["#3B82F6", "#8B5CF6", "#EF4444", "#10B981"],
-      borderWidth: 2,
-    },
-  ],
-};
-
-const barData = {
-  labels: ["Jan", "Feb", "Mar", "Apr", "May"],
-  datasets: [
-    {
-      label: "Monthly Sales (INR)",
-      data: [10000, 15000, 20000, 18000, 22000],
-      backgroundColor: "#6366F1",
-      borderRadius: 5,
-    },
-  ],
-};
-
-const doughnutOptions = {
-  maintainAspectRatio: false,
-  cutout: "70%",
-  plugins: { legend: { position: "bottom" } },
-};
-
-const barOptions = {
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-  scales: { y: { beginAtZero: true } },
-};
-
-// Table data
-const orders = [
-  {
-    date: "2025-06-01",
-    number: "#ORD123",
-    gateway: "Razorpay",
-    total: "₹500",
-    status: "Paid",
-    payment: "Confirmed",
-  },
-  {
-    date: "2025-06-02",
-    number: "#ORD124",
-    gateway: "Stripe",
-    total: "₹300",
-    status: "Pending",
-    payment: "Pending",
-  },
-];
-
-const users = [
-  {
-    date: "2025-06-01",
-    name: "Yagyesh",
-    email: "yagyesh@example.com",
-    lastActive: "2025-06-04",
-    spend: "₹500",
-  },
-  {
-    date: "2025-06-03",
-    name: "Ankit",
-    email: "ankit@example.com",
-    lastActive: "2025-06-04",
-    spend: "₹300",
-  },
-];
-
 export default function AdminDashboard() {
+  // State for API data
+  const [products, setProducts] = useState([]);
+  const [exams, setExams] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [prodRes, examRes, orderRes, userRes] = await Promise.all([
+          fetch("/api/products").then((res) => res.json()),
+          fetch("/api/exams").then((res) => res.json()),
+          fetch("/api/orders").then((res) => res.json()),
+          fetch("/api/users").then((res) => res.json()),
+        ]);
+
+        setProducts(prodRes || []);
+        setExams(examRes || []);
+        setOrders(orderRes || []);
+        setUsers(userRes || []);
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Dynamic Stat Cards
+  const statCards = [
+    {
+      title: "Total Products",
+      value: products.length,
+      icon: FaClipboardList,
+      color: "text-blue-500",
+    },
+    {
+      title: "Total Exams",
+      value: exams.length,
+      icon: FaGraduationCap,
+      color: "text-purple-500",
+    },
+    { title: "Customers", value: users.length, icon: FaUsers, color: "text-green-500" },
+    { title: "Orders", value: orders.length, icon: FaClipboardList, color: "text-red-500" },
+    {
+      title: "Sales (INR)",
+      value: "₹" + orders.reduce((sum, o) => sum + (parseInt(o.total) || 0), 0),
+      icon: FaDollarSign,
+      color: "text-indigo-500",
+    },
+    { title: "Subscribers", value: 0, icon: FaInbox, color: "text-teal-500" }, // later if you add subscribers API
+  ];
+
+  // Dynamic Chart Data
+  const doughnutData = {
+    labels: ["Products", "Exams", "Orders", "Users"],
+    datasets: [
+      {
+        data: [products.length, exams.length, orders.length, users.length],
+        backgroundColor: ["#3B82F6", "#8B5CF6", "#EF4444", "#10B981"],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const barData = {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May"], // should come from API later
+    datasets: [
+      {
+        label: "Monthly Sales (INR)",
+        data: orders.map((o) => parseInt(o.total) || 0), // adjust when backend gives monthly aggregation
+        backgroundColor: "#6366F1",
+        borderRadius: 5,
+      },
+    ],
+  };
+
+  const doughnutOptions = {
+    maintainAspectRatio: false,
+    cutout: "70%",
+    plugins: { legend: { position: "bottom" } },
+  };
+
+  const barOptions = {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true } },
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <h1 className="text-3xl font-bold mb-8 text-gray-800">Admin Dashboard</h1>

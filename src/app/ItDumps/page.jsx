@@ -6,9 +6,12 @@ import guarantee from "../../assets/userAssets/guaranteed.png";
 // Fetch from backend API
 async function getDumpsData() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/product-categories`, {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/product-categories`,
+      {
+        cache: "no-store",
+      }
+    );
 
     if (!res.ok) {
       throw new Error(`Failed to fetch categories: ${res.statusText}`);
@@ -75,43 +78,45 @@ export default async function ITDumpsPage() {
           </div>
 
           <div className="space-y-3">
-            {["90 Days Free Updates", "24/7 Customer Support"].map((text, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <FaCheckCircle className="text-blue-600 text-lg" />
-                {text}
-              </div>
-            ))}
+            {["90 Days Free Updates", "24/7 Customer Support"].map(
+              (text, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <FaCheckCircle className="text-blue-600 text-lg" />
+                  {text}
+                </div>
+              )
+            )}
           </div>
         </div>
 
         {/* Category Cards */}
         <div className="flex flex-wrap justify-center gap-6">
           {dumpsData.length > 0 ? (
-            dumpsData
-              .filter((item) => item.status === "Publish")
-              .map((item) => (
-                <Link
-                  key={item._id}
-                  href={`/ItDumps/${createSlug(item.name)}`}
-                  className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px]"
-                >
-                  <div className="h-28 md:h-32 w-full relative">
-                    <Image
-                      src={item.image || "https://via.placeholder.com/150"}
-                      alt={item.name}
-                      fill
-                      className="object-contain p-3"
-                    />
-                  </div>
-                  <div className="px-3 pb-4">
-                    <h3 className="text-sm sm:text-base font-medium capitalize text-gray-800 truncate">
-                      {item.name}
-                    </h3>
-                  </div>
-                </Link>
-              ))
+            dumpsData.map((item) => (
+              <Link
+                key={item._id}
+                href={`/ItDumps/${createSlug(item.name)}`}
+                className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px]"
+              >
+                <div className="h-28 md:h-32 w-full relative">
+                  <Image
+                    src={item.image || "https://via.placeholder.com/150"}
+                    alt={item.name}
+                    fill
+                    className="object-contain p-3"
+                  />
+                </div>
+                <div className="px-3 pb-4">
+                  <h3 className="text-sm sm:text-base font-medium capitalize text-gray-800 truncate">
+                    {item.name}
+                  </h3>
+                </div>
+              </Link>
+            ))
           ) : (
-            <p className="text-gray-600 text-center">No categories available.</p>
+            <p className="text-gray-600 text-center">
+              No categories available.
+            </p>
           )}
         </div>
       </div>
