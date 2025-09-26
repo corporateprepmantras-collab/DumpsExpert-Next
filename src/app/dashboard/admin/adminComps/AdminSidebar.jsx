@@ -197,12 +197,28 @@ const sidebarItems = [
       },
       
       {
-        label: "Content Section 1",
+        label: " Landing Content Section 1",
         to: "/dashboard/admin/adminPages/ContentSection1",
       },
       {
-        label: "Content Section 2",
+        label: " Landing Content Section 2",
         to: "/dashboard/admin/adminPages/ContentSection2",
+      },
+      {
+        label: "Guarantee Page",
+        to: "/dashboard/admin/adminPages/Guarantee",
+      },
+      {
+        label: "Terms and Condition Page",
+        to: "/dashboard/admin/adminPages/terms",
+      },
+      {
+        label: "Privacy Policy Page",
+        to: "/dashboard/admin/adminPages/privacy-policy",
+      },
+      {
+        label: "Refund Policy Page",
+        to: "/dashboard/admin/adminPages/refund-policy",
       },
     ],
   },
