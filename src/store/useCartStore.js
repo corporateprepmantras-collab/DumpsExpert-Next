@@ -127,12 +127,22 @@ const useCartStore = create((set, get) => ({
       console.warn("User not logged in, cannot update quantity");
       return;
     }
-
+  
     try {
       set({ isLoading: true });
       
+      // Find the item in current cart to get the correct productId
+      const currentItems = get().cartItems;
+      const item = currentItems.find(item => item._id === id && item.type === type);
+      
+      if (!item) {
+        console.error("Item not found in local cart");
+        throw new Error("Item not found in local cart");
+      }
+      
+      // Use the actual productId from the item, not the _id
       const response = await axios.patch("/api/cart/item", { 
-        productId: id, 
+        productId: item.productId || item._id, // Use productId if available, fallback to _id
         type, 
         operation 
       });
