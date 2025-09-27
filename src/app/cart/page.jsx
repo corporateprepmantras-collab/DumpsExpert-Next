@@ -33,8 +33,16 @@ const Cart = () => {
   const removeFromCart = useCartStore((state) => state.removeFromCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const clearCart = useCartStore((state) => state.clearCart);
+  const setLoginStatus = useCartStore((state) => state.setLoginStatus);
 
   const router = useRouter();
+
+  // Initialize cart when component mounts and user is authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      setLoginStatus(true);
+    }
+  }, [status, setLoginStatus]);
 
   // Calculate totals
   const subtotal = cartItems.reduce(
