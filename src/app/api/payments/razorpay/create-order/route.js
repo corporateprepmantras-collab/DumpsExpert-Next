@@ -5,7 +5,7 @@ export async function POST(request) {
   try {
     console.log("Route hit: /api/payments/razorpay/create-order");
     
-    // Check Razorpay credentials
+    // Check Razorpay credentials - Use consistent environment variable names
     const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V";
     const keySecret = process.env.RAZORPAY_KEY_SECRET || "jPBuKq2CqukA4JxOXKfp8QU7";
 
@@ -23,7 +23,7 @@ export async function POST(request) {
       );
     }
 
-    // Initialize Razorpay instance with validation
+    // Initialize Razorpay instance inside the function
     const razorpay = new Razorpay({
       key_id: keyId,
       key_secret: keySecret,
