@@ -3,13 +3,12 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import instance from "axios";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import useCartStore from "@/store/useCartStore";
 import cartImg from "../../assets/landingassets/emptycart.webp";
 import { useSession, signIn } from "next-auth/react";
-import axios from "axios";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const Cart = () => {
@@ -24,7 +23,7 @@ const Cart = () => {
   const [paypalOrderId, setPaypalOrderId] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
 
-  // Currency options with conversion rates (you may want to fetch these from an API)
+  // Currency options with conversion rates
   const currencies = {
     USD: { symbol: "$", rate: 1, name: "US Dollar" },
     INR: { symbol: "₹", rate: 83, name: "Indian Rupee" }
@@ -36,6 +35,18 @@ const Cart = () => {
   const clearCart = useCartStore((state) => state.clearCart);
 
   const router = useRouter();
+
+  // Calculate totals
+  const subtotal = cartItems.reduce(
+    (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
+    0
+  );
+  const grandTotal = subtotal - discount;
+
+  // Calculate converted amounts
+  const convertedSubtotal = (subtotal * currencies[selectedCurrency].rate).toFixed(2);
+  const convertedDiscount = (discount * currencies[selectedCurrency].rate).toFixed(2);
+  const convertedGrandTotal = (grandTotal * currencies[selectedCurrency].rate).toFixed(2);
 
   // Fetch userId from /api/user/me
   useEffect(() => {
@@ -66,13 +77,6 @@ const Cart = () => {
     };
   }, []);
 
-  const subtotal = cartItems.reduce(
-    (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
-    0
-  );
-
-  const grandTotal = subtotal - discount;
-
   const handleDelete = (id, type) => {
     removeFromCart(id, type);
     toast.success("Item removed from cart");
@@ -93,33 +97,25 @@ const Cart = () => {
     }
 
     try {
-      if (!instance || typeof axios.post !== "function") {
-        throw new Error("Axios instance is not initialized");
-      }
-
       const response = await axios.post("/api/coupons/validate", {
         code: couponCode,
+        totalAmount: grandTotal,
       });
-      const { discount } = response.data.coupon;
 
-      // Calculate discount amount based on subtotal
-      const discountAmount = (subtotal * discount) / 100;
-
-      setDiscount(discountAmount);
-      setCouponError("");
-      setCouponApplicable(true);
-      setCouponCode("");
-      toast.success(
-        `Coupon applied successfully! You saved ₹${discountAmount.toFixed(
-          2
-        )} (${discount}% off)`
-      );
+      if (response.data.success) {
+        setDiscount(response.data.discount);
+        setCouponApplicable(true);
+        setCouponError("");
+        toast.success(`Coupon applied! You saved ₹${response.data.discount}`);
+      } else {
+        setCouponError(response.data.error || "Invalid coupon code");
+        toast.error(response.data.error || "Invalid coupon code");
+      }
     } catch (error) {
+      console.error("Coupon validation failed:", error);
       const errorMessage =
-        error.response?.data?.message || "Failed to apply coupon";
+        error.response?.data?.error || "Failed to validate coupon";
       setCouponError(errorMessage);
-      setDiscount(0);
-      setCouponApplicable(false);
       toast.error(errorMessage);
     }
   };
@@ -131,60 +127,47 @@ const Cart = () => {
       return;
     }
 
-    if (!window.Razorpay) {
-      toast.error("Razorpay SDK failed to load. Please try again later.");
-      return;
-    }
-
     if (grandTotal <= 0) {
       toast.error("Cart total must be greater than zero");
       return;
     }
 
     try {
-      if (!instance || typeof axios.post !== "function") {
-        throw new Error("Axios instance is not initialized");
-      }
-
-      console.log("Initiating Razorpay order creation:", {
+      console.log("Creating Razorpay order:", {
         amount: grandTotal,
         userId,
       });
-      const orderData = {
+
+      const response = await axios.post("/api/payments/razorpay/create-order", {
         amount: grandTotal,
         currency: "INR",
-        userId, // Include userId for validation
-      };
-      const response = await axios.post(
-        "/api/payments/razorpay/create-order",
-        orderData
-      );
-      if (!response.data?.id) {
+        userId,
+      });
+
+      if (!response.data?.success || !response.data?.orderId) {
         throw new Error(
           response.data.error || "Failed to create Razorpay order"
         );
       }
 
-      const { id, amount, currency } = response.data;
-
       const options = {
-        key:
-          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V",
-        amount: amount,
-        currency: currency,
-        order_id: id,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: grandTotal * 100,
+        currency: "INR",
         name: "DumpsExpert",
-        description: "Purchase Exam Dumps",
-        handler: async (razorpayResponse) => {
+        description: "Purchase IT Certification Materials",
+        order_id: response.data.orderId,
+        handler: async (response) => {
           try {
-            console.log("Verifying Razorpay payment:", razorpayResponse);
+            console.log("Razorpay payment successful:", response);
             console.log("User ID sent to verify:", userId);
+
             const paymentVerification = await axios.post(
               "/api/payments/razorpay/verify",
               {
-                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
-                razorpay_order_id: razorpayResponse.razorpay_order_id,
-                razorpay_signature: razorpayResponse.razorpay_signature,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
                 amount: grandTotal,
                 userId,
               }
@@ -196,6 +179,7 @@ const Cart = () => {
                 items: cartItems,
                 totalAmount: grandTotal,
               });
+
               await axios.post("/api/order", {
                 userId,
                 items: cartItems,
@@ -206,47 +190,41 @@ const Cart = () => {
 
               clearCart();
 
-              // Update session with new user data
-              await update({
-                user: {
-                  ...session.user,
-                  role: paymentVerification.data.user.role,
-                  subscription: paymentVerification.data.user.subscription,
-                },
-              });
+              if (paymentVerification.data.user) {
+                await update({
+                  user: {
+                    ...session.user,
+                    role: paymentVerification.data.user.role,
+                    subscription: paymentVerification.data.user.subscription,
+                  },
+                });
+              }
 
+              toast.success("Payment successful! Order created.");
               router.push("/dashboard");
-              toast.success("Payment successful! Redirecting to dashboard...");
             } else {
-              toast.error(
-                paymentVerification.data.error || "Payment verification failed"
-              );
+              throw new Error(paymentVerification.data.error || "Payment verification failed");
             }
           } catch (error) {
-            console.error("Payment verification error:", {
-              message: error.message,
-              stack: error.stack,
-              response: error.response?.data,
-            });
+            console.error("Payment verification failed:", error);
             toast.error(
               error.response?.data?.error || "Payment verification failed"
             );
           }
         },
-        theme: {
-          color: "#3B82F6",
-        },
         prefill: {
-          email: session.user.email,
-          name: session.user.name,
+          name: session?.user?.name || "",
+          email: session?.user?.email || "",
+        },
+        theme: {
+          color: "#4F46E5",
         },
       };
 
-      console.log("Opening Razorpay checkout with options:", options);
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (response) => {
         console.error("Razorpay payment failed:", response.error);
-        toast.error(response.error?.description || "Payment failed");
+        toast.error(`Payment failed: ${response.error.description}`);
       });
       rzp.open();
       setShowPaymentModal(false);
@@ -272,7 +250,7 @@ const Cart = () => {
       return;
     }
 
-    const convertedAmount = (grandTotal * currencies[selectedCurrency].rate).toFixed(2);
+    const convertedAmount = parseFloat(convertedGrandTotal);
 
     if (convertedAmount <= 0) {
       toast.error("Cart total must be greater than zero");
@@ -287,7 +265,7 @@ const Cart = () => {
       });
 
       const response = await axios.post("/api/payments/paypal/create-order", {
-        amount: parseFloat(convertedAmount),
+        amount: convertedAmount,
         currency: selectedCurrency,
         userId,
       });
@@ -318,7 +296,7 @@ const Cart = () => {
         "/api/payments/paypal/verify",
         {
           orderId: data.orderID,
-          amount: grandTotal,
+          amount: parseFloat(convertedGrandTotal),
           userId,
         }
       );
@@ -340,7 +318,6 @@ const Cart = () => {
 
         clearCart();
 
-        // Update session with new user data if available
         if (paymentVerification.data.user) {
           await update({
             user: {
@@ -351,15 +328,14 @@ const Cart = () => {
           });
         }
 
+        toast.success("Payment successful! Order created.");
+        setShowPaymentModal(false);
         router.push("/dashboard");
-        toast.success("Payment successful! Redirecting to dashboard...");
       } else {
-        toast.error(
-          paymentVerification.data.error || "Payment verification failed"
-        );
+        throw new Error(paymentVerification.data.error || "Payment verification failed");
       }
     } catch (error) {
-      console.error("PayPal payment verification error:", error);
+      console.error("PayPal payment verification failed:", error);
       toast.error(
         error.response?.data?.error || "Payment verification failed"
       );
@@ -376,11 +352,15 @@ const Cart = () => {
     toast.info("Payment cancelled");
   };
 
+  if (!isMounted) {
+    return <div className="text-center">Loading...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Shopping Cart</h1>
 
         {cartItems.length === 0 ? (
           <div className="text-center py-16">
@@ -391,11 +371,9 @@ const Cart = () => {
               height={300}
               className="mx-auto mb-8"
             />
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-              Your cart is empty
-            </h2>
-            <p className="text-gray-500 mb-8">
-              Add some items to your cart to get started.
+            <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
+            <p className="text-gray-600 mb-8">
+              Add some items to your cart to get started!
             </p>
             <Button
               onClick={() => router.push("/")}
@@ -430,7 +408,7 @@ const Cart = () => {
                       Type: {item.type}
                     </p>
                     <p className="text-lg font-semibold text-green-600">
-                      ₹{item.price}
+                      {currencies[selectedCurrency].symbol}{(item.price * currencies[selectedCurrency].rate).toFixed(2)}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -467,15 +445,33 @@ const Cart = () => {
             <div className="bg-white rounded-lg shadow-sm p-6 h-fit">
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
 
+              {/* Currency Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Display Currency
+                </label>
+                <select
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {Object.entries(currencies).map(([code, { symbol, name }]) => (
+                    <option key={code} value={code}>
+                      {symbol} {name} ({code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>₹{subtotal || 0}</span>
+                  <span>{currencies[selectedCurrency].symbol}{convertedSubtotal}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount:</span>
-                    <span>-₹{discount}</span>
+                    <span>-{currencies[selectedCurrency].symbol}{convertedDiscount}</span>
                   </div>
                 )}
               </div>
@@ -497,28 +493,28 @@ const Cart = () => {
                 {couponError && (
                   <p className="text-red-500 text-sm mt-2">{couponError}</p>
                 )}
-
-                <hr className="my-4" />
-
-                <p className="font-medium text-lg">
-                  Grand Total:{" "}
-                  <span className="float-right text-green-600">
-                    ₹{grandTotal || 0}
-                  </span>
-                </p>
-
-                {cartItems.length > 0 && (
-                  <div className="mt-6">
-                    <Button
-                      variant="default"
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                      onClick={() => setShowPaymentModal(true)}
-                    >
-                      Continue to Payment
-                    </Button>
-                  </div>
-                )}
               </div>
+
+              <hr className="my-4" />
+
+              <p className="font-medium text-lg">
+                Grand Total:{" "}
+                <span className="float-right text-green-600">
+                  {currencies[selectedCurrency].symbol}{convertedGrandTotal} {selectedCurrency}
+                </span>
+              </p>
+
+              {cartItems.length > 0 && (
+                <div className="mt-6">
+                  <Button
+                    variant="default"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    onClick={() => setShowPaymentModal(true)}
+                  >
+                    Continue to Payment
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -556,13 +552,12 @@ const Cart = () => {
                 onClick={handleRazorpayPayment}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
               >
-                <Image
-                  src="https://via.placeholder.com/100"
-                  alt="Razorpay"
-                  width={80}
-                  height={40}
-                  className="w-20 h-10"
-                />
+                <svg className="w-20 h-10" viewBox="0 0 100 40" fill="none">
+                  <rect width="100" height="40" rx="4" fill="white"/>
+                  <text x="50" y="25" textAnchor="middle" className="text-sm font-medium fill-blue-600">
+                    Razorpay
+                  </text>
+                </svg>
                 Pay with Razorpay ({currencies[selectedCurrency].symbol}{convertedGrandTotal})
               </button>
 
@@ -599,66 +594,6 @@ const Cart = () => {
             </div>
           </div>
         )}
-
-        {/* Update the cart summary section to show currency selection */}
-        {cartItems.length > 0 && (
-          <div className="lg:col-span-1">
-            <div className="bg-gray-50 rounded-lg p-6 sticky top-4">
-              <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-              
-              {/* Currency Selection in Cart Summary */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Display Currency
-                </label>
-                <select
-                  value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {Object.entries(currencies).map(([code, { symbol, name }]) => (
-                    <option key={code} value={code}>
-                      {symbol} {name} ({code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>{currencies[selectedCurrency].symbol}{convertedSubtotal}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount:</span>
-                    <span>-{currencies[selectedCurrency].symbol}{convertedDiscount}</span>
-                  </div>
-                )}
-                <hr className="my-2" />
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>Total:</span>
-                  <span>{currencies[selectedCurrency].symbol}{convertedGrandTotal} {selectedCurrency}</span>
-                </div>
-              </div>
-
-              {/* ... existing coupon code section ... */}
-
-              {cartItems.length > 0 && (
-                <div className="mt-6">
-                  <Button
-                    variant="default"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700"
-                    onClick={() => setShowPaymentModal(true)}
-                  >
-                    Continue to Payment
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
   );
