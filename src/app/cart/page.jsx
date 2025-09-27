@@ -22,6 +22,13 @@ const Cart = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [userId, setUserId] = useState(null);
   const [paypalOrderId, setPaypalOrderId] = useState(null);
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+
+  // Currency options with conversion rates (you may want to fetch these from an API)
+  const currencies = {
+    USD: { symbol: "$", rate: 1, name: "US Dollar" },
+    INR: { symbol: "₹", rate: 83, name: "Indian Rupee" }
+  };
 
   const cartItems = useCartStore((state) => state.cartItems);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
@@ -265,20 +272,23 @@ const Cart = () => {
       return;
     }
 
-    if (grandTotal <= 0) {
+    const convertedAmount = (grandTotal * currencies[selectedCurrency].rate).toFixed(2);
+
+    if (convertedAmount <= 0) {
       toast.error("Cart total must be greater than zero");
       return;
     }
 
     try {
       console.log("Creating PayPal order:", {
-        amount: grandTotal,
+        amount: convertedAmount,
+        currency: selectedCurrency,
         userId,
       });
 
       const response = await axios.post("/api/payments/paypal/create-order", {
-        amount: grandTotal,
-        currency: "INR",
+        amount: parseFloat(convertedAmount),
+        currency: selectedCurrency,
         userId,
       });
 
@@ -520,6 +530,27 @@ const Cart = () => {
                 Select Payment Method
               </h3>
 
+              {/* Currency Selection */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Currency
+                </label>
+                <select
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {Object.entries(currencies).map(([code, { symbol, name }]) => (
+                    <option key={code} value={code}>
+                      {symbol} {name} ({code})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-gray-600">
+                  Total: {currencies[selectedCurrency].symbol}{convertedGrandTotal} {selectedCurrency}
+                </p>
+              </div>
+
               {/* Razorpay Button */}
               <button
                 onClick={handleRazorpayPayment}
@@ -532,7 +563,7 @@ const Cart = () => {
                   height={40}
                   className="w-20 h-10"
                 />
-                Pay with Razorpay
+                Pay with Razorpay ({currencies[selectedCurrency].symbol}{convertedGrandTotal})
               </button>
 
               {/* PayPal Button */}
@@ -540,7 +571,7 @@ const Cart = () => {
                 <PayPalScriptProvider
                   options={{
                     "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
-                    currency: "INR",
+                    currency: selectedCurrency,
                     intent: "capture",
                   }}
                 >
@@ -568,6 +599,66 @@ const Cart = () => {
             </div>
           </div>
         )}
+
+        {/* Update the cart summary section to show currency selection */}
+        {cartItems.length > 0 && (
+          <div className="lg:col-span-1">
+            <div className="bg-gray-50 rounded-lg p-6 sticky top-4">
+              <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+              
+              {/* Currency Selection in Cart Summary */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Display Currency
+                </label>
+                <select
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {Object.entries(currencies).map(([code, { symbol, name }]) => (
+                    <option key={code} value={code}>
+                      {symbol} {name} ({code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>{currencies[selectedCurrency].symbol}{convertedSubtotal}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount:</span>
+                    <span>-{currencies[selectedCurrency].symbol}{convertedDiscount}</span>
+                  </div>
+                )}
+                <hr className="my-2" />
+                <div className="flex justify-between font-semibold text-lg">
+                  <span>Total:</span>
+                  <span>{currencies[selectedCurrency].symbol}{convertedGrandTotal} {selectedCurrency}</span>
+                </div>
+              </div>
+
+              {/* ... existing coupon code section ... */}
+
+              {cartItems.length > 0 && (
+                <div className="mt-6">
+                  <Button
+                    variant="default"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    onClick={() => setShowPaymentModal(true)}
+                  >
+                    Continue to Payment
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

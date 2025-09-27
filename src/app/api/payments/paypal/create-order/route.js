@@ -1,15 +1,25 @@
 import { NextResponse } from 'next/server';
 import paypal from '@paypal/checkout-server-sdk';
 
-const clientId = process.env.PAYPAL_CLIENT_ID;
-const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret); // Use LiveEnvironment for production
-const client = new paypal.core.PayPalHttpClient(environment);
-
 export async function POST(request) {
   try {
     console.log("Route hit: /api/payments/paypal/create-order");
     const { amount, currency, userId } = await request.json();
+
+    // Check PayPal credentials
+    const clientId = process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      console.error('PayPal credentials not configured');
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'PayPal payment is not configured. Please contact support.' 
+        }, 
+        { status: 503 }
+      );
+    }
 
     // Input validation
     if (!amount || amount <= 0) {
@@ -31,13 +41,17 @@ export async function POST(request) {
       );
     }
 
+    // Initialize PayPal client after credential validation
+    const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
+    const client = new paypal.core.PayPalHttpClient(environment);
+
     const paypalRequest = new paypal.orders.OrdersCreateRequest();
     paypalRequest.requestBody({
       intent: 'CAPTURE',
       purchase_units: [
         {
           amount: {
-            currency_code: currency || 'INR',
+            currency_code: currency || 'USD',
             value: amount.toString()
           }
         }
