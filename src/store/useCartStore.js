@@ -27,7 +27,7 @@ let useCartStoreBase = (set, get) => ({
   syncWithServer: async () => {
     const { isLoggedIn } = get();
     if (!isLoggedIn) return;
-
+  
     try {
       set({ isLoading: true, syncError: null });
       
@@ -35,7 +35,7 @@ let useCartStoreBase = (set, get) => ({
       const response = await axios.get("/api/cart");
       const serverItems = response.data.items || [];
       
-      // Always use server items as source of truth
+      // Always prioritize server state over local storage
       set({ 
         cartItems: serverItems,
         lastSynced: new Date(),
@@ -43,13 +43,50 @@ let useCartStoreBase = (set, get) => ({
         syncError: null
       });
       
+      // Force update local storage with server data
+      localStorage.setItem('cart-storage', JSON.stringify({
+        state: {
+          cartItems: serverItems,
+          totalQuantity: get().calculateTotalQuantity(serverItems),
+          lastSynced: new Date()
+        },
+        version: 0
+      }));
+      
       return serverItems;
     } catch (error) {
       console.error("Failed to sync cart with server:", error);
       set({ syncError: "Failed to sync with server" });
-      throw error; // Re-throw to allow error handling in components
+      throw error;
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  // Add method to force sync and clear conflicts
+  forceSyncWithServer: async () => {
+    const { isLoggedIn } = get();
+    if (!isLoggedIn) return;
+    
+    try {
+      // Clear local storage first
+      localStorage.removeItem('cart-storage');
+      
+      // Fetch fresh data from server
+      const response = await axios.get("/api/cart");
+      const serverItems = response.data.items || [];
+      
+      set({
+        cartItems: serverItems,
+        totalQuantity: get().calculateTotalQuantity(serverItems),
+        lastSynced: new Date(),
+        syncError: null
+      });
+      
+      return serverItems;
+    } catch (error) {
+      console.error("Force sync failed:", error);
+      throw error;
     }
   },
 
@@ -117,9 +154,8 @@ let useCartStoreBase = (set, get) => ({
     if (!isLoggedIn) return;
     
     try {
-      const response = await axios.delete(`/api/cart/item`, {
-        params: { id, type }
-      });
+      // FIX: Use query parameters in URL instead of params object
+      const response = await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
       
       // Update with server response
       if (response.data?.items) {
@@ -167,16 +203,28 @@ let useCartStoreBase = (set, get) => ({
       const response = await axios.patch("/api/cart/item", { 
         productId: id, 
         type, 
-        operation,
-        quantity: updatedItems.find(i => i._id === id && i.type === type)?.quantity
+        operation
       });
       
-      // Update with server response
+      // Update with server response and force local storage update
       if (response.data?.items) {
+        const serverItems = response.data.items;
+        const newTotalQuantity = get().calculateTotalQuantity(serverItems);
+        
         set({ 
-          cartItems: response.data.items,
-          totalQuantity: get().calculateTotalQuantity(response.data.items)
+          cartItems: serverItems,
+          totalQuantity: newTotalQuantity
         });
+        
+        // Force update local storage
+        localStorage.setItem('cart-storage', JSON.stringify({
+          state: {
+            cartItems: serverItems,
+            totalQuantity: newTotalQuantity,
+            lastSynced: new Date()
+          },
+          version: 0
+        }));
       }
       return response.data?.items || updatedItems;
     } catch (error) {
@@ -219,14 +267,26 @@ let useCartStoreBase = (set, get) => ({
 });
 
 // Wrap state in persist
+// Enhanced persist configuration
 useCartStoreBase = persist(useCartStoreBase, {
   name: "cart-storage",
   partialize: (state) => ({
-    // Only persist these fields
     cartItems: state.cartItems,
     totalQuantity: state.totalQuantity,
     lastSynced: state.lastSynced
   }),
+  // Add merge function to handle conflicts
+  merge: (persistedState, currentState) => {
+    // If user is logged in, prioritize server state
+    if (currentState.isLoggedIn && persistedState.lastSynced) {
+      const timeDiff = new Date() - new Date(persistedState.lastSynced);
+      // If last sync was more than 5 minutes ago, don't use persisted state
+      if (timeDiff > 5 * 60 * 1000) {
+        return currentState;
+      }
+    }
+    return { ...currentState, ...persistedState };
+  }
 });
 
 const useCartStore = create(useCartStoreBase);
