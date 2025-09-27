@@ -8,14 +8,33 @@ import Payment from "@/models/paymentSchema";
 import UserInfo from "@/models/userInfoSchema";
 import mongoose from "mongoose";
 
-const razorpay = new Razorpay({
-  key_id: "rzp_test_7kAotmP1o8JR8V",
-  key_secret: "jPBuKq2CqukA4JxOXKfp8QU7",
-});
-
 export async function POST(request) {
   try {
     console.log("Route hit: /api/payments/razorpay/verify");
+
+    // Check Razorpay credentials
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V";
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || "jPBuKq2CqukA4JxOXKfp8QU7";
+
+    if (!keyId || !keySecret) {
+      console.error('Razorpay credentials not configured', { 
+        hasKeyId: !!keyId, 
+        hasKeySecret: !!keySecret 
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Razorpay payment verification is not configured. Please contact support.' 
+        }, 
+        { status: 503 }
+      );
+    }
+
+    // Initialize Razorpay instance with validation
+    const razorpay = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
 
     // Get session to verify authenticated user
     const session = await getServerSession(authOptions);
