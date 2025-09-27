@@ -109,6 +109,8 @@ export async function DELETE(request) {
     const productId = searchParams.get('id');
     const type = searchParams.get('type');
     
+    console.log(`DELETE request - productId: ${productId}, type: ${type}`);
+    
     if (!productId || !type) {
       return NextResponse.json(
         { error: "Missing product ID or type" },
@@ -119,50 +121,51 @@ export async function DELETE(request) {
     await connectMongoDB();
     const userId = session.user.id;
     
-    console.log(`Deleting item: ${productId} of type ${type} for user ${userId}`);
-    
-    // Find the cart first to check if the item exists
+    // First, let's find the cart to debug
     const cart = await Cart.findOne({ user: userId });
+    console.log('Current cart items:', cart?.items?.map(item => ({
+      productId: item.productId.toString(),
+      _id: item._id.toString(),
+      type: item.type
+    })));
     
-    if (!cart) {
-      return NextResponse.json({ 
-        success: true, 
-        items: [] 
-      });
-    }
-    
-    // Check if item exists in cart
-    const itemExists = cart.items.some(
-      item => item.productId.toString() === productId && item.type === type
-    );
-    
-    if (!itemExists) {
-      return NextResponse.json({
-        success: true,
-        items: cart.items
-      });
-    }
-    
-    // Remove the item
+    // Try to remove using both productId and _id to handle the mismatch
     const result = await Cart.findOneAndUpdate(
       { user: userId },
       { 
-        $pull: { items: { productId: productId, type: type } },
+        $pull: { 
+          items: { 
+            $or: [
+              { productId: productId, type: type },
+              { _id: productId, type: type }
+            ]
+          }
+        },
         lastUpdated: new Date()
       },
       { new: true }
     );
     
-    console.log(`Item deleted, remaining items: ${result?.items?.length || 0}`);
+    if (!result) {
+      return NextResponse.json(
+        { error: "Cart not found" },
+        { status: 404 }
+      );
+    }
+    
+    const totalQuantity = result.items.reduce((total, item) => total + item.quantity, 0);
+    
+    console.log(`After deletion - Remaining items: ${result.items.length}, Total quantity: ${totalQuantity}`);
 
     return NextResponse.json({ 
       success: true, 
-      items: result?.items || [] 
+      items: result.items,
+      totalQuantity: totalQuantity
     });
   } catch (error) {
     console.error("Error removing item from cart:", error);
     return NextResponse.json(
-      { error: "Failed to remove item from cart" },
+      { error: "Failed to remove item from cart", details: error.message },
       { status: 500 }
     );
   }

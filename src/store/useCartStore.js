@@ -1,14 +1,13 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import axios from "axios";
 
-let useCartStoreBase = (set, get) => ({
+const useCartStore = create((set, get) => ({
   cartItems: [],
   isLoading: false,
   isLoggedIn: false,
   lastSynced: null,
   totalQuantity: 0,
-  syncError: null, // Add this to track sync errors
+  syncError: null,
 
   // Calculate total quantity
   calculateTotalQuantity: (items) => {
@@ -20,22 +19,30 @@ let useCartStoreBase = (set, get) => ({
     set({ isLoggedIn: status });
     if (status) {
       get().syncWithServer();
+    } else {
+      // Clear cart when logged out
+      set({ 
+        cartItems: [], 
+        totalQuantity: 0, 
+        lastSynced: null 
+      });
     }
   },
 
-  // Sync cart with server
+  // Sync cart with server (server is source of truth)
   syncWithServer: async () => {
     const { isLoggedIn } = get();
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      set({ cartItems: [], totalQuantity: 0 });
+      return;
+    }
 
     try {
       set({ isLoading: true, syncError: null });
       
-      // Get server cart
       const response = await axios.get("/api/cart");
       const serverItems = response.data.items || [];
       
-      // Always use server items as source of truth
       set({ 
         cartItems: serverItems,
         lastSynced: new Date(),
@@ -47,189 +54,144 @@ let useCartStoreBase = (set, get) => ({
     } catch (error) {
       console.error("Failed to sync cart with server:", error);
       set({ syncError: "Failed to sync with server" });
-      throw error; // Re-throw to allow error handling in components
+      throw error;
     } finally {
       set({ isLoading: false });
     }
   },
 
   addToCart: async (item) => {
-    console.log("Adding item to cart:", item);
-    const existing = get().cartItems.find(
-      (i) => i._id === item._id && i.type === item.type
-    );
-    
-    let updatedItems;
-    if (existing) {
-      updatedItems = get().cartItems.map((i) =>
-        i._id === item._id && i.type === item.type
-          ? { ...i, quantity: (i.quantity || 1) + 1 }
-          : i
-      );
-    } else {
-      updatedItems = [...get().cartItems, { ...item, quantity: 1 }];
-    }
-    
-    // Update local state first
-    set({
-      cartItems: updatedItems,
-      totalQuantity: get().calculateTotalQuantity(updatedItems)
-    });
-    
-    // Sync with server if logged in
     const { isLoggedIn } = get();
-    if (isLoggedIn) {
-      try {
-        // Send the complete item with quantity
-        const itemToSend = existing 
-          ? { ...item, quantity: (existing.quantity || 1) + 1 }
-          : { ...item, quantity: 1 };
-          
-        const response = await axios.post("/api/cart/item", itemToSend);
-        
-        // Update state with server response to ensure sync
-        if (response.data && response.data.items) {
-          set({ 
-            cartItems: response.data.items,
-            totalQuantity: get().calculateTotalQuantity(response.data.items)
-          });
-        }
-      } catch (error) {
-        console.error("Failed to sync cart item with server:", error);
+    if (!isLoggedIn) {
+      console.warn("User not logged in, cannot add to cart");
+      return;
+    }
+
+    try {
+      set({ isLoading: true });
+      
+      const response = await axios.post("/api/cart/item", item);
+      
+      if (response.data && response.data.items) {
+        set({ 
+          cartItems: response.data.items,
+          totalQuantity: get().calculateTotalQuantity(response.data.items),
+          lastSynced: new Date()
+        });
       }
+      
+      return response.data.items;
+    } catch (error) {
+      console.error("Failed to add item to cart:", error);
+      set({ syncError: "Failed to add item" });
+      throw error;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
   removeFromCart: async (id, type) => {
     const { isLoggedIn } = get();
-    const originalItems = [...get().cartItems];
-    
-    // Optimistic UI update
-    const updatedItems = originalItems.filter(
-      (item) => !(item._id === id && item.type === type)
-    );
-    
-    set({
-      cartItems: updatedItems,
-      totalQuantity: get().calculateTotalQuantity(updatedItems)
-    });
-    
-    if (!isLoggedIn) return;
-    
+    if (!isLoggedIn) {
+      console.warn("User not logged in, cannot remove from cart");
+      return;
+    }
+
     try {
-      const response = await axios.delete(`/api/cart/item`, {
-        params: { id, type }
-      });
+      set({ isLoading: true });
       
-      // Update with server response
-      if (response.data?.items) {
+      // Use the item's _id for deletion (not productId)
+      const response = await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
+      
+      if (response.data && response.data.items !== undefined) {
         set({ 
           cartItems: response.data.items,
-          totalQuantity: get().calculateTotalQuantity(response.data.items)
+          totalQuantity: get().calculateTotalQuantity(response.data.items),
+          lastSynced: new Date()
         });
       }
-      return response.data?.items || updatedItems;
+      
+      return response.data.items;
     } catch (error) {
-      console.error("Failed to remove item:", error);
-      // Revert on error
-      set({
-        cartItems: originalItems,
-        totalQuantity: get().calculateTotalQuantity(originalItems)
-      });
-      throw error; // Re-throw to allow error handling in components
+      console.error("Failed to remove item from cart:", error);
+      set({ syncError: "Failed to remove item" });
+      throw error;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
   updateQuantity: async (id, type, operation) => {
     const { isLoggedIn } = get();
-    const originalItems = [...get().cartItems];
-    
-    // Calculate new quantity
-    const updatedItems = originalItems.map((item) => {
-      if (item._id === id && item.type === type) {
-        const newQty = operation === "inc"
-          ? (item.quantity || 1) + 1
-          : Math.max(1, (item.quantity || 1) - 1);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    });
-    
-    // Optimistic UI update
-    set({
-      cartItems: updatedItems,
-      totalQuantity: get().calculateTotalQuantity(updatedItems)
-    });
-    
-    if (!isLoggedIn) return;
-    
+    if (!isLoggedIn) {
+      console.warn("User not logged in, cannot update quantity");
+      return;
+    }
+  
     try {
+      set({ isLoading: true });
+      
+      // Find the item in current cart to get the correct productId
+      const currentItems = get().cartItems;
+      const item = currentItems.find(item => item._id === id && item.type === type);
+      
+      if (!item) {
+        console.error("Item not found in local cart");
+        throw new Error("Item not found in local cart");
+      }
+      
+      // Use the actual productId from the item, not the _id
       const response = await axios.patch("/api/cart/item", { 
-        productId: id, 
+        productId: item.productId || item._id, // Use productId if available, fallback to _id
         type, 
-        operation,
-        quantity: updatedItems.find(i => i._id === id && i.type === type)?.quantity
+        operation 
       });
       
-      // Update with server response
-      if (response.data?.items) {
+      if (response.data && response.data.items) {
         set({ 
           cartItems: response.data.items,
-          totalQuantity: get().calculateTotalQuantity(response.data.items)
+          totalQuantity: get().calculateTotalQuantity(response.data.items),
+          lastSynced: new Date()
         });
       }
-      return response.data?.items || updatedItems;
+      
+      return response.data.items;
     } catch (error) {
       console.error("Failed to update quantity:", error);
-      // Revert on error
-      set({
-        cartItems: originalItems,
-        totalQuantity: get().calculateTotalQuantity(originalItems)
-      });
-      throw error; // Re-throw to allow error handling in components
+      set({ syncError: "Failed to update quantity" });
+      throw error;
+    } finally {
+      set({ isLoading: false });
     }
-  },
-
-  // Add a method to clear local storage persistence
-  clearLocalStorage: () => {
-    localStorage.removeItem("cart-storage");
-    set({ 
-      cartItems: [],
-      totalQuantity: 0,
-      lastSynced: null
-    });
   },
 
   clearCart: async () => {
-    set({ 
-      cartItems: [],
-      totalQuantity: 0
-    });
-    
-    // Sync with server if logged in
     const { isLoggedIn } = get();
-    if (isLoggedIn) {
-      try {
-        await axios.post("/api/cart", { items: [] });
-      } catch (error) {
-        console.error("Failed to clear cart on server:", error);
-      }
+    if (!isLoggedIn) return;
+
+    try {
+      set({ isLoading: true });
+      
+      await axios.post("/api/cart", { items: [] });
+      
+      set({ 
+        cartItems: [],
+        totalQuantity: 0,
+        lastSynced: new Date()
+      });
+    } catch (error) {
+      console.error("Failed to clear cart:", error);
+      set({ syncError: "Failed to clear cart" });
+    } finally {
+      set({ isLoading: false });
     }
   },
-});
 
-// Wrap state in persist
-useCartStoreBase = persist(useCartStoreBase, {
-  name: "cart-storage",
-  partialize: (state) => ({
-    // Only persist these fields
-    cartItems: state.cartItems,
-    totalQuantity: state.totalQuantity,
-    lastSynced: state.lastSynced
-  }),
-});
-
-const useCartStore = create(useCartStoreBase);
+  // Force refresh from server
+  refreshCart: async () => {
+    return get().syncWithServer();
+  }
+}));
 
 // Selector: Total Price
 export const getCartTotal = () =>
