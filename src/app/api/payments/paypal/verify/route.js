@@ -7,8 +7,14 @@ import Payment from "@/models/paymentSchema";
 import UserInfo from "@/models/userInfoSchema";
 import mongoose from "mongoose";
 
-const clientId = process.env.PAYPAL_CLIENT_ID;
+const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+// Add credential validation
+if (!clientId || !clientSecret) {
+  console.error('PayPal credentials not configured for verify endpoint');
+}
+
 const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret); // Use LiveEnvironment for production
 const client = new paypal.core.PayPalHttpClient(environment);
 

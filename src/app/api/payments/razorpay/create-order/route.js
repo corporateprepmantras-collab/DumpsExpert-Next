@@ -3,8 +3,8 @@ import Razorpay from "razorpay";
 
 // Initialize Razorpay instance once
 const razorpay = new Razorpay({
-  key_id: "rzp_test_7kAotmP1o8JR8V",
-  key_secret: "jPBuKq2CqukA4JxOXKfp8QU7",
+  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "jPBuKq2CqukA4JxOXKfp8QU7",
 });
 
 export async function POST(request) {
@@ -38,7 +38,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         success: true,
-        id: order.id,
+        orderId: order.id, // Changed from 'id' to 'orderId' to match cart expectation
         amount: order.amount / 100, // Return amount in INR
         currency: order.currency,
         receipt: order.receipt,

@@ -156,7 +156,7 @@ const Cart = () => {
         currency: "INR",
         name: "DumpsExpert",
         description: "Purchase IT Certification Materials",
-        order_id: response.data.orderId,
+        order_id: response.data.orderId, // This now matches the API response
         handler: async (response) => {
           try {
             console.log("Razorpay payment successful:", response);
