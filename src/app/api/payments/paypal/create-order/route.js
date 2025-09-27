@@ -8,11 +8,27 @@ const client = new paypal.core.PayPalHttpClient(environment);
 
 export async function POST(request) {
   try {
-    const { amount, currency } = await request.json();
+    console.log("Route hit: /api/payments/paypal/create-order");
+    const { amount, currency, userId } = await request.json();
 
-    if (!amount || !currency) {
-      console.error('Missing required fields:', { amount, currency });
-      return NextResponse.json({ error: 'Missing required order details' }, { status: 400 });
+    // Input validation
+    if (!amount || amount <= 0) {
+      console.error('Invalid or missing amount:', { amount });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Invalid or missing amount. Must be a number greater than 0.' 
+        }, 
+        { status: 400 }
+      );
+    }
+
+    if (!currency) {
+      console.error('Missing currency:', { currency });
+      return NextResponse.json(
+        { success: false, error: 'Missing currency' }, 
+        { status: 400 }
+      );
     }
 
     const paypalRequest = new paypal.orders.OrdersCreateRequest();
@@ -29,12 +45,26 @@ export async function POST(request) {
     });
 
     const order = await client.execute(paypalRequest);
+    
+    console.log("PayPal order created successfully:", {
+      orderId: order.result.id,
+      amount,
+      currency,
+      userId
+    });
+
     return NextResponse.json({
       success: true,
       orderId: order.result.id
     });
   } catch (error) {
-    console.error('PayPal order creation failed:', error);
-    return NextResponse.json({ error: 'Payment initiation failed' }, { status: 500 });
+    console.error('[PAYPAL_ORDER_ERROR]', {
+      error: error.message,
+      stack: error.stack,
+    });
+    return NextResponse.json(
+      { success: false, error: `Unable to create order: ${error.message}` }, 
+      { status: 500 }
+    );
   }
 }
