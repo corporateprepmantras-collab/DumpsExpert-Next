@@ -26,7 +26,7 @@ const Cart = () => {
   // Currency options with conversion rates
   const currencies = {
     USD: { symbol: "$", rate: 1, name: "US Dollar" },
-    INR: { symbol: "₹", rate: 83, name: "Indian Rupee" },
+    INR: { symbol: "₹", rate: 1, name: "Indian Rupee" },
   };
 
   const cartItems = useCartStore((state) => state.cartItems);
@@ -371,7 +371,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen mt-20 bg-gray-50">
       <Toaster position="top-right" />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-center mb-8">Shopping Cart</h1>
@@ -385,7 +385,6 @@ const Cart = () => {
               height={300}
               className="mx-auto mb-8"
             />
-            <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
             <p className="text-gray-600 mb-8">
               Add some items to your cart to get started!
             </p>
@@ -393,7 +392,7 @@ const Cart = () => {
               onClick={() => router.push("/")}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              Continue Shopping
+              Continue exploring
             </Button>
           </div>
         ) : (
