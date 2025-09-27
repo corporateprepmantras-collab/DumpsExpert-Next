@@ -6,12 +6,15 @@ export async function POST(request) {
     console.log("Route hit: /api/payments/paypal/create-order");
     const { amount, currency, userId } = await request.json();
 
-    // Check PayPal credentials
-    const clientId = process.env.PAYPAL_CLIENT_ID;
+    // Check PayPal credentials - Updated to use NEXT_PUBLIC_ prefix for consistency
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      console.error('PayPal credentials not configured');
+      console.error('PayPal credentials not configured', { 
+        hasClientId: !!clientId, 
+        hasClientSecret: !!clientSecret 
+      });
       return NextResponse.json(
         { 
           success: false, 
