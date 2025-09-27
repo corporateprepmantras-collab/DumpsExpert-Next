@@ -90,6 +90,12 @@ export default function Navbar() {
         }
       };
       fetchUserData();
+      
+      // Initialize cart when user is authenticated
+      useCartStore.getState().setLoginStatus(true);
+    } else if (status === "unauthenticated") {
+      // Clear cart when user is not authenticated
+      useCartStore.getState().setLoginStatus(false);
     }
   }, [status, session]);
 
