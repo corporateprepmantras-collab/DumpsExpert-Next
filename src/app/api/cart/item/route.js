@@ -121,33 +121,41 @@ export async function DELETE(request) {
     await connectMongoDB();
     const userId = session.user.id;
     
-    // Remove the item and return updated cart
+    // First, let's find the cart to debug
+    const cart = await Cart.findOne({ user: userId });
+    console.log('Current cart items:', cart?.items?.map(item => ({
+      productId: item.productId.toString(),
+      _id: item._id.toString(),
+      type: item.type
+    })));
+    
+    // Try to remove using both productId and _id to handle the mismatch
     const result = await Cart.findOneAndUpdate(
       { user: userId },
       { 
-        $pull: { items: { productId: productId, type: type } },
+        $pull: { 
+          items: { 
+            $or: [
+              { productId: productId, type: type },
+              { _id: productId, type: type }
+            ]
+          }
+        },
         lastUpdated: new Date()
       },
       { new: true }
     );
     
-    // If no cart exists, create empty one
     if (!result) {
-      const newCart = await Cart.create({
-        user: userId,
-        items: [],
-        lastUpdated: new Date()
-      });
-      return NextResponse.json({ 
-        success: true, 
-        items: [],
-        totalQuantity: 0
-      });
+      return NextResponse.json(
+        { error: "Cart not found" },
+        { status: 404 }
+      );
     }
     
     const totalQuantity = result.items.reduce((total, item) => total + item.quantity, 0);
     
-    console.log(`Item deleted successfully. Remaining items: ${result.items.length}, Total quantity: ${totalQuantity}`);
+    console.log(`After deletion - Remaining items: ${result.items.length}, Total quantity: ${totalQuantity}`);
 
     return NextResponse.json({ 
       success: true, 
