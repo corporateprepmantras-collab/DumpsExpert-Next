@@ -215,7 +215,7 @@ const BlogPage = () => {
               </div>
 
               {/* Content */}
-              <div>
+              <div className="max-h-96 overflow-y-scroll">
         <RichTextEditor
           label="Content"
           name="content"

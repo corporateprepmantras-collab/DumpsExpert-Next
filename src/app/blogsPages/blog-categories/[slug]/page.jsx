@@ -2,12 +2,17 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
-
-// const BASE_URL = "http://${process.env.NEXT_PUBLIC_BASE_URL}";
+import { useParams, usePathname } from "next/navigation";
 
 export default function BlogPage() {
+  const params = useParams();
+  const pathname = usePathname();
+
+  // if route is /blogsPages -> no category selected
+  // if route is /blogsPages/[slug] -> category selected
+  const selectedCategory = params?.slug || "";
+
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [blogs, setBlogs] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,13 +38,14 @@ export default function BlogPage() {
       setLoading(true);
       try {
         const res = await axios.get(`/api/blogs`);
-        const allBlogs = res.data?.data || []; // ✅ fix
+        const allBlogs = res.data?.data || [];
 
-        // Filter by selected category
+        // Filter by selected category (match category field)
         const filteredByCategory = selectedCategory
           ? allBlogs.filter(
               (b) =>
-                b.category?.toLowerCase() === selectedCategory.toLowerCase()
+                typeof b.category === "string" &&
+                b.category.toLowerCase() === selectedCategory.toLowerCase()
             )
           : allBlogs;
 
@@ -52,7 +58,7 @@ export default function BlogPage() {
 
         setBlogs(filteredBlogs);
 
-        // Top 10 recent posts (descending by createdAt)
+        // Top 10 recent posts
         const recent = [...allBlogs]
           .sort(
             (a, b) =>
@@ -83,29 +89,32 @@ export default function BlogPage() {
 
         {/* Categories */}
         <div className="flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => setSelectedCategory("")}
-            className={`px-4 py-1 rounded-full border ${
-              selectedCategory === ""
-                ? "bg-white text-black font-semibold"
-                : "bg-transparent border-white"
-            }`}
-          >
-            All
-          </button>
-
-          {categories.map((cat) => (
+          {/* All blogs */}
+          <Link href="/blogsPages">
             <button
-              key={cat._id}
-              onClick={() => setSelectedCategory(cat.category)}
               className={`px-4 py-1 rounded-full border ${
-                selectedCategory === cat.category
+                !selectedCategory
                   ? "bg-white text-black font-semibold"
                   : "bg-transparent border-white"
               }`}
             >
-              {cat.category}
+              All
             </button>
+          </Link>
+
+          {/* Dynamic categories */}
+          {categories.map((cat) => (
+            <Link key={cat._id} href={`/blogsPages/${cat.category}`}>
+              <button
+                className={`px-4 py-1 rounded-full border ${
+                  selectedCategory.toLowerCase() === cat.category.toLowerCase()
+                    ? "bg-white text-black font-semibold"
+                    : "bg-transparent border-white"
+                }`}
+              >
+                {cat.category}
+              </button>
+            </Link>
           ))}
         </div>
       </div>
@@ -173,10 +182,10 @@ export default function BlogPage() {
               {recentPosts.map((post) => (
                 <li key={post._id}>
                   <Link
-                    href={`/blogsPages/${post.categories || post._id}`}
+                    href={`/blogsPages/blog/${post.categories || post._id}`}
                     className="text-blue-600 hover:underline block"
                   >
-                    {post.title}
+                    {post.sectionName}
                   </Link>
                 </li>
               ))}

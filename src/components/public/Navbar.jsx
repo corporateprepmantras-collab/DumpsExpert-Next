@@ -41,7 +41,7 @@ export default function Navbar() {
     const calculateTotalQuantity = (items) => {
       return items.reduce((total, item) => total + (item.quantity || 1), 0);
     };
-    
+
     // Initial cart count - total quantity
     setCartItemCount(calculateTotalQuantity(useCartStore.getState().cartItems));
 
@@ -155,7 +155,7 @@ export default function Navbar() {
                             item.dropdownKey === "ItDumps"
                               ? "ItDumps"
                               : "blogsPages"
-                          }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
+                          }/${sub}`}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           {sub}

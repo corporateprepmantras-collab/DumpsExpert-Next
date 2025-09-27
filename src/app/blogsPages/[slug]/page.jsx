@@ -38,28 +38,30 @@ const BlogPage = () => {
       setError("");
 
       try {
-        const blogsRes = await axios.get("/api/blogs");
-        const normalizedBlogs = normalizeBlogs(blogsRes.data);
-        setBlogs(normalizedBlogs);
+        let normalizedBlogs = [];
+        if (categorySlug) {
+          // ✅ fetch by slug
+          const res = await axios.get(
+            `/api/blogs/blog-categories/${categorySlug}`
+          );
+          normalizedBlogs = normalizeBlogs(res.data.blogs);
+        } else {
+          // ✅ fetch all blogs
+          const blogsRes = await axios.get("/api/blogs");
+          normalizedBlogs = normalizeBlogs(blogsRes.data);
+        }
 
-        // Filter blogs by slug (category)
-        const filtered = categorySlug
-          ? normalizedBlogs.filter(
-              (blog) =>
-                blog.category?.toLowerCase() === categorySlug.toLowerCase()
-            )
-          : normalizedBlogs;
+        setFilteredBlogs(normalizedBlogs);
 
-        setFilteredBlogs(filtered);
-
+        // recent posts
         const recent = [...normalizedBlogs]
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 10);
         setRecentPosts(recent);
 
+        // categories (still global)
         const categoriesRes = await axios.get("/api/blogs/blog-categories");
-        const normalizedCategories = normalizeBlogs(categoriesRes.data);
-        setCategories(normalizedCategories);
+        setCategories(normalizeBlogs(categoriesRes.data));
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to fetch data. Check console or network tab.");
@@ -69,7 +71,7 @@ const BlogPage = () => {
     };
 
     fetchData();
-  }, [categorySlug]); // refetch when slug changes
+  }, [categorySlug]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -93,7 +95,7 @@ const BlogPage = () => {
           {categories.map((cat) => (
             <Link
               key={cat._id ?? cat.category}
-              href={`/blogs/${cat.category.toLowerCase()}`}
+              href={`/blogsPages/${cat.category}`}
               className={`px-4 py-1 rounded-full border border-white ${
                 categorySlug === cat.category.toLowerCase()
                   ? "bg-white text-black"
@@ -115,7 +117,9 @@ const BlogPage = () => {
           ) : error ? (
             <p className="text-center text-red-500 col-span-full">{error}</p>
           ) : filteredBlogs.length === 0 ? (
-            <p className="text-gray-600 italic col-span-full">No blogs found.</p>
+            <p className="text-gray-600 italic col-span-full">
+              No blogs found.
+            </p>
           ) : (
             filteredBlogs.map((blog, idx) => (
               <BlogCard
@@ -147,7 +151,7 @@ const BlogPage = () => {
               {recentPosts.map((post) => (
                 <li key={post._id ?? post.slug}>
                   <Link
-                    href={`/blogs/${post.slug?.toLowerCase()}`}
+                    href={`/blogsPages/${post.categories}`}
                     className="text-blue-600 hover:underline block"
                   >
                     {post.title}
