@@ -13,19 +13,21 @@ export async function POST(request) {
     console.log("Route hit: /api/payments/razorpay/verify");
 
     // Check Razorpay credentials - Use consistent environment variable names
-    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V";
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || "jPBuKq2CqukA4JxOXKfp8QU7";
+    const keyId = process.env.RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V";
+    const keySecret =
+      process.env.RAZORPAY_KEY_SECRET || "jPBuKq2CqukA4JxOXKfp8QU7";
 
     if (!keyId || !keySecret) {
-      console.error('Razorpay credentials not configured', { 
-        hasKeyId: !!keyId, 
-        hasKeySecret: !!keySecret 
+      console.error("Razorpay credentials not configured", {
+        hasKeyId: !!keyId,
+        hasKeySecret: !!keySecret,
       });
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Razorpay payment verification is not configured. Please contact support.' 
-        }, 
+        {
+          success: false,
+          error:
+            "Razorpay payment verification is not configured. Please contact support.",
+        },
         { status: 503 }
       );
     }

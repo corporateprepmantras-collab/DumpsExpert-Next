@@ -26,7 +26,7 @@ const Cart = () => {
   // Currency options with conversion rates
   const currencies = {
     USD: { symbol: "$", rate: 1, name: "US Dollar" },
-    INR: { symbol: "₹", rate: 83, name: "Indian Rupee" }
+    INR: { symbol: "₹", rate: 83, name: "Indian Rupee" },
   };
 
   const cartItems = useCartStore((state) => state.cartItems);
@@ -44,9 +44,15 @@ const Cart = () => {
   const grandTotal = subtotal - discount;
 
   // Calculate converted amounts
-  const convertedSubtotal = (subtotal * currencies[selectedCurrency].rate).toFixed(2);
-  const convertedDiscount = (discount * currencies[selectedCurrency].rate).toFixed(2);
-  const convertedGrandTotal = (grandTotal * currencies[selectedCurrency].rate).toFixed(2);
+  const convertedSubtotal = (
+    subtotal * currencies[selectedCurrency].rate
+  ).toFixed(2);
+  const convertedDiscount = (
+    discount * currencies[selectedCurrency].rate
+  ).toFixed(2);
+  const convertedGrandTotal = (
+    grandTotal * currencies[selectedCurrency].rate
+  ).toFixed(2);
 
   // Fetch userId from /api/user/me
   useEffect(() => {
@@ -151,7 +157,7 @@ const Cart = () => {
       }
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: process.env.RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V", // Use your Razorpay Key ID
         amount: grandTotal * 100,
         currency: "INR",
         name: "DumpsExpert",
@@ -203,7 +209,9 @@ const Cart = () => {
               toast.success("Payment successful! Order created.");
               router.push("/dashboard");
             } else {
-              throw new Error(paymentVerification.data.error || "Payment verification failed");
+              throw new Error(
+                paymentVerification.data.error || "Payment verification failed"
+              );
             }
           } catch (error) {
             console.error("Payment verification failed:", error);
@@ -271,9 +279,7 @@ const Cart = () => {
       });
 
       if (!response.data?.success || !response.data?.orderId) {
-        throw new Error(
-          response.data.error || "Failed to create PayPal order"
-        );
+        throw new Error(response.data.error || "Failed to create PayPal order");
       }
 
       setPaypalOrderId(response.data.orderId);
@@ -332,13 +338,13 @@ const Cart = () => {
         setShowPaymentModal(false);
         router.push("/dashboard");
       } else {
-        throw new Error(paymentVerification.data.error || "Payment verification failed");
+        throw new Error(
+          paymentVerification.data.error || "Payment verification failed"
+        );
       }
     } catch (error) {
       console.error("PayPal payment verification failed:", error);
-      toast.error(
-        error.response?.data?.error || "Payment verification failed"
-      );
+      toast.error(error.response?.data?.error || "Payment verification failed");
     }
   };
 
@@ -408,7 +414,10 @@ const Cart = () => {
                       Type: {item.type}
                     </p>
                     <p className="text-lg font-semibold text-green-600">
-                      {currencies[selectedCurrency].symbol}{(item.price * currencies[selectedCurrency].rate).toFixed(2)}
+                      {currencies[selectedCurrency].symbol}
+                      {(item.price * currencies[selectedCurrency].rate).toFixed(
+                        2
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -455,23 +464,31 @@ const Cart = () => {
                   onChange={(e) => setSelectedCurrency(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  {Object.entries(currencies).map(([code, { symbol, name }]) => (
-                    <option key={code} value={code}>
-                      {symbol} {name} ({code})
-                    </option>
-                  ))}
+                  {Object.entries(currencies).map(
+                    ([code, { symbol, name }]) => (
+                      <option key={code} value={code}>
+                        {symbol} {name} ({code})
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>{currencies[selectedCurrency].symbol}{convertedSubtotal}</span>
+                  <span>
+                    {currencies[selectedCurrency].symbol}
+                    {convertedSubtotal}
+                  </span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount:</span>
-                    <span>-{currencies[selectedCurrency].symbol}{convertedDiscount}</span>
+                    <span>
+                      -{currencies[selectedCurrency].symbol}
+                      {convertedDiscount}
+                    </span>
                   </div>
                 )}
               </div>
@@ -500,7 +517,8 @@ const Cart = () => {
               <p className="font-medium text-lg">
                 Grand Total:{" "}
                 <span className="float-right text-green-600">
-                  {currencies[selectedCurrency].symbol}{convertedGrandTotal} {selectedCurrency}
+                  {currencies[selectedCurrency].symbol}
+                  {convertedGrandTotal} {selectedCurrency}
                 </span>
               </p>
 
@@ -536,14 +554,17 @@ const Cart = () => {
                   onChange={(e) => setSelectedCurrency(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  {Object.entries(currencies).map(([code, { symbol, name }]) => (
-                    <option key={code} value={code}>
-                      {symbol} {name} ({code})
-                    </option>
-                  ))}
+                  {Object.entries(currencies).map(
+                    ([code, { symbol, name }]) => (
+                      <option key={code} value={code}>
+                        {symbol} {name} ({code})
+                      </option>
+                    )
+                  )}
                 </select>
                 <p className="text-sm text-gray-600">
-                  Total: {currencies[selectedCurrency].symbol}{convertedGrandTotal} {selectedCurrency}
+                  Total: {currencies[selectedCurrency].symbol}
+                  {convertedGrandTotal} {selectedCurrency}
                 </p>
               </div>
 
@@ -553,19 +574,26 @@ const Cart = () => {
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
               >
                 <svg className="w-20 h-10" viewBox="0 0 100 40" fill="none">
-                  <rect width="100" height="40" rx="4" fill="white"/>
-                  <text x="50" y="25" textAnchor="middle" className="text-sm font-medium fill-blue-600">
+                  <rect width="100" height="40" rx="4" fill="white" />
+                  <text
+                    x="50"
+                    y="25"
+                    textAnchor="middle"
+                    className="text-sm font-medium fill-blue-600"
+                  >
                     Razorpay
                   </text>
                 </svg>
-                Pay with Razorpay ({currencies[selectedCurrency].symbol}{convertedGrandTotal})
+                Pay with Razorpay ({currencies[selectedCurrency].symbol}
+                {convertedGrandTotal})
               </button>
 
               {/* PayPal Button */}
               <div className="w-full">
                 <PayPalScriptProvider
                   options={{
-                    "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+                    "client-id":
+                      process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
                     currency: selectedCurrency,
                     intent: "capture",
                   }}
