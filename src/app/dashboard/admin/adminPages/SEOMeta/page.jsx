@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Box,
@@ -26,24 +26,20 @@ const defaultSchemaPlaceholder = `{
 const pages = ["home", "about", "blog", "sap", "contact"];
 
 const fields = [
-  // Basic SEO
   { name: "Title", label: "Meta Title" },
   { name: "Keywords", label: "Meta Keywords" },
   { name: "Description", label: "Meta Description", textarea: true },
 
-  // Open Graph
   { name: "OgTitle", label: "OG Title" },
   { name: "OgDescription", label: "OG Description", textarea: true },
   { name: "OgImage", label: "OG Image URL" },
   { name: "OgUrl", label: "OG URL" },
 
-  // Twitter
   { name: "TwitterTitle", label: "Twitter Title" },
   { name: "TwitterDescription", label: "Twitter Description", textarea: true },
   { name: "TwitterImage", label: "Twitter Image URL" },
   { name: "TwitterCard", label: "Twitter Card Type" },
 
-  // Additional
   { name: "CanonicalUrl", label: "Canonical URL" },
   { name: "Schema", label: "JSON-LD Schema", textarea: true },
 ];
@@ -55,6 +51,31 @@ export default function SEOMetaInfo() {
   const [snackbarMsg, setSnackbarMsg] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
+  // ✅ Fetch SEO data when switching tabs
+  useEffect(() => {
+    const fetchSEO = async () => {
+      try {
+        const res = await axios.get(`/api/seo/${activeTab}`);
+        const data = res.data || {};
+        const newValues = {};
+        fields.forEach((field) => {
+          newValues[`${activeTab}${field.name}`] =
+            data[field.name.toLowerCase()] || "";
+        });
+        setFormValues((prev) => ({ ...prev, ...newValues }));
+      } catch (err) {
+        console.warn(`No SEO data found for ${activeTab}`);
+        const emptyValues = {};
+        fields.forEach((field) => {
+          emptyValues[`${activeTab}${field.name}`] =
+            field.name === "Schema" ? defaultSchemaPlaceholder : "";
+        });
+        setFormValues((prev) => ({ ...prev, ...emptyValues }));
+      }
+    };
+    fetchSEO();
+  }, [activeTab]);
+
   const handleChange = (name, value) => {
     setFormValues((prev) => ({
       ...prev,
@@ -62,6 +83,7 @@ export default function SEOMetaInfo() {
     }));
   };
 
+  // ✅ Save SEO data
   const handleSend = async () => {
     try {
       setLoading(true);
@@ -69,15 +91,10 @@ export default function SEOMetaInfo() {
       const formData = {};
       fields.forEach((field) => {
         const key = `${activeTab}${field.name}`;
-        const val = formValues[key] || "";
-        formData[field.name.toLowerCase()] = val;
+        formData[field.name.toLowerCase()] = formValues[key] || "";
       });
 
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/seo/${activeTab}`,
-        formData,
-        { withCredentials: true }
-      );
+      await axios.post(`/api/seo/${activeTab}`, formData);
 
       setSnackbarMsg(`SEO data for ${activeTab} saved successfully!`);
       setSnackbarOpen(true);
@@ -98,7 +115,7 @@ export default function SEOMetaInfo() {
         ...prev,
         [key]: JSON.stringify(parsed, null, 2),
       }));
-    } catch (error) {
+    } catch {
       setSnackbarMsg("Invalid JSON format. Cannot format.");
       setSnackbarOpen(true);
     }
@@ -118,7 +135,11 @@ export default function SEOMetaInfo() {
           sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}
         >
           {pages.map((page) => (
-            <Tab key={page} value={page} label={`${page.charAt(0).toUpperCase() + page.slice(1)} Page`} />
+            <Tab
+              key={page}
+              value={page}
+              label={`${page.charAt(0).toUpperCase() + page.slice(1)} Page`}
+            />
           ))}
         </Tabs>
 
@@ -129,7 +150,6 @@ export default function SEOMetaInfo() {
             <TextField
               key={field.name}
               label={field.label}
-              name={`${activeTab}${field.name}`}
               value={formValues[`${activeTab}${field.name}`] || ""}
               onChange={(e) => handleChange(field.name, e.target.value)}
               fullWidth
@@ -146,7 +166,6 @@ export default function SEOMetaInfo() {
             <TextField
               key={field.name}
               label={field.label}
-              name={`${activeTab}${field.name}`}
               value={formValues[`${activeTab}${field.name}`] || ""}
               onChange={(e) => handleChange(field.name, e.target.value)}
               fullWidth
@@ -163,13 +182,17 @@ export default function SEOMetaInfo() {
             field.name === "TwitterCard" ? (
               <Select
                 key={field.name}
-                name={`${activeTab}${field.name}`}
-                value={formValues[`${activeTab}${field.name}`] || "summary_large_image"}
+                value={
+                  formValues[`${activeTab}${field.name}`] ||
+                  "summary_large_image"
+                }
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 fullWidth
               >
                 <MenuItem value="summary">Summary</MenuItem>
-                <MenuItem value="summary_large_image">Summary Large Image</MenuItem>
+                <MenuItem value="summary_large_image">
+                  Summary Large Image
+                </MenuItem>
                 <MenuItem value="app">App</MenuItem>
                 <MenuItem value="player">Player</MenuItem>
               </Select>
@@ -177,7 +200,6 @@ export default function SEOMetaInfo() {
               <TextField
                 key={field.name}
                 label={field.label}
-                name={`${activeTab}${field.name}`}
                 value={formValues[`${activeTab}${field.name}`] || ""}
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 fullWidth
@@ -192,23 +214,40 @@ export default function SEOMetaInfo() {
           {/* Additional SEO */}
           <Typography variant="h6">Additional SEO</Typography>
           {fields.slice(11).map((field) => (
-            <Box key={field.name} sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box
+              key={field.name}
+              sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <Typography>{field.label}</Typography>
                 {field.name === "Schema" && (
-                  <Button size="small" variant="text" onClick={handleFormatJSON}>
+                  <Button
+                    size="small"
+                    variant="text"
+                    onClick={handleFormatJSON}
+                  >
                     Format JSON
                   </Button>
                 )}
               </Box>
               <TextField
-                name={`${activeTab}${field.name}`}
-                value={formValues[`${activeTab}${field.name}`] || (field.name === "Schema" ? defaultSchemaPlaceholder : "")}
+                value={
+                  formValues[`${activeTab}${field.name}`] ||
+                  (field.name === "Schema" ? defaultSchemaPlaceholder : "")
+                }
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 fullWidth
                 multiline
                 rows={field.name === "Schema" ? 8 : 4}
-                sx={{ fontFamily: field.name === "Schema" ? "monospace" : "inherit" }}
+                sx={{
+                  fontFamily: field.name === "Schema" ? "monospace" : "inherit",
+                }}
               />
             </Box>
           ))}
