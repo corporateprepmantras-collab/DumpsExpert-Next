@@ -1,51 +1,44 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import ProductCategory from "@/models/productCategorySchema";
-import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
+// 📌 UPDATE category
 export async function PUT(req, { params }) {
   try {
     await connectMongoDB();
-
-    const { id } = await params;
+    const { id } = params;
     const formData = await req.formData();
 
-    const name = formData.get("name");
-    const status = formData.get("status") || "Ready";
+    const updates = {
+      name: formData.get("name")?.toString().trim(),
+      slug: formData.get("slug")?.toString().trim() || "",
+      description: formData.get("description")?.toString() || "",
+      descriptionBelow: formData.get("descriptionBelow")?.toString() || "",
+      metaTitle: formData.get("metaTitle")?.toString() || "",
+      metaKeywords: formData.get("metaKeywords")?.toString() || "",
+      metaDescription: formData.get("metaDescription")?.toString() || "",
+      remarks: formData.get("remarks")?.toString() || "",
+      status: formData.get("status")?.toString() || "Ready",
+    };
+
     const file = formData.get("image");
 
-    const category = await ProductCategory.findById(id);
-
-    if (!category) {
-      return NextResponse.json(
-        { message: "Category not found" },
-        { status: 404 }
-      );
-    }
-
-    let imageUrl = category.image;
-    let publicId = category.public_id;
-
-    if (file && file.size > 0) {
-      // Delete old image
-      if (publicId) {
-        await deleteFromCloudinary(publicId);
-      }
-      // Upload new image
+    if (file instanceof File && file.type.startsWith("image/")) {
       const uploadResult = await uploadToCloudinary(file);
-      if (!uploadResult.secure_url) {
-        throw new Error("Cloudinary upload failed");
-      }
-      imageUrl = uploadResult.secure_url;
-      publicId = uploadResult.public_id;
+      updates.image = uploadResult.secure_url;
+      updates.public_id = uploadResult.public_id;
     }
 
-    category.name = name || category.name;
-    category.status = status;
-    category.image = imageUrl;
-    category.public_id = publicId;
+    const updatedCategory = await ProductCategory.findByIdAndUpdate(
+      id,
+      updates,
+      { new: true }
+    );
 
-    const updatedCategory = await category.save();
+    if (!updatedCategory) {
+      return NextResponse.json({ message: "Category not found" }, { status: 404 });
+    }
 
     return NextResponse.json(updatedCategory);
   } catch (error) {
@@ -57,28 +50,19 @@ export async function PUT(req, { params }) {
   }
 }
 
+// 📌 DELETE category
 export async function DELETE(req, { params }) {
   try {
     await connectMongoDB();
+    const { id } = params;
 
-    const { id } = await params;
+    const deletedCategory = await ProductCategory.findByIdAndDelete(id);
 
-    const category = await ProductCategory.findById(id);
-
-    if (!category) {
-      return NextResponse.json(
-        { message: "Category not found" },
-        { status: 404 }
-      );
+    if (!deletedCategory) {
+      return NextResponse.json({ message: "Category not found" }, { status: 404 });
     }
 
-    if (category.public_id) {
-      await deleteFromCloudinary(category.public_id);
-    }
-
-    await ProductCategory.findByIdAndDelete(id);
-
-    return NextResponse.json({ message: "Category deleted successfully" });
+    return NextResponse.json({ message: "Category deleted" });
   } catch (error) {
     console.error("DELETE Error:", error);
     return NextResponse.json(

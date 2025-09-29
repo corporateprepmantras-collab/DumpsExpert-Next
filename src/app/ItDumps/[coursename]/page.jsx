@@ -8,28 +8,41 @@ import Breadcrumbs from "@/components/public/Breadcrumbs";
 
 export default function CategoryPage() {
   const params = useParams();
-  const coursename = params?.coursename || ""; // category name from URL
+  const coursename = params?.coursename || ""; // category slug or name from URL
   const [searchTerm, setSearchTerm] = useState("");
   const [showFullText, setShowFullText] = useState(false);
   const [products, setProducts] = useState([]);
+  const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch products from API
+  // Fetch products & category
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchData() {
       try {
-        const res = await axios.get("/api/products");
-        setProducts(res.data.data || []);
+        const [prodRes, catRes] = await Promise.all([
+          axios.get("/api/products"),
+          axios.get("/api/product-categories"),
+        ]);
+
+        setProducts(prodRes.data.data || []);
+
+        // Match category by slug or name
+        const matchedCategory = catRes.data.find(
+          (c) =>
+            c.slug?.toLowerCase() === coursename.toLowerCase() ||
+            c.name?.toLowerCase() === coursename.toLowerCase()
+        );
+        setCategory(matchedCategory || null);
       } catch (err) {
-        console.error("Error fetching products:", err);
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     }
-    fetchProducts();
-  }, []);
+    fetchData();
+  }, [coursename]);
 
-  // Filter by category from route
+  // Filter products by category
   const categoryProducts = useMemo(() => {
     return products.filter(
       (p) => p.category?.toLowerCase() === coursename.toLowerCase()
@@ -60,27 +73,30 @@ export default function CategoryPage() {
       </div>
 
       <div className="w-full max-w-5xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl font-semibold text-gray-800 mb-4">
-          Latest {coursename.toUpperCase()} Exam Questions & Dumps [2025]
-        </h1>
+        {/* ✅ Category Meta Info */}
+        {category && (
+          <div className="mb-8 shadow rounded-lg border p-6">
+            <h1 className="text-3xl sm:text-4xl font-semibold text-gray-800 mb-4">
+              {category.name.toUpperCase()} Exam Dumps [2025]
+            </h1>
 
-        <p className="text-gray-600 text-base mb-3">
-          {showFullText
-            ? `DumpsExpert provides the most up-to-date ${coursename} certification dumps. All exam questions are based on the latest formats, helping you practice and pass with confidence.`
-            : `${coursename} certification can boost your IT or business career globally. DumpsExpert gives you the latest questions & answers PDF to pass your exam easily and confidently...`}
-        </p>
-        <button
-          className="text-blue-600 text-sm mb-6 hover:underline"
-          onClick={() => setShowFullText(!showFullText)}
-        >
-          {showFullText ? "Read Less" : "Read More"}
-        </button>
+  {category.description && (
+              <div
+                className="prose max-w-none text-gray-700 mb-4"
+                dangerouslySetInnerHTML={{ __html: category.description }}
+              />
+            )}
+           
 
+          </div>
+        )}
+
+        {/* ✅ Products List */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <p className="text-sm text-gray-600">
             Showing {filteredProducts.length} results
           </p>
-          <div className="flex items-center border border-gray-300 rounded-md bg-white shadow-sm w-full sm:w-[400px]">
+          <div className="flex items-center border  rounded-md  shadow-sm w-full sm:w-[400px]">
             <input
               type="text"
               placeholder="Search Exam Code or Name"
@@ -93,10 +109,10 @@ export default function CategoryPage() {
           </div>
         </div>
 
-        {/* Desktop Table View */}
         {filteredProducts.length > 0 ? (
           <>
-            <div className="hidden md:block overflow-x-auto bg-white shadow rounded-lg border border-gray-200">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto  shadow rounded-lg border ">
               <table className="min-w-full text-left text-gray-800">
                 <thead className="bg-gray-100 text-gray-700 uppercase text-sm">
                   <tr>
@@ -121,8 +137,7 @@ export default function CategoryPage() {
                           Starting at:
                         </span>
                         <span className="font-semibold">
-                          ₹{product.dumpsPriceInr.trim()} ($
-                          {product.dumpsPriceUsd})
+                          ₹{product.dumpsPriceInr.trim()} (${product.dumpsPriceUsd})
                         </span>
                         <span className="block text-xs line-through text-gray-500">
                           ₹{product.dumpsMrpInr.trim()} (${product.dumpsMrpUsd})
@@ -141,13 +156,45 @@ export default function CategoryPage() {
                 </tbody>
               </table>
             </div>
+  {category && (
+          <div className="mb-8 shadow rounded-lg border border-gray-200 p-6">
+            
 
+            {/* Category Image */}
+            {category.image && (
+              <div className="mb-4">
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className="max-h-64 rounded-lg shadow"
+                />
+              </div>
+            )}
+
+            {/* Description */}
+            {category.description && (
+              <div
+                className="prose max-w-none text-gray-700 mb-4"
+                dangerouslySetInnerHTML={{ __html: category.description }}
+              />
+            )}
+
+            {/* Description Below */}
+            {category.descriptionBelow && (
+              <div
+                className="prose max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: category.descriptionBelow }}
+              />
+            )}
+
+          </div>
+        )}
             {/* Mobile Card View */}
             <div className="md:hidden flex flex-col items-center gap-6 mt-6">
               {filteredProducts.map((product) => (
                 <div
                   key={product._id}
-                  className="relative w-full max-w-sm bg-white rounded-xl shadow border border-gray-200 p-5"
+                  className="relative w-full max-w-sm rounded-xl shadow border border-gray-200 p-5"
                 >
                   <div className="mb-2 text-center">
                     <p className="text-sm text-gray-600">Exam Code</p>

@@ -7,6 +7,8 @@ import { useSession, signOut } from "next-auth/react";
 import dumpslogo from "../../assets/logo/premantras_logo.png";
 import NavbarSearch from "./NavbarSearch";
 import { ShoppingCart, Menu, X } from "lucide-react";
+import { Search } from "lucide-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +36,11 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [dropdownData, setDropdownData] = useState({ ItDumps: [], blogs: [] });
   const [cartItemCount, setCartItemCount] = useState(0);
-
+  const [mounted, setMounted] = useState(false);
+  const [query, setQuery] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
   // Subscribe to cart changes - Updated to count total quantity
   useEffect(() => {
     // Calculate total quantity function
@@ -90,7 +96,7 @@ export default function Navbar() {
         }
       };
       fetchUserData();
-      
+
       // Initialize cart when user is authenticated
       useCartStore.getState().setLoginStatus(true);
     } else if (status === "unauthenticated") {
@@ -98,6 +104,13 @@ export default function Navbar() {
       useCartStore.getState().setLoginStatus(false);
     }
   }, [status, session]);
+
+  const toggleSearch = () => {
+    setIsOpen((prev) => !prev);
+    setQuery("");
+    setProducts([]);
+    setSearched(false);
+  };
 
   const handleLogout = async () => {
     try {
@@ -178,9 +191,22 @@ export default function Navbar() {
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* Search */}
-          <div className="hidden lg:block">
-            <NavbarSearch hideOnLarge={false} />
-          </div>
+          <Link href="/search">
+            <div className="hidden lg:block">
+              <Button
+                variant="ghost"
+                onClick={toggleSearch}
+                className="rounded-full cursor-pointer"
+                size="icon"
+              >
+                {isOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Search className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
+          </Link>
 
           {/* Cart with Counter */}
           <Link href="/cart" className="relative">

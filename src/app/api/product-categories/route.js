@@ -28,49 +28,56 @@ export async function POST(req) {
   try {
     await connectMongoDB();
 
-    // Handle multipart/form-data
     const formData = await req.formData();
+
+    // ✅ Extract fields
     const name = formData.get("name")?.toString().trim();
+    const slug = formData.get("slug")?.toString().trim() || "";
+    const description = formData.get("description")?.toString() || "";
+    const descriptionBelow = formData.get("descriptionBelow")?.toString() || "";
+    const metaTitle = formData.get("metaTitle")?.toString() || "";
+    const metaKeywords = formData.get("metaKeywords")?.toString() || "";
+    const metaDescription = formData.get("metaDescription")?.toString() || "";
+    const remarks = formData.get("remarks")?.toString() || "";
     const status = formData.get("status")?.toString().trim() || "Ready";
     const file = formData.get("image");
 
-    // Validation: name
+    // ✅ Validation
     if (!name || name.length < 2) {
       return NextResponse.json(
         { message: "Name must be at least 2 characters" },
         { status: 400 }
       );
     }
-
-    // Validation: status
     if (!["Ready", "Publish"].includes(status)) {
-      return NextResponse.json(
-        { message: "Invalid status" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Invalid status" }, { status: 400 });
     }
 
-    // Validation: file
-    if (!(file instanceof File) || !file.type.startsWith("image/")) {
-      return NextResponse.json(
-        { message: "Invalid file type. Only images are allowed" },
-        { status: 400 }
-      );
+    // ✅ Upload image if provided
+    let imageUrl = "";
+    let publicId = "";
+    if (file instanceof File && file.type.startsWith("image/")) {
+      const uploadResult = await uploadToCloudinary(file);
+      if (!uploadResult.secure_url || !uploadResult.public_id) {
+        throw new Error("Cloudinary upload failed");
+      }
+      imageUrl = uploadResult.secure_url;
+      publicId = uploadResult.public_id;
     }
 
-    // Upload image to Cloudinary
-    const uploadResult = await uploadToCloudinary(file);
-
-    if (!uploadResult.secure_url || !uploadResult.public_id) {
-      throw new Error("Cloudinary upload failed");
-    }
-
-    // Save to MongoDB
+    // ✅ Save to MongoDB
     const newCategory = new ProductCategory({
       name,
+      slug,
+      description,
+      descriptionBelow,
+      metaTitle,
+      metaKeywords,
+      metaDescription,
+      remarks,
       status,
-      image: uploadResult.secure_url,
-      public_id: uploadResult.public_id,
+      image: imageUrl,
+      public_id: publicId,
     });
 
     const savedCategory = await newCategory.save();
