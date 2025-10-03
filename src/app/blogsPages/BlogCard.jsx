@@ -3,8 +3,7 @@ import React from "react";
 import Link from "next/link";
 
 const BlogCard = ({ title, description, date, imageUrl, slug }) => {
-  return (
-    <Link href={`/blogsPages/blog`} className="block">
+  return (<>
       <div className="bg-gray-100 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
         {imageUrl && (
           <img
@@ -24,7 +23,7 @@ const BlogCard = ({ title, description, date, imageUrl, slug }) => {
           Read More →
         </p>
       </div>
-    </Link>
+      </>
   );
 };
 

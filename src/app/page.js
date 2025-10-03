@@ -10,7 +10,7 @@ import Head from "next/head";
 
 import banner from "@/assets/landingassets/banner.webp";
 
-// Corrected folder name
+// Sections
 import ExamDumpsSlider from "@/landingpage/ExamDumpsSlider";
 import UnlockGoals from "@/landingpage/UnlockGoals";
 import GeneralFAQs from "@/landingpage/GeneralFAQs";
@@ -18,13 +18,33 @@ import ContentDumpsFirst from "@/landingpage/ContentBoxFirst";
 import ContentDumpsSecond from "@/landingpage/ContentBoxSecond";
 import Testimonial from "@/landingpage/Testimonial";
 
+// ✅ Maintenance Page
+import MaintenancePage from "@/components/public/MaintenancePage";
+
 export default function HomePage() {
   const [seo, setSeo] = useState({});
   const [categories, setCategories] = useState([]);
   const [blogs, setBlogs] = useState([]);
+  const [maintenance, setMaintenance] = useState(null); // 🔧 maintenance state
 
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "https://dumps-expert-next.vercel.app";
+
+  // ✅ Fetch maintenance mode first
+  useEffect(() => {
+    const fetchMaintenance = async () => {
+      try {
+        const res = await fetch(`${baseUrl}/api/maintenance-page`, {
+          cache: "no-store",
+        });
+        const data = await res.json();
+        setMaintenance(data);
+      } catch (err) {
+        console.error("Error fetching maintenance:", err);
+      }
+    };
+    fetchMaintenance();
+  }, []);
 
   // Fetch SEO data
   useEffect(() => {
@@ -80,6 +100,19 @@ export default function HomePage() {
     { _id: "d6", name: "PMP Project Management Professional" },
     { _id: "d7", name: "Salesforce Administrator (ADM-201)" },
   ];
+
+  // ✅ If maintenance mode is ON → Show MaintenancePage
+  if (maintenance?.maintenanceMode) {
+    return (
+      <MaintenancePage
+        text={
+          maintenance?.maintenanceText ||
+          "We are upgrading our site. Please check back soon."
+        }
+        imageUrl={maintenance?.imageUrl || null}
+      />
+    );
+  }
 
   return (
     <>

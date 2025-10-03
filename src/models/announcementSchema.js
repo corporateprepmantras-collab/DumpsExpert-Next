@@ -1,36 +1,17 @@
 import mongoose from "mongoose";
 
-const announcementSchema = new mongoose.Schema(
+const AnnouncementSchema = new mongoose.Schema(
   {
-    active: {
-      type: Boolean,
-      default: false,
-    },
-    delay: {
-      type: Number,
-      default: 2.0,
-      min: 0,
-    },
-    imageUrl: {
-      type: String,
-      required: true,
-      trim: true,
-      validate: {
-        validator: (v) => /^https?:\/\/.+\.(jpg|jpeg|png|gif)$/.test(v),
-        message: "Invalid image URL",
-      },
-    },
-    imagePublicId: {
-      type: String,
-      required: false,
-    },
-    lastUpdatedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: false,
-    },
+    active: { type: Boolean, default: false },
+    delay: { type: Number, default: 2.0 },
+    imageUrl: { type: String, default: "" },
+    imagePublicId: { type: String, default: "" },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.AnnouncementSetting || mongoose.model("AnnouncementSetting", announcementSchema);
+const Announcement =
+  mongoose.models.Announcement ||
+  mongoose.model("Announcement", AnnouncementSchema);
+
+export default Announcement;

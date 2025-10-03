@@ -208,10 +208,7 @@ export default function ProductDetailsPage() {
           content={product.metaDescription || product.title}
         />
         <meta property="og:image" content={product.imageUrl} />
-        <meta
-          property="og:url"
-          content={`https://yourdomain.com/${product.slug}`}
-        />
+       
         <meta property="og:type" content="product" />
 
         {/* Twitter */}

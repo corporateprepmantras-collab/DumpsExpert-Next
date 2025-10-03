@@ -15,7 +15,7 @@ export async function generateMetadata() {
     const seo = await res.json();
 
     return {
-      title: seo.title || "About Us | Prepmantras",
+      title: seo.title ,
       description:
         seo.description ||
         "Learn more about Prepmantras and why we’re trusted for SAP and IT exam dumps.",

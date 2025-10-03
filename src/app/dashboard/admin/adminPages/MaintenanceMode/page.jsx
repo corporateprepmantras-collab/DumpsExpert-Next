@@ -9,15 +9,15 @@ const MaintenancePage = () => {
   );
   const [preview, setPreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [settingsExist, setSettingsExist] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axios.get(
-          "/api/maintenance-page/"
-        );
+        const res = await axios.get("/api/maintenance-page");
         const data = res.data;
         if (data) {
+          setSettingsExist(true);
           setMaintenanceMode(data.maintenanceMode);
           setMaintenanceText(data.maintenanceText);
           if (data.imageUrl) setPreview(data.imageUrl);
@@ -46,16 +46,25 @@ const MaintenancePage = () => {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      const res = await axios.post(
-        "http://${process.env.NEXT_PUBLIC_BASE_URL}/api/maintenance-page/update",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-      alert("✅ Maintenance settings updated!");
-      console.log("Update response:", res.data);
+      let res;
+      if (settingsExist) {
+        // Update existing settings
+        res = await axios.put("/api/maintenance-page", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        // Create new settings (first time)
+        res = await axios.post("/api/maintenance-page", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setSettingsExist(true);
+      }
+
+      alert("✅ Maintenance settings saved!");
+      console.log("Response:", res.data);
     } catch (err) {
-      console.error("Update failed:", err.message);
-      alert("❌ Update failed!");
+      console.error("Save failed:", err.message);
+      alert("❌ Save failed!");
     }
   };
 
@@ -90,7 +99,7 @@ const MaintenancePage = () => {
             maintenanceMode ? "bg-green-600" : "bg-red-600"
           }`}
         >
-          {maintenanceMode ? "Active" : "Dactive"}
+          {maintenanceMode ? "Active" : "Inactive"}
         </span>
       </div>
 
@@ -136,7 +145,7 @@ const MaintenancePage = () => {
         onClick={handleSubmit}
         className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded"
       >
-        Update
+        {settingsExist ? "Update" : "Create"}
       </button>
     </div>
   );

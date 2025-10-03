@@ -220,6 +220,10 @@ const sidebarItems = [
         label: "Refund Policy Page",
         to: "/dashboard/admin/adminPages/refund-policy",
       },
+      {
+        label: "Contact Messages Page",
+        to: "/dashboard/admin/adminPages/contactMessages",
+      },
     ],
   },
 ];
