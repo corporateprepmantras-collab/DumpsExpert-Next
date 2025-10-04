@@ -1,9 +1,8 @@
-// app/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import Head from "next/head";
@@ -18,39 +17,55 @@ import ContentDumpsFirst from "@/landingpage/ContentBoxFirst";
 import ContentDumpsSecond from "@/landingpage/ContentBoxSecond";
 import Testimonial from "@/landingpage/Testimonial";
 
-// ✅ Maintenance Page
-import MaintenancePage from "@/components/public/MaintenancePage";
-
 export default function HomePage() {
   const [seo, setSeo] = useState({});
   const [categories, setCategories] = useState([]);
   const [blogs, setBlogs] = useState([]);
-  const [maintenance, setMaintenance] = useState(null); // 🔧 maintenance state
+  const [announcement, setAnnouncement] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "https://dumps-expert-next.vercel.app";
+  const dumps = [
+    { _id: "d1", name: "AWS Certified Solutions Architect" },
+    { _id: "d2", name: "Microsoft Azure Fundamentals" },
+    { _id: "d3", name: "Google Cloud Digital Leader" },
+    { _id: "d4", name: "Cisco CCNA 200-301" },
+    { _id: "d5", name: "CompTIA Security+" },
+    { _id: "d6", name: "PMP Project Management Professional" },
+    { _id: "d7", name: "Salesforce Administrator (ADM-201)" },
+  ];
 
-  // ✅ Fetch maintenance mode first
+  // ✅ Fetch announcement and trigger modal with delay from API
   useEffect(() => {
-    const fetchMaintenance = async () => {
+    const fetchAnnouncement = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/maintenance-page`, {
-          cache: "no-store",
-        });
+        const res = await fetch(`/api/announcement`, { cache: "no-store" });
+        if (!res.ok) return;
         const data = await res.json();
-        setMaintenance(data);
+        setAnnouncement(data);
+
+        // inside useEffect after fetching announcement
+        if (data?.active) {
+          const delaySeconds = parseFloat(data.delay || "1.00") * 10;
+
+          // Show modal after delay
+          setTimeout(() => {
+            setShowModal(true);
+
+            // Auto-close modal after the same delay
+          }, delaySeconds);
+        }
       } catch (err) {
-        console.error("Error fetching maintenance:", err);
+        console.error("Error fetching announcement:", err);
       }
     };
-    fetchMaintenance();
+    fetchAnnouncement();
   }, []);
 
-  // Fetch SEO data
+  // ✅ Fetch SEO
   useEffect(() => {
     const fetchSeo = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/seo/home`, { cache: "no-store" });
+        const res = await fetch(`/api/seo/home`, { cache: "no-store" });
         const data = await res.json();
         setSeo(data);
       } catch (error) {
@@ -60,11 +75,11 @@ export default function HomePage() {
     fetchSeo();
   }, []);
 
-  // Fetch categories
+  // ✅ Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/blogs/blog-categories`, {
+        const res = await fetch(`/api/blogs/blog-categories`, {
           cache: "no-store",
         });
         const data = await res.json();
@@ -76,11 +91,11 @@ export default function HomePage() {
     fetchCategories();
   }, []);
 
-  // Fetch blogs
+  // ✅ Fetch blogs
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/blogs`, { cache: "no-store" });
+        const res = await fetch(`/api/blogs`, { cache: "no-store" });
         const data = await res.json();
         setBlogs(data?.data || []);
       } catch (err) {
@@ -90,33 +105,8 @@ export default function HomePage() {
     fetchBlogs();
   }, []);
 
-  // static dumps
-  const dumps = [
-    { _id: "d1", name: "AWS Certified Solutions Architect" },
-    { _id: "d2", name: "Microsoft Azure Fundamentals" },
-    { _id: "d3", name: "Google Cloud Digital Leader" },
-    { _id: "d4", name: "Cisco CCNA 200-301" },
-    { _id: "d5", name: "CompTIA Security+" },
-    { _id: "d6", name: "PMP Project Management Professional" },
-    { _id: "d7", name: "Salesforce Administrator (ADM-201)" },
-  ];
-
-  // ✅ If maintenance mode is ON → Show MaintenancePage
-  if (maintenance?.maintenanceMode) {
-    return (
-      <MaintenancePage
-        text={
-          maintenance?.maintenanceText ||
-          "We are upgrading our site. Please check back soon."
-        }
-        imageUrl={maintenance?.imageUrl || null}
-      />
-    );
-  }
-
   return (
     <>
-      {/* ✅ SEO Meta Tags */}
       <Head>
         <title>{seo.title || "Prepmantras – #1 IT Exam Prep Provider"}</title>
         <meta
@@ -126,56 +116,40 @@ export default function HomePage() {
             "Pass your IT certifications in first attempt with trusted exam Prep, practice tests & PDF guides by Prepmantras."
           }
         />
-        <meta
-          name="keywords"
-          content={seo.keywords || "IT exams, certification dumps, practice tests"}
-        />
-        <meta name="author" content={seo.author || "Prepmantras"} />
-
-        {/* OpenGraph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={seo.url || baseUrl} />
-        <meta
-          property="og:title"
-          content={seo.ogTitle || seo.title || "Prepmantras – IT Exam Prep"}
-        />
-        <meta
-          property="og:description"
-          content={
-            seo.ogDescription ||
-            seo.description ||
-            "Pass your IT certifications with Prepmantras trusted materials."
-          }
-        />
-        <meta
-          property="og:image"
-          content={seo.ogImage || `${baseUrl}/default-og.jpg`}
-        />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content={seo.twitterTitle || seo.title || "Prepmantras – IT Exam Prep"}
-        />
-        <meta
-          name="twitter:description"
-          content={
-            seo.twitterDescription ||
-            seo.description ||
-            "Trusted IT certification practice & dumps."
-          }
-        />
-        <meta
-          name="twitter:image"
-          content={seo.twitterImage || `${baseUrl}/default-twitter.jpg`}
-        />
-
-        {/* Canonical */}
-        <link rel="canonical" href={seo.canonical || baseUrl} />
       </Head>
 
-      {/* ✅ Page Content */}
+      {/* ✅ Announcement Modal */}
+      {showModal && announcement?.active && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Image */}
+            {announcement?.imageUrl && (
+              <img
+                src={announcement.imageUrl}
+                alt="Announcement"
+                className="w-full h-auto rounded mb-4"
+              />
+            )}
+
+            {/* Message */}
+            {announcement?.message && (
+              <p className="text-gray-700 text-center">
+                {announcement.message}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ---- Homepage ---- */}
       <div className="p-2">
         {/* Hero Section */}
         <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
@@ -205,10 +179,6 @@ export default function HomePage() {
                 </li>
               ))}
             </ul>
-            <p className="text-sm sm:text-base text-gray-500">
-              ⭐ Trusted by over <strong>50,000 IT professionals</strong>{" "}
-              worldwide. Rated <strong>4.8/5</strong> by verified users.
-            </p>
           </div>
 
           <div className="w-full lg:w-1/2 flex justify-center items-center">
@@ -222,114 +192,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Popular Dumps */}
-        <section className="py-16 px-4 md:px-12">
-          <h2 className="text-3xl font-bold text-center mb-10">
-            Top Trending Certification Prep
-          </h2>
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {dumps.length > 0 ? (
-              dumps.map((dump) => (
-                <Button
-                  key={dump._id}
-                  variant="secondary"
-                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2"
-                >
-                  {dump.name}
-                </Button>
-              ))
-            ) : (
-              <p className="text-center col-span-full text-gray-500">
-                No categories found.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* Blog Section */}
-        <section className="py-20 px-4 md:px-20 bg-white">
-          <h2 className="text-3xl font-bold text-center mb-10 text-gray-800">
-            Latest Exam Tips & Insights
-          </h2>
-
-          {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {categories?.map((cat) => (
-              <Button
-                key={cat._id}
-                variant="outline"
-                asChild
-                className="capitalize rounded-full"
-              >
-                <Link
-                  href={`/?category=${encodeURIComponent(
-                    cat.category.toLowerCase()
-                  )}`}
-                >
-                  {cat.category}
-                </Link>
-              </Button>
-            ))}
-          </div>
-
-          {/* Blog Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {blogs.length === 0 ? (
-              <p className="text-center text-gray-500 col-span-full">
-                No blogs found.
-              </p>
-            ) : (
-              blogs
-                .slice()
-                .reverse()
-                .slice(0, 6)
-                .map((blog) => (
-                  <Link
-                    key={blog._id}
-                    href={`/blogsPages/blog/${blog.slug || blog._id}`}
-                  >
-                    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition flex flex-col h-full">
-                      {blog.imageUrl && (
-                        <img
-                          src={blog.imageUrl}
-                          alt={blog.title || blog.sectionName}
-                          className="w-full h-48 object-cover"
-                        />
-                      )}
-                      <div className="p-4 flex flex-col flex-grow">
-                        <h3 className="text-lg font-semibold text-gray-800 line-clamp-1 mb-1">
-                          {blog.title || blog.sectionName}
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-2">
-                          {blog.createdAt
-                            ? new Date(blog.createdAt).toLocaleDateString()
-                            : ""}
-                        </p>
-                        <p className="text-gray-600 text-sm flex-grow line-clamp-3">
-                          {blog.metaDescription}
-                        </p>
-                        <p className="text-blue-600 mt-4 text-sm font-medium hover:underline">
-                          Read More →
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-            )}
-          </div>
-
-          {/* See All Blogs Button */}
-          <div className="mt-10 text-center">
-            <Button
-              asChild
-              className="bg-[#1f424b] hover:bg-[#2f5058] text-white"
-            >
-              <Link href="/blogs">See All Blogs</Link>
-            </Button>
-          </div>
-        </section>
-
-        {/* Extra Sections */}
+        {/* Other Sections */}
         <ExamDumpsSlider />
         <ContentDumpsFirst />
         <UnlockGoals />
