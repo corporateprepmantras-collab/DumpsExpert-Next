@@ -43,7 +43,7 @@ const Announcement = () => {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      await axios.post("/api/announcement/update", formData, {
+      await axios.put("/api/announcement", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });

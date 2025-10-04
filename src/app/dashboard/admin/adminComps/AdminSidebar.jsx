@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState ,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -33,7 +33,6 @@ const iconMap = {
   "Web Customization": <FaTools size={20} />,
   "Basic Information": <FaIdBadge size={20} />,
   "Menu Builder": <FaList size={20} />,
-  "Social Links": <FaPeopleArrows size={20} />,
   "SEO Meta Info": <FaTags size={20} />,
   "SEO Site Map": <FaTags size={20} />,
   Permalink: <FaList size={20} />,
@@ -92,13 +91,12 @@ const sidebarItems = [
             label: "Menu Builder",
             to: "/dashboard/admin/adminPages/MenuBuilder",
           },
-          {
-            label: "Social Links",
-            to: "/dashboard/admin/adminPages/SocialLinks",
-          },
 
           { label: "SEO Meta Info", to: "/dashboard/admin/adminPages/SEOMeta" },
-          { label: "SEO Site Map", to: "/dashboard/admin/adminPages/SEOSiteMap" },
+          {
+            label: "SEO Site Map",
+            to: "/dashboard/admin/adminPages/SEOSiteMap",
+          },
 
           { label: "Permalink", to: "/dashboard/admin/adminPages/Permalink" },
           {
@@ -137,15 +135,13 @@ const sidebarItems = [
             label: "Coupon List",
             to: "/dashboard/admin/coupons",
           },
-      
         ],
       },
       {
         label: "Orders",
         to: "#",
         children: [
-          { label: "All Orders",
-             to: "/dashboard/admin/orders/all" },
+          { label: "All Orders", to: "/dashboard/admin/orders/all" },
           {
             label: "Pending Orders",
             to: "/dashboard/admin/orders/pending",
@@ -163,9 +159,7 @@ const sidebarItems = [
       {
         label: "Exam",
         to: "#",
-        children: [
-          { label: "Online Exam", to: "/dashboard/admin/exam" },
-        ],
+        children: [{ label: "Online Exam", to: "/dashboard/admin/exam" }],
       },
       {
         label: "Blog",
@@ -181,21 +175,26 @@ const sidebarItems = [
           // },
         ],
       },
-        {
+      {
         label: "Contact",
         to: "#",
         children: [
           { label: "Contact Message", to: "/dashboard/admin/contact" },
-          { label: "Contact content 1", to: "/dashboard/admin/contact/ContactDataFirst" },
-          { label: "Contact content 1", to: "/dashboard/admin/contact/ContactDataSecond" },
+          {
+            label: "Contact content 1",
+            to: "/dashboard/admin/contact/ContactDataFirst",
+          },
+          {
+            label: "Contact content 1",
+            to: "/dashboard/admin/contact/ContactDataSecond",
+          },
         ],
-
       },
       {
         label: "Manage General FAQs",
         to: "/dashboard/admin/generalFaq",
       },
-      
+
       {
         label: " Landing Content Section 1",
         to: "/dashboard/admin/adminPages/ContentSection1",
@@ -265,7 +264,9 @@ export default function AdminSidebar() {
       </div>
       {/* Overlay for mobile sidebar */}
       <div
-        className={`fixed inset-0 z-40 transition-opacity duration-200 ${sidebarOpen ? "block opacity-100" : "hidden opacity-0"}`}
+        className={`fixed inset-0 z-40 transition-opacity duration-200 ${
+          sidebarOpen ? "block opacity-100" : "hidden opacity-0"
+        }`}
         onClick={() => setSidebarOpen(false)}
       ></div>
       {/* Sidebar Drawer (mobile/tablet) */}
@@ -290,20 +291,25 @@ export default function AdminSidebar() {
               </div>
               <div className="space-y-1">
                 {section.links.map((item, idx) => {
-                  const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+                  const hasChildren =
+                    Array.isArray(item.children) && item.children.length > 0;
                   const isExpanded = openItems[item.label];
                   return hasChildren ? (
                     <div key={idx} className="border rounded-md">
                       <button
                         onClick={() => toggleItem(item.label)}
-                        className={`flex items-center justify-between w-full px-2 py-1 rounded hover:bg-blue-50 transition ${isExpanded ? "bg-blue-100" : ""}`}
+                        className={`flex items-center justify-between w-full px-2 py-1 rounded hover:bg-blue-50 transition ${
+                          isExpanded ? "bg-blue-100" : ""
+                        }`}
                       >
                         <div className="flex items-center gap-2">
                           {iconMap[item.label] || <FaPlusCircle size={16} />}
                           {item.label}
                         </div>
                         <FaChevronDown
-                          className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          className={`w-3 h-3 transition-transform ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
                         />
                       </button>
                       {isExpanded && (
@@ -312,7 +318,11 @@ export default function AdminSidebar() {
                             <Link
                               key={subIdx}
                               href={subItem.to}
-                              className={`block px-2 py-1 rounded hover:bg-blue-50 ${isPathActive(subItem.to) ? "bg-blue-600 text-white font-semibold" : ""}`}
+                              className={`block px-2 py-1 rounded hover:bg-blue-50 ${
+                                isPathActive(subItem.to)
+                                  ? "bg-blue-600 text-white font-semibold"
+                                  : ""
+                              }`}
                               onClick={() => setSidebarOpen(false)}
                             >
                               {subItem.label}
@@ -325,7 +335,11 @@ export default function AdminSidebar() {
                     <Link
                       key={idx}
                       href={item.to}
-                      className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-blue-50 ${isPathActive(item.to) ? "bg-blue-600 text-white font-semibold" : ""}`}
+                      className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-blue-50 ${
+                        isPathActive(item.to)
+                          ? "bg-blue-600 text-white font-semibold"
+                          : ""
+                      }`}
                       onClick={() => setSidebarOpen(false)}
                     >
                       {iconMap[item.label] || <FaPlusCircle size={16} />}
@@ -354,20 +368,25 @@ export default function AdminSidebar() {
             </div>
             <div className="space-y-1">
               {section.links.map((item, idx) => {
-                const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+                const hasChildren =
+                  Array.isArray(item.children) && item.children.length > 0;
                 const isExpanded = openItems[item.label];
                 return hasChildren ? (
                   <div key={idx} className="border rounded-md">
                     <button
                       onClick={() => toggleItem(item.label)}
-                      className={`flex items-center justify-between w-full px-2 py-1 rounded hover:bg-blue-50 transition ${isExpanded ? "bg-blue-100" : ""}`}
+                      className={`flex items-center justify-between w-full px-2 py-1 rounded hover:bg-blue-50 transition ${
+                        isExpanded ? "bg-blue-100" : ""
+                      }`}
                     >
                       <div className="flex items-center gap-2">
                         {iconMap[item.label] || <FaPlusCircle size={16} />}
                         {item.label}
                       </div>
                       <FaChevronDown
-                        className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        className={`w-3 h-3 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
                       />
                     </button>
                     {isExpanded && (
@@ -376,7 +395,11 @@ export default function AdminSidebar() {
                           <Link
                             key={subIdx}
                             href={subItem.to}
-                            className={`block px-2 py-1 rounded hover:bg-blue-50 ${isPathActive(subItem.to) ? "bg-blue-600 text-white font-semibold" : ""}`}
+                            className={`block px-2 py-1 rounded hover:bg-blue-50 ${
+                              isPathActive(subItem.to)
+                                ? "bg-blue-600 text-white font-semibold"
+                                : ""
+                            }`}
                           >
                             {subItem.label}
                           </Link>
@@ -388,7 +411,11 @@ export default function AdminSidebar() {
                   <Link
                     key={idx}
                     href={item.to}
-                    className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-blue-50 ${isPathActive(item.to) ? "bg-blue-600 text-white font-semibold" : ""}`}
+                    className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-blue-50 ${
+                      isPathActive(item.to)
+                        ? "bg-blue-600 text-white font-semibold"
+                        : ""
+                    }`}
                   >
                     {iconMap[item.label] || <FaPlusCircle size={16} />}
                     {item.label}
