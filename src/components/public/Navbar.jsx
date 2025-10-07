@@ -27,6 +27,7 @@ const navlinks = [
   { label: "Contact Us", path: "/contact" },
 ];
 
+// 🧱 Local cache helpers
 function getCacheItem(key) {
   try {
     const raw = sessionStorage.getItem(key);
@@ -64,7 +65,7 @@ export default function Navbar() {
   const [cartItemCount, setCartItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Cart count logic
+  // ✅ Cart count
   useEffect(() => {
     const calculateTotalQuantity = (items) =>
       items.reduce((total, item) => total + (item.quantity || 1), 0);
@@ -75,28 +76,39 @@ export default function Navbar() {
     return () => unsubscribe();
   }, []);
 
-  // ✅ Load dropdowns and userData
+  // ✅ Load dropdowns and user data
   useEffect(() => {
     async function loadData() {
       try {
         const [blogCategories, productCategories] = await Promise.all([
           fetchWithCache("blog_categories", "/api/blogs/blog-categories", (d) =>
             Array.isArray(d)
-              ? d
-                  .map((c) => c.category)
-                  .filter((c) => typeof c === "string" && c.trim() !== "")
+              ? d.map((c) =>
+                  typeof c === "string"
+                    ? c
+                    : typeof c?.category === "string"
+                    ? c.category
+                    : ""
+                )
               : []
           ),
           fetchWithCache("product_categories", "/api/product-categories", (d) =>
             Array.isArray(d)
-              ? d
-                  .map((p) => p.name)
-                  .filter((n) => typeof n === "string" && n.trim() !== "")
+              ? d.map((p) =>
+                  typeof p === "string"
+                    ? p
+                    : typeof p?.name === "string"
+                    ? p.name
+                    : ""
+                )
               : []
           ),
         ]);
 
-        setDropdownData({ blogs: blogCategories, ItDumps: productCategories });
+        setDropdownData({
+          blogs: blogCategories.filter((c) => c.trim() !== ""),
+          ItDumps: productCategories.filter((p) => p.trim() !== ""),
+        });
 
         if (status === "authenticated" && session?.user?.email) {
           const res = await fetch("/api/user/me", { cache: "no-store" });
@@ -134,9 +146,7 @@ export default function Navbar() {
     return "/dashboard/guest";
   };
 
-  /* ----------------------------------------
-     🧱 Skeleton Loading UI
-  ---------------------------------------- */
+  // 🧱 Skeleton while loading
   if (loading) {
     return (
       <nav className="bg-white fixed w-full shadow z-50 flex justify-between items-center py-2 lg:px-28 px-4">
@@ -155,19 +165,20 @@ export default function Navbar() {
     );
   }
 
-  /* ----------------------------------------
-     ✅ Actual Navbar
-  ---------------------------------------- */
+  // ✅ Main Navbar
   return (
     <nav className="bg-white fixed w-full shadow z-50 flex justify-between items-center py-2 lg:px-28 px-4">
+      {/* Logo */}
       <Link href="/">
         <Image src={dumpslogo} alt="dumpsxpert logo" width={150} height={150} />
       </Link>
 
+      {/* Desktop Menu */}
       <ul className="hidden lg:flex gap-10 font-semibold items-center relative">
         {navlinks.map((item, index) => {
           const hasDropdown =
             item.dropdownKey && dropdownData[item.dropdownKey]?.length > 0;
+
           return (
             <li
               key={index}
@@ -185,6 +196,7 @@ export default function Navbar() {
                 {hasDropdown && <span className="text-sm">&#9662;</span>}
               </Link>
 
+              {/* Dropdown */}
               {hasDropdown && activeDropdown === item.dropdownKey && (
                 <ul className="absolute top-full left-0 bg-white border rounded-lg shadow-lg w-48 z-50">
                   {dropdownData[item.dropdownKey]
@@ -212,13 +224,16 @@ export default function Navbar() {
         })}
       </ul>
 
+      {/* Right Side Buttons */}
       <div className="flex items-center gap-4">
+        {/* Search */}
         <Link href="/search">
           <Button variant="ghost" size="icon" className="rounded-full">
             <Search className="w-5 h-5" />
           </Button>
         </Link>
 
+        {/* Cart */}
         <Link href="/cart" className="relative">
           <ShoppingCart className="hover:text-gray-500" />
           {cartItemCount > 0 && (
@@ -228,6 +243,7 @@ export default function Navbar() {
           )}
         </Link>
 
+        {/* Auth Menu */}
         {status === "authenticated" ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -271,6 +287,7 @@ export default function Navbar() {
           </Link>
         )}
 
+        {/* Mobile Menu Toggle */}
         <div className="lg:hidden">
           <Button
             variant="ghost"

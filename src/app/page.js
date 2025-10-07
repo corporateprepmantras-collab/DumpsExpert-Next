@@ -78,35 +78,52 @@ export default function HomePage() {
   useEffect(() => {
     async function loadAll() {
       try {
-        // ✅ Always compute base URL correctly for both local & deployed builds
         const baseUrl =
           typeof window !== "undefined"
             ? window.location.origin
             : process.env.NEXT_PUBLIC_BASE_URL || "";
 
-        // ✅ Fetch all key data in parallel
         await Promise.all([
+          // ✅ SEO
           fetchWithSmartCache(
             "seo_home",
             `${baseUrl}/api/seo/home`,
             setSeo,
             (d) => d.data || d
           ),
+
+          // ✅ Blog Categories
           fetchWithSmartCache(
             "blog_categories",
             `${baseUrl}/api/blogs/blog-categories`,
             setCategories,
-            (d) => d.data || d
+            (d) =>
+              Array.isArray(d)
+                ? d
+                : Array.isArray(d?.data)
+                ? d.data
+                : Array.isArray(d?.categories)
+                ? d.categories
+                : []
           ),
+
+          // ✅ Blogs (handles all API formats)
           fetchWithSmartCache(
             "blogs_data",
             `${baseUrl}/api/blogs`,
             setBlogs,
-            (d) => d.data || d
+            (d) =>
+              Array.isArray(d)
+                ? d
+                : Array.isArray(d?.blogs)
+                ? d.blogs
+                : Array.isArray(d?.data)
+                ? d.data
+                : []
           ),
         ]);
 
-        // ✅ Announcement (fetched separately)
+        // ✅ Announcement
         try {
           const res = await fetch(`${baseUrl}/api/announcement`, {
             cache: "no-store",
@@ -262,7 +279,7 @@ export default function HomePage() {
           <div className="flex flex-wrap justify-center gap-3 mb-10">
             {categories?.map((cat) => (
               <Button
-                key={cat._id}
+                key={cat._id || cat.category}
                 variant="outline"
                 asChild
                 className="capitalize rounded-full"
@@ -323,13 +340,6 @@ export default function HomePage() {
                           Read More →
                         </p>
                       </div>
-
-                      <motion.div
-                        className="absolute bottom-0 left-0 h-[3px] bg-orange-500"
-                        initial={{ width: "0%" }}
-                        whileHover={{ width: "100%" }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                      />
                     </Link>
                   </motion.div>
                 ))
