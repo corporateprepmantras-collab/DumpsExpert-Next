@@ -7,7 +7,7 @@ import AboutContentSection from "./AboutContentSection";
 export async function generateMetadata() {
   try {
     const res = await fetch("/api/seo/about", {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
     if (!res.ok) throw new Error("Failed to fetch About SEO");
@@ -15,7 +15,7 @@ export async function generateMetadata() {
     const seo = await res.json();
 
     return {
-      title: seo.title ,
+      title: seo.title,
       description:
         seo.description ||
         "Learn more about Prepmantras and why we’re trusted for SAP and IT exam dumps.",
@@ -69,8 +69,8 @@ export default function AboutUs() {
           <div className="lg:w-1/2 space-y-6">
             <h2 className="text-3xl font-bold text-gray-800">About Us</h2>
             <p className="text-gray-600">
-              Welcome to Prepmantras.com – your ultimate destination for reliable,
-              accurate, and verified IT certification exam resources.
+              Welcome to Prepmantras.com – your ultimate destination for
+              reliable, accurate, and verified IT certification exam resources.
             </p>
             <p className="text-gray-600">
               We specialize in providing top-quality SAP exam Prep and an
@@ -95,7 +95,9 @@ export default function AboutUs() {
                 Each SAP exam dump is meticulously compiled by certified
                 professionals based on trends, topics, and past exams.
               </li>
-              <li>Our mission: help you pass your SAP exam on the first attempt.</li>
+              <li>
+                Our mission: help you pass your SAP exam on the first attempt.
+              </li>
             </ul>
           </div>
         </div>

@@ -6,12 +6,9 @@ import guarantee from "../../assets/userAssets/guaranteed.png";
 // Fetch from backend API
 async function getDumpsData() {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/product-categories`,
-      {
-        cache: "no-store",
-      }
-    );
+    const res = await fetch(`/api/product-categories`, {
+      next: { revalidate: 60 },
+    });
 
     if (!res.ok) {
       throw new Error(`Failed to fetch categories: ${res.statusText}`);
