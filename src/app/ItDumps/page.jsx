@@ -6,18 +6,18 @@ import guarantee from "../../assets/userAssets/guaranteed.png";
 // Fetch from backend API
 async function getDumpsData() {
   try {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com"; // ✅ use absolute URL
     const res = await fetch(`/api/product-categories`, {
       next: { revalidate: 60 },
     });
 
-    if (!res.ok) {
+    if (!res.ok)
       throw new Error(`Failed to fetch categories: ${res.statusText}`);
-    }
 
     const json = await res.json();
-
-    if (Array.isArray(json)) return json; // API returns array directly
-    if (Array.isArray(json?.data)) return json.data; // API returns { data: [...] }
+    if (Array.isArray(json)) return json;
+    if (Array.isArray(json?.data)) return json.data;
 
     console.error("Unexpected API response format:", json);
     return [];

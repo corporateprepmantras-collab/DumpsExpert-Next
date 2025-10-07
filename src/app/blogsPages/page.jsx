@@ -5,6 +5,7 @@ import Link from "next/link";
 import BlogCard from "./BlogCard";
 import axios from "axios";
 import Head from "next/head";
+
 const normalizeBlogs = (data) => {
   if (!data) return [];
   if (Array.isArray(data)) return data;
@@ -24,6 +25,7 @@ const BlogPage = () => {
   const [categories, setCategories] = useState([]);
   const [blogs, setBlogs] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
+  const [seoData, setSeoData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,9 +35,12 @@ const BlogPage = () => {
       setError("");
 
       try {
-        // fetch blogs
+        // ✅ Fetch SEO data
+        const seoRes = await axios.get("/api/seo/blog");
+        setSeoData(seoRes.data);
+
+        // ✅ Fetch blogs
         const blogsRes = await axios.get("/api/blogs");
-        console.log("blogs api response:", blogsRes.data);
         const normalizedBlogs = normalizeBlogs(blogsRes.data);
         setBlogs(normalizedBlogs);
 
@@ -44,9 +49,8 @@ const BlogPage = () => {
           .slice(0, 10);
         setRecentPosts(recent);
 
-        // fetch categories
+        // ✅ Fetch categories
         const categoriesRes = await axios.get("/api/blogs/blog-categories");
-        console.log("categories api response:", categoriesRes.data);
         const normalizedCategories = normalizeBlogs(categoriesRes.data);
         setCategories(normalizedCategories);
       } catch (err) {
@@ -62,43 +66,41 @@ const BlogPage = () => {
 
   return (
     <>
-      <Head>
-        <title>{product.metaTitle || product.title}</title>
-        <meta
-          name="description"
-          content={product.metaDescription || product.title}
-        />
-        <meta name="keywords" content={product.metaKeywords || ""} />
+      {/* ✅ SEO Head Section */}
+      {seoData && (
+        <Head>
+          <title>{seoData.title}</title>
+          <meta name="description" content={seoData.description} />
+          <meta name="keywords" content={seoData.keywords} />
+          <link rel="canonical" href={seoData.canonicalurl} />
 
-        {/* Open Graph / Facebook */}
+          {/* Open Graph / Facebook */}
+          <meta property="og:title" content={seoData.ogtitle} />
+          <meta property="og:description" content={seoData.ogdescription} />
+          <meta property="og:image" content={seoData.ogimage} />
+          <meta property="og:url" content={seoData.ogurl} />
+          <meta property="og:type" content="website" />
 
-        <meta
-          property="og:description"
-          content={product.metaDescription || product.title}
-        />
-        <meta property="og:image" content={product.imageUrl} />
+          {/* Twitter */}
+          <meta
+            name="twitter:card"
+            content={seoData.twittercard || "summary_large_image"}
+          />
+          <meta name="twitter:title" content={seoData.twittertitle} />
+          <meta
+            name="twitter:description"
+            content={seoData.twitterdescription}
+          />
+          <meta name="twitter:image" content={seoData.twitterimage} />
 
-        <meta property="og:type" content="product" />
+          {/* JSON-LD Schema */}
+          {seoData.schema && (
+            <script type="application/ld+json">{seoData.schema}</script>
+          )}
+        </Head>
+      )}
 
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content={product.metaTitle || product.title}
-        />
-        <meta
-          name="twitter:description"
-          content={product.metaDescription || product.title}
-        />
-        <meta name="twitter:image" content={product.imageUrl} />
-
-        {/* JSON-LD Schema if available */}
-        {product.schema && (
-          <script type="application/ld+json">
-            {JSON.stringify(JSON.parse(product.schema))}
-          </script>
-        )}
-      </Head>
+      {/* ✅ Blog Page Content */}
       <div className="min-h-screen bg-white">
         <div
           className="w-full h-80 bg-cover bg-center py-14 px-4 text-white"
