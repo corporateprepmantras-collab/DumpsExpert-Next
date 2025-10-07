@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
-import Blog from "@/models/blogSchema";
+import { Blog, BlogCategory } from "@/models";
 import { uploadToCloudinaryBlog } from "@/lib/cloudinary";
 
 export async function GET(request) {
@@ -28,11 +28,11 @@ export async function GET(request) {
       ];
     }
 
-const blogs = await Blog.find(query)
-  .populate("category", "sectionName category") // yahan populate laga rahe hain
-  .sort({ createdAt: -1 })
-  .skip(skip)
-  .limit(limit);
+    const blogs = await Blog.find(query)
+      .populate("category", "sectionName category") // yahan populate laga rahe hain
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const total = await Blog.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
@@ -47,7 +47,6 @@ const blogs = await Blog.find(query)
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
 
 export async function POST(request) {
   try {
@@ -66,7 +65,10 @@ export async function POST(request) {
     const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
     if (!slugRegex.test(slug)) {
       return NextResponse.json(
-        { error: "Invalid slug format. Use only lowercase letters, numbers, and hyphens." },
+        {
+          error:
+            "Invalid slug format. Use only lowercase letters, numbers, and hyphens.",
+        },
         { status: 400 }
       );
     }
