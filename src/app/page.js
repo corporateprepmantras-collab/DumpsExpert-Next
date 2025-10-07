@@ -6,10 +6,9 @@ import { Check, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import Head from "next/head";
+import { motion } from "framer-motion";
 
 import banner from "@/assets/landingassets/banner.webp";
-
-// Sections
 import ExamDumpsSlider from "@/landingpage/ExamDumpsSlider";
 import UnlockGoals from "@/landingpage/UnlockGoals";
 import GeneralFAQs from "@/landingpage/GeneralFAQs";
@@ -23,6 +22,7 @@ export default function HomePage() {
   const [blogs, setBlogs] = useState([]);
   const [announcement, setAnnouncement] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true); // ✅ controls page rendering
 
   const dumps = [
     { _id: "d1", name: "AWS Certified Solutions Architect" },
@@ -34,77 +34,111 @@ export default function HomePage() {
     { _id: "d7", name: "Salesforce Administrator (ADM-201)" },
   ];
 
-  // ✅ Fetch announcement and trigger modal with delay from API
+  /* ---------- Cache Helpers ---------- */
+  function getCacheItem(key) {
+    try {
+      const raw = sessionStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+  }
+
+  function setCacheItem(key, value) {
+    try {
+      sessionStorage.setItem(key, JSON.stringify(value));
+    } catch {}
+  }
+
+  async function fetchWithSmartCache(key, url, setState, normalize = (d) => d) {
+    const cached = getCacheItem(key);
+    if (cached) setState(normalize(cached));
+
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      const data = await res.json();
+      const normalized = normalize(data);
+
+      // update only if data changed
+      if (JSON.stringify(normalize(cached)) !== JSON.stringify(normalized)) {
+        setCacheItem(key, normalized);
+        setState(normalized);
+      }
+      return normalized;
+    } catch (err) {
+      console.error(`❌ Fetch failed for ${key}:`, err);
+      return cached || null;
+    }
+  }
+
+  /* ---------- Fetch all data in parallel ---------- */
   useEffect(() => {
-    const fetchAnnouncement = async () => {
+    async function loadAll() {
       try {
-        const res = await fetch(`/api/announcement`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        setAnnouncement(data);
+        const [seoData, catsData, blogsData] = await Promise.all([
+          fetchWithSmartCache(
+            "seo_home",
+            "/api/seo/home",
+            setSeo,
+            (d) => d.data || d
+          ),
+          fetchWithSmartCache(
+            "blog_categories",
+            "/api/blogs/blog-categories",
+            setCategories,
+            (d) => d.data || d
+          ),
+          fetchWithSmartCache(
+            "blogs_data",
+            "/api/blogs",
+            setBlogs,
+            (d) => d.data || d
+          ),
+        ]);
 
-        // inside useEffect after fetching announcement
-        if (data?.active) {
-          const delaySeconds = parseFloat(data.delay || "1.00") * 10;
+        // Announcement
+        try {
+          const res = await fetch(`/api/announcement`, { cache: "no-store" });
+          if (res.ok) {
+            const data = await res.json();
+            setAnnouncement(data);
 
-          // Show modal after delay
-          setTimeout(() => {
-            setShowModal(true);
-
-            // Auto-close modal after the same delay
-          }, delaySeconds);
+            if (data?.active) {
+              const lastShown = localStorage.getItem("announcementShownAt");
+              const now = Date.now();
+              const oneHour = 60 * 60 * 1000;
+              if (!lastShown || now - parseInt(lastShown, 10) > oneHour) {
+                setTimeout(() => {
+                  setShowModal(true);
+                  localStorage.setItem("announcementShownAt", now.toString());
+                }, parseFloat(data.delay || "1.00") * 1000);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Announcement fetch failed:", err);
         }
       } catch (err) {
-        console.error("Error fetching announcement:", err);
+        console.error("Main data fetch failed:", err);
+      } finally {
+        setLoading(false); // ✅ allow rendering
       }
-    };
-    fetchAnnouncement();
+    }
+
+    loadAll();
   }, []);
 
-  // ✅ Fetch SEO
-  useEffect(() => {
-    const fetchSeo = async () => {
-      try {
-        const res = await fetch(`/api/seo/home`, { cache: "no-store" });
-        const data = await res.json();
-        setSeo(data);
-      } catch (error) {
-        console.error("SEO fetch error:", error);
-      }
-    };
-    fetchSeo();
-  }, []);
-
-  // ✅ Fetch categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await fetch(`/api/blogs/blog-categories`, {
-          cache: "no-store",
-        });
-        const data = await res.json();
-        setCategories(data || []);
-      } catch (err) {
-        console.error("Error fetching categories:", err);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  // ✅ Fetch blogs
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        const res = await fetch(`/api/blogs`, { cache: "no-store" });
-        const data = await res.json();
-        setBlogs(data?.data || []);
-      } catch (err) {
-        console.error("Error fetching blogs:", err);
-      }
-    };
-    fetchBlogs();
-  }, []);
-
+  /* ---------- Loading screen ---------- */
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-white text-gray-700">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-800 mb-4"></div>
+        <p className="text-sm font-medium">Loading content, please wait...</p>
+      </div>
+    );
+  }
+  /* ---------- Render ---------- */
   return (
     <>
       <Head>
@@ -118,11 +152,10 @@ export default function HomePage() {
         />
       </Head>
 
-      {/* ✅ Announcement Modal */}
+      {/* Announcement Modal */}
       {showModal && announcement?.active && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
-            {/* Close Button */}
             <button
               onClick={() => setShowModal(false)}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
@@ -130,7 +163,6 @@ export default function HomePage() {
               <X size={20} />
             </button>
 
-            {/* Image */}
             {announcement?.imageUrl && (
               <img
                 src={announcement.imageUrl}
@@ -139,7 +171,6 @@ export default function HomePage() {
               />
             )}
 
-            {/* Message */}
             {announcement?.message && (
               <p className="text-gray-700 text-center">
                 {announcement.message}
@@ -149,9 +180,9 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ---- Homepage ---- */}
+      {/* Homepage */}
       <div className="p-2">
-        {/* Hero Section */}
+        {/* Hero */}
         <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
           <div className="w-full lg:w-1/2 mt-10 lg:mt-0">
             <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4">
@@ -192,7 +223,117 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Other Sections */}
+        {/* Popular Dumps */}
+        <section className="py-16 px-4 md:px-12">
+          <h2 className="text-3xl font-bold text-center mb-10">
+            Top Trending Certification Dumps
+          </h2>
+          <div className="flex flex-wrap justify-center gap-3 mb-10">
+            {dumps.map((dump) => (
+              <Button
+                key={dump._id}
+                variant="secondary"
+                className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2"
+              >
+                {dump.name}
+              </Button>
+            ))}
+          </div>
+        </section>
+
+        {/* Blog Section */}
+        <section className="py-20 px-4 md:px-20 bg-white">
+          <h2 className="text-4xl font-bold mb-14 text-center text-gray-800">
+            Latest Exam Tips & Insights
+          </h2>
+
+          <div className="flex flex-wrap justify-center gap-3 mb-10">
+            {categories?.map((cat) => (
+              <Button
+                key={cat._id}
+                variant="outline"
+                asChild
+                className="capitalize rounded-full"
+              >
+                <Link href={`/blogsPages/${cat.category}`}>{cat.category}</Link>
+              </Button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+            {!blogs || blogs.length === 0 ? (
+              <p className="text-center text-gray-500 col-span-full">
+                No blogs found.
+              </p>
+            ) : (
+              blogs
+                .slice()
+                .reverse()
+                .slice(0, 6)
+                .map((blog) => (
+                  <motion.div
+                    key={blog._id}
+                    whileHover={{
+                      scale: 1.04,
+                      boxShadow: "0px 0px 30px rgba(255, 145, 0, 0.25)",
+                    }}
+                    transition={{ type: "spring", stiffness: 180, damping: 12 }}
+                    className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg cursor-pointer transition-all"
+                  >
+                    <Link href={`/blogsPages/blog/${blog.slug || blog._id}`}>
+                      {blog.imageUrl && (
+                        <div className="relative overflow-hidden aspect-square">
+                          <img
+                            src={blog.imageUrl}
+                            alt={blog.title || blog.sectionName}
+                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        </div>
+                      )}
+
+                      <div className="p-5 flex flex-col justify-between h-full">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-orange-500 transition-colors duration-300 line-clamp-1">
+                          {blog.title || blog.sectionName}
+                        </h3>
+
+                        <p className="text-sm text-gray-500 mb-2">
+                          {blog.createdAt
+                            ? new Date(blog.createdAt).toLocaleDateString()
+                            : ""}
+                        </p>
+
+                        <p className="text-gray-600 text-sm flex-grow line-clamp-3">
+                          {blog.metaDescription || "No description available."}
+                        </p>
+
+                        <p className="text-orange-500 mt-4 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all duration-300">
+                          Read More →
+                        </p>
+                      </div>
+
+                      <motion.div
+                        className="absolute bottom-0 left-0 h-[3px] bg-orange-500"
+                        initial={{ width: "0%" }}
+                        whileHover={{ width: "100%" }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                      />
+                    </Link>
+                  </motion.div>
+                ))
+            )}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Button
+              asChild
+              className="bg-[#1f424b] hover:bg-[#2f5058] text-white"
+            >
+              <Link href="blogsPages/blog-categories">See All Blogs</Link>
+            </Button>
+          </div>
+        </section>
+
         <ExamDumpsSlider />
         <ContentDumpsFirst />
         <UnlockGoals />
