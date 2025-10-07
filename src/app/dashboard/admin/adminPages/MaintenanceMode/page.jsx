@@ -14,8 +14,11 @@ const MaintenancePage = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axios.get("/api/maintenance-page");
-        const data = res.data;
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/maintenance-page`
+        );
+        const data = await res.json(); // ✅ must call .json()
+
         if (data) {
           setSettingsExist(true);
           setMaintenanceMode(data.maintenanceMode);

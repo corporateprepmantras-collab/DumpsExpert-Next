@@ -8,7 +8,7 @@ async function getDumpsData() {
   try {
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com"; // ✅ use absolute URL
-    const res = await fetch(`/api/product-categories`, {
+    const res = await fetch(`${baseUrl}/api/product-categories`, {
       next: { revalidate: 60 },
     });
 

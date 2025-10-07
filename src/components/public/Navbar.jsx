@@ -62,7 +62,7 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [dropdownData, setDropdownData] = useState({ ItDumps: [], blogs: [] });
   const [cartItemCount, setCartItemCount] = useState(0);
-  const [loading, setLoading] = useState(true); // ✅ New state
+  const [loading, setLoading] = useState(true);
 
   // ✅ Cart count logic
   useEffect(() => {
@@ -81,10 +81,18 @@ export default function Navbar() {
       try {
         const [blogCategories, productCategories] = await Promise.all([
           fetchWithCache("blog_categories", "/api/blogs/blog-categories", (d) =>
-            Array.isArray(d) ? d.map((c) => c.category) : []
+            Array.isArray(d)
+              ? d
+                  .map((c) => c.category)
+                  .filter((c) => typeof c === "string" && c.trim() !== "")
+              : []
           ),
           fetchWithCache("product_categories", "/api/product-categories", (d) =>
-            Array.isArray(d) ? d.map((p) => p.name) : []
+            Array.isArray(d)
+              ? d
+                  .map((p) => p.name)
+                  .filter((n) => typeof n === "string" && n.trim() !== "")
+              : []
           ),
         ]);
 
@@ -101,7 +109,7 @@ export default function Navbar() {
       } catch (err) {
         console.error("Error loading navbar data:", err);
       } finally {
-        setLoading(false); // ✅ stop loading
+        setLoading(false);
       }
     }
 
@@ -176,22 +184,27 @@ export default function Navbar() {
                 {item.label}
                 {hasDropdown && <span className="text-sm">&#9662;</span>}
               </Link>
+
               {hasDropdown && activeDropdown === item.dropdownKey && (
                 <ul className="absolute top-full left-0 bg-white border rounded-lg shadow-lg w-48 z-50">
-                  {dropdownData[item.dropdownKey].map((sub, i) => (
-                    <li key={i}>
-                      <Link
-                        href={`/${
-                          item.dropdownKey === "ItDumps"
-                            ? "ItDumps"
-                            : "blogsPages"
-                        }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        {sub}
-                      </Link>
-                    </li>
-                  ))}
+                  {dropdownData[item.dropdownKey]
+                    .filter(
+                      (sub) => typeof sub === "string" && sub.trim() !== ""
+                    )
+                    .map((sub, i) => (
+                      <li key={i}>
+                        <Link
+                          href={`/${
+                            item.dropdownKey === "ItDumps"
+                              ? "ItDumps"
+                              : "blogsPages"
+                          }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          {sub}
+                        </Link>
+                      </li>
+                    ))}
                 </ul>
               )}
             </li>
@@ -221,11 +234,11 @@ export default function Navbar() {
               <Button variant="ghost" className="p-0 h-auto">
                 <Avatar>
                   <AvatarImage
-                    src={userData?.profileImage || "https://via.placeholder.com/40"}
+                    src={
+                      userData?.profileImage || "https://via.placeholder.com/40"
+                    }
                   />
-                  <AvatarFallback>
-                    {userData?.name?.[0] || "U"}
-                  </AvatarFallback>
+                  <AvatarFallback>{userData?.name?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -244,10 +257,7 @@ export default function Navbar() {
               <DropdownMenuItem asChild>
                 <Link href={getDashboardPath()}>Dashboard</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-red-600"
-                onClick={handleLogout}
-              >
+              <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

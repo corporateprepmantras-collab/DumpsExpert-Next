@@ -6,43 +6,25 @@ import AboutContentSection from "./AboutContentSection";
 // ✅ Fetch SEO dynamically
 export async function generateMetadata() {
   try {
-    const res = await fetch("/api/seo/about", {
-      next: { revalidate: 60 },
-    });
-
-    if (!res.ok) throw new Error("Failed to fetch About SEO");
-
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/seo/about`,
+      {
+        next: { revalidate: 3600 }, // 1 hour cache
+        cache: "force-cache",
+      }
+    );
     const seo = await res.json();
 
     return {
       title: seo.title,
-      description:
-        seo.description ||
-        "Learn more about Prepmantras and why we’re trusted for SAP and IT exam dumps.",
-      keywords: seo.keywords || [],
-      openGraph: {
-        title: seo.ogtitle || seo.title,
-        description: seo.ogdescription || seo.description,
-        url: seo.ogurl || "",
-        images: [
-          {
-            url: seo.ogimage || "",
-            width: 1200,
-            height: 630,
-            alt: seo.ogtitle || "About Us",
-          },
-        ],
-      },
-      alternates: {
-        canonical: seo.canonicalurl || "",
-      },
+      description: seo.description,
+      keywords: seo.keywords,
     };
   } catch (error) {
-    console.error("About SEO Fetch Error:", error);
+    console.error("SEO Fetch Failed:", error);
     return {
       title: "About Us | Prepmantras",
-      description:
-        "Learn more about Prepmantras and why we’re trusted for SAP and IT exam dumps.",
+      description: "Learn more about Prepmantras...",
     };
   }
 }
