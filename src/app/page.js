@@ -22,7 +22,7 @@ export default function HomePage() {
   const [blogs, setBlogs] = useState([]);
   const [announcement, setAnnouncement] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(true); // ✅ controls page rendering
+  const [loading, setLoading] = useState(true);
 
   const dumps = [
     { _id: "d1", name: "AWS Certified Solutions Architect" },
@@ -51,20 +51,22 @@ export default function HomePage() {
     } catch {}
   }
 
+  /* ---------- Smart Fetch With Cache ---------- */
   async function fetchWithSmartCache(key, url, setState, normalize = (d) => d) {
     const cached = getCacheItem(key);
     if (cached) setState(normalize(cached));
 
     try {
       const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       const data = await res.json();
       const normalized = normalize(data);
 
-      // update only if data changed
       if (JSON.stringify(normalize(cached)) !== JSON.stringify(normalized)) {
         setCacheItem(key, normalized);
         setState(normalized);
       }
+
       return normalized;
     } catch (err) {
       console.error(`❌ Fetch failed for ${key}:`, err);
@@ -72,14 +74,18 @@ export default function HomePage() {
     }
   }
 
-  /* ---------- Fetch all data in parallel ---------- */
+  /* ---------- Fetch All Data ---------- */
   useEffect(() => {
     async function loadAll() {
       try {
+        // ✅ Always compute base URL correctly for both local & deployed builds
         const baseUrl =
-          process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+          typeof window !== "undefined"
+            ? window.location.origin
+            : process.env.NEXT_PUBLIC_BASE_URL || "";
 
-        const [seoData, catsData, blogsData] = await Promise.all([
+        // ✅ Fetch all key data in parallel
+        await Promise.all([
           fetchWithSmartCache(
             "seo_home",
             `${baseUrl}/api/seo/home`,
@@ -100,9 +106,11 @@ export default function HomePage() {
           ),
         ]);
 
-        // Announcement
+        // ✅ Announcement (fetched separately)
         try {
-          const res = await fetch(`/api/announcement`, { cache: "no-store" });
+          const res = await fetch(`${baseUrl}/api/announcement`, {
+            cache: "no-store",
+          });
           if (res.ok) {
             const data = await res.json();
             setAnnouncement(data);
@@ -111,6 +119,7 @@ export default function HomePage() {
               const lastShown = localStorage.getItem("announcementShownAt");
               const now = Date.now();
               const oneHour = 60 * 60 * 1000;
+
               if (!lastShown || now - parseInt(lastShown, 10) > oneHour) {
                 setTimeout(() => {
                   setShowModal(true);
@@ -120,19 +129,19 @@ export default function HomePage() {
             }
           }
         } catch (err) {
-          console.error("Announcement fetch failed:", err);
+          console.error("❌ Announcement fetch failed:", err);
         }
       } catch (err) {
-        console.error("Main data fetch failed:", err);
+        console.error("❌ Main data fetch failed:", err);
       } finally {
-        setLoading(false); // ✅ allow rendering
+        setLoading(false);
       }
     }
 
     loadAll();
   }, []);
 
-  /* ---------- Loading screen ---------- */
+  /* ---------- Loading Screen ---------- */
   if (loading) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-white text-gray-700">
@@ -141,7 +150,8 @@ export default function HomePage() {
       </div>
     );
   }
-  /* ---------- Render ---------- */
+
+  /* ---------- Render Page ---------- */
   return (
     <>
       <Head>
@@ -155,7 +165,7 @@ export default function HomePage() {
         />
       </Head>
 
-      {/* Announcement Modal */}
+      {/* ---------- Announcement Modal ---------- */}
       {showModal && announcement?.active && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
@@ -183,9 +193,8 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Homepage */}
+      {/* ---------- Hero Section ---------- */}
       <div className="p-2">
-        {/* Hero */}
         <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
           <div className="w-full lg:w-1/2 mt-10 lg:mt-0">
             <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4">
@@ -226,7 +235,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Popular Dumps */}
+        {/* ---------- Popular Dumps ---------- */}
         <section className="py-16 px-4 md:px-12">
           <h2 className="text-3xl font-bold text-center mb-10">
             Top Trending Certification Dumps
@@ -244,7 +253,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Blog Section */}
+        {/* ---------- Blog Section ---------- */}
         <section className="py-20 px-4 md:px-20 bg-white">
           <h2 className="text-4xl font-bold mb-14 text-center text-gray-800">
             Latest Exam Tips & Insights
