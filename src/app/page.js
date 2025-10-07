@@ -76,22 +76,25 @@ export default function HomePage() {
   useEffect(() => {
     async function loadAll() {
       try {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+
         const [seoData, catsData, blogsData] = await Promise.all([
           fetchWithSmartCache(
             "seo_home",
-            "/api/seo/home",
+            `${baseUrl}/api/seo/home`,
             setSeo,
             (d) => d.data || d
           ),
           fetchWithSmartCache(
             "blog_categories",
-            "/api/blogs/blog-categories",
+            `${baseUrl}/api/blogs/blog-categories`,
             setCategories,
             (d) => d.data || d
           ),
           fetchWithSmartCache(
             "blogs_data",
-            "/api/blogs",
+            `${baseUrl}/api/blogs`,
             setBlogs,
             (d) => d.data || d
           ),
