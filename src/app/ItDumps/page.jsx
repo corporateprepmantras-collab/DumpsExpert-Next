@@ -3,11 +3,37 @@ import Link from "next/link";
 import { FaCheckCircle } from "react-icons/fa";
 import guarantee from "../../assets/userAssets/guaranteed.png";
 
-// Fetch from backend API
+/* ===========================
+   ✅ Fetch SEO data (Server-side)
+   =========================== */
+async function fetchSEO() {
+  try {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+
+    // 🔹 Fetch SEO data specifically for SAP (It Dumps page)
+    const res = await fetch(`${baseUrl}/api/seo/sap`, {
+      next: { revalidate: 120 }, // Revalidate every 2 minutes
+    });
+
+    if (!res.ok) throw new Error("Failed to fetch SEO data");
+
+    const json = await res.json();
+    return json?.data || {};
+  } catch (error) {
+    console.error("❌ SEO fetch failed:", error);
+    return {};
+  }
+}
+
+/* ===========================
+   ✅ Fetch Product Categories
+   =========================== */
 async function getDumpsData() {
   try {
     const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com"; // ✅ use absolute URL
+      process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+
     const res = await fetch(`${baseUrl}/api/product-categories`, {
       next: { revalidate: 60 },
     });
@@ -19,23 +45,61 @@ async function getDumpsData() {
     if (Array.isArray(json)) return json;
     if (Array.isArray(json?.data)) return json.data;
 
-    console.error("Unexpected API response format:", json);
+    console.error("⚠️ Unexpected API format:", json);
     return [];
   } catch (error) {
-    console.error("Error fetching dumps data:", error);
+    console.error("❌ Error fetching dumps data:", error);
     return [];
   }
 }
 
-// Create SEO-friendly slug
+/* ===========================
+   ✅ Dynamic Metadata
+   =========================== */
+export async function generateMetadata() {
+  const seo = await fetchSEO();
+
+  return {
+    title: seo.title || "SAP Dumps – Prepmantras",
+    description:
+      seo.description ||
+      "Get the latest SAP certification dumps and verified exam prep materials at Prepmantras.",
+    keywords: seo.keywords || "SAP dumps, SAP certification, prepmantras",
+    openGraph: {
+      title: seo.ogtitle || seo.title || "Prepmantras SAP Dumps",
+      description:
+        seo.ogdescription ||
+        seo.description ||
+        "Verified SAP dumps for guaranteed success.",
+      images: [seo.ogimage || "/default-og.jpg"],
+      url: seo.ogurl || "https://prepmantras.com/ItDumps",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.twittertitle || seo.title || "Prepmantras SAP Dumps",
+      description:
+        seo.twitterdescription ||
+        seo.description ||
+        "Trusted SAP dumps and exam prep materials.",
+      images: [seo.twitterimage || seo.ogimage || "/default-og.jpg"],
+    },
+  };
+}
+
+/* ===========================
+   ✅ Utility – Create SEO-Friendly Slug
+   =========================== */
 function createSlug(name) {
   return name
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, "") // remove special chars
-    .replace(/\s+/g, "-"); // spaces → dashes
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-");
 }
 
+/* ===========================
+   ✅ Page Component
+   =========================== */
 export default async function ITDumpsPage() {
   const dumpsData = await getDumpsData();
 
@@ -54,9 +118,9 @@ export default async function ITDumpsPage() {
       <div className="absolute inset-0 bg-white/70 backdrop-blur-md z-0" />
 
       <div className="relative z-10 w-full max-w-7xl mx-auto">
-        {/* Heading */}
+        {/* ✅ Dynamic Page Title */}
         <h1 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-10">
-          Unlock Your Potential with IT Certification Dumps
+          Unlock Your Potential with SAP Certification Dumps
         </h1>
 
         {/* Features */}
