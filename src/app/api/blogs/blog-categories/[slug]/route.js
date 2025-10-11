@@ -9,16 +9,22 @@ export async function GET(req, { params }) {
 
     const { slug } = params;
 
-    // find category by "category" field instead of slug
-    const category = await BlogCategory.findOne({ category: slug });
+    // Convert URL slug (e.g., "web-development") to readable category name
+    const formattedSlug = slug.replace(/-/g, " ").toLowerCase();
+
+    // Find category by normalized name
+    const category = await BlogCategory.findOne({
+      category: { $regex: new RegExp(`^${formattedSlug}$`, "i") },
+    });
+
     if (!category) {
       return NextResponse.json(
-        { error: "Category not found" },
+        { error: `Category '${slug}' not found` },
         { status: 404 }
       );
     }
 
-    // find blogs under that category
+    // Fetch all blogs under this category
     const blogs = await Blog.find({ category: category._id })
       .sort({ createdAt: -1 })
       .lean();

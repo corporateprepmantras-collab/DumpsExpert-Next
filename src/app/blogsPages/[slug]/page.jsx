@@ -84,13 +84,9 @@ const BlogPage = () => {
       >
         <h1 className="text-4xl pt-24 font-bold text-center mb-6">OUR BLOGS</h1>
         <div className="flex flex-wrap justify-center gap-2">
-          <Link
-            href="/blogs"
-            className={`px-4 py-1 rounded-full border border-white ${
-              !categorySlug ? "bg-white text-black" : "bg-transparent"
-            }`}
-          >
-            All
+          {/* All */}
+          <Link href="/blogsPages/blog-categories">
+            <button className={`px-4 py-1 rounded-full border `}>All</button>
           </Link>
           {categories.map((cat) => (
             <Link

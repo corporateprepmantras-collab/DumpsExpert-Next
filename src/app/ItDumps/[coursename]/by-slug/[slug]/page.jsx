@@ -2,37 +2,42 @@ import ProductDetail from "./ProductDetail";
 import { notFound } from "next/navigation";
 
 export async function generateMetadata({ params }) {
+  const { slug } = params;
+
   try {
-    // 👇 Fetch using slug (not id)
+    // 🟢 Correct endpoint and correct response structure
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/product/by-slug/${params.slug}`,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/get-by-slug/${slug}`,
       { cache: "no-store" }
     );
 
     if (!res.ok) throw new Error("Product fetch failed");
+
     const data = await res.json();
-    const product = data?.product || {};
+    const product = data?.data || {}; // ✅ fixed: use data.data not data.product
 
     if (!product?.title) return notFound();
 
-    const url = `${process.env.NEXT_PUBLIC_SITE_URL}/ItDumps/sap/by-slug/${params.slug}`;
-    const imageUrl = product.imageUrl || "/default-product.webp";
+    const url = `${process.env.NEXT_PUBLIC_SITE_URL}/ItDumps/sap/by-slug/${slug}`;
+    const imageUrl =
+      product.imageUrl ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/default-product.webp`;
 
+    // 🟢 SEO Metadata Setup
     return {
-      title: product.metaTitle || product.title || "Product Details",
+      title: product.metaTitle || product.title,
       description:
         product.metaDescription ||
         product.Description?.slice(0, 150) ||
-        "Get detailed information about this product.",
+        "Explore SAP certification details and dumps.",
       keywords:
-        product.metaKeywords || "exam dumps, SAP, certification, IT dumps",
-      robots: {
-        index: true,
-        follow: true,
-      },
-      alternates: {
-        canonical: url,
-      },
+        product.metaKeywords ||
+        "exam dumps, SAP, certification, IT dumps, practice questions",
+
+      metadataBase: new URL(
+        process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+      ),
+
       openGraph: {
         title: product.metaTitle || product.title,
         description:
@@ -50,32 +55,15 @@ export async function generateMetadata({ params }) {
           },
         ],
       },
+
       twitter: {
         card: "summary_large_image",
         title: product.metaTitle || product.title,
         description: product.metaDescription || product.Description,
         images: [imageUrl],
       },
-      other: {
-        "application/ld+json": JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Product",
-          name: product.title,
-          image: imageUrl,
-          description: product.metaDescription || product.Description,
-          brand: {
-            "@type": "Brand",
-            name: "PrepMantras",
-          },
-          offers: {
-            "@type": "Offer",
-            priceCurrency: "INR",
-            price: product.price || "0",
-            availability: "https://schema.org/InStock",
-            url,
-          },
-        }),
-      },
+
+      alternates: { canonical: url },
     };
   } catch (error) {
     console.error("SEO fetch failed:", error);
@@ -86,6 +74,8 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default function ProductPage({ params }) {
-  return <ProductDetail slug={params.slug} />;
+// ✅ Page Component
+export default async function ProductPage({ params }) {
+  const { slug } = params;
+  return <ProductDetail slug={slug} />;
 }

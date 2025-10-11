@@ -2,16 +2,18 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
-
-// const BASE_URL = "http://${process.env.NEXT_PUBLIC_BASE_URL}";
+import { useParams, usePathname } from "next/navigation";
 
 export default function BlogPage() {
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [blogs, setBlogs] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  const params = useParams();
+  const pathname = usePathname();
+  const selectedCategory = params?.slug || ""; // will be "" when on /blogsPages/blog-categories
 
   // ✅ Fetch categories
   useEffect(() => {
@@ -27,33 +29,26 @@ export default function BlogPage() {
     fetchCategories();
   }, []);
 
-  // ✅ Fetch blogs
+  // ✅ Fetch blogs (based on route)
   useEffect(() => {
     const fetchBlogs = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`/api/blogs`);
-        const allBlogs = res.data?.data || []; // ✅ fix
+        let res;
 
-        // Filter by selected category
-        const filteredByCategory = selectedCategory
-          ? allBlogs.filter(
-              (b) =>
-                b.category?.toLowerCase() === selectedCategory.toLowerCase()
-            )
-          : allBlogs;
+        if (pathname.includes("/blogsPages/blog-categories")) {
+          // Fetch all blogs
+          res = await axios.get(`/api/blogs`);
+          setBlogs(res.data?.data || []);
+        } else if (selectedCategory) {
+          // Fetch by category slug
+          res = await axios.get(`/api/blogsPages/${selectedCategory}`);
+          setBlogs(res.data?.blogs || []);
+        }
 
-        // Filter by search query
-        const filteredBlogs = search
-          ? filteredByCategory.filter((b) =>
-              b.sectionName?.toLowerCase().includes(search.toLowerCase())
-            )
-          : filteredByCategory;
-
-        setBlogs(filteredBlogs);
-
-        // Top 10 recent posts (descending by createdAt)
-        const recent = [...allBlogs]
+        // Top 10 recent posts
+        const all = res?.data?.data || res?.data?.blogs || [];
+        const recent = [...all]
           .sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -68,7 +63,7 @@ export default function BlogPage() {
     };
 
     fetchBlogs();
-  }, [selectedCategory, search]);
+  }, [selectedCategory, pathname]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -81,37 +76,45 @@ export default function BlogPage() {
       >
         <h1 className="text-4xl pt-24 font-bold text-center mb-6">OUR BLOGS</h1>
 
-        {/* Categories */}
+        {/* ✅ Category Tabs */}
+        {/* ✅ Category Tabs */}
         <div className="flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => setSelectedCategory("")}
-            className={`px-4 py-1 rounded-full border ${
-              selectedCategory === ""
-                ? "bg-white text-black font-semibold"
-                : "bg-transparent border-white"
-            }`}
-          >
-            All
-          </button>
-
-          {categories.map((cat) => (
+          {/* All */}
+          <Link href="/blogsPages/blog-categories">
             <button
-              key={cat._id}
-              onClick={() => setSelectedCategory(cat.category)}
               className={`px-4 py-1 rounded-full border ${
-                selectedCategory === cat.category
+                pathname === "/blogsPages/blog-categories"
                   ? "bg-white text-black font-semibold"
                   : "bg-transparent border-white"
               }`}
             >
-              {cat.category}
+              All
             </button>
-          ))}
+          </Link>
+
+          {/* Dynamic Categories */}
+          {categories.map((cat) => {
+            const slug = cat.category.toLowerCase().replace(/\s+/g, "-");
+            return (
+              <Link key={cat._id} href={`/blogsPages/${slug}`}>
+                <button
+                  className={`px-4 py-1 rounded-full border ${
+                    selectedCategory === slug
+                      ? "bg-white text-black font-semibold"
+                      : "bg-transparent border-white"
+                  }`}
+                >
+                  {cat.category}
+                </button>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
+      {/* Blog Cards + Sidebar */}
       <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col lg:flex-row gap-10">
-        {/* Blog Cards */}
+        {/* Blogs */}
         <div className="w-full lg:w-3/4 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
             <p className="text-center text-gray-500 col-span-full">
@@ -173,10 +176,10 @@ export default function BlogPage() {
               {recentPosts.map((post) => (
                 <li key={post._id}>
                   <Link
-                    href={`/blogsPages/${post.categories || post._id}`}
+                    href={`/blogsPages/blog/${post.slug || post._id}`}
                     className="text-blue-600 hover:underline block"
                   >
-                    {post.title}
+                    {post.sectionName}
                   </Link>
                 </li>
               ))}
