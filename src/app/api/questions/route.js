@@ -13,65 +13,102 @@ cloudinary.config({
 export async function POST(request) {
   try {
     await connectMongoDB();
-    
+
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());
-    
-    const { examId } = data;
-    
+ console.log(data)
+    const { examId, questionType } = data;
     if (!examId) {
       return NextResponse.json(
         { success: false, message: "Exam ID is required" },
         { status: 400 }
       );
     }
-    
-    // Process options
-    const options = JSON.parse(data.options || '[]');
-    const correctAnswers = JSON.parse(data.correctAnswers || '[]');
-    
-    // Upload question image if exists
-    const questionImageFile = formData.get('questionImage');
-    let questionImageUrl = '';
-    if (questionImageFile instanceof Blob && questionImageFile.size > 0) {
-      questionImageUrl = await uploadImage(questionImageFile);
-    }
 
-    // Upload option images
-    const processedOptions = await Promise.all(
-      options.map(async (option, index) => {
-        const optionImageFile = formData.get(`optionImage-${index}`);
-        if (optionImageFile instanceof Blob && optionImageFile.size > 0) {
-          option.image = await uploadImage(optionImageFile);
-        }
-        return option;
-      })
-    );
-
-    // Create new question
-    const newQuestion = await Question.create({
-      ...data,
+    const questionData = {
       examId,
-      questionImage: questionImageUrl,
-      options: processedOptions,
-      correctAnswers,
+      questionText: data.questionText,
+      questionCode: data.questionCode,
+      questionType,
+      difficulty: data.difficulty,
       marks: Number(data.marks),
       negativeMarks: Number(data.negativeMarks),
-      isSample: data.isSample === 'true',
-    });
+      subject: data.subject,
+      topic: data.topic,
+      tags: JSON.parse(data.tags || "[]"),
+      isSample: data.isSample === "true",
+      explanation: data.explanation,
+      status: data.status,
+    };
 
-    return NextResponse.json(
-      { success: true, data: newQuestion },
-      { status: 201 }
-    );
+    // ✅ Question image
+    const questionImageFile = formData.get("questionImage");
+    if (questionImageFile instanceof Blob && questionImageFile.size > 0) {
+      questionData.questionImage = await uploadImage(questionImageFile);
+    }
+
+    // ✅ Matching type
+    if (questionType === "matching") {
+      const matchingPairs = JSON.parse(data.matchingPairs || "{}");
+
+      const processedLeftItems = await Promise.all(
+        (matchingPairs.leftItems || []).map(async (item) => {
+          const imageFile = formData.get(`matchingImage-${item.id}`);
+          if (imageFile instanceof Blob && imageFile.size > 0) {
+            item.image = await uploadImage(imageFile);
+          }
+          return item;
+        })
+      );
+
+      const processedRightItems = await Promise.all(
+        (matchingPairs.rightItems || []).map(async (item) => {
+          const imageFile = formData.get(`matchingImage-${item.id}`);
+          if (imageFile instanceof Blob && imageFile.size > 0) {
+            item.image = await uploadImage(imageFile);
+          }
+          return item;
+        })
+      );
+
+      questionData.matchingPairs = {
+        leftItems: processedLeftItems,
+        rightItems: processedRightItems,
+        correctMatches: matchingPairs.correctMatches || {},
+      };
+    } else {
+      // ✅ MCQ type
+      const options = JSON.parse(data.options || "[]");
+      const correctAnswers = JSON.parse(data.correctAnswers || "[]");
+
+      const processedOptions = await Promise.all(
+        options.map(async (option, index) => {
+          const optionImageFile = formData.get(`optionImage-${index}`);
+          if (optionImageFile instanceof Blob && optionImageFile.size > 0) {
+            option.image = await uploadImage(optionImageFile);
+          }
+          return option;
+        })
+      );
+
+      questionData.options = processedOptions;
+      questionData.correctAnswers = correctAnswers;
+    }
+
+    console.log("✅ Final questionData before save:", questionData);
+
+    const newQuestion = await Question.create(questionData);
+
+    return NextResponse.json({ success: true, data: newQuestion }, { status: 201 });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error creating question:", error);
     return NextResponse.json(
       { success: false, message: "Failed to create question" },
       { status: 500 }
     );
   }
 }
+
 
 // Helper function to upload image to Cloudinary
 async function uploadImage(imageFile) {

@@ -1,14 +1,12 @@
 import { connectMongoDB } from "@/lib/mongo";
 import Question from "@/models/questionSchema";
 import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
-// ✅ Get a single question by ID
+
+// ✅ Get a single question by ID for editing
 export async function GET(request, { params }) {
   try {
-    // Extract question ID from parameters
     const { id } = await params;
     
-    // Check if ID is provided
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Question ID is required" },
@@ -16,13 +14,10 @@ export async function GET(request, { params }) {
       );
     }
     
-    // Connect to MongoDB
     await connectMongoDB();
     
-    // Find the question by ID
     const question = await Question.findById(id);
     
-    // Check if question exists
     if (!question) {
       return NextResponse.json(
         { success: false, message: "Question not found" },
@@ -30,7 +25,6 @@ export async function GET(request, { params }) {
       );
     }
     
-    // Return the question data
     return NextResponse.json({
       success: true,
       data: question,
@@ -48,75 +42,126 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { id } = await params;
-    
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Question ID is required" },
         { status: 400 }
       );
     }
-    
+
     await connectMongoDB();
-    
+
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());
-    
-    // Process options and correctAnswers
-    const options = JSON.parse(data.options || '[]');
-    const correctAnswers = JSON.parse(data.correctAnswers || '[]');
-    
-    // Upload question image if exists
-    const questionImageFile = formData.get('questionImage');
-    let questionImageUrl = data.questionImage; // Keep existing if not updated
-    if (questionImageFile instanceof Blob && questionImageFile.size > 0) {
-      questionImageUrl = await uploadImage(questionImageFile);
-    }
+    const { questionType } = data;
 
-    // Upload option images
-    const processedOptions = await Promise.all(
-      options.map(async (option, index) => {
-        const optionImageFile = formData.get(`optionImage-${index}`);
-        if (optionImageFile instanceof Blob && optionImageFile.size > 0) {
-          option.image = await uploadImage(optionImageFile);
-        }
-        return option;
-      })
-    );
-
-    // Update question
-    const updatedQuestion = await Question.findByIdAndUpdate(
-      id,
-      {
-        ...data,
-        questionImage: questionImageUrl,
-        options: processedOptions,
-        correctAnswers,
-        marks: Number(data.marks),
-        negativeMarks: Number(data.negativeMarks),
-        isSample: data.isSample === 'true',
-      },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedQuestion) {
+    const existingQuestion = await Question.findById(id);
+    if (!existingQuestion) {
       return NextResponse.json(
         { success: false, message: "Question not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(
-      { success: true, data: updatedQuestion },
-      { status: 200 }
-    );
+    const updateData = {
+      questionText: data.questionText,
+      questionCode: data.questionCode,
+      questionType,
+      difficulty: data.difficulty,
+      marks: Number(data.marks),
+      negativeMarks: Number(data.negativeMarks),
+      subject: data.subject,
+      topic: data.topic,
+      tags: JSON.parse(data.tags || "[]"),
+      isSample: data.isSample === "true",
+      explanation: data.explanation,
+      status: data.status,
+    };
+
+    const questionImageFile = formData.get("questionImage");
+    if (questionImageFile instanceof Blob && questionImageFile.size > 0) {
+      updateData.questionImage = await uploadImage(questionImageFile);
+    } else {
+      updateData.questionImage = existingQuestion.questionImage;
+    }
+
+    if (questionType === "matching") {
+      const matchingPairs = JSON.parse(data.matchingPairs || "{}");
+
+      const processedLeftItems = await Promise.all(
+        (matchingPairs.leftItems || []).map(async (item, index) => {
+          const imageFile = formData.get(`matchingImage-${item.id}`);
+          if (imageFile instanceof Blob && imageFile.size > 0) {
+            item.image = await uploadImage(imageFile);
+          } else {
+            const existingItem = existingQuestion.matchingPairs?.leftItems?.[index];
+            if (existingItem && existingItem.image) {
+              item.image = existingItem.image;
+            }
+          }
+          return item;
+        })
+      );
+
+      const processedRightItems = await Promise.all(
+        (matchingPairs.rightItems || []).map(async (item, index) => {
+          const imageFile = formData.get(`matchingImage-${item.id}`);
+          if (imageFile instanceof Blob && imageFile.size > 0) {
+            item.image = await uploadImage(imageFile);
+          } else {
+            const existingItem = existingQuestion.matchingPairs?.rightItems?.[index];
+            if (existingItem && existingItem.image) {
+              item.image = existingItem.image;
+            }
+          }
+          return item;
+        })
+      );
+
+      updateData.matchingPairs = {
+        leftItems: processedLeftItems,
+        rightItems: processedRightItems,
+        correctMatches: matchingPairs.correctMatches || {},
+      };
+    } else {
+      const options = JSON.parse(data.options || "[]");
+      const correctAnswers = JSON.parse(data.correctAnswers || "[]");
+
+      const processedOptions = await Promise.all(
+        options.map(async (option, index) => {
+          const optionImageFile = formData.get(`optionImage-${index}`);
+          if (optionImageFile instanceof Blob && optionImageFile.size > 0) {
+            option.image = await uploadImage(optionImageFile);
+          } else {
+            const existingOption = existingQuestion.options?.[index];
+            if (existingOption && existingOption.image) {
+              option.image = existingOption.image;
+            }
+          }
+          return option;
+        })
+      );
+
+      updateData.options = processedOptions;
+      updateData.correctAnswers = correctAnswers;
+    }
+
+    const updatedQuestion = await Question.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    return NextResponse.json({ success: true, data: updatedQuestion }, { status: 200 });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error updating question:", error);
     return NextResponse.json(
       { success: false, message: "Failed to update question" },
       { status: 500 }
     );
   }
 }
+
+
 
 // ✅ Delete a question by ID
 export async function DELETE(request, { params }) {
