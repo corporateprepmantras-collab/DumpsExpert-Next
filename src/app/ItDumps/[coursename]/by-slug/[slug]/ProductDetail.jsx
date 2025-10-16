@@ -59,42 +59,41 @@ export default function ProductDetailsPage() {
     }
   }, [status]);
 
-  const handleAddToCart = (type = "regular") => {
+  const handleAddToCart = (type = "regular", examData = null) => {
     if (!product) return;
 
     if (status !== "authenticated") {
       toast.error("Please login to add items to cart");
-      setTimeout(() => {
-        router.push("/auth/signin");
-      }, 1500);
+      setTimeout(() => router.push("/auth/signin"), 1500);
       return;
     }
 
     let item = {
-      ...product,
+      _id: product._id,
+      slug: product.slug,
       type,
-      title: product.title,
       imageUrl: product.imageUrl,
-      samplePdfUrl: product.samplePdfUrl,
-      mainPdfUrl: product.mainPdfUrl,
+      quantity: 1,
     };
 
-    switch (type) {
-      case "regular":
-        item.title = `${product.title} [PDF]`;
-        item.price = product.dumpsPriceInr || product.dumpsPriceUsd;
-        break;
-      case "online":
-        item.title = `${product.title} [Online Exam]`;
-        item.price = exams?.priceINR || exams?.priceUSD;
-        break;
-      case "combo":
-        item.title = `${product.title} [Combo]`;
-        item.price = product.comboPriceInr || product.comboPriceUsd;
-        break;
-      default:
-        item.title = product.title;
-        item.price = product.dumpsPriceInr || product.dumpsPriceUsd;
+    if (type === "regular") {
+      item.title = `${product.title} [PDF]`;
+      item.priceInr = product.dumpsPriceInr ?? 0;
+      item.priceUsd = product.dumpsPriceUsd ?? 0;
+      item.mrpInr = product.dumpsMrpInr ?? 0;
+      item.mrpUsd = product.dumpsMrpUsd ?? 0;
+    } else if (type === "combo") {
+      item.title = `${product.title} [Combo]`;
+      item.priceInr = product.comboPriceInr ?? 0;
+      item.priceUsd = product.comboPriceUsd ?? 0;
+      item.mrpInr = product.comboMrpInr ?? 0;
+      item.mrpUsd = product.comboMrpUsd ?? 0;
+    } else if (type === "online" && examData) {
+      item.title = `${product.title} [Online Exam]`;
+      item.priceInr = examData.priceINR ?? 0;
+      item.priceUsd = examData.priceUSD ?? 0;
+      item.mrpInr = examData.mrpINR ?? 0;
+      item.mrpUsd = examData.mrpUSD ?? 0;
     }
 
     const result = useCartStore.getState().addToCart(item);
@@ -102,9 +101,7 @@ export default function ProductDetailsPage() {
     if (!result.success) {
       toast.error(result.message);
       if (result.message.toLowerCase().includes("login")) {
-        setTimeout(() => {
-          router.push("/auth/signin");
-        }, 1500);
+        setTimeout(() => router.push("/auth/signin"), 1500);
       }
       return;
     }
@@ -208,7 +205,7 @@ export default function ProductDetailsPage() {
           content={product.metaDescription || product.title}
         />
         <meta property="og:image" content={product.imageUrl} />
-       
+
         <meta property="og:type" content="product" />
 
         {/* Twitter */}
@@ -369,8 +366,8 @@ export default function ProductDetailsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => handleAddToCart("regular")}
-                      className="w-full bg-gradient-to-r cursor-pointer from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                      onClick={() => handleAddToCart("online", exam)}
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
                     >
                       🛒 Add to Cart
                     </button>

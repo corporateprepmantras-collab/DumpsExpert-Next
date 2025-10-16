@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import BlogCard from "../BlogCard";
 import axios from "axios";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 const normalizeBlogs = (data) => {
   if (!data) return [];
@@ -22,9 +22,8 @@ const normalizeBlogs = (data) => {
 };
 
 const BlogPage = () => {
-  const params = useParams(); // Get category slug from URL
+  const params = useParams();
   const categorySlug = params?.slug ?? null;
-  const router = useRouter();
 
   const [categories, setCategories] = useState([]);
   const [blogs, setBlogs] = useState([]);
@@ -40,34 +39,37 @@ const BlogPage = () => {
       setError("");
 
       try {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+
         let normalizedBlogs = [];
 
         if (categorySlug) {
-          // ✅ Fetch blogs by category slug
+          // ✅ Fetch blogs by category
           const res = await axios.get(
-            `/api/blogs/blog-categories/${categorySlug}`
+            `${baseUrl}/api/blogs/blog-categories/${categorySlug}`
           );
           normalizedBlogs = normalizeBlogs(res.data.blogs);
         } else {
           // ✅ Fetch all blogs
-          const blogsRes = await axios.get("/api/blogs");
+          const blogsRes = await axios.get(`${baseUrl}/api/blogs`);
           normalizedBlogs = normalizeBlogs(blogsRes.data);
         }
 
         setBlogs(normalizedBlogs);
         setFilteredBlogs(normalizedBlogs);
 
-        // ✅ Recent posts (sorted by date)
+        // ✅ Sort recent posts
         const recent = [...normalizedBlogs]
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 10);
         setRecentPosts(recent);
 
-        // ✅ Fetch all categories
-        const categoriesRes = await axios.get("/api/blogs/blog-categories");
-        setCategories(normalizeBlogs(categoriesRes.data));
+        // ✅ Fetch categories
+        const catRes = await axios.get(`${baseUrl}/api/blogs/blog-categories`);
+        setCategories(normalizeBlogs(catRes.data));
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching blogs:", err);
         setError("Failed to fetch blogs. Please try again later.");
       } finally {
         setLoading(false);
@@ -77,7 +79,7 @@ const BlogPage = () => {
     fetchData();
   }, [categorySlug]);
 
-  // ✅ Search handler
+  // ✅ Search filter
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
@@ -105,7 +107,9 @@ const BlogPage = () => {
             "url(https://t3.ftcdn.net/jpg/03/16/91/28/360_F_316912806_RCeHVmUx5LuBMi7MKYTY5arkE4I0DcpU.jpg)",
         }}
       >
-        <h1 className="text-4xl pt-24 font-bold text-center mb-6">OUR BLOGS</h1>
+        <h1 className="text-4xl pt-24 font-bold text-center mb-6">
+          OUR BLOGS
+        </h1>
 
         {/* ================= Categories Filter ================= */}
         <div className="flex flex-wrap justify-center gap-2">
@@ -122,11 +126,11 @@ const BlogPage = () => {
           {categories.map((cat) => (
             <Link
               key={cat._id ?? cat.category}
-              href={`/blogsPages/${cat.category.toLowerCase()}`}
+              href={`/blogsPages/${cat.category?.toLowerCase()}`}
             >
               <button
                 className={`px-4 py-1 rounded-full border border-white ${
-                  categorySlug === cat.category.toLowerCase()
+                  categorySlug === cat.category?.toLowerCase()
                     ? "bg-white text-black"
                     : "bg-transparent"
                 }`}
@@ -149,9 +153,7 @@ const BlogPage = () => {
           ) : error ? (
             <p className="text-center text-red-500 col-span-full">{error}</p>
           ) : filteredBlogs.length === 0 ? (
-            <p className="text-gray-600 italic col-span-full">
-              No blogs found.
-            </p>
+            <p className="text-gray-600 italic col-span-full">No blogs found.</p>
           ) : (
             filteredBlogs.map((blog, idx) => (
               <Link

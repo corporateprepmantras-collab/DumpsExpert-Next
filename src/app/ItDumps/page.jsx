@@ -3,6 +3,9 @@ import Link from "next/link";
 import { FaCheckCircle } from "react-icons/fa";
 import guarantee from "../../assets/userAssets/guaranteed.png";
 
+// ✅ Force this page to always be dynamic
+export const dynamic = "force-dynamic";
+
 /* ===========================
    ✅ Fetch SEO data (Server-side)
    =========================== */
@@ -11,15 +14,16 @@ async function fetchSEO() {
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
 
-    // 🔹 Fetch SEO data specifically for SAP (It Dumps page)
     const res = await fetch(`${baseUrl}/api/seo/sap`, {
-      next: { revalidate: 120 }, // Revalidate every 2 minutes
+      cache: "no-store", // 🚀 Always fetch fresh data
     });
 
     if (!res.ok) throw new Error("Failed to fetch SEO data");
 
     const json = await res.json();
-    return json?.data || {};
+
+    // Handle both formats: {data: {...}} or {...directly}
+    return json.data || json;
   } catch (error) {
     console.error("❌ SEO fetch failed:", error);
     return {};
@@ -42,11 +46,7 @@ async function getDumpsData() {
       throw new Error(`Failed to fetch categories: ${res.statusText}`);
 
     const json = await res.json();
-    if (Array.isArray(json)) return json;
-    if (Array.isArray(json?.data)) return json.data;
-
-    console.error("⚠️ Unexpected API format:", json);
-    return [];
+    return Array.isArray(json.data) ? json.data : json;
   } catch (error) {
     console.error("❌ Error fetching dumps data:", error);
     return [];
@@ -114,16 +114,13 @@ export default async function ITDumpsPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      {/* Overlay */}
       <div className="absolute inset-0 bg-white/70 backdrop-blur-md z-0" />
 
       <div className="relative z-10 w-full max-w-7xl mx-auto">
-        {/* ✅ Dynamic Page Title */}
         <h1 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-10">
           Unlock Your Potential with SAP Certification Dumps
         </h1>
 
-        {/* Features */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-center max-w-2xl mx-auto mb-12 text-gray-900 text-sm sm:text-base font-medium">
           <div className="space-y-3">
             {[
@@ -150,7 +147,6 @@ export default async function ITDumpsPage() {
           </div>
         </div>
 
-        {/* Category Cards */}
         <div className="flex flex-wrap justify-center gap-6">
           {dumpsData.length > 0 ? (
             dumpsData.map((item) => (

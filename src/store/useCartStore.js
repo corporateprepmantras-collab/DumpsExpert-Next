@@ -21,10 +21,10 @@ const useCartStore = create((set, get) => ({
       get().syncWithServer();
     } else {
       // Clear cart when logged out
-      set({ 
-        cartItems: [], 
-        totalQuantity: 0, 
-        lastSynced: null 
+      set({
+        cartItems: [],
+        totalQuantity: 0,
+        lastSynced: null,
       });
     }
   },
@@ -39,17 +39,17 @@ const useCartStore = create((set, get) => ({
 
     try {
       set({ isLoading: true, syncError: null });
-      
+
       const response = await axios.get("/api/cart");
       const serverItems = response.data.items || [];
-      
-      set({ 
+
+      set({
         cartItems: serverItems,
         lastSynced: new Date(),
         totalQuantity: get().calculateTotalQuantity(serverItems),
-        syncError: null
+        syncError: null,
       });
-      
+
       return serverItems;
     } catch (error) {
       console.error("Failed to sync cart with server:", error);
@@ -69,17 +69,17 @@ const useCartStore = create((set, get) => ({
 
     try {
       set({ isLoading: true });
-      
+
       const response = await axios.post("/api/cart/item", item);
-      
+
       if (response.data && response.data.items) {
-        set({ 
+        set({
           cartItems: response.data.items,
           totalQuantity: get().calculateTotalQuantity(response.data.items),
-          lastSynced: new Date()
+          lastSynced: new Date(),
         });
       }
-      
+
       return response.data.items;
     } catch (error) {
       console.error("Failed to add item to cart:", error);
@@ -99,18 +99,20 @@ const useCartStore = create((set, get) => ({
 
     try {
       set({ isLoading: true });
-      
+
       // Use the item's _id for deletion (not productId)
-      const response = await axios.delete(`/api/cart/item?id=${id}&type=${type}`);
-      
+      const response = await axios.delete(
+        `/api/cart/item?id=${id}&type=${type}`
+      );
+
       if (response.data && response.data.items !== undefined) {
-        set({ 
+        set({
           cartItems: response.data.items,
           totalQuantity: get().calculateTotalQuantity(response.data.items),
-          lastSynced: new Date()
+          lastSynced: new Date(),
         });
       }
-      
+
       return response.data.items;
     } catch (error) {
       console.error("Failed to remove item from cart:", error);
@@ -127,34 +129,36 @@ const useCartStore = create((set, get) => ({
       console.warn("User not logged in, cannot update quantity");
       return;
     }
-  
+
     try {
       set({ isLoading: true });
-      
+
       // Find the item in current cart to get the correct productId
       const currentItems = get().cartItems;
-      const item = currentItems.find(item => item._id === id && item.type === type);
-      
+      const item = currentItems.find(
+        (item) => item._id === id && item.type === type
+      );
+
       if (!item) {
         console.error("Item not found in local cart");
         throw new Error("Item not found in local cart");
       }
-      
+
       // Use the actual productId from the item, not the _id
-      const response = await axios.patch("/api/cart/item", { 
+      const response = await axios.patch("/api/cart/item", {
         productId: item.productId || item._id, // Use productId if available, fallback to _id
-        type, 
-        operation 
+        type,
+        operation,
       });
-      
+
       if (response.data && response.data.items) {
-        set({ 
+        set({
           cartItems: response.data.items,
           totalQuantity: get().calculateTotalQuantity(response.data.items),
-          lastSynced: new Date()
+          lastSynced: new Date(),
         });
       }
-      
+
       return response.data.items;
     } catch (error) {
       console.error("Failed to update quantity:", error);
@@ -171,13 +175,13 @@ const useCartStore = create((set, get) => ({
 
     try {
       set({ isLoading: true });
-      
+
       await axios.post("/api/cart", { items: [] });
-      
-      set({ 
+
+      set({
         cartItems: [],
         totalQuantity: 0,
-        lastSynced: new Date()
+        lastSynced: new Date(),
       });
     } catch (error) {
       console.error("Failed to clear cart:", error);
@@ -190,7 +194,7 @@ const useCartStore = create((set, get) => ({
   // Force refresh from server
   refreshCart: async () => {
     return get().syncWithServer();
-  }
+  },
 }));
 
 // Selector: Total Price
