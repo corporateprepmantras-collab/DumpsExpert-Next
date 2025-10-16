@@ -132,11 +132,16 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                     />
                   </td>
                   <td className="p-3">
-                    {/* Display correct answers */}
-                    {q.correctAnswers?.length > 0
+                    {q.correctAnswers && q.correctAnswers.length > 0
                       ? q.correctAnswers.join(", ")
+                      : q.matchingPairs?.correctMatches &&
+                        Object.keys(q.matchingPairs.correctMatches).length > 0
+                      ? Object.entries(q.matchingPairs.correctMatches)
+                          .map(([left, right]) => `${left} - ${right}`)
+                          .join(", ")
                       : "N/A"}
                   </td>
+
                   <td className="p-3">
                     {/* Display sample status */}
                     <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
