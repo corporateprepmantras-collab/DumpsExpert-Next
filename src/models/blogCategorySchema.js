@@ -1,20 +1,21 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const blogCategorySchema = new mongoose.Schema({
-  sectionName: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  category: {
-    type: String,
-    required: true,
-  },
-      language: {
+const blogCategorySchema = new mongoose.Schema(
+  {
+    sectionName: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    category: {
+      type: String,
+      required: true,
+    },
+    language: {
       type: String,
       required: true,
       trim: true,
-      enum: ['en', 'es', 'fr','hi'],
+      enum: ["en", "es", "fr", "hi"],
     },
     slug: {
       type: String,
@@ -22,40 +23,67 @@ const blogCategorySchema = new mongoose.Schema({
       trim: true,
       unique: true,
     },
-  imageUrl: {
-    type: String,
-    required: true,
-  },
-  imagePublicId: {
-    type: String,
-  },
-  metaTitle: {
-    type: String,
-    required: true,
-  },
-  metaKeywords: {
-    type: String,
-    required: true,
-  },
-  metaDescription: {
-    type: String,
-    required: true,
-  },
-  schema: {
-    type: String,
-    default: '{}',
-    validate: {
-      validator: function(v) {
-        try {
-          JSON.parse(v);
-          return true;
-        } catch {
-          return false;
-        }
+    imageUrl: {
+      type: String,
+      required: true,
+    },
+    imagePublicId: {
+      type: String,
+    },
+    metaTitle: {
+      type: String,
+      required: true,
+    },
+    metaKeywords: {
+      type: String,
+      required: true,
+    },
+    metaDescription: {
+      type: String,
+      required: true,
+    },
+    schema: {
+      type: String,
+      default: "{}",
+      validate: {
+        validator: function (v) {
+          try {
+            JSON.parse(v);
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        message: "Invalid JSON format",
       },
-      message: 'Invalid JSON format'
-    }
-  }
-}, { timestamps: true });
+    },
+    openGraphTitle: {
+      type: String,
+      default: "",
+    },
+    openGraphDescription: {
+      type: String,
+      default: "",
+    },
+    openGraphImage: {
+      type: String,
+      default: "",
+    },
+    twitterTitle: {
+      type: String,
+      default: "",
+    },
+    twitterDescription: {
+      type: String,
+      default: "",
+    },
+    twitterImage: {
+      type: String,
+      default: "",
+    },
+  },
+  { timestamps: true }
+);
 
-export default mongoose.models.BlogCategory || mongoose.model('BlogCategory', blogCategorySchema);
+export default mongoose.models.BlogCategory ||
+  mongoose.model("BlogCategory", blogCategorySchema);
