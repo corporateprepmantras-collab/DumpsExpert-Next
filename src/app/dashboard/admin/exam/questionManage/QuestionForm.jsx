@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 // Import axios instance for API calls
 import api from "axios";
+import { Plus, Trash2, Upload, Link } from "lucide-react";
 
 // Main component for adding/editing questions
 const QuestionForm = () => {
@@ -34,6 +35,17 @@ const QuestionForm = () => {
       { label: "D", text: "", image: "" },
     ],
     correctAnswers: [],
+    matchingPairs: {
+      leftItems: [
+        { id: "L1", text: "", image: "", imageUrl: "" },
+        { id: "L2", text: "", image: "", imageUrl: "" },
+      ],
+      rightItems: [
+        { id: "R1", text: "", image: "", imageUrl: "" },
+        { id: "R2", text: "", image: "", imageUrl: "" },
+      ],
+      correctMatches: {},
+    },
     isSample: false,
     explanation: "",
     status: "draft",
@@ -42,12 +54,14 @@ const QuestionForm = () => {
   // State for image files
   const [questionImageFile, setQuestionImageFile] = useState(null);
   const [optionImageFiles, setOptionImageFiles] = useState({});
+  const [matchingImageFiles, setMatchingImageFiles] = useState({});
   // State for loading status
   const [loading, setLoading] = useState(false);
   // State for preview images
   const [previewImages, setPreviewImages] = useState({});
   // State for tracking if we're editing an existing question
   const [isEditing, setIsEditing] = useState(false);
+  const [imageUploadMode, setImageUploadMode] = useState({});
 
   // Effect to fetch question data when editing
   useEffect(() => {
@@ -169,6 +183,95 @@ const QuestionForm = () => {
       correctAnswers: updatedAnswers,
     }));
   };
+    const addMatchingItem = (side) => {
+    const items = side === "left" ? formData.matchingPairs.leftItems : formData.matchingPairs.rightItems;
+    const newId = side === "left" ? `L${items.length + 1}` : `R${items.length + 1}`;
+    const newItem = { id: newId, text: "", image: "", imageUrl: "" };
+    
+    setFormData((prev) => ({
+      ...prev,
+      matchingPairs: {
+        ...prev.matchingPairs,
+        [side === "left" ? "leftItems" : "rightItems"]: [...items, newItem],
+      },
+    }));
+  };
+
+  const removeMatchingItem = (side, index) => {
+    const items = side === "left" ? formData.matchingPairs.leftItems : formData.matchingPairs.rightItems;
+    if (items.length <= 2) {
+      alert("Minimum 2 items required!");
+      return;
+    }
+    
+    const itemId = items[index].id;
+    const updatedItems = items.filter((_, i) => i !== index);
+    const updatedMatches = { ...formData.matchingPairs.correctMatches };
+    
+    if (side === "left") {
+      delete updatedMatches[itemId];
+    } else {
+      Object.keys(updatedMatches).forEach(key => {
+        if (updatedMatches[key] === itemId) {
+          delete updatedMatches[key];
+        }
+      });
+    }
+    
+    setFormData((prev) => ({
+      ...prev,
+      matchingPairs: {
+        ...prev.matchingPairs,
+        [side === "left" ? "leftItems" : "rightItems"]: updatedItems,
+        correctMatches: updatedMatches,
+      },
+    }));
+  };
+
+  const handleMatchingItemChange = (side, index, field, value) => {
+    const items = side === "left" ? [...formData.matchingPairs.leftItems] : [...formData.matchingPairs.rightItems];
+    items[index] = {
+      ...items[index],
+      [field]: value,
+    };
+    
+    setFormData((prev) => ({
+      ...prev,
+      matchingPairs: {
+        ...prev.matchingPairs,
+        [side === "left" ? "leftItems" : "rightItems"]: items,
+      },
+    }));
+  };
+
+  const handleMatchingImageUpload = (side, index, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const key = `${side}-${index}`;
+      setMatchingImageFiles((prev) => ({
+        ...prev,
+        [key]: file,
+      }));
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewImages((prev) => ({
+        ...prev,
+        [`matching-${key}`]: previewUrl,
+      }));
+    }
+  };
+
+  const handleCorrectMatchChange = (leftId, rightId) => {
+    setFormData((prev) => ({
+      ...prev,
+      matchingPairs: {
+        ...prev.matchingPairs,
+        correctMatches: {
+          ...prev.matchingPairs.correctMatches,
+          [leftId]: rightId,
+        },
+      },
+    }));
+  };
 
   // Function to handle image upload for question
   const handleQuestionImageChange = (e) => {
@@ -206,75 +309,183 @@ const QuestionForm = () => {
   };
 
   // Function to handle form submission
+  // const handleSubmit = async (e) => {
+  //   // Prevent default form submission
+  //   e.preventDefault();
+  //   // Set loading state
+  //   setLoading(true);
+
+  //   try {
+  //     // Create FormData object for file uploads
+  //     const submitData = new FormData();
+  //     // Append all form fields to FormData
+  //     Object.keys(formData).forEach((key) => {
+  //       if (key === "options" || key === "correctAnswers" || key === "tags") {
+  //         // Stringify arrays for form data
+  //         submitData.append(key, JSON.stringify(formData[key]));
+  //       } else {
+  //         // Append other fields directly
+  //         submitData.append(key, formData[key]);
+  //       }
+  //     });
+
+  //     // Append exam ID to form data
+  //     submitData.append("examId", examId);
+
+  //     // Append question image if selected
+  //     if (questionImageFile) {
+  //       submitData.append("questionImage", questionImageFile);
+  //     }
+
+  //     // Append option images if selected
+  //     Object.keys(optionImageFiles).forEach((index) => {
+  //       submitData.append(`optionImage-${index}`, optionImageFiles[index]);
+  //     });
+
+  //     // Determine API endpoint and method based on edit or add
+  //     let response;
+  //     if (isEditing) {
+  //       // For editing existing question
+  //       submitData.append("_id", questionId);
+  //       response = await api.put(`/api/questions/${questionId}`, submitData, {
+  //         headers: {
+  //           "Content-Type": "multipart/form-data",
+  //         },
+  //       });
+  //     } else {
+  //       // For adding new question
+  //       response = await api.post("/api/questions", submitData, {
+  //         headers: {
+  //           "Content-Type": "multipart/form-data",
+  //         },
+  //       });
+  //     }
+
+  //     // Check if API call was successful
+  //     if (response.data.success) {
+  //       // Navigate back to questions list
+  //       router.push(`/dashboard/admin/exam/${examId}/questions`);
+  //       router.refresh(); // Refresh the page to see updated data
+  //     } else {
+  //       // Show error message
+  //       alert(response.data.message || "Operation failed");
+  //     }
+  //   } catch (err) {
+  //     // Log error and show alert
+  //     console.error("Operation failed", err);
+  //     alert(
+  //       "Operation failed: " + (err.response?.data?.message || err.message)
+  //     );
+  //   } finally {
+  //     // Reset loading state
+  //     setLoading(false);
+  //   }
+  // };
   const handleSubmit = async (e) => {
-    // Prevent default form submission
     e.preventDefault();
-    // Set loading state
     setLoading(true);
 
     try {
-      // Create FormData object for file uploads
       const submitData = new FormData();
-      // Append all form fields to FormData
-      Object.keys(formData).forEach((key) => {
-        if (key === "options" || key === "correctAnswers" || key === "tags") {
-          // Stringify arrays for form data
-          submitData.append(key, JSON.stringify(formData[key]));
-        } else {
-          // Append other fields directly
-          submitData.append(key, formData[key]);
-        }
-      });
+      
+      // Append basic form data
+      submitData.append('examId', examId);
+      submitData.append('questionText', formData.questionText);
+      submitData.append('questionCode', formData.questionCode);
+      submitData.append('questionType', formData.questionType);
+      submitData.append('difficulty', formData.difficulty);
+      submitData.append('marks', formData.marks.toString());
+      submitData.append('negativeMarks', formData.negativeMarks.toString());
+      submitData.append('subject', formData.subject);
+      submitData.append('topic', formData.topic);
+      submitData.append('tags', JSON.stringify(formData.tags));
+      submitData.append('options', JSON.stringify(formData.options));
+      submitData.append('correctAnswers', JSON.stringify(formData.correctAnswers));
+      submitData.append('isSample', formData.isSample.toString());
+      submitData.append('explanation', formData.explanation);
+      submitData.append('status', formData.status);
 
-      // Append exam ID to form data
-      submitData.append("examId", examId);
-
-      // Append question image if selected
+      // Append question image if exists
       if (questionImageFile) {
-        submitData.append("questionImage", questionImageFile);
+        submitData.append('questionImage', questionImageFile);
       }
 
-      // Append option images if selected
-      Object.keys(optionImageFiles).forEach((index) => {
-        submitData.append(`optionImage-${index}`, optionImageFiles[index]);
+      // Append option images
+      Object.entries(optionImageFiles).forEach(([index, file]) => {
+        submitData.append(`optionImage-${index}`, file);
       });
 
-      // Determine API endpoint and method based on edit or add
-      let response;
-      if (isEditing) {
-        // For editing existing question
-        submitData.append("_id", questionId);
-        response = await api.put(`/api/questions/${questionId}`, submitData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-      } else {
-        // For adding new question
-        response = await api.post("/api/questions", submitData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+      // Append matching type data if applicable
+      if (formData.questionType === 'matching') {
+        submitData.append('matchingPairs', JSON.stringify(formData.matchingPairs));
+        
+        // Append matching images
+        Object.entries(matchingImageFiles).forEach(([key, file]) => {
+          submitData.append(`matchingImage-${key}`, file);
         });
       }
 
-      // Check if API call was successful
-      if (response.data.success) {
-        // Navigate back to questions list
-        router.push(`/dashboard/admin/exam/${examId}/questions`);
-        router.refresh(); // Refresh the page to see updated data
+      const url = isEditing && questionId !== 'new' 
+        ? `/api/questions/${questionId}`
+        : '/api/questions';
+
+      const method = isEditing && questionId !== 'new' ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        body: submitData,
+      });
+     console.log(submitData);
+      const result = await response.json();
+ 
+      if (result.success) {
+        alert(`Question ${isEditing ? 'updated' : 'created'} successfully!`);
+        if (!isEditing) {
+          // Reset form after successful creation
+          setFormData({
+            questionText: "",
+            questionCode: "",
+            questionType: "radio",
+            difficulty: "medium",
+            marks: 1,
+            negativeMarks: 0,
+            subject: "",
+            topic: "",
+            tags: [],
+            options: [
+              { label: "A", text: "", image: "" },
+              { label: "B", text: "", image: "" },
+              { label: "C", text: "", image: "" },
+              { label: "D", text: "", image: "" },
+            ],
+            correctAnswers: [],
+            matchingPairs: {
+              leftItems: [
+                { id: "L1", text: "", image: "", imageUrl: "" },
+                { id: "L2", text: "", image: "", imageUrl: "" },
+              ],
+              rightItems: [
+                { id: "R1", text: "", image: "", imageUrl: "" },
+                { id: "R2", text: "", image: "", imageUrl: "" },
+              ],
+              correctMatches: {},
+            },
+            isSample: false,
+            explanation: "",
+            status: "draft",
+          });
+          setQuestionImageFile(null);
+          setOptionImageFiles({});
+          setMatchingImageFiles({});
+          setPreviewImages({});
+        }
       } else {
-        // Show error message
-        alert(response.data.message || "Operation failed");
+        alert(`Error: ${result.message}`);
       }
-    } catch (err) {
-      // Log error and show alert
-      console.error("Operation failed", err);
-      alert(
-        "Operation failed: " + (err.response?.data?.message || err.message)
-      );
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('Failed to submit question. Please try again.');
     } finally {
-      // Reset loading state
       setLoading(false);
     }
   };
@@ -289,642 +500,1399 @@ const QuestionForm = () => {
   }
 
   // Render component
-  return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* Form header */}
-      <h1 className="text-2xl font-bold mb-6">
-        {isEditing ? "Edit" : "Add"} Question
-      </h1>
+ return (
+    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">
+          {isEditing ? "Edit" : "Add"} Question
+        </h1>
 
-      {/* Question form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic information section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span>
+              Basic Information
+            </h2>
 
-          {/* Question code input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Question Code
-            </label>
-            <input
-              type="text"
-              name="questionCode"
-              value={formData.questionCode}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded-md"
-              placeholder="Enter question code"
-            />
-          </div>
-
-          {/* Question text input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Question Text
-            </label>
-            <textarea
-              name="questionText"
-              value={formData.questionText}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded-md"
-              rows="4"
-              placeholder="Enter question text"
-              required
-            />
-          </div>
-
-          {/* Question image upload */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Question Image (Optional)
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleQuestionImageChange}
-              className="w-full p-2 border rounded-md"
-            />
-            {/* Display preview if available */}
-            {(previewImages.question || formData.questionImage) && (
-              <div className="mt-2">
-                <img
-                  src={previewImages.question || formData.questionImage}
-                  alt="Question preview"
-                  className="h-32 object-contain border rounded"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Question type selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Question Type
-            </label>
-            <select
-              name="questionType"
-              value={formData.questionType}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded-md"
-            >
-              <option value="radio">Single Choice</option>
-              <option value="checkbox">Multiple Choice</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Options section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-4">Options</h2>
-
-          {/* Map through options */}
-          {formData.options.map((option, index) => (
-            <div key={index} className="mb-4 p-4 border rounded-md">
-              <div className="flex items-center mb-2">
-                {/* Option label */}
-                <span className="font-medium mr-3">Option {option.label}:</span>
-
-                {/* Correct answer checkbox */}
-                <label className="flex items-center">
-                  <input
-                    type={
-                      formData.questionType === "radio" ? "radio" : "checkbox"
-                    }
-                    name="correctAnswers"
-                    checked={formData.correctAnswers.includes(option.label)}
-                    onChange={() => handleCorrectAnswerChange(option.label)}
-                    className="mr-2"
-                  />
-                  Correct Answer
-                </label>
-              </div>
-
-              {/* Option text input */}
-              <div className="mb-3">
-                <textarea
-                  value={option.text}
-                  onChange={(e) =>
-                    handleOptionChange(index, "text", e.target.value)
-                  }
-                  className="w-full p-2 border rounded-md"
-                  rows="2"
-                  placeholder="Enter option text"
-                  required
-                />
-              </div>
-
-              {/* Option image upload */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Option Image (Optional)
+                  Question Code
                 </label>
                 <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleOptionImageChange(index, e)}
-                  className="w-full p-2 border rounded-md"
+                  type="text"
+                  name="questionCode"
+                  value={formData.questionCode}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Q001"
                 />
-                {/* Display preview if available */}
-                {(previewImages[`option-${index}`] || option.image) && (
-                  <div className="mt-2">
-                    <img
-                      src={previewImages[`option-${index}`] || option.image}
-                      alt={`Option ${option.label} preview`}
-                      className="h-32 object-contain border rounded"
-                    />
-                  </div>
-                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Question Type
+                </label>
+                <select
+                  name="questionType"
+                  value={formData.questionType}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="radio">Single Choice (MCQ)</option>
+                  <option value="checkbox">Multiple Choice</option>
+                  <option value="matching">Matching Type</option>
+                </select>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Additional information section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-4">Additional Information</h2>
-
-          {/* Difficulty selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Difficulty
+                Question Text *
               </label>
-              <select
-                name="difficulty"
-                value={formData.difficulty}
+              <textarea
+                name="questionText"
+                value={formData.questionText}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows="4"
+                placeholder="Enter your question here..."
+                required
+              />
             </div>
 
-            {/* Marks input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Marks
+                Question Image (Optional)
               </label>
               <input
-                type="number"
-                name="marks"
-                value={formData.marks}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded-md"
-                min="0"
-                step="0.5"
+                type="file"
+                accept="image/*"
+                onChange={handleQuestionImageChange}
+                className="w-full p-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
+              {previewImages.question && (
+                <div className="mt-3">
+                  <img
+                    src={previewImages.question}
+                    alt="Question preview"
+                    className="h-40 object-contain border-2 border-gray-300 rounded-lg"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Negative marks input */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Negative Marks
-              </label>
-              <input
-                type="number"
-                name="negativeMarks"
-                value={formData.negativeMarks}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded-md"
-                min="0"
-                step="0.5"
-              />
+          {formData.questionType === "matching" ? (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg border border-purple-200">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                <span className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+                Matching Items
+              </h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-purple-300">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-gray-700 text-lg">Column A (Questions)</h3>
+                    <button
+                      type="button"
+                      onClick={() => addMatchingItem("left")}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+                    >
+                      <Plus size={18} /> Add Item
+                    </button>
+                  </div>
+                  
+                  {formData.matchingPairs.leftItems.map((item, index) => (
+                    <div key={item.id} className="mb-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="font-bold text-purple-700 bg-white px-3 py-1 rounded-full">{item.id}</span>
+                        {formData.matchingPairs.leftItems.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => removeMatchingItem("left", index)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-100 p-2 rounded-full transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+                      
+                      <textarea
+                        value={item.text}
+                        onChange={(e) => handleMatchingItemChange("left", index, "text", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        rows="2"
+                        placeholder="Enter question text..."
+                      />
+                      
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setImageUploadMode(prev => ({
+                              ...prev,
+                              [`left-${index}`]: imageUploadMode[`left-${index}`] === 'file' ? '' : 'file'
+                            }))}
+                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              imageUploadMode[`left-${index}`] === 'file' 
+                                ? 'bg-blue-500 text-white shadow-md' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            <Upload size={16} /> Upload File
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setImageUploadMode(prev => ({
+                              ...prev,
+                              [`left-${index}`]: imageUploadMode[`left-${index}`] === 'url' ? '' : 'url'
+                            }))}
+                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              imageUploadMode[`left-${index}`] === 'url' 
+                                ? 'bg-blue-500 text-white shadow-md' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            <Link size={16} /> Image URL
+                          </button>
+                        </div>
+                        
+                        {imageUploadMode[`left-${index}`] === 'file' && (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleMatchingImageUpload("left", index, e)}
+                            className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
+                          />
+                        )}
+                        
+                        {imageUploadMode[`left-${index}`] === 'url' && (
+                          <input
+                            type="url"
+                            value={item.imageUrl || ''}
+                            onChange={(e) => handleMatchingItemChange("left", index, "imageUrl", e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        )}
+                        
+                        {(previewImages[`matching-left-${index}`] || item.imageUrl) && (
+                          <img
+                            src={previewImages[`matching-left-${index}`] || item.imageUrl}
+                            alt={`Left ${item.id}`}
+                            className="w-full h-32 object-contain border-2 border-purple-300 rounded-lg bg-white p-2"
+                          />
+                        )}
+                      </div>
+                      
+                      <div className="mt-3">
+                        <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase">
+                          Correct Match:
+                        </label>
+                        <select
+                          value={formData.matchingPairs.correctMatches[item.id] || ""}
+                          onChange={(e) => handleCorrectMatchChange(item.id, e.target.value)}
+                          className="w-full p-2 border-2 border-purple-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        >
+                          <option value="">Select matching answer</option>
+                          {formData.matchingPairs.rightItems.map((rightItem) => (
+                            <option key={rightItem.id} value={rightItem.id}>
+                              {rightItem.id} - {rightItem.text.substring(0, 30)}{rightItem.text.length > 30 ? '...' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-pink-300">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-gray-700 text-lg">Column B (Answers)</h3>
+                    <button
+                      type="button"
+                      onClick={() => addMatchingItem("right")}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+                    >
+                      <Plus size={18} /> Add Item
+                    </button>
+                  </div>
+                  
+                  {formData.matchingPairs.rightItems.map((item, index) => (
+                    <div key={item.id} className="mb-4 p-4 border-2 border-pink-200 rounded-lg bg-pink-50 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="font-bold text-pink-700 bg-white px-3 py-1 rounded-full">{item.id}</span>
+                        {formData.matchingPairs.rightItems.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => removeMatchingItem("right", index)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-100 p-2 rounded-full transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+                      
+                      <textarea
+                        value={item.text}
+                        onChange={(e) => handleMatchingItemChange("right", index, "text", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        rows="2"
+                        placeholder="Enter answer text..."
+                      />
+                      
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setImageUploadMode(prev => ({
+                              ...prev,
+                              [`right-${index}`]: imageUploadMode[`right-${index}`] === 'file' ? '' : 'file'
+                            }))}
+                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              imageUploadMode[`right-${index}`] === 'file' 
+                                ? 'bg-blue-500 text-white shadow-md' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            <Upload size={16} /> Upload File
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setImageUploadMode(prev => ({
+                              ...prev,
+                              [`right-${index}`]: imageUploadMode[`right-${index}`] === 'url' ? '' : 'url'
+                            }))}
+                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              imageUploadMode[`right-${index}`] === 'url' 
+                                ? 'bg-blue-500 text-white shadow-md' 
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            <Link size={16} /> Image URL
+                          </button>
+                        </div>
+                        
+                        {imageUploadMode[`right-${index}`] === 'file' && (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleMatchingImageUpload("right", index, e)}
+                            className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-100 file:text-pink-700 hover:file:bg-pink-200"
+                          />
+                        )}
+                        
+                        {imageUploadMode[`right-${index}`] === 'url' && (
+                          <input
+                            type="url"
+                            value={item.imageUrl || ''}
+                            onChange={(e) => handleMatchingItemChange("right", index, "imageUrl", e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        )}
+                        
+                        {(previewImages[`matching-right-${index}`] || item.imageUrl) && (
+                          <img
+                            src={previewImages[`matching-right-${index}`] || item.imageUrl}
+                            alt={`Right ${item.id}`}
+                            className="w-full h-32 object-contain border-2 border-pink-300 rounded-lg bg-white p-2"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-lg border border-green-200">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                <span className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+                Answer Options
+              </h2>
+
+              {formData.options.map((option, index) => (
+                <div key={index} className="mb-4 p-4 border-2 border-green-200 rounded-lg bg-white hover:shadow-md transition-shadow">
+                  <div className="flex items-center mb-3">
+                    <span className="font-bold text-lg mr-4 bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                      {option.label}
+                    </span>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type={formData.questionType === "radio" ? "radio" : "checkbox"}
+                        name="correctAnswers"
+                        checked={formData.correctAnswers.includes(option.label)}
+                        onChange={() => handleCorrectAnswerChange(option.label)}
+                        className="mr-2 w-5 h-5 text-green-500 focus:ring-green-500"
+                      />
+                      <span className="font-medium text-green-700">Mark as Correct Answer</span>
+                    </label>
+                  </div>
+
+                  <div className="mb-3">
+                    <textarea
+                      value={option.text}
+                      onChange={(e) => handleOptionChange(index, "text", e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      rows="2"
+                      placeholder={`Enter option ${option.label} text...`}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Option Image (Optional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleOptionImageChange(index, e)}
+                      className="w-full p-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-100 file:text-green-700 hover:file:bg-green-200"
+                    />
+                    {previewImages[`option-${index}`] && (
+                      <div className="mt-3">
+                        <img
+                          src={previewImages[`option-${index}`]}
+                          alt={`Option ${option.label} preview`}
+                          className="h-32 object-contain border-2 border-green-300 rounded-lg"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-lg border border-amber-200">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+              <span className="bg-amber-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">3</span>
+              Additional Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Difficulty Level
+                </label>
+                <select
+                  name="difficulty"
+                  value={formData.difficulty}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Marks
+                </label>
+                <input
+                  type="number"
+                  name="marks"
+                  value={formData.marks}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Negative Marks
+                </label>
+                <input
+                  type="number"
+                  name="negativeMarks"
+                  value={formData.negativeMarks}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
             </div>
 
-            {/* Sample question checkbox */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="isSample"
-                checked={formData.isSample}
-                onChange={handleInputChange}
-                className="mr-2"
-                id="isSample"
-              />
-              <label
-                htmlFor="isSample"
-                className="text-sm font-medium text-gray-700"
-              >
-                Sample Question
-              </label>
-            </div>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  placeholder="e.g., Mathematics"
+                />
+              </div>
 
-          {/* Subject and topic inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Topic
+                </label>
+                <input
+                  type="text"
+                  name="topic"
+                  value={formData.topic}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  placeholder="e.g., Algebra"
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subject
+                Tags (comma separated)
               </label>
               <input
                 type="text"
-                name="subject"
-                value={formData.subject}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded-md"
-                placeholder="Enter subject"
+                value={formData.tags.join(", ")}
+                onChange={(e) => {
+                  const tagsArray = e.target.value.split(",").map((tag) => tag.trim()).filter((tag) => tag);
+                  setFormData((prev) => ({ ...prev, tags: tagsArray }));
+                }}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="e.g., algebra, geometry, math"
               />
             </div>
 
-            <div>
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Topic
+                Explanation
               </label>
-              <input
-                type="text"
-                name="topic"
-                value={formData.topic}
+              <textarea
+                name="explanation"
+                value={formData.explanation}
                 onChange={handleInputChange}
-                className="w-full p-2 border rounded-md"
-                placeholder="Enter topic"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                rows="3"
+                placeholder="Provide explanation for the correct answer..."
               />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isSample"
+                  checked={formData.isSample}
+                  onChange={handleInputChange}
+                  className="mr-2 w-5 h-5 text-amber-500 focus:ring-amber-500"
+                />
+                <span className="font-medium text-gray-700">Mark as Sample Question</span>
+              </label>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="publish">Publish</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Tags input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tags (comma separated)
-            </label>
-            <input
-              type="text"
-              value={formData.tags.join(", ")}
-              onChange={(e) => {
-                const tagsArray = e.target.value
-                  .split(",")
-                  .map((tag) => tag.trim())
-                  .filter((tag) => tag);
-                setFormData((prev) => ({ ...prev, tags: tagsArray }));
-              }}
-              className="w-full p-2 border rounded-md"
-              placeholder="Enter tags separated by commas"
-            />
-          </div>
-
-          {/* Explanation textarea */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Explanation
-            </label>
-            <textarea
-              name="explanation"
-              value={formData.explanation}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded-md"
-              rows="3"
-              placeholder="Enter explanation for the answer"
-            />
-          </div>
-
-          {/* Status selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleInputChange}
-              className="w-full p-2 border rounded-md"
+          <div className="flex justify-end gap-4 pt-6 border-t">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
-              <option value="draft">Draft</option>
-              <option value="publish">Publish</option>
-            </select>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  {isEditing ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                <>
+                  {isEditing ? "Update Question" : "Create Question"}
+                </>
+              )}
+            </button>
           </div>
-        </div>
-
-        {/* Form buttons */}
-        <div className="flex justify-end space-x-4">
-          {/* Cancel button */}
-          <button
-            type="button"
-            onClick={() =>
-              router.push(`/dashboard/admin/exam/${examId}/questions`)
-            }
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Saving..." : "Save Question"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
 
-// Export component
 export default QuestionForm;
 
 
 // "use client";
-// import { useState } from "react";
+// import React, { useState } from "react";
+// import { Plus, Trash2, Upload, Link } from "lucide-react";
 
-// export default function QuestionForm() {
-//   const [questionType, setQuestionType] = useState("radio");
-//   const [questionText, setQuestionText] = useState("");
-//   const [options, setOptions] = useState(["", "", "", ""]);
-//   const [correctAnswers, setCorrectAnswers] = useState([]);
+// const QuestionForm = () => {
+//   const examId = "exam123";
+//   const questionId = "new";
+  
+//   const [formData, setFormData] = useState({
+//     questionText: "",
+//     questionCode: "",
+//     questionType: "radio",
+//     difficulty: "medium",
+//     marks: 1,
+//     negativeMarks: 0,
+//     subject: "",
+//     topic: "",
+//     tags: [],
+//     options: [
+//       { label: "A", text: "", image: "" },
+//       { label: "B", text: "", image: "" },
+//       { label: "C", text: "", image: "" },
+//       { label: "D", text: "", image: "" },
+//     ],
+//     correctAnswers: [],
+//     matchingPairs: {
+//       leftItems: [
+//         { id: "L1", text: "", image: "", imageUrl: "" },
+//         { id: "L2", text: "", image: "", imageUrl: "" },
+//       ],
+//       rightItems: [
+//         { id: "R1", text: "", image: "", imageUrl: "" },
+//         { id: "R2", text: "", image: "", imageUrl: "" },
+//       ],
+//       correctMatches: {},
+//     },
+//     isSample: false,
+//     explanation: "",
+//     status: "draft",
+//   });
 
-//   // For match-the-following
-//   const [leftItems, setLeftItems] = useState([""]);
-//   const [rightOptions, setRightOptions] = useState([""]);
-//   const [matchAnswers, setMatchAnswers] = useState({}); // {leftIndex: rightValue}
+//   const [questionImageFile, setQuestionImageFile] = useState(null);
+//   const [optionImageFiles, setOptionImageFiles] = useState({});
+//   const [matchingImageFiles, setMatchingImageFiles] = useState({});
+//   const [loading, setLoading] = useState(false);
+//   const [previewImages, setPreviewImages] = useState({});
+//   const [isEditing, setIsEditing] = useState(false);
+//   const [imageUploadMode, setImageUploadMode] = useState({});
 
-//   // Student attempt
-//   const [studentAnswers, setStudentAnswers] = useState({});
-//   const [result, setResult] = useState(null);
-
-//   // Admin option input
-//   const handleOptionChange = (index, value) => {
-//     const updated = [...options];
-//     updated[index] = value;
-//     setOptions(updated);
+//   const handleInputChange = (e) => {
+//     const { name, value, type, checked } = e.target;
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]: type === "checkbox" ? checked : value,
+//     }));
 //   };
 
-//   // Admin correct answer selection
-//   const handleCorrectAnswer = (value) => {
-//     if (questionType === "radio") {
-//       setCorrectAnswers([value]);
-//     } else if (questionType === "checkbox") {
-//       setCorrectAnswers((prev) =>
-//         prev.includes(value)
-//           ? prev.filter((ans) => ans !== value)
-//           : [...prev, value]
-//       );
+//   const handleOptionChange = (index, field, value) => {
+//     const updatedOptions = [...formData.options];
+//     updatedOptions[index] = {
+//       ...updatedOptions[index],
+//       [field]: value,
+//     };
+//     setFormData((prev) => ({
+//       ...prev,
+//       options: updatedOptions,
+//     }));
+//   };
+
+//   const handleCorrectAnswerChange = (label) => {
+//     let updatedAnswers;
+//     if (formData.questionType === "radio") {
+//       updatedAnswers = [label];
+//     } else {
+//       updatedAnswers = formData.correctAnswers.includes(label)
+//         ? formData.correctAnswers.filter((a) => a !== label)
+//         : [...formData.correctAnswers, label];
 //     }
+//     setFormData((prev) => ({
+//       ...prev,
+//       correctAnswers: updatedAnswers,
+//     }));
 //   };
 
-//   // Left and Right input
-//   const handleLeftChange = (index, value) => {
-//     const updated = [...leftItems];
-//     updated[index] = value;
-//     setLeftItems(updated);
+//   const addMatchingItem = (side) => {
+//     const items = side === "left" ? formData.matchingPairs.leftItems : formData.matchingPairs.rightItems;
+//     const newId = side === "left" ? `L${items.length + 1}` : `R${items.length + 1}`;
+//     const newItem = { id: newId, text: "", image: "", imageUrl: "" };
+    
+//     setFormData((prev) => ({
+//       ...prev,
+//       matchingPairs: {
+//         ...prev.matchingPairs,
+//         [side === "left" ? "leftItems" : "rightItems"]: [...items, newItem],
+//       },
+//     }));
 //   };
 
-//   const handleRightChange = (index, value) => {
-//     const updated = [...rightOptions];
-//     updated[index] = value;
-//     setRightOptions(updated);
-//   };
-
-//   // Admin sets correct match
-//   const handleMatchAnswer = (leftIndex, rightValue) => {
-//     setMatchAnswers((prev) => ({ ...prev, [leftIndex]: rightValue }));
-//   };
-
-//   // Add more inputs
-//   const addLeftItem = () => setLeftItems([...leftItems, ""]);
-//   const addRightOption = () => setRightOptions([...rightOptions, ""]);
-
-//   // Student attempt handlers
-//   const handleStudentAnswer = (value) => {
-//     if (questionType === "radio") {
-//       setStudentAnswers({ 0: value });
-//     } else if (questionType === "checkbox") {
-//       setStudentAnswers((prev) => {
-//         const current = prev[0] || [];
-//         return {
-//           ...prev,
-//           0: current.includes(value)
-//             ? current.filter((v) => v !== value)
-//             : [...current, value],
-//         };
+//   const removeMatchingItem = (side, index) => {
+//     const items = side === "left" ? formData.matchingPairs.leftItems : formData.matchingPairs.rightItems;
+//     if (items.length <= 2) {
+//       alert("Minimum 2 items required!");
+//       return;
+//     }
+    
+//     const itemId = items[index].id;
+//     const updatedItems = items.filter((_, i) => i !== index);
+//     const updatedMatches = { ...formData.matchingPairs.correctMatches };
+    
+//     if (side === "left") {
+//       delete updatedMatches[itemId];
+//     } else {
+//       Object.keys(updatedMatches).forEach(key => {
+//         if (updatedMatches[key] === itemId) {
+//           delete updatedMatches[key];
+//         }
 //       });
 //     }
+    
+//     setFormData((prev) => ({
+//       ...prev,
+//       matchingPairs: {
+//         ...prev.matchingPairs,
+//         [side === "left" ? "leftItems" : "rightItems"]: updatedItems,
+//         correctMatches: updatedMatches,
+//       },
+//     }));
 //   };
 
-//   const handleStudentMatch = (leftIndex, rightValue) => {
-//     setStudentAnswers((prev) => ({ ...prev, [leftIndex]: rightValue }));
+//   const handleMatchingItemChange = (side, index, field, value) => {
+//     const items = side === "left" ? [...formData.matchingPairs.leftItems] : [...formData.matchingPairs.rightItems];
+//     items[index] = {
+//       ...items[index],
+//       [field]: value,
+//     };
+    
+//     setFormData((prev) => ({
+//       ...prev,
+//       matchingPairs: {
+//         ...prev.matchingPairs,
+//         [side === "left" ? "leftItems" : "rightItems"]: items,
+//       },
+//     }));
 //   };
 
-//   // Evaluate student answers
-//   // Evaluate student answers
-// const evaluateAnswers = () => {
-//   let isCorrect = false;
-
-//   if (questionType === "radio" || questionType === "checkbox") {
-//     const studentAns = studentAnswers[0] || [];
-//     const correct = questionType === "radio" ? correctAnswers[0] : correctAnswers;
-
-//     if (questionType === "radio") {
-//       isCorrect = studentAns === correct;
-//     } else {
-//       const sameLength = studentAns.length === correct.length;
-//       const sameValues = studentAns.every((a) => correct.includes(a));
-//       isCorrect = sameLength && sameValues;
+//   const handleMatchingImageUpload = (side, index, e) => {
+//     const file = e.target.files[0];
+//     if (file) {
+//       const key = `${side}-${index}`;
+//       setMatchingImageFiles((prev) => ({
+//         ...prev,
+//         [key]: file,
+//       }));
+//       const previewUrl = URL.createObjectURL(file);
+//       setPreviewImages((prev) => ({
+//         ...prev,
+//         [`matching-${key}`]: previewUrl,
+//       }));
 //     }
-//   } else if (questionType === "match") {
-//     const total = leftItems.length;
-//     let correctCount = 0;
+//   };
 
-//     leftItems.forEach((_, i) => {
-//       if (studentAnswers[i] && studentAnswers[i] === matchAnswers[i]) {
-//         correctCount++;
+//   const handleCorrectMatchChange = (leftId, rightId) => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       matchingPairs: {
+//         ...prev.matchingPairs,
+//         correctMatches: {
+//           ...prev.matchingPairs.correctMatches,
+//           [leftId]: rightId,
+//         },
+//       },
+//     }));
+//   };
+
+//   const handleQuestionImageChange = (e) => {
+//     const file = e.target.files[0];
+//     if (file) {
+//       setQuestionImageFile(file);
+//       const previewUrl = URL.createObjectURL(file);
+//       setPreviewImages((prev) => ({
+//         ...prev,
+//         question: previewUrl,
+//       }));
+//     }
+//   };
+
+//   const handleOptionImageChange = (index, e) => {
+//     const file = e.target.files[0];
+//     if (file) {
+//       setOptionImageFiles((prev) => ({
+//         ...prev,
+//         [index]: file,
+//       }));
+//       const previewUrl = URL.createObjectURL(file);
+//       setPreviewImages((prev) => ({
+//         ...prev,
+//         [`option-${index}`]: previewUrl,
+//       }));
+//     }
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     setLoading(true);
+
+//     try {
+//       const submitData = new FormData();
+      
+//       // Append basic form data
+//       submitData.append('examId', examId);
+//       submitData.append('questionText', formData.questionText);
+//       submitData.append('questionCode', formData.questionCode);
+//       submitData.append('questionType', formData.questionType);
+//       submitData.append('difficulty', formData.difficulty);
+//       submitData.append('marks', formData.marks.toString());
+//       submitData.append('negativeMarks', formData.negativeMarks.toString());
+//       submitData.append('subject', formData.subject);
+//       submitData.append('topic', formData.topic);
+//       submitData.append('tags', JSON.stringify(formData.tags));
+//       submitData.append('options', JSON.stringify(formData.options));
+//       submitData.append('correctAnswers', JSON.stringify(formData.correctAnswers));
+//       submitData.append('isSample', formData.isSample.toString());
+//       submitData.append('explanation', formData.explanation);
+//       submitData.append('status', formData.status);
+
+//       // Append question image if exists
+//       if (questionImageFile) {
+//         submitData.append('questionImage', questionImageFile);
 //       }
-//     });
 
-//     isCorrect = correctCount === total; // ✅ full correct only
-//   }
+//       // Append option images
+//       Object.entries(optionImageFiles).forEach(([index, file]) => {
+//         submitData.append(`optionImage-${index}`, file);
+//       });
 
-//   setResult(isCorrect ? "✅ Correct" : "❌ Incorrect");
-// };
+//       // Append matching type data if applicable
+//       if (formData.questionType === 'matching') {
+//         submitData.append('matchingPairs', JSON.stringify(formData.matchingPairs));
+        
+//         // Append matching images
+//         Object.entries(matchingImageFiles).forEach(([key, file]) => {
+//           submitData.append(`matchingImage-${key}`, file);
+//         });
+//       }
 
+//       const url = isEditing && questionId !== 'new' 
+//         ? `/api/questions/${questionId}`
+//         : '/api/questions';
+
+//       const method = isEditing && questionId !== 'new' ? 'PUT' : 'POST';
+
+//       const response = await fetch(url, {
+//         method,
+//         body: submitData,
+//       });
+
+//       const result = await response.json();
+
+//       if (result.success) {
+//         alert(`Question ${isEditing ? 'updated' : 'created'} successfully!`);
+//         if (!isEditing) {
+//           // Reset form after successful creation
+//           setFormData({
+//             questionText: "",
+//             questionCode: "",
+//             questionType: "radio",
+//             difficulty: "medium",
+//             marks: 1,
+//             negativeMarks: 0,
+//             subject: "",
+//             topic: "",
+//             tags: [],
+//             options: [
+//               { label: "A", text: "", image: "" },
+//               { label: "B", text: "", image: "" },
+//               { label: "C", text: "", image: "" },
+//               { label: "D", text: "", image: "" },
+//             ],
+//             correctAnswers: [],
+//             matchingPairs: {
+//               leftItems: [
+//                 { id: "L1", text: "", image: "", imageUrl: "" },
+//                 { id: "L2", text: "", image: "", imageUrl: "" },
+//               ],
+//               rightItems: [
+//                 { id: "R1", text: "", image: "", imageUrl: "" },
+//                 { id: "R2", text: "", image: "", imageUrl: "" },
+//               ],
+//               correctMatches: {},
+//             },
+//             isSample: false,
+//             explanation: "",
+//             status: "draft",
+//           });
+//           setQuestionImageFile(null);
+//           setOptionImageFiles({});
+//           setMatchingImageFiles({});
+//           setPreviewImages({});
+//         }
+//       } else {
+//         alert(`Error: ${result.message}`);
+//       }
+//     } catch (error) {
+//       console.error('Submission error:', error);
+//       alert('Failed to submit question. Please try again.');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
 //   return (
-//     <div className="p-6 max-w-3xl mx-auto bg-white shadow rounded">
-//       <h2 className="text-xl font-bold mb-4">Add Question</h2>
+//     <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+//       <div className="bg-white rounded-lg shadow-lg p-6">
+//         <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">
+//           {isEditing ? "Edit" : "Add"} Question
+//         </h1>
 
-//       {/* Question Type */}
-//       <label className="block mb-2 font-semibold">Question Type</label>
-//       <select
-//         className="border rounded p-2 mb-4 w-full"
-//         value={questionType}
-//         onChange={(e) => {
-//           setQuestionType(e.target.value);
-//           setCorrectAnswers([]);
-//           setMatchAnswers({});
-//         }}
-//       >
-//         <option value="radio">Radio (Single Choice)</option>
-//         <option value="checkbox">Checkbox (Multiple Choice)</option>
-//         <option value="match">Match the Following</option>
-//       </select>
+//         <form onSubmit={handleSubmit} className="space-y-6">
+//           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+//             <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+//               <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span>
+//               Basic Information
+//             </h2>
 
-//       {/* Question Text */}
-//       <label className="block mb-2 font-semibold">Question</label>
-//       <input
-//         type="text"
-//         className="border rounded p-2 mb-4 w-full"
-//         value={questionText}
-//         onChange={(e) => setQuestionText(e.target.value)}
-//         placeholder="Enter question"
-//       />
+//             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Question Code
+//                 </label>
+//                 <input
+//                   type="text"
+//                   name="questionCode"
+//                   value={formData.questionCode}
+//                   onChange={handleInputChange}
+//                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+//                   placeholder="e.g., Q001"
+//                 />
+//               </div>
 
-//       {/* Options (Admin) */}
-//       {(questionType === "radio" || questionType === "checkbox") && (
-//         <div>
-//           <h3 className="font-semibold mb-2">Options</h3>
-//           {options.map((opt, index) => (
-//             <div key={index} className="flex items-center gap-2 mb-2">
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Question Type
+//                 </label>
+//                 <select
+//                   name="questionType"
+//                   value={formData.questionType}
+//                   onChange={handleInputChange}
+//                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+//                 >
+//                   <option value="radio">Single Choice (MCQ)</option>
+//                   <option value="checkbox">Multiple Choice</option>
+//                   <option value="matching">Matching Type</option>
+//                 </select>
+//               </div>
+//             </div>
+
+//             <div className="mb-4">
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Question Text *
+//               </label>
+//               <textarea
+//                 name="questionText"
+//                 value={formData.questionText}
+//                 onChange={handleInputChange}
+//                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+//                 rows="4"
+//                 placeholder="Enter your question here..."
+//                 required
+//               />
+//             </div>
+
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Question Image (Optional)
+//               </label>
+//               <input
+//                 type="file"
+//                 accept="image/*"
+//                 onChange={handleQuestionImageChange}
+//                 className="w-full p-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+//               />
+//               {previewImages.question && (
+//                 <div className="mt-3">
+//                   <img
+//                     src={previewImages.question}
+//                     alt="Question preview"
+//                     className="h-40 object-contain border-2 border-gray-300 rounded-lg"
+//                   />
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+
+//           {formData.questionType === "matching" ? (
+//             <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg border border-purple-200">
+//               <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+//                 <span className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+//                 Matching Items
+//               </h2>
+              
+//               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//                 <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-purple-300">
+//                   <div className="flex justify-between items-center mb-4">
+//                     <h3 className="font-semibold text-gray-700 text-lg">Column A (Questions)</h3>
+//                     <button
+//                       type="button"
+//                       onClick={() => addMatchingItem("left")}
+//                       className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+//                     >
+//                       <Plus size={18} /> Add Item
+//                     </button>
+//                   </div>
+                  
+//                   {formData.matchingPairs.leftItems.map((item, index) => (
+//                     <div key={item.id} className="mb-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50 hover:shadow-md transition-shadow">
+//                       <div className="flex justify-between items-start mb-3">
+//                         <span className="font-bold text-purple-700 bg-white px-3 py-1 rounded-full">{item.id}</span>
+//                         {formData.matchingPairs.leftItems.length > 2 && (
+//                           <button
+//                             type="button"
+//                             onClick={() => removeMatchingItem("left", index)}
+//                             className="text-red-500 hover:text-red-700 hover:bg-red-100 p-2 rounded-full transition-colors"
+//                           >
+//                             <Trash2 size={18} />
+//                           </button>
+//                         )}
+//                       </div>
+                      
+//                       <textarea
+//                         value={item.text}
+//                         onChange={(e) => handleMatchingItemChange("left", index, "text", e.target.value)}
+//                         className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+//                         rows="2"
+//                         placeholder="Enter question text..."
+//                       />
+                      
+//                       <div className="space-y-2">
+//                         <div className="flex gap-2">
+//                           <button
+//                             type="button"
+//                             onClick={() => setImageUploadMode(prev => ({
+//                               ...prev,
+//                               [`left-${index}`]: imageUploadMode[`left-${index}`] === 'file' ? '' : 'file'
+//                             }))}
+//                             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+//                               imageUploadMode[`left-${index}`] === 'file' 
+//                                 ? 'bg-blue-500 text-white shadow-md' 
+//                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+//                             }`}
+//                           >
+//                             <Upload size={16} /> Upload File
+//                           </button>
+//                           <button
+//                             type="button"
+//                             onClick={() => setImageUploadMode(prev => ({
+//                               ...prev,
+//                               [`left-${index}`]: imageUploadMode[`left-${index}`] === 'url' ? '' : 'url'
+//                             }))}
+//                             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+//                               imageUploadMode[`left-${index}`] === 'url' 
+//                                 ? 'bg-blue-500 text-white shadow-md' 
+//                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+//                             }`}
+//                           >
+//                             <Link size={16} /> Image URL
+//                           </button>
+//                         </div>
+                        
+//                         {imageUploadMode[`left-${index}`] === 'file' && (
+//                           <input
+//                             type="file"
+//                             accept="image/*"
+//                             onChange={(e) => handleMatchingImageUpload("left", index, e)}
+//                             className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
+//                           />
+//                         )}
+                        
+//                         {imageUploadMode[`left-${index}`] === 'url' && (
+//                           <input
+//                             type="url"
+//                             value={item.imageUrl || ''}
+//                             onChange={(e) => handleMatchingItemChange("left", index, "imageUrl", e.target.value)}
+//                             className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+//                             placeholder="https://example.com/image.jpg"
+//                           />
+//                         )}
+                        
+//                         {(previewImages[`matching-left-${index}`] || item.imageUrl) && (
+//                           <img
+//                             src={previewImages[`matching-left-${index}`] || item.imageUrl}
+//                             alt={`Left ${item.id}`}
+//                             className="w-full h-32 object-contain border-2 border-purple-300 rounded-lg bg-white p-2"
+//                           />
+//                         )}
+//                       </div>
+                      
+//                       <div className="mt-3">
+//                         <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase">
+//                           Correct Match:
+//                         </label>
+//                         <select
+//                           value={formData.matchingPairs.correctMatches[item.id] || ""}
+//                           onChange={(e) => handleCorrectMatchChange(item.id, e.target.value)}
+//                           className="w-full p-2 border-2 border-purple-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+//                         >
+//                           <option value="">Select matching answer</option>
+//                           {formData.matchingPairs.rightItems.map((rightItem) => (
+//                             <option key={rightItem.id} value={rightItem.id}>
+//                               {rightItem.id} - {rightItem.text.substring(0, 30)}{rightItem.text.length > 30 ? '...' : ''}
+//                             </option>
+//                           ))}
+//                         </select>
+//                       </div>
+//                     </div>
+//                   ))}
+//                 </div>
+
+//                 <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-pink-300">
+//                   <div className="flex justify-between items-center mb-4">
+//                     <h3 className="font-semibold text-gray-700 text-lg">Column B (Answers)</h3>
+//                     <button
+//                       type="button"
+//                       onClick={() => addMatchingItem("right")}
+//                       className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+//                     >
+//                       <Plus size={18} /> Add Item
+//                     </button>
+//                   </div>
+                  
+//                   {formData.matchingPairs.rightItems.map((item, index) => (
+//                     <div key={item.id} className="mb-4 p-4 border-2 border-pink-200 rounded-lg bg-pink-50 hover:shadow-md transition-shadow">
+//                       <div className="flex justify-between items-start mb-3">
+//                         <span className="font-bold text-pink-700 bg-white px-3 py-1 rounded-full">{item.id}</span>
+//                         {formData.matchingPairs.rightItems.length > 2 && (
+//                           <button
+//                             type="button"
+//                             onClick={() => removeMatchingItem("right", index)}
+//                             className="text-red-500 hover:text-red-700 hover:bg-red-100 p-2 rounded-full transition-colors"
+//                           >
+//                             <Trash2 size={18} />
+//                           </button>
+//                         )}
+//                       </div>
+                      
+//                       <textarea
+//                         value={item.text}
+//                         onChange={(e) => handleMatchingItemChange("right", index, "text", e.target.value)}
+//                         className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+//                         rows="2"
+//                         placeholder="Enter answer text..."
+//                       />
+                      
+//                       <div className="space-y-2">
+//                         <div className="flex gap-2">
+//                           <button
+//                             type="button"
+//                             onClick={() => setImageUploadMode(prev => ({
+//                               ...prev,
+//                               [`right-${index}`]: imageUploadMode[`right-${index}`] === 'file' ? '' : 'file'
+//                             }))}
+//                             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+//                               imageUploadMode[`right-${index}`] === 'file' 
+//                                 ? 'bg-blue-500 text-white shadow-md' 
+//                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+//                             }`}
+//                           >
+//                             <Upload size={16} /> Upload File
+//                           </button>
+//                           <button
+//                             type="button"
+//                             onClick={() => setImageUploadMode(prev => ({
+//                               ...prev,
+//                               [`right-${index}`]: imageUploadMode[`right-${index}`] === 'url' ? '' : 'url'
+//                             }))}
+//                             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+//                               imageUploadMode[`right-${index}`] === 'url' 
+//                                 ? 'bg-blue-500 text-white shadow-md' 
+//                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+//                             }`}
+//                           >
+//                             <Link size={16} /> Image URL
+//                           </button>
+//                         </div>
+                        
+//                         {imageUploadMode[`right-${index}`] === 'file' && (
+//                           <input
+//                             type="file"
+//                             accept="image/*"
+//                             onChange={(e) => handleMatchingImageUpload("right", index, e)}
+//                             className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-100 file:text-pink-700 hover:file:bg-pink-200"
+//                           />
+//                         )}
+                        
+//                         {imageUploadMode[`right-${index}`] === 'url' && (
+//                           <input
+//                             type="url"
+//                             value={item.imageUrl || ''}
+//                             onChange={(e) => handleMatchingItemChange("right", index, "imageUrl", e.target.value)}
+//                             className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+//                             placeholder="https://example.com/image.jpg"
+//                           />
+//                         )}
+                        
+//                         {(previewImages[`matching-right-${index}`] || item.imageUrl) && (
+//                           <img
+//                             src={previewImages[`matching-right-${index}`] || item.imageUrl}
+//                             alt={`Right ${item.id}`}
+//                             className="w-full h-32 object-contain border-2 border-pink-300 rounded-lg bg-white p-2"
+//                           />
+//                         )}
+//                       </div>
+//                     </div>
+//                   ))}
+//                 </div>
+//               </div>
+//             </div>
+//           ) : (
+//             <div className="bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-lg border border-green-200">
+//               <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+//                 <span className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+//                 Answer Options
+//               </h2>
+
+//               {formData.options.map((option, index) => (
+//                 <div key={index} className="mb-4 p-4 border-2 border-green-200 rounded-lg bg-white hover:shadow-md transition-shadow">
+//                   <div className="flex items-center mb-3">
+//                     <span className="font-bold text-lg mr-4 bg-green-100 text-green-700 px-3 py-1 rounded-full">
+//                       {option.label}
+//                     </span>
+//                     <label className="flex items-center cursor-pointer">
+//                       <input
+//                         type={formData.questionType === "radio" ? "radio" : "checkbox"}
+//                         name="correctAnswers"
+//                         checked={formData.correctAnswers.includes(option.label)}
+//                         onChange={() => handleCorrectAnswerChange(option.label)}
+//                         className="mr-2 w-5 h-5 text-green-500 focus:ring-green-500"
+//                       />
+//                       <span className="font-medium text-green-700">Mark as Correct Answer</span>
+//                     </label>
+//                   </div>
+
+//                   <div className="mb-3">
+//                     <textarea
+//                       value={option.text}
+//                       onChange={(e) => handleOptionChange(index, "text", e.target.value)}
+//                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+//                       rows="2"
+//                       placeholder={`Enter option ${option.label} text...`}
+//                       required
+//                     />
+//                   </div>
+
+//                   <div>
+//                     <label className="block text-sm font-medium text-gray-700 mb-2">
+//                       Option Image (Optional)
+//                     </label>
+//                     <input
+//                       type="file"
+//                       accept="image/*"
+//                       onChange={(e) => handleOptionImageChange(index, e)}
+//                       className="w-full p-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-100 file:text-green-700 hover:file:bg-green-200"
+//                     />
+//                     {previewImages[`option-${index}`] && (
+//                       <div className="mt-3">
+//                         <img
+//                           src={previewImages[`option-${index}`]}
+//                           alt={`Option ${option.label} preview`}
+//                           className="h-32 object-contain border-2 border-green-300 rounded-lg"
+//                         />
+//                       </div>
+//                     )}
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           )}
+
+//           <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-lg border border-amber-200">
+//             <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+//               <span className="bg-amber-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">3</span>
+//               Additional Details
+//             </h2>
+
+//             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Difficulty Level
+//                 </label>
+//                 <select
+//                   name="difficulty"
+//                   value={formData.difficulty}
+//                   onChange={handleInputChange}
+//                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                 >
+//                   <option value="easy">Easy</option>
+//                   <option value="medium">Medium</option>
+//                   <option value="hard">Hard</option>
+//                 </select>
+//               </div>
+
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Marks
+//                 </label>
+//                 <input
+//                   type="number"
+//                   name="marks"
+//                   value={formData.marks}
+//                   onChange={handleInputChange}
+//                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                   min="0"
+//                   step="0.5"
+//                 />
+//               </div>
+
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Negative Marks
+//                 </label>
+//                 <input
+//                   type="number"
+//                   name="negativeMarks"
+//                   value={formData.negativeMarks}
+//                   onChange={handleInputChange}
+//                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                   min="0"
+//                   step="0.5"
+//                 />
+//               </div>
+//             </div>
+
+//             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Subject
+//                 </label>
+//                 <input
+//                   type="text"
+//                   name="subject"
+//                   value={formData.subject}
+//                   onChange={handleInputChange}
+//                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                   placeholder="e.g., Mathematics"
+//                 />
+//               </div>
+
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Topic
+//                 </label>
+//                 <input
+//                   type="text"
+//                   name="topic"
+//                   value={formData.topic}
+//                   onChange={handleInputChange}
+//                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                   placeholder="e.g., Algebra"
+//                 />
+//               </div>
+//             </div>
+
+//             <div className="mb-4">
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Tags (comma separated)
+//               </label>
 //               <input
 //                 type="text"
-//                 className="border rounded p-2 flex-1"
-//                 value={opt}
-//                 onChange={(e) => handleOptionChange(index, e.target.value)}
-//                 placeholder={`Option ${index + 1}`}
+//                 value={formData.tags.join(", ")}
+//                 onChange={(e) => {
+//                   const tagsArray = e.target.value.split(",").map((tag) => tag.trim()).filter((tag) => tag);
+//                   setFormData((prev) => ({ ...prev, tags: tagsArray }));
+//                 }}
+//                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                 placeholder="e.g., algebra, geometry, math"
 //               />
-//               <input
-//                 type={questionType === "radio" ? "radio" : "checkbox"}
-//                 name="correct"
-//                 checked={correctAnswers.includes(opt)}
-//                 onChange={() => handleCorrectAnswer(opt)}
-//               />
-//               <span className="text-sm">Correct</span>
 //             </div>
-//           ))}
-//         </div>
-//       )}
 
-//       {/* Match (Admin) */}
-//       {questionType === "match" && (
-//         <div>
-//           <h3 className="font-semibold mb-2">Match the Following</h3>
-
-//           {/* Right side */}
-//           <h4 className="font-medium">Right Side Options</h4>
-//           {rightOptions.map((opt, index) => (
-//             <input
-//               key={index}
-//               type="text"
-//               className="border rounded p-2 mb-2 w-full"
-//               value={opt}
-//               onChange={(e) => handleRightChange(index, e.target.value)}
-//               placeholder={`Right Option ${index + 1}`}
-//             />
-//           ))}
-//           <button
-//             type="button"
-//             className="bg-gray-200 px-3 py-1 rounded mb-4"
-//             onClick={addRightOption}
-//           >
-//             + Add Right Option
-//           </button>
-
-//           {/* Left side */}
-//           <h4 className="font-medium">Left Side Items</h4>
-//           {leftItems.map((left, index) => (
-//             <div key={index} className="flex gap-2 mb-2">
-//               <input
-//                 type="text"
-//                 className="border rounded p-2 w-1/2"
-//                 value={left}
-//                 onChange={(e) => handleLeftChange(index, e.target.value)}
-//                 placeholder={`Left Item ${index + 1}`}
+//             <div className="mb-4">
+//               <label className="block text-sm font-medium text-gray-700 mb-1">
+//                 Explanation
+//               </label>
+//               <textarea
+//                 name="explanation"
+//                 value={formData.explanation}
+//                 onChange={handleInputChange}
+//                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                 rows="3"
+//                 placeholder="Provide explanation for the correct answer..."
 //               />
-//               <select
-//                 className="border rounded p-2 w-1/2"
-//                 value={matchAnswers[index] || ""}
-//                 onChange={(e) => handleMatchAnswer(index, e.target.value)}
-//               >
-//                 <option value="">Correct Match</option>
-//                 {rightOptions.map((opt, i) => (
-//                   <option key={i} value={opt}>
-//                     {opt}
-//                   </option>
-//                 ))}
-//               </select>
 //             </div>
-//           ))}
-//           <button
-//             type="button"
-//             className="bg-gray-300 px-4 py-2 rounded"
-//             onClick={addLeftItem}
-//           >
-//             + Add Left Item
-//           </button>
-//         </div>
-//       )}
 
-//       {/* ---- Student Attempt ---- */}
-//       <div className="mt-8 border-t pt-4">
-//         <h3 className="font-semibold mb-2">Student Attempt</h3>
-//         <p className="mb-2">{questionText}</p>
+//             <div className="flex items-center gap-4">
+//               <label className="flex items-center cursor-pointer">
+//                 <input
+//                   type="checkbox"
+//                   name="isSample"
+//                   checked={formData.isSample}
+//                   onChange={handleInputChange}
+//                   className="mr-2 w-5 h-5 text-amber-500 focus:ring-amber-500"
+//                 />
+//                 <span className="font-medium text-gray-700">Mark as Sample Question</span>
+//               </label>
 
-//         {questionType === "radio" &&
-//           options.map((opt, i) => (
-//             <label key={i} className="block">
-//               <input
-//                 type="radio"
-//                 name="studentRadio"
-//                 className="mr-2"
-//                 value={opt}
-//                 checked={studentAnswers[0] === opt}
-//                 onChange={(e) => handleStudentAnswer(e.target.value)}
-//               />
-//               {opt}
-//             </label>
-//           ))}
-
-//         {questionType === "checkbox" &&
-//           options.map((opt, i) => (
-//             <label key={i} className="block">
-//               <input
-//                 type="checkbox"
-//                 className="mr-2"
-//                 value={opt}
-//                 checked={(studentAnswers[0] || []).includes(opt)}
-//                 onChange={() => handleStudentAnswer(opt)}
-//               />
-//               {opt}
-//             </label>
-//           ))}
-
-//         {questionType === "match" &&
-//           leftItems.map((left, i) => (
-//             <div key={i} className="flex items-center gap-2 mb-2">
-//               <span className="w-1/2">{left}</span>
-//               <select
-//                 className="border rounded p-2 w-1/2"
-//                 value={studentAnswers[i] || ""}
-//                 onChange={(e) => handleStudentMatch(i, e.target.value)}
-//               >
-//                 <option value="">Select</option>
-//                 {rightOptions.map((opt, j) => (
-//                   <option key={j} value={opt}>
-//                     {opt}
-//                   </option>
-//                 ))}
-//               </select>
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-1">
+//                   Status
+//                 </label>
+//                 <select
+//                   name="status"
+//                   value={formData.status}
+//                   onChange={handleInputChange}
+//                   className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+//                 >
+//                   <option value="draft">Draft</option>
+//                   <option value="publish">Publish</option>
+//                 </select>
+//               </div>
 //             </div>
-//           ))}
+//           </div>
 
-//         <button
-//           type="button"
-//           onClick={evaluateAnswers}
-//           className="bg-green-500 text-white px-6 py-2 rounded mt-4"
-//         >
-//           Submit Answer
-//         </button>
-
-//     {result && (
-//   <p className="mt-4 font-semibold text-blue-600">
-//     Result: {result}
-//   </p>
-// )}
-
+//           <div className="flex justify-end gap-4 pt-6 border-t">
+//             <button
+//               type="button"
+//               onClick={() => window.history.back()}
+//               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+//             >
+//               Cancel
+//             </button>
+//             <button
+//               type="submit"
+//               disabled={loading}
+//               className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+//             >
+//               {loading ? (
+//                 <>
+//                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+//                   {isEditing ? "Updating..." : "Creating..."}
+//                 </>
+//               ) : (
+//                 <>
+//                   {isEditing ? "Update Question" : "Create Question"}
+//                 </>
+//               )}
+//             </button>
+//           </div>
+//         </form>
 //       </div>
 //     </div>
 //   );
-// }
+// };
+
+// export default QuestionForm;
