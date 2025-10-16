@@ -132,7 +132,7 @@ export default function ProductDetailsPage() {
         );
         if (!examRes.ok) throw new Error("Failed to fetch exam details");
         const examData = await examRes.json();
-        setExams(Array.isArray(examData.data) ? examData.data : []);
+        +setExams(Array.isArray(examData.data) ? examData.data : []);
       } catch (err) {
         console.error("Error loading product/exam data:", err);
       }
