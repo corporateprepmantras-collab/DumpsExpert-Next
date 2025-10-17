@@ -204,9 +204,10 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
       </div>
 
       {/* Modal for question preview */}
+
       {previewQuestion && (
         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-md shadow-lg max-w-3xl w-full p-6 relative overflow-y-auto max-h-[90vh]">
+          <div className="bg-white rounded-md shadow-lg max-w-4xl w-full p-6 relative overflow-y-auto max-h-[90vh]">
             {/* Close button */}
             <button
               onClick={() => setPreviewQuestion(null)}
@@ -225,12 +226,10 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
               </label>
               <div
                 className="prose prose-sm max-w-none border p-3 rounded"
-                // Display full question text
                 dangerouslySetInnerHTML={{
                   __html: previewQuestion.questionText,
                 }}
               />
-              {/* Display question image if exists */}
               {previewQuestion.questionImage && (
                 <img
                   src={previewQuestion.questionImage}
@@ -240,42 +239,170 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
               )}
             </div>
 
-            {/* Options section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Map through options */}
-              {previewQuestion.options?.map((opt, i) => (
-                <div
-                  key={i}
-                  // Highlight correct answers
-                  className={`border p-3 rounded ${
-                    previewQuestion.correctAnswers?.includes(opt.label)
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <strong className="text-sm">Option {opt.label}:</strong>
-                  <div
-                    className="mt-1 prose prose-sm max-w-none"
-                    // Display option text
-                    dangerouslySetInnerHTML={{ __html: opt.text }}
-                  />
-                  {/* Display option image if exists */}
-                  {opt.image && (
-                    <img
-                      src={opt.image}
-                      alt={`Option ${opt.label}`}
-                      className="mt-2 max-h-32 border rounded"
-                    />
-                  )}
-                  {/* Display correct answer indicator */}
-                  {previewQuestion.correctAnswers?.includes(opt.label) && (
-                    <div className="text-green-600 text-sm font-medium mt-2">
-                      ✓ Correct Answer
+            {/* Check question type and render accordingly */}
+            {previewQuestion.questionType === "matching" ? (
+              // Matching type question display
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-600 mb-3">
+                  Matching Pairs:
+                </label>
+
+                {/* Left and Right columns */}
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2 border-b pb-1">
+                      Column A
+                    </h4>
+                    <div className="space-y-3">
+                      {previewQuestion.matchingPairs?.leftItems?.map(
+                        (item, index) => (
+                          <div
+                            key={item.id || index}
+                            className="border p-3 rounded bg-gray-50"
+                          >
+                            <div className="font-medium text-sm text-gray-600">
+                              {item.id}
+                            </div>
+                            <div
+                              className="mt-1 prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: item.text }}
+                            />
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={`Left ${item.id}`}
+                                className="mt-2 max-h-24 border rounded"
+                              />
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2 border-b pb-1">
+                      Column B
+                    </h4>
+                    <div className="space-y-3">
+                      {previewQuestion.matchingPairs?.rightItems?.map(
+                        (item, index) => (
+                          <div
+                            key={item.id || index}
+                            className="border p-3 rounded bg-gray-50"
+                          >
+                            <div className="font-medium text-sm text-gray-600">
+                              {item.id}
+                            </div>
+                            <div
+                              className="mt-1 prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: item.text }}
+                            />
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={`Right ${item.id}`}
+                                className="mt-2 max-h-24 border rounded"
+                              />
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Correct Matches */}
+                {previewQuestion.matchingPairs?.correctMatches &&
+                  Object.keys(previewQuestion.matchingPairs.correctMatches)
+                    .length > 0 && (
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Correct Matches:
+                      </label>
+                      <div className="bg-green-50 border border-green-200 rounded p-4">
+                        <div className="grid grid-cols-1 gap-2">
+                          {Object.entries(
+                            previewQuestion.matchingPairs.correctMatches
+                          ).map(([leftId, rightId]) => {
+                            const leftItem =
+                              previewQuestion.matchingPairs.leftItems?.find(
+                                (item) => item.id === leftId
+                              );
+                            const rightItem =
+                              previewQuestion.matchingPairs.rightItems?.find(
+                                (item) => item.id === rightId
+                              );
+
+                            return (
+                              <div
+                                key={leftId}
+                                className="flex items-center gap-3 text-sm"
+                              >
+                                <div className="flex-1 bg-white p-2 rounded border">
+                                  <span className="font-medium">{leftId}:</span>
+                                  <span
+                                    dangerouslySetInnerHTML={{
+                                      __html: leftItem?.text || "N/A",
+                                    }}
+                                  />
+                                </div>
+                                <div className="text-green-600 font-bold">
+                                  →
+                                </div>
+                                <div className="flex-1 bg-white p-2 rounded border">
+                                  <span className="font-medium">
+                                    {rightId}:
+                                  </span>
+                                  <span
+                                    dangerouslySetInnerHTML={{
+                                      __html: rightItem?.text || "N/A",
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              // MCQ type question display (original code)
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {previewQuestion.options?.map((opt, i) => (
+                  <div
+                    key={i}
+                    className={`border p-3 rounded ${
+                      previewQuestion.correctAnswers?.includes(opt.label)
+                        ? "border-green-500 bg-green-50"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    <strong className="text-sm">Option {opt.label}:</strong>
+                    <div
+                      className="mt-1 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: opt.text }}
+                    />
+                    {opt.image && (
+                      <img
+                        src={opt.image}
+                        alt={`Option ${opt.label}`}
+                        className="mt-2 max-h-32 border rounded"
+                      />
+                    )}
+                    {previewQuestion.correctAnswers?.includes(opt.label) && (
+                      <div className="text-green-600 text-sm font-medium mt-2">
+                        ✓ Correct Answer
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Explanation section */}
             {previewQuestion.explanation && (
@@ -285,7 +412,6 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                 </label>
                 <div
                   className="prose prose-sm max-w-none border p-3 rounded"
-                  // Display explanation
                   dangerouslySetInnerHTML={{
                     __html: previewQuestion.explanation,
                   }}
