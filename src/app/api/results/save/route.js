@@ -1,17 +1,19 @@
-// app/api/results/route.js
+// app/api/results/save/route.js
 import { connectMongoDB } from "@/lib/mongo";
 import Result from "@/models/resultSchema";
 import Exam from "@/models/examCodeSchema";
 
-// ✅ POST /api/results — Save result with attempt count
 export async function POST(req) {
   try {
     await connectMongoDB();
     const body = await req.json();
 
+    console.log("📥 Received result data:", body);
+
     const {
       studentId,
       examCode,
+      examId,
       totalQuestions,
       attempted,
       correct,
@@ -22,7 +24,9 @@ export async function POST(req) {
       userAnswers,
     } = body;
 
+    // Validate required fields
     if (!studentId || !examCode) {
+      console.error("❌ Missing required fields:", { studentId, examCode });
       return new Response(
         JSON.stringify({
           success: false,
@@ -32,64 +36,115 @@ export async function POST(req) {
       );
     }
 
-    // Find exam by code
-const exam = await Exam.findOne({ $or: [{ code: examCode }, { slug: examCode }] });
-    if (!exam) {
-      return new Response(
-        JSON.stringify({ success: false, message: "Exam not found" }),
-        { status: 404 }
-      );
+    // Handle temporary student IDs
+    let finalStudentId = studentId;
+    let isTempStudent = false;
+    
+    if (studentId.startsWith('temp_')) {
+      isTempStudent = true;
+      console.log("👤 Using temporary student ID");
     }
 
-    // Count previous attempts
-    const existingAttempts = await Result.countDocuments({
-      studentId,
-      examCode,
-    });
+    // Find exam by code or use provided examId
+    let exam = null;
+    if (examId && !examId.startsWith('temp_exam_')) {
+      exam = await Exam.findById(examId);
+    }
+    
+    if (!exam) {
+      exam = await Exam.findOne({ 
+        $or: [
+          { code: examCode }, 
+          { slug: examCode },
+          { _id: examId }
+        ] 
+      });
+    }
 
-    // Create new result with attempt number
-    const newResult = new Result({
-      studentId,
+    if (!exam) {
+      console.log("📝 Creating temporary exam record");
+      exam = {
+        _id: examId || `temp_exam_${examCode}`,
+        code: examCode,
+        name: `Exam: ${examCode}`
+      };
+    }
+
+    // Count previous attempts for real students
+    let attemptNumber = 1;
+    if (!isTempStudent) {
+      const existingAttempts = await Result.countDocuments({
+        studentId,
+        examCode,
+      });
+      attemptNumber = existingAttempts + 1;
+    }
+
+    // Create result object
+    const resultData = {
+      studentId: finalStudentId,
       examId: exam._id,
       examCode,
       totalQuestions,
       attempted,
       correct,
       wrong,
-      percentage,
+      percentage: parseFloat(percentage),
       duration,
       questions,
       userAnswers,
-      attempt: existingAttempts + 1,
-    });
+      attempt: attemptNumber,
+      isTempStudent,
+    };
 
-    await newResult.save();
+    // Save to database only for real students
+    let savedResult;
+    if (!isTempStudent) {
+      savedResult = new Result(resultData);
+      await savedResult.save();
+      console.log("✅ Result saved to database:", savedResult._id);
+    } else {
+      // For temp students, create a mock result
+      savedResult = {
+        ...resultData,
+        _id: `temp_result_${Date.now()}`,
+        createdAt: new Date(),
+        isTemp: true
+      };
+      console.log("✅ Temporary result created (not saved to DB)");
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Result saved successfully",
-        attempt: existingAttempts + 1,
-        data: newResult,
+        message: "Result processed successfully",
+        attempt: attemptNumber,
+        data: savedResult,
+        isTempStudent,
       }),
       { status: 201 }
     );
   } catch (error) {
     console.error("❌ Error saving result:", error);
     return new Response(
-      JSON.stringify({ success: false, message: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }),
       { status: 500 }
     );
   }
 }
 
-// ✅ GET /api/results/[studentId] — Fetch result history
+// GET method to fetch results
 export async function GET(req) {
   try {
     await connectMongoDB();
 
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get("studentId");
+    const examCode = searchParams.get("examCode");
 
     if (!studentId) {
       return new Response(
@@ -98,13 +153,23 @@ export async function GET(req) {
       );
     }
 
-    const results = await Result.find({ studentId }).sort({ createdAt: -1 });
+    let query = { studentId };
+    if (examCode) {
+      query.examCode = examCode;
+    }
 
-    return new Response(JSON.stringify({ success: true, data: results }), {
-      status: 200,
-    });
+    const results = await Result.find(query).sort({ createdAt: -1 });
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        data: results,
+        count: results.length 
+      }), 
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("❌ Error fetching history:", error);
+    console.error("❌ Error fetching results:", error);
     return new Response(
       JSON.stringify({ success: false, message: error.message }),
       { status: 500 }
