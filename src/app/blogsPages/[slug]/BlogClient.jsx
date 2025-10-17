@@ -111,7 +111,7 @@ const BlogClient = ({ categorySlug, blogs, categories }) => {
               {recentPosts.map((post) => (
                 <li key={post._id ?? post.slug}>
                   <Link
-                    href={`/blogsPages/by-slug/${post.slug}`}
+                    href={`/blogsPages/blog/${post.slug}`}
                     className="text-blue-600 hover:underline block"
                   >
                     {post.title || post.category}

@@ -46,17 +46,24 @@ export default function BlogPage() {
           setBlogs(res.data?.blogs || []);
         }
 
-        // Top 10 recent posts
-        const all = res?.data?.data || res?.data?.blogs || [];
-        const recent = [...all]
+        // ✅ Extract all blog data for recent posts
+        const allBlogs = res?.data?.data || res?.data?.blogs || [];
+
+        // ✅ Filter out any undefined or missing createdAt
+        const validBlogs = allBlogs.filter((b) => b.createdAt);
+
+        // ✅ Sort newest → oldest
+        const recent = validBlogs
           .sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
           .slice(0, 10);
+
         setRecentPosts(recent);
       } catch (err) {
         console.error("Error fetching blogs:", err);
+        setRecentPosts([]); // fallback to empty
       } finally {
         setLoading(false);
       }
