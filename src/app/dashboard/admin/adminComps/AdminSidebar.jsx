@@ -223,6 +223,10 @@ const sidebarItems = [
         label: "Contact Messages Page",
         to: "/dashboard/admin/adminPages/contactMessages",
       },
+      {
+        label: "Trending Section",
+        to: "/dashboard/admin/adminPages/Trending",
+      },
     ],
   },
 ];

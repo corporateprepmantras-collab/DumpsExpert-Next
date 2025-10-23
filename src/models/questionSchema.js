@@ -1,23 +1,26 @@
 import mongoose from "mongoose";
 
+// ✅ Option Schema (supports multiple images)
 const optionSchema = new mongoose.Schema({
   label: String,
   text: String,
-  image: String, // 🆕 optional image per option
+  images: { type: [String], default: [] }, // 🆕 Multiple images
 });
+
+// ✅ Matching Pairs Schema
 const matchingPairsSchema = new mongoose.Schema({
   leftItems: [
     {
       id: { type: String, required: true },
       text: { type: String, required: true },
-      image: { type: String, required: false },
+      images: { type: [String], default: [] }, // 🆕 Multiple images
     },
   ],
   rightItems: [
     {
       id: { type: String, required: true },
       text: { type: String, required: true },
-      image: { type: String, required: false },
+      images: { type: [String], default: [] }, // 🆕 Multiple images
     },
   ],
   correctMatches: {
@@ -27,7 +30,7 @@ const matchingPairsSchema = new mongoose.Schema({
   },
 });
 
-// Main question schema
+// ✅ Main Question Schema
 const questionSchema = new mongoose.Schema(
   {
     examId: {
@@ -37,7 +40,10 @@ const questionSchema = new mongoose.Schema(
     },
     questionCode: { type: String, required: true },
     questionText: { type: String, required: true },
-    questionImage: { type: String },
+
+    // 🆕 Multiple question images
+    questionImages: { type: [String], default: [] },
+
     questionType: {
       type: String,
       enum: ["radio", "checkbox", "truefalse", "matching"],
@@ -65,13 +71,13 @@ const questionSchema = new mongoose.Schema(
     topic: { type: String, required: true },
     tags: { type: [String], default: [] },
 
-    // ✅ Options (for radio / checkbox)
+    // ✅ Options (radio / checkbox)
     options: { type: [optionSchema], default: [] },
 
-    // ✅ Correct answers (for radio / checkbox)
+    // ✅ Correct answers
     correctAnswers: { type: [String], default: [] },
 
-    // ✅ Matching pairs (for matching question type)
+    // ✅ Matching pairs (for matching type)
     matchingPairs: {
       type: matchingPairsSchema,
       required: function () {
@@ -95,10 +101,10 @@ const questionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Prevent duplicate question codes under same exam
+// ✅ Prevent duplicate question codes under same exam
 questionSchema.index({ examId: 1, questionCode: 1 }, { unique: true });
 
-// Safe model export for Next.js
+// ✅ Safe export for Next.js
 const Question =
   mongoose.models.Question || mongoose.model("Question", questionSchema);
 

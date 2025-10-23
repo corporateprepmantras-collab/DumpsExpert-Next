@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Head from "next/head";
 import { motion } from "framer-motion";
+import axios from "axios"; // ✅ add this
 
 import banner from "@/assets/landingassets/banner.webp";
 import ExamDumpsSlider from "@/landingpage/ExamDumpsSlider";
@@ -23,16 +24,25 @@ export default function HomePage() {
   const [announcement, setAnnouncement] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dumps, setDumps] = useState([]); // ✅ Added missing state
 
-  const dumps = [
-    { _id: "d1", name: "AWS Certified Solutions Architect" },
-    { _id: "d2", name: "Microsoft Azure Fundamentals" },
-    { _id: "d3", name: "Google Cloud Digital Leader" },
-    { _id: "d4", name: "Cisco CCNA 200-301" },
-    { _id: "d5", name: "CompTIA Security+" },
-    { _id: "d6", name: "PMP Project Management Professional" },
-    { _id: "d7", name: "Salesforce Administrator (ADM-201)" },
-  ];
+  // ✅ Fetch trending dumps
+  const getDumps = async () => {
+    try {
+      const res = await axios.get("/api/trending");
+      setDumps(res.data);
+    } catch (error) {
+      console.error("Error fetching dumps:", error);
+    }
+  };
+
+  useEffect(() => {
+    getDumps();
+  }, []);
+
+  useEffect(() => {
+    getDumps();
+  }, []);
 
   /* ---------- Cache Helpers ---------- */
   function getCacheItem(key) {
@@ -253,20 +263,26 @@ export default function HomePage() {
         </section>
 
         {/* ---------- Popular Dumps ---------- */}
-        <section className="py-16 px-4 md:px-12">
-          <h2 className="text-3xl font-bold text-center mb-10">
+        {/* ---------- Trending Dumps ---------- */}
+        <section className="py-16 px-4 md:px-12 bg-white">
+          <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
             Top Trending Certification Dumps
           </h2>
+
           <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {dumps.map((dump) => (
-              <Button
-                key={dump._id}
-                variant="secondary"
-                className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2"
-              >
-                {dump.name}
-              </Button>
-            ))}
+            {dumps.length > 0 ? (
+              dumps.map((dump) => (
+                <Button
+                  key={dump._id}
+                  variant="secondary"
+                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2"
+                >
+                  {dump.title}
+                </Button>
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm">Loading dumps...</p>
+            )}
           </div>
         </section>
 

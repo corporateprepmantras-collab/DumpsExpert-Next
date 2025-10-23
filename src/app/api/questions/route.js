@@ -1,7 +1,7 @@
 import { connectMongoDB } from "@/lib/mongo";
 import Question from "@/models/questionSchema";
-import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
+import { NextResponse } from "next/server";
+import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -16,7 +16,7 @@ export async function POST(request) {
 
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());
- console.log(data)
+    console.log(data);
     const { examId, questionType } = data;
     if (!examId) {
       return NextResponse.json(
@@ -48,27 +48,43 @@ export async function POST(request) {
     }
 
     // ✅ Matching type
+    // ✅ Matching type
     if (questionType === "matching") {
       const matchingPairs = JSON.parse(data.matchingPairs || "{}");
 
-      const processedLeftItems = await Promise.all(
-        (matchingPairs.leftItems || []).map(async (item) => {
-          const imageFile = formData.get(`matchingImage-${item.id}`);
-          if (imageFile instanceof Blob && imageFile.size > 0) {
-            item.image = await uploadImage(imageFile);
-          }
-          return item;
-        })
-      );
+      const processItems = async (items, side) => {
+        return Promise.all(
+          (items || []).map(async (item) => {
+            const imageFiles = formData.getAll(
+              `matchingImages-${side}-${item.id}`
+            ); // multiple files
+            const uploadedUrls = [];
 
-      const processedRightItems = await Promise.all(
-        (matchingPairs.rightItems || []).map(async (item) => {
-          const imageFile = formData.get(`matchingImage-${item.id}`);
-          if (imageFile instanceof Blob && imageFile.size > 0) {
-            item.image = await uploadImage(imageFile);
-          }
-          return item;
-        })
+            for (const file of imageFiles) {
+              if (file instanceof Blob && file.size > 0) {
+                const url = await uploadImage(file);
+                uploadedUrls.push(url);
+              }
+            }
+
+            // ✅ Also handle pasted URLs from frontend
+            const pastedUrls = JSON.parse(
+              data[`pastedImages-${side}-${item.id}`] || "[]"
+            );
+
+            item.images = [...uploadedUrls, ...pastedUrls]; // array of all image URLs
+            return item;
+          })
+        );
+      };
+
+      const processedLeftItems = await processItems(
+        matchingPairs.leftItems,
+        "left"
+      );
+      const processedRightItems = await processItems(
+        matchingPairs.rightItems,
+        "right"
       );
 
       questionData.matchingPairs = {
@@ -76,30 +92,16 @@ export async function POST(request) {
         rightItems: processedRightItems,
         correctMatches: matchingPairs.correctMatches || {},
       };
-    } else {
-      // ✅ MCQ type
-      const options = JSON.parse(data.options || "[]");
-      const correctAnswers = JSON.parse(data.correctAnswers || "[]");
-
-      const processedOptions = await Promise.all(
-        options.map(async (option, index) => {
-          const optionImageFile = formData.get(`optionImage-${index}`);
-          if (optionImageFile instanceof Blob && optionImageFile.size > 0) {
-            option.image = await uploadImage(optionImageFile);
-          }
-          return option;
-        })
-      );
-
-      questionData.options = processedOptions;
-      questionData.correctAnswers = correctAnswers;
     }
 
     console.log("✅ Final questionData before save:", questionData);
 
     const newQuestion = await Question.create(questionData);
 
-    return NextResponse.json({ success: true, data: newQuestion }, { status: 201 });
+    return NextResponse.json(
+      { success: true, data: newQuestion },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("❌ Error creating question:", error);
     return NextResponse.json(
@@ -109,7 +111,6 @@ export async function POST(request) {
   }
 }
 
-
 // Helper function to upload image to Cloudinary
 async function uploadImage(imageFile) {
   const bytes = await imageFile.arrayBuffer();
@@ -117,7 +118,7 @@ async function uploadImage(imageFile) {
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { resource_type: 'image' },
+      { resource_type: "image" },
       (error, result) => {
         if (error) reject(error);
         else resolve(result.secure_url);
