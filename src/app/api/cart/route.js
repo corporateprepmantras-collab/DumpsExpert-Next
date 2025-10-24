@@ -1,79 +1,52 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Cart from "@/models/cartSchema";
-import Exam from "@/models/examCodeSchema"; // ✅ import your exam model
+import Exam from "@/models/examCodeSchema";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/authOptions";
 
-// ✅ Utility function to populate missing prices
+// Populate online item prices & include slug
 async function populateOnlineItemPrices(items) {
-  const updatedItems = await Promise.all(
+  return Promise.all(
     items.map(async (item) => {
-      if (item.type === "online" && (!item.priceINR || !item.priceUSD)) {
-        try {
-          const exam = await Exam.findOne({ productId: item.productId }).lean();
-          if (exam) {
-            return {
-              ...item,
-              priceINR: exam.priceINR,
-              priceUSD: exam.priceUSD,
-              price: exam.priceINR, // Default to INR
-            };
-          }
-        } catch (err) {
-          console.error(
-            "Error fetching price for product:",
-            item.productId,
-            err
-          );
+      if (
+        item.type === "online" &&
+        (!item.priceINR || !item.priceUSD || !item.slug)
+      ) {
+        const exam = await Exam.findOne({ productId: item.productId }).lean();
+        if (exam) {
+          return {
+            ...item,
+            priceINR: exam.priceINR,
+            priceUSD: exam.priceUSD,
+            price: exam.priceINR,
+            slug: exam.slug || item.slug || "",
+          };
         }
       }
       return item;
     })
   );
-  return updatedItems;
 }
 
-// 🟢 GET: Fetch user's cart
+// GET Cart
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized: Please log in" },
-        { status: 401 }
-      );
-    }
+    if (!session?.user?.id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     await connectMongoDB();
     const userId = session.user.id;
+    const cart = await Cart.findOne({ user: userId }).lean();
 
-    let cart = await Cart.findOne({ user: userId }).lean();
+    const updatedItems = cart?.items
+      ? await populateOnlineItemPrices(cart.items)
+      : [];
 
-    // Return empty if none exists
-    if (!cart) {
-      return NextResponse.json(
-        { items: [] },
-        {
-          headers: { "Cache-Control": "private, max-age=30" },
-        }
-      );
-    }
-
-    // ✅ Populate missing prices before returning
-    const updatedItems = await populateOnlineItemPrices(cart.items || []);
-
-    return NextResponse.json(
-      { items: updatedItems },
-      {
-        headers: {
-          "Cache-Control": "private, max-age=30",
-          ETag: `"${cart.lastUpdated.getTime()}"`,
-        },
-      }
-    );
-  } catch (error) {
-    console.error("Error fetching cart:", error);
+    return NextResponse.json({ items: updatedItems });
+  } catch (err) {
+    console.error("Cart fetch failed:", err);
     return NextResponse.json(
       { error: "Failed to fetch cart" },
       { status: 500 }
@@ -81,43 +54,30 @@ export async function GET(request) {
   }
 }
 
-// 🟣 POST: Update entire cart (sync from client)
+// POST Cart
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized: Please log in" },
-        { status: 401 }
-      );
-    }
+    if (!session?.user?.id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { items } = await request.json();
-    if (!Array.isArray(items)) {
+    if (!Array.isArray(items))
       return NextResponse.json({ error: "Invalid cart data" }, { status: 400 });
-    }
 
     await connectMongoDB();
     const userId = session.user.id;
-
-    // ✅ Populate prices before saving to DB
     const updatedItems = await populateOnlineItemPrices(items);
 
     const result = await Cart.findOneAndUpdate(
       { user: userId },
-      {
-        items: updatedItems,
-        lastUpdated: new Date(),
-      },
+      { items: updatedItems, lastUpdated: new Date() },
       { upsert: true, new: true }
     );
 
-    return NextResponse.json({
-      success: true,
-      items: result.items,
-    });
-  } catch (error) {
-    console.error("Error updating cart:", error);
+    return NextResponse.json({ success: true, items: result.items });
+  } catch (err) {
+    console.error("Cart update failed:", err);
     return NextResponse.json(
       { error: "Failed to update cart" },
       { status: 500 }

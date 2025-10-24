@@ -192,6 +192,7 @@ const Cart = () => {
                 totalAmount: grandTotal,
                 paymentMethod: "razorpay",
                 paymentId: paymentVerification.data.paymentId,
+                slug: product.slug,
               });
 
               clearCart();
@@ -537,91 +538,86 @@ const Cart = () => {
           </div>
         )}
 
-        {showPaymentModal && (
-          <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
-              <h3 className="text-xl font-semibold text-center">
-                Select Payment Method
-              </h3>
+       {showPaymentModal && (
+  <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
+      <h3 className="text-xl font-semibold text-center">
+        Select Payment Method
+      </h3>
 
-              {/* Currency Selection */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Currency
-                </label>
-                <select
-                  value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {Object.entries(currencies).map(
-                    ([code, { symbol, name }]) => (
-                      <option key={code} value={code}>
-                        {symbol} {name} ({code})
-                      </option>
-                    )
-                  )}
-                </select>
-                <p className="text-sm text-gray-600">
-                  Total: {currencies[selectedCurrency].symbol}
-                  {convertedGrandTotal} {selectedCurrency}
-                </p>
-              </div>
+      {/* Currency Selection */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Currency
+        </label>
+        <select
+          value={selectedCurrency}
+          onChange={(e) => setSelectedCurrency(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          {Object.entries(currencies).map(([code, { symbol, name }]) => (
+            <option key={code} value={code}>
+              {symbol} {name} ({code})
+            </option>
+          ))}
+        </select>
+        <p className="text-sm text-gray-600">
+          Total: {currencies[selectedCurrency].symbol}
+          {convertedGrandTotal} {selectedCurrency}
+        </p>
+      </div>
 
-              {/* Razorpay Button */}
-              <button
-                onClick={handleRazorpayPayment}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
-              >
-                <svg className="w-20 h-10" viewBox="0 0 100 40" fill="none">
-                  <rect width="100" height="40" rx="4" fill="white" />
-                  <text
-                    x="50"
-                    y="25"
-                    textAnchor="middle"
-                    className="text-sm font-medium fill-blue-600"
-                  >
-                    Razorpay
-                  </text>
-                </svg>
-                Pay with Razorpay ({currencies[selectedCurrency].symbol}
-                {convertedGrandTotal})
-              </button>
+      {/* Razorpay Button (Only for INR) */}
+      {selectedCurrency === "INR" && (
+        <button
+          onClick={handleRazorpayPayment}
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
+        >
+          💳 Pay with Razorpay ({currencies[selectedCurrency].symbol}
+          {convertedGrandTotal})
+        </button>
+      )}
 
-              {/* PayPal Button */}
-              <div className="w-full">
-                <PayPalScriptProvider
-                  options={{
-                    "client-id":
-                      process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
-                    currency: selectedCurrency,
-                    intent: "capture",
-                  }}
-                >
-                  <PayPalButtons
-                    style={{
-                      layout: "horizontal",
-                      color: "blue",
-                      shape: "rect",
-                      label: "pay",
-                    }}
-                    createOrder={createPayPalOrder}
-                    onApprove={onPayPalApprove}
-                    onError={onPayPalError}
-                    onCancel={onPayPalCancel}
-                  />
-                </PayPalScriptProvider>
-              </div>
+      {/* PayPal Button (Only for USD) */}
+      {selectedCurrency === "USD" && (
+        <div className="w-full">
+          <PayPalScriptProvider
+            key={selectedCurrency} // ensures re-render on currency change
+            options={{
+              "client-id":
+                process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ||
+                "YOUR_REAL_SANDBOX_CLIENT_ID",
+              currency: selectedCurrency,
+              intent: "capture",
+            }}
+          >
+            <PayPalButtons
+              style={{
+                layout: "vertical",
+                color: "gold",
+                shape: "rect",
+                label: "paypal",
+              }}
+              createOrder={createPayPalOrder}
+              onApprove={onPayPalApprove}
+              onError={onPayPalError}
+              onCancel={onPayPalCancel}
+              forceReRender={[selectedCurrency, convertedGrandTotal]}
+            />
+          </PayPalScriptProvider>
+        </div>
+      )}
 
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="block mx-auto mt-2 text-sm text-gray-500 hover:underline"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+      <button
+        onClick={() => setShowPaymentModal(false)}
+        className="block mx-auto mt-2 text-sm text-gray-500 hover:underline"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
       </div>
     </div>
   );
