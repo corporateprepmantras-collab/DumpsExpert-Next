@@ -1,34 +1,15 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
+// Initialize Razorpay instance once
+const razorpay = new Razorpay({
+  key_id: "rzp_test_7kAotmP1o8JR8V",
+  key_secret: "jPBuKq2CqukA4JxOXKfp8QU7",
+});
+
 export async function POST(request) {
   try {
     console.log("Route hit: /api/payments/razorpay/create-order");
-
-    // Check Razorpay credentials - Use consistent environment variable names
-    const keyId = "rzp_test_7kAotmP1o8JR8V";
-    const keySecret = "jPBuKq2CqukA4JxOXKfp8QU7";
-
-    if (!keyId || !keySecret) {
-      console.error("Razorpay credentials not configured", {
-        hasKeyId: !!keyId,
-        hasKeySecret: !!keySecret,
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Razorpay payment is not configured. Please contact support.",
-        },
-        { status: 503 }
-      );
-    }
-
-    // Initialize Razorpay instance inside the function
-    const razorpay = new Razorpay({
-      key_id: keyId,
-      key_secret: keySecret,
-    });
-
     const body = await request.json();
     const amount = Number(body.amount);
     const currency = body.currency || "INR";
@@ -52,13 +33,12 @@ export async function POST(request) {
       payment_capture: 1,
     };
 
-    console.log("Creating Razorpay order with options:", options);
     const order = await razorpay.orders.create(options);
 
     return NextResponse.json(
       {
         success: true,
-        orderId: order.id,
+        id: order.id,
         amount: order.amount / 100, // Return amount in INR
         currency: order.currency,
         receipt: order.receipt,

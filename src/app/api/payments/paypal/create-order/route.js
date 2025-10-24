@@ -1,52 +1,19 @@
 import { NextResponse } from 'next/server';
 import paypal from '@paypal/checkout-server-sdk';
 
+const clientId = process.env.PAYPAL_CLIENT_ID;
+const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret); // Use LiveEnvironment for production
+const client = new paypal.core.PayPalHttpClient(environment);
+
 export async function POST(request) {
   try {
-    console.log("Route hit: /api/payments/paypal/create-order");
-    const { amount, currency, userId } = await request.json();
+    const { amount, currency } = await request.json();
 
-    // Check PayPal credentials - Updated to use NEXT_PUBLIC_ prefix for consistency
-    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
-      console.error('PayPal credentials not configured', { 
-        hasClientId: !!clientId, 
-        hasClientSecret: !!clientSecret 
-      });
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'PayPal payment is not configured. Please contact support.' 
-        }, 
-        { status: 503 }
-      );
+    if (!amount || !currency) {
+      console.error('Missing required fields:', { amount, currency });
+      return NextResponse.json({ error: 'Missing required order details' }, { status: 400 });
     }
-
-    // Input validation
-    if (!amount || amount <= 0) {
-      console.error('Invalid or missing amount:', { amount });
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid or missing amount. Must be a number greater than 0.' 
-        }, 
-        { status: 400 }
-      );
-    }
-
-    if (!currency) {
-      console.error('Missing currency:', { currency });
-      return NextResponse.json(
-        { success: false, error: 'Missing currency' }, 
-        { status: 400 }
-      );
-    }
-
-    // Initialize PayPal client after credential validation
-    const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
-    const client = new paypal.core.PayPalHttpClient(environment);
 
     const paypalRequest = new paypal.orders.OrdersCreateRequest();
     paypalRequest.requestBody({
@@ -54,7 +21,7 @@ export async function POST(request) {
       purchase_units: [
         {
           amount: {
-            currency_code: currency || 'USD',
+            currency_code: currency || 'INR',
             value: amount.toString()
           }
         }
@@ -62,26 +29,12 @@ export async function POST(request) {
     });
 
     const order = await client.execute(paypalRequest);
-    
-    console.log("PayPal order created successfully:", {
-      orderId: order.result.id,
-      amount,
-      currency,
-      userId
-    });
-
     return NextResponse.json({
       success: true,
       orderId: order.result.id
     });
   } catch (error) {
-    console.error('[PAYPAL_ORDER_ERROR]', {
-      error: error.message,
-      stack: error.stack,
-    });
-    return NextResponse.json(
-      { success: false, error: `Unable to create order: ${error.message}` }, 
-      { status: 500 }
-    );
+    console.error('PayPal order creation failed:', error);
+    return NextResponse.json({ error: 'Payment initiation failed' }, { status: 500 });
   }
 }
