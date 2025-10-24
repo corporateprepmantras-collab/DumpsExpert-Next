@@ -11,46 +11,53 @@ const ExamCoursesPage = () => {
   useEffect(() => {
     const fetchExamCourses = async () => {
       try {
-        // ✅ Step 1: Fetch all student orders
-        const { data } = await axios.get(
-          `http://localhost:3000/api/student/orders`
-        );
+        const { data } = await axios.get(`/api/student/orders`);
         const orders = data?.orders || [];
+        console.log("Fetched Orders =>", orders);
 
-        // ✅ Step 2: Extract ALL course details (including PDFs)
         const courses = orders.flatMap((order) =>
-          order.courseDetails.map((course) => ({
-            name: course.name,
-            slug: course.slug,
-            code: course.sapExamCode,
-            purchaseDate: order.purchaseDate,
-          }))
+          (order.courseDetails || [])
+            .filter((c) => c?.name)
+            .map((course) => ({
+              name: course.name,
+              slug: course.slug || "",
+              code: course.sapExamCode || "N/A",
+              purchaseDate: order.purchaseDate,
+            }))
         );
+        console.log("Extracted Courses =>", courses);
 
-        if (courses.length === 0) {
-          setExamCourses([]);
-          return;
-        }
-
-        // ✅ Step 3: Check which courses have an exam available
         const checkedCourses = await Promise.all(
           courses.map(async (course) => {
+            console.log("Checking Exam for:", course.slug);
+            let examRes;
             try {
-              const res = await axios.get(
-                `http://localhost:3000/api/exams/byslug/${course.slug}`
+              if (course.slug && course.slug.trim() !== "") {
+                examRes = await axios.get(
+                  `/api/exams/byslug/${encodeURIComponent(course.slug)}`
+                );
+              } else {
+                // fallback by course name if slug is empty
+                examRes = await axios.get(
+                  `/api/exams/byslug/${encodeURIComponent(course.name)}`
+                );
+              }
+
+              const examData = examRes?.data?.data?.[0];
+              return { ...course, examId: examData?._id || null };
+            } catch (err) {
+              console.error(
+                `Error checking exam for ${course.name}:`,
+                err.message
               );
-              const exam = res.data?.data?.[0];
-              return { ...course, examId: exam?._id || null };
-            } catch (error) {
-              console.error(`Error checking exam for ${course.slug}:`, error);
               return { ...course, examId: null };
             }
           })
         );
 
         setExamCourses(checkedCourses);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
+      } catch (err) {
+        console.error("Error fetching exam courses:", err);
       } finally {
         setLoading(false);
       }
@@ -88,7 +95,7 @@ const ExamCoursesPage = () => {
               </span>
 
               <span className="text-blue-500 font-semibold w-32 text-center">
-                {course.code || "N/A"}
+                {course.code}
               </span>
 
               {course.examId ? (

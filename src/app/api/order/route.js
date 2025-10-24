@@ -7,26 +7,31 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/authOptions";
 
 // Define authUsers model to ensure it's registered before use
-const authUserModel = mongoose.models.authUsers || mongoose.model('authUsers', new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  name: { type: String },
-  image: { type: String },
-  emailVerified: { type: Date },
-}, { collection: 'authUsers' }));
+const authUserModel =
+  mongoose.models.authUsers ||
+  mongoose.model(
+    "authUsers",
+    new mongoose.Schema(
+      {
+        email: { type: String, required: true, unique: true },
+        name: { type: String },
+        image: { type: String },
+        emailVerified: { type: Date },
+      },
+      { collection: "authUsers" }
+    )
+  );
+
 
 export async function POST(request) {
   try {
-    console.log("Route hit: /api/order [POST]");
+    console.log("✅ Route hit: /api/order [POST]");
     await connectMongoDB();
 
     const session = await getServerSession(authOptions);
     console.log("Session:", session);
 
     if (!session || !session.user?.id) {
-      console.error("Unauthorized: No valid session", {
-        sessionExists: !!session,
-        userId: session?.user?.id || "none",
-      });
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
         { status: 401 }
@@ -37,31 +42,13 @@ export async function POST(request) {
       await request.json();
 
     if (userId !== session.user.id) {
-      console.error("User ID mismatch:", {
-        provided: userId,
-        session: session.user.id,
-      });
       return NextResponse.json(
         { error: "Unauthorized: User ID mismatch" },
         { status: 403 }
       );
     }
 
-    if (
-      !userId ||
-      !items ||
-      !items.length ||
-      !totalAmount ||
-      !paymentMethod ||
-      !paymentId
-    ) {
-      console.error("Missing required fields:", {
-        userId,
-        items,
-        totalAmount,
-        paymentMethod,
-        paymentId,
-      });
+    if (!userId || !Array.isArray(items) || !items.length || !paymentMethod || !paymentId) {
       return NextResponse.json(
         { error: "Missing required order details" },
         { status: 400 }
@@ -69,7 +56,6 @@ export async function POST(request) {
     }
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      console.error("Invalid userId:", userId);
       return NextResponse.json(
         { error: "Invalid user ID format" },
         { status: 400 }
@@ -78,68 +64,74 @@ export async function POST(request) {
 
     const user = await UserInfo.findOne({ authUserId: userId });
     if (!user) {
-      console.error("User not found:", userId);
       return NextResponse.json({ error: "User not found" }, { status: 400 });
     }
 
-    if (
-      !Array.isArray(items) ||
-      items.some((item) => !item._id || !item.title || !item.price)
-    ) {
-      console.error("Invalid items format:", items);
-      return NextResponse.json(
-        { error: "Invalid items format" },
-        { status: 400 }
-      );
-    }
+    const currency = paymentMethod === "paypal" ? "USD" : "INR";
 
-    for (const item of items) {
-      if (!mongoose.Types.ObjectId.isValid(item._id)) {
-        console.error("Invalid courseId:", item._id);
-        return NextResponse.json(
-          { error: `Invalid course ID format: ${item._id}` },
-          { status: 400 }
-        );
-      }
-    }
+    // Populate course details with proper price and slug
+    const courseDetails = await Promise.all(
+      items.map(async (item) => {
+        // Determine price
+        const price =
+          currency === "INR" ? item.priceINR ?? item.price : item.priceUSD ?? item.price;
 
-    const courseDetails = items.map((item) => ({
-      courseId: new mongoose.Types.ObjectId(item._id),
-      name: item.title,
-      price: item.price,
-      sapExamCode: item.sapExamCode || "",
-      category: item.category || "",
-      sku: item.sku || "",
-      samplePdfUrl: item.samplePdfUrl || "",
-      mainPdfUrl: item.mainPdfUrl || "",
-      slug: item.slug || "",
-    }));
+        // Ensure slug for online items
+        let slug = item.slug || "";
+        if (item.type === "online" && !slug && item.productId) {
+          const exam = await Exam.findOne({ productId: item.productId }).lean();
+          if (exam) slug = exam.slug || "";
+        }
+
+        return {
+          courseId: mongoose.Types.ObjectId.isValid(item._id) ? item._id : null,
+          productId: item.productId ? mongoose.Types.ObjectId(item.productId) : null,
+          name: item.title || "Untitled Product",
+          price: price || 0,
+          quantity: item.quantity || 1,
+          type: item.type || "regular",
+          imageUrl: item.imageUrl || "",
+          sapExamCode: item.sapExamCode || "",
+          category: item.category || "",
+          sku: item.sku || "",
+          samplePdfUrl: item.samplePdfUrl || "",
+          mainPdfUrl: item.mainPdfUrl || "",
+          slug,
+        };
+      })
+    );
+
+    const computedTotal = courseDetails.reduce(
+      (sum, item) => sum + item.price * (item.quantity || 1),
+      0
+    );
 
     const order = await Order.create({
       user: userId,
       courseDetails,
-      totalAmount,
+      totalAmount: computedTotal || totalAmount,
       paymentMethod,
       paymentId,
-      currency: "INR",
+      currency,
       status: "completed",
     });
 
-    console.log("Order created:", {
+    console.log("✅ Order created successfully:", {
       orderId: order._id,
-      orderNumber: order.orderNumber,
-      userId,
+      currency,
+      totalAmount: computedTotal,
     });
+
     return NextResponse.json({
       success: true,
       orderId: order._id,
       orderNumber: order.orderNumber,
+      currency,
+      totalAmount: computedTotal,
+      courseDetails, // Include details in response
     });
   } catch (error) {
-    console.error("Order creation failed:", {
-      error: error.message,
-      stack: error.stack,
-    });
+    console.error("❌ Order creation failed:", error);
     return NextResponse.json(
       { error: `Order creation failed: ${error.message}` },
       { status: 500 }
@@ -195,9 +187,9 @@ export async function GET(request) {
     // Fixed populate path - use the collection name directly
     const orders = await Order.find(query)
       .populate({
-        path: 'user',
-        select: 'name email',
-        model: 'authUsers'
+        path: "user",
+        select: "name email",
+        model: "authUsers",
       })
       .sort({ purchaseDate: -1 })
       .lean();
@@ -205,11 +197,13 @@ export async function GET(request) {
     console.log("Orders retrieved:", {
       count: orders.length,
       userId: userId || "all",
-      sampleOrder: orders[0] ? {
-        id: orders[0]._id,
-        user: orders[0].user,
-        orderNumber: orders[0].orderNumber
-      } : null
+      sampleOrder: orders[0]
+        ? {
+            id: orders[0]._id,
+            user: orders[0].user,
+            orderNumber: orders[0].orderNumber,
+          }
+        : null,
     });
 
     return NextResponse.json({ orders: orders || [] });
@@ -232,7 +226,7 @@ export async function DELETE(request) {
     await connectMongoDB();
 
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
@@ -267,21 +261,20 @@ export async function DELETE(request) {
       }
     }
 
-    const result = await Order.deleteMany({ 
-      _id: { $in: orderIds.map(id => new mongoose.Types.ObjectId(id)) }
+    const result = await Order.deleteMany({
+      _id: { $in: orderIds.map((id) => new mongoose.Types.ObjectId(id)) },
     });
 
     console.log("Orders deleted:", {
       deletedCount: result.deletedCount,
-      orderIds
+      orderIds,
     });
 
     return NextResponse.json({
       success: true,
       deletedCount: result.deletedCount,
-      message: `${result.deletedCount} order(s) deleted successfully`
+      message: `${result.deletedCount} order(s) deleted successfully`,
     });
-
   } catch (error) {
     console.error("Order deletion failed:", {
       error: error.message,

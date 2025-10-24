@@ -205,6 +205,7 @@ const Cart = () => {
                 totalAmount: grandTotal,
                 paymentMethod: "razorpay",
                 paymentId: paymentVerification.data.paymentId,
+                slug: product.slug,
               });
 
               clearCart();
