@@ -50,7 +50,7 @@ export async function GET(request) {
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
+//update few runs
     // ✅ Allow only students and admins
     if (user.role !== "student" && user.role !== "admin") {
       return NextResponse.json(
