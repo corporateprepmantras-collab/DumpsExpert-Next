@@ -3,454 +3,397 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import useCartStore from "@/store/useCartStore";
 import cartImg from "../../assets/landingassets/emptycart.webp";
 import { useSession } from "next-auth/react";
-import axios from "axios";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
-const Cart = () => {
+export default function Cart() {
   const { data: session, status, update } = useSession();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
   const [discount, setDiscount] = useState(0);
-  const [couponApplicable, setCouponApplicable] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const [userId, setUserId] = useState(null);
-
-  const cartItems = useCartStore((state) => state.cartItems);
-  const removeFromCart = useCartStore((state) => state.removeFromCart);
-  const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const clearCart = useCartStore((state) => state.clearCart);
+  const [paypalOrderId, setPaypalOrderId] = useState(null);
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+  const [loadingPrices, setLoadingPrices] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const router = useRouter();
+  const { cartItems, removeFromCart, updateQuantity, clearCart, setCartItems } =
+    useCartStore();
 
-  // Fetch userId from /api/user/me
+  const currencies = {
+    USD: { symbol: "$", name: "US Dollar" },
+    INR: { symbol: "₹", name: "Indian Rupee" },
+  };
+
+  // ✅ Fetch user ID
   useEffect(() => {
     const fetchUserId = async () => {
       if (status === "authenticated") {
         try {
-          const response = await axios.get("/api/user/me");
-          setUserId(response.data.id);
-          console.log("Fetched userId:", response.data.id);
-        } catch (error) {
-          console.error("Failed to fetch userId:", error);
-          toast.error("Failed to fetch user details. Please try again.");
+          const res = await axios.get("/api/user/me");
+          setUserId(res.data.id);
+        } catch {
+          toast.error("Failed to load user info");
         }
       }
     };
     fetchUserId();
   }, [status]);
 
-  // Load Razorpay SDK
+  // ✅ Load Razorpay SDK once
   useEffect(() => {
     setIsMounted(true);
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
+    return () => document.body.removeChild(script);
   }, []);
 
-  const subtotal = cartItems.reduce(
-    (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
-    0
-  );
+  // ✅ Fetch missing prices for online items
+  useEffect(() => {
+    const fetchPrices = async () => {
+      setLoadingPrices(true);
+      const updated = await Promise.all(
+        cartItems.map(async (item) => {
+          if (item.type === "online" && !item.priceINR) {
+            try {
+              const res = await axios.get(
+                `/api/exam/by-product/${item.productId}`
+              );
+              const exam = res.data;
+              return {
+                ...item,
+                priceINR: exam.priceINR,
+                priceUSD: exam.priceUSD,
+              };
+            } catch (err) {
+              console.error("Error fetching price:", err);
+            }
+          }
+          return item;
+        })
+      );
+      setCartItems(updated);
+      setLoadingPrices(false);
+    };
+    if (cartItems.length > 0) fetchPrices();
+  }, [cartItems, setCartItems]);
+
+  // ✅ Calculate totals dynamically based on selected currency
+  const subtotal = cartItems.reduce((acc, item) => {
+    const price =
+      selectedCurrency === "USD" ? item.priceUSD || 0 : item.priceINR || 0;
+    return acc + price * (item.quantity || 1);
+  }, 0);
 
   const grandTotal = subtotal - discount;
 
-  const handleDelete = (id, type) => {
-    removeFromCart(id, type);
-    toast.success("Item removed from cart");
-  };
-
-  const handleQuantityChange = (id, type, operation) => {
-    updateQuantity(id, type, operation);
-    toast.success(
-      `Quantity ${operation === "inc" ? "increased" : "decreased"}`
-    );
-  };
-
-  // Apply coupon
+  // ✅ Coupon Validation
   const handleCoupon = async () => {
-    if (!couponCode) {
+    if (!couponCode.trim()) {
       setCouponError("Please enter a coupon code");
-      toast.error("Please enter a coupon code");
+      toast.error("Enter a coupon code");
       return;
     }
-
     try {
-      const response = await axios.post("/api/coupons/validate", {
+      const res = await axios.post("/api/coupons/validate", {
         code: couponCode,
+        totalAmount: grandTotal,
       });
-      const coupon = response.data.coupon;
-
-      let discountAmount = 0;
-
-      // ✅ Check discountType properly
-      switch (coupon.discountType) {
-        case "percent":
-          discountAmount = (subtotal * coupon.discount) / 100;
-          break;
-
-        case "fixed_inr":
-          discountAmount = coupon.discount; // fixed INR value
-          break;
-
-        case "fixed_usd":
-          // If your cart is only INR, you may need conversion logic here
-          discountAmount = coupon.discount;
-          break;
-
-        default:
-          if (coupon.discount) {
-            discountAmount = coupon.discount;
-          }
+      if (res.data.success) {
+        setDiscount(res.data.discount);
+        toast.success(`Coupon applied! You saved ₹${res.data.discount}`);
+      } else {
+        throw new Error(res.data.error);
       }
-
-      // ✅ Prevent negative total
-      if (discountAmount > subtotal) {
-        discountAmount = subtotal;
-      }
-
-      setDiscount(discountAmount);
-      setCouponApplicable(true);
-      setCouponError("");
-      setCouponCode("");
-
-      toast.success(
-        `Coupon applied! You saved ₹${discountAmount.toFixed(2)} ${
-          coupon.discountType === "percent" ? `(${coupon.discount}% off)` : ""
-        }`
-      );
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to apply coupon";
-      setCouponError(errorMessage);
-      setDiscount(0);
-      setCouponApplicable(false);
-      toast.error(errorMessage);
+    } catch (err) {
+      const msg = err.response?.data?.error || "Invalid coupon";
+      setCouponError(msg);
+      toast.error(msg);
     }
   };
 
-  // Handle Razorpay Payment
+  // ✅ Razorpay Payment Handler
   const handleRazorpayPayment = async () => {
-    if (status === "unauthenticated" || !userId) {
-      toast.error("Please log in to proceed with payment");
+    if (!userId) {
+      toast.error("Please log in");
       router.push("/auth/signin");
       return;
     }
-
-    if (!window.Razorpay) {
-      toast.error("Razorpay SDK failed to load. Please try again later.");
-      return;
-    }
-
-    if (grandTotal <= 0) {
-      toast.error("Cart total must be greater than zero");
-      return;
-    }
-
     try {
-      const orderData = {
+      const res = await axios.post("/api/payments/razorpay/create-order", {
         amount: grandTotal,
         currency: "INR",
         userId,
-      };
-
-      const response = await axios.post(
-        "/api/payments/razorpay/create-order",
-        orderData
-      );
-
-      if (!response.data?.id) {
-        throw new Error(
-          response.data.error || "Failed to create Razorpay order"
-        );
-      }
-
-      const { id, amount, currency } = response.data;
-
+      });
+      const { orderId } = res.data;
       const options = {
         key:
           process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V",
-        amount,
-        currency,
-        order_id: id,
+        amount: grandTotal * 100,
+        currency: "INR",
         name: "DumpsExpert",
-        description: "Purchase Exam Dumps",
-        handler: async (razorpayResponse) => {
-          try {
-            const paymentVerification = await axios.post(
-              "/api/payments/razorpay/verify",
-              {
-                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
-                razorpay_order_id: razorpayResponse.razorpay_order_id,
-                razorpay_signature: razorpayResponse.razorpay_signature,
-                amount: grandTotal,
-                userId,
-              }
-            );
-
-            if (paymentVerification.data.success) {
-              await axios.post("/api/order", {
-                userId,
-                items: cartItems,
-                totalAmount: grandTotal,
-                paymentMethod: "razorpay",
-                paymentId: paymentVerification.data.paymentId,
-                slug: product.slug,
-              });
-
-              clearCart();
-
-              // Update session
-              await update({
-                user: {
-                  ...session.user,
-                  role: paymentVerification.data.user.role,
-                  subscription: paymentVerification.data.user.subscription,
-                },
-              });
-
-              router.push("/dashboard");
-              toast.success("Payment successful! Redirecting...");
-            } else {
-              toast.error(
-                paymentVerification.data.error || "Payment verification failed"
-              );
-            }
-          } catch (error) {
-            console.error("Payment verification error:", error);
-            toast.error("Payment verification failed");
-          }
+        description: "Purchase IT Certification Dumps",
+        order_id: orderId,
+        handler: async (response) => {
+          const verify = await axios.post("/api/payments/razorpay/verify", {
+            ...response,
+            amount: grandTotal,
+            userId,
+          });
+          if (verify.data.success) {
+            await axios.post("/api/order", {
+              userId,
+              items: cartItems,
+              totalAmount: grandTotal,
+              paymentMethod: "razorpay",
+              paymentId: verify.data.paymentId,
+            });
+            clearCart();
+            toast.success("Payment successful!");
+            router.push("/dashboard");
+          } else toast.error("Payment verification failed");
         },
-        theme: { color: "#3B82F6" },
         prefill: {
-          email: session?.user?.email,
-          name: session?.user?.name,
+          name: session?.user?.name || "",
+          email: session?.user?.email || "",
         },
+        theme: { color: "#4F46E5" },
       };
-
       const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", (response) => {
-        toast.error(response.error?.description || "Payment failed");
-      });
       rzp.open();
-      setShowPaymentModal(false);
-    } catch (error) {
-      console.error("Payment initiation failed:", error);
-      toast.error(
-        error.response?.data?.error ||
-          "Failed to initiate payment. Please try again."
-      );
+    } catch (err) {
+      toast.error("Failed to initiate Razorpay payment");
     }
   };
 
-  if (!isMounted) {
-    return <div className="text-center py-20">Loading...</div>;
-  }
+  // ✅ PayPal Handlers
+  const createPayPalOrder = async () => {
+    const res = await axios.post("/api/payments/paypal/create-order", {
+      amount: grandTotal,
+      currency: selectedCurrency,
+      userId,
+    });
+    setPaypalOrderId(res.data.orderId);
+    return res.data.orderId;
+  };
+
+  const onPayPalApprove = async (data) => {
+    const verify = await axios.post("/api/payments/paypal/verify", {
+      orderId: data.orderID,
+      amount: grandTotal,
+      userId,
+    });
+    if (verify.data.success) {
+      await axios.post("/api/order", {
+        userId,
+        items: cartItems,
+        totalAmount: grandTotal,
+        paymentMethod: "paypal",
+        paymentId: verify.data.paymentId,
+      });
+      clearCart();
+      toast.success("Payment successful!");
+      router.push("/dashboard");
+    } else toast.error("Payment verification failed");
+  };
+
+  if (!isMounted) return <div className="text-center mt-20">Loading...</div>;
+  if (loadingPrices)
+    return <div className="text-center mt-20">Fetching prices...</div>;
 
   return (
-    <div className="min-h-[80vh] bg-[#f9f9f9] px-4 py-10">
-      <Toaster richColors position="top-right" />
-      <div className="flex justify-center mt-16 mb-4">
-        <h2 className="text-4xl font-bold text-gray-800">Your Cart</h2>
-      </div>
+    <div className="min-h-screen bg-gray-50 pt-24">
+      <Toaster position="top-right" />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Shopping Cart</h1>
 
-      <div className="flex flex-col items-center lg:flex-row justify-between gap-6 w-full">
-        {/* Cart Items */}
-        <div className="w-full lg:w-[65%]">
-          {cartItems.length === 0 ? (
-            <div className="flex flex-col items-center text-center space-y-4">
-              <Image
-                src={cartImg}
-                alt="empty_cart_img"
-                width={256}
-                height={256}
-                className="w-64"
-                draggable={false}
-              />
-              <p className="text-gray-600 text-lg">
-                Your cart is empty. Add items to your cart to proceed.
-              </p>
-              <Button
-                onClick={() => router.push("/ItDumps")}
-                variant="default"
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                Shop Now
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4 w-full max-h-[565px] overflow-y-auto pr-2">
+        {cartItems.length === 0 ? (
+          <div className="text-center py-16">
+            <Image
+              src={cartImg}
+              alt="Empty Cart"
+              width={300}
+              height={300}
+              className="mx-auto mb-8"
+            />
+            <p className="text-gray-600 mb-8">Your cart is empty.</p>
+            <Button
+              onClick={() => router.push("/")}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              Continue Shopping
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 🛒 Cart Items */}
+            <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item) => (
                 <div
                   key={`${item._id}-${item.type}`}
-                  className="flex items-center justify-between bg-white border p-4 rounded-lg shadow-sm"
+                  className="bg-white p-6 rounded-lg shadow flex items-center space-x-4"
                 >
-                  <div className="flex items-center gap-4">
-                    <Image
-                      src={item.imageUrl || "https://via.placeholder.com/100"}
-                      alt={item.title || "Product Image"}
-                      width={64}
-                      height={64}
-                      className="w-16 h-16 object-cover rounded-lg border"
-                    />
-                    <div>
-                      <h4 className="text-lg font-semibold">
-                        {item.title || "Unknown Product"}
-                      </h4>
-                      <p className="text-sm text-gray-500 capitalize">
-                        {item.type || "Unknown"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() =>
-                            handleQuantityChange(item._id, item.type, "dec")
-                          }
-                          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                          disabled={item.quantity <= 1}
-                        >
-                          −
-                        </button>
-                        <span className="px-3 py-1 border rounded bg-white">
-                          {item.quantity || 1}
-                        </span>
-                        <button
-                          onClick={() =>
-                            handleQuantityChange(item._id, item.type, "inc")
-                          }
-                          className="px-3 py-1 bg-gray-200 rounded"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right space-y-2">
-                    <p className="text-lg font-semibold">
-                      ₹{(item.price || 0) * (item.quantity || 1)}
+                  <Image
+                    src={item.imageUrl || "/placeholder-image.jpg"}
+                    alt={item.title}
+                    width={80}
+                    height={80}
+                    className="rounded object-cover"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-lg">{item.title}</h3>
+                    <p className="text-sm text-gray-500 capitalize">
+                      Type: {item.type}
                     </p>
+                    <p className="font-semibold text-green-600">
+                      {currencies[selectedCurrency].symbol}
+                      {selectedCurrency === "USD"
+                        ? item.priceUSD?.toFixed(2)
+                        : item.priceINR?.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => handleDelete(item._id, item.type)}
-                      className="text-red-500 text-sm hover:underline"
+                      onClick={() => updateQuantity(item._id, item.type, "dec")}
+                      disabled={item.quantity <= 1}
+                      className="w-8 h-8 bg-gray-200 rounded-full"
                     >
-                      Delete
+                      −
+                    </button>
+                    <span>{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item._id, item.type, "inc")}
+                      className="w-8 h-8 bg-gray-200 rounded-full"
+                    >
+                      +
                     </button>
                   </div>
+                  <button
+                    onClick={() => removeFromCart(item._id, item.type)}
+                    className="text-red-500 text-xl"
+                  >
+                    🗑️
+                  </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
 
-        {/* Order Summary */}
-        <div className="w-full lg:w-[35%] h-96 bg-gray-50 p-6 rounded-xl shadow-md border">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Order Summary
-          </h2>
+            {/* 📦 Order Summary */}
+            <div className="bg-white rounded-lg shadow p-6 h-fit">
+              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
 
-          <div className="text-gray-700 space-y-2 text-sm">
-            <p>
-              Total (MRP): <span className="float-right">₹{subtotal || 0}</span>
-            </p>
-            <p>
-              Subtotal: <span className="float-right">₹{subtotal || 0}</span>
-            </p>
-            <p>
-              Discount:{" "}
-              <span className="float-right text-green-600">
-                ₹{discount.toFixed(2) || 0}
-              </span>
-            </p>
-            {couponApplicable && (
-              <p className="text-green-600 text-sm">
-                Coupon applied! You saved ₹{discount.toFixed(2)}
+              <label className="block text-sm mb-2">Display Currency</label>
+              <select
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value)}
+                className="border px-3 py-2 rounded w-full mb-4"
+              >
+                {Object.entries(currencies).map(([code, { symbol, name }]) => (
+                  <option key={code} value={code}>
+                    {symbol} {name}
+                  </option>
+                ))}
+              </select>
+
+              <div className="flex justify-between mb-2">
+                <span>Subtotal</span>
+                <span>
+                  {currencies[selectedCurrency].symbol}
+                  {subtotal.toFixed(2)}
+                </span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-green-600 mb-2">
+                  <span>Discount</span>
+                  <span>
+                    -{currencies[selectedCurrency].symbol}
+                    {discount.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              <hr className="my-3" />
+              <p className="flex justify-between font-semibold">
+                Total{" "}
+                <span className="text-green-600">
+                  {currencies[selectedCurrency].symbol}
+                  {grandTotal.toFixed(2)}
+                </span>
               </p>
-            )}
-          </div>
 
-          <hr className="my-4" />
+              <div className="mt-6">
+                <input
+                  type="text"
+                  placeholder="Enter coupon"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  className="w-full border px-3 py-2 rounded mb-2"
+                />
+                <Button
+                  onClick={handleCoupon}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Apply Coupon
+                </Button>
+              </div>
 
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Enter coupon code"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-            />
-            <Button onClick={handleCoupon} variant="default">
-              Apply
-            </Button>
-          </div>
-          {couponError && (
-            <p className="text-red-500 text-sm mt-2">{couponError}</p>
-          )}
-
-          <hr className="my-4" />
-
-          <p className="font-medium text-lg">
-            Grand Total:{" "}
-            <span className="float-right text-green-600">
-              ₹{grandTotal || 0}
-            </span>
-          </p>
-
-          {cartItems.length > 0 && (
-            <div className="mt-6">
               <Button
-                variant="default"
-                className="w-full bg-indigo-600 hover:bg-indigo-700"
+                className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700"
                 onClick={() => setShowPaymentModal(true)}
               >
-                Continue to Payment
+                Proceed to Payment
               </Button>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
-            <h3 className="text-xl font-semibold text-center">
-              Select Payment Method
-            </h3>
-
-            <button
-              onClick={handleRazorpayPayment}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
-            >
-              <Image
-                src="https://via.placeholder.com/100"
-                alt="Razorpay"
-                width={80}
-                height={40}
-                className="w-20 h-10"
-              />
-              Pay with Razorpay
-            </button>
-
-            <button
-              onClick={() => setShowPaymentModal(false)}
-              className="block mx-auto mt-2 text-sm text-gray-500 hover:underline"
-            >
-              Cancel
-            </button>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* 💳 Payment Modal */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-xl font-semibold mb-4 text-center">
+                Choose Payment Method
+              </h3>
+
+              <button
+                onClick={handleRazorpayPayment}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg mb-3"
+              >
+                Pay with Razorpay (₹{grandTotal.toFixed(2)})
+              </button>
+
+              <PayPalScriptProvider
+                options={{
+                  "client-id":
+                    process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+                  currency: selectedCurrency,
+                }}
+              >
+                <PayPalButtons
+                  style={{ layout: "horizontal", color: "blue", shape: "rect" }}
+                  createOrder={createPayPalOrder}
+                  onApprove={onPayPalApprove}
+                />
+              </PayPalScriptProvider>
+
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="block mx-auto mt-4 text-sm text-gray-500 hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
-export default Cart;
+}
