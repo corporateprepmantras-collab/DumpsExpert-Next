@@ -22,16 +22,19 @@ const authUserModel =
     )
   );
 
-
 export async function POST(request) {
   try {
-    console.log("✅ Route hit: /api/order [POST]");
+    console.log("Route hit: /api/order [POST]");
     await connectMongoDB();
 
     const session = await getServerSession(authOptions);
     console.log("Session:", session);
 
     if (!session || !session.user?.id) {
+      console.error("Unauthorized: No valid session", {
+        sessionExists: !!session,
+        userId: session?.user?.id || "none",
+      });
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
         { status: 401 }
@@ -42,13 +45,31 @@ export async function POST(request) {
       await request.json();
 
     if (userId !== session.user.id) {
+      console.error("User ID mismatch:", {
+        provided: userId,
+        session: session.user.id,
+      });
       return NextResponse.json(
         { error: "Unauthorized: User ID mismatch" },
         { status: 403 }
       );
     }
 
-    if (!userId || !Array.isArray(items) || !items.length || !paymentMethod || !paymentId) {
+    if (
+      !userId ||
+      !items ||
+      !items.length ||
+      !totalAmount ||
+      !paymentMethod ||
+      !paymentId
+    ) {
+      console.error("Missing required fields:", {
+        userId,
+        items,
+        totalAmount,
+        paymentMethod,
+        paymentId,
+      });
       return NextResponse.json(
         { error: "Missing required order details" },
         { status: 400 }
@@ -56,6 +77,7 @@ export async function POST(request) {
     }
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
+      console.error("Invalid userId:", userId);
       return NextResponse.json(
         { error: "Invalid user ID format" },
         { status: 400 }
@@ -64,74 +86,68 @@ export async function POST(request) {
 
     const user = await UserInfo.findOne({ authUserId: userId });
     if (!user) {
+      console.error("User not found:", userId);
       return NextResponse.json({ error: "User not found" }, { status: 400 });
     }
 
-    const currency = paymentMethod === "paypal" ? "USD" : "INR";
+    if (
+      !Array.isArray(items) ||
+      items.some((item) => !item._id || !item.title || !item.price)
+    ) {
+      console.error("Invalid items format:", items);
+      return NextResponse.json(
+        { error: "Invalid items format" },
+        { status: 400 }
+      );
+    }
 
-    // Populate course details with proper price and slug
-    const courseDetails = await Promise.all(
-      items.map(async (item) => {
-        // Determine price
-        const price =
-          currency === "INR" ? item.priceINR ?? item.price : item.priceUSD ?? item.price;
+    for (const item of items) {
+      if (!mongoose.Types.ObjectId.isValid(item._id)) {
+        console.error("Invalid courseId:", item._id);
+        return NextResponse.json(
+          { error: `Invalid course ID format: ${item._id}` },
+          { status: 400 }
+        );
+      }
+    }
 
-        // Ensure slug for online items
-        let slug = item.slug || "";
-        if (item.type === "online" && !slug && item.productId) {
-          const exam = await Exam.findOne({ productId: item.productId }).lean();
-          if (exam) slug = exam.slug || "";
-        }
-
-        return {
-          courseId: mongoose.Types.ObjectId.isValid(item._id) ? item._id : null,
-          productId: item.productId ? mongoose.Types.ObjectId(item.productId) : null,
-          name: item.title || "Untitled Product",
-          price: price || 0,
-          quantity: item.quantity || 1,
-          type: item.type || "regular",
-          imageUrl: item.imageUrl || "",
-          sapExamCode: item.sapExamCode || "",
-          category: item.category || "",
-          sku: item.sku || "",
-          samplePdfUrl: item.samplePdfUrl || "",
-          mainPdfUrl: item.mainPdfUrl || "",
-          slug,
-        };
-      })
-    );
-
-    const computedTotal = courseDetails.reduce(
-      (sum, item) => sum + item.price * (item.quantity || 1),
-      0
-    );
+    const courseDetails = items.map((item) => ({
+      courseId: new mongoose.Types.ObjectId(item._id),
+      name: item.title,
+      price: item.price,
+      sapExamCode: item.sapExamCode || "",
+      category: item.category || "",
+      sku: item.sku || "",
+      samplePdfUrl: item.samplePdfUrl || "",
+      mainPdfUrl: item.mainPdfUrl || "",
+      slug: item.slug || "",
+    }));
 
     const order = await Order.create({
       user: userId,
       courseDetails,
-      totalAmount: computedTotal || totalAmount,
+      totalAmount,
       paymentMethod,
       paymentId,
-      currency,
+      currency: "INR",
       status: "completed",
     });
 
-    console.log("✅ Order created successfully:", {
+    console.log("Order created:", {
       orderId: order._id,
-      currency,
-      totalAmount: computedTotal,
+      orderNumber: order.orderNumber,
+      userId,
     });
-
     return NextResponse.json({
       success: true,
       orderId: order._id,
       orderNumber: order.orderNumber,
-      currency,
-      totalAmount: computedTotal,
-      courseDetails, // Include details in response
     });
   } catch (error) {
-    console.error("❌ Order creation failed:", error);
+    console.error("Order creation failed:", {
+      error: error.message,
+      stack: error.stack,
+    });
     return NextResponse.json(
       { error: `Order creation failed: ${error.message}` },
       { status: 500 }
@@ -181,32 +197,30 @@ export async function GET(request) {
           { status: 400 }
         );
       }
+      const targetUser = await UserInfo.findOne({ authUserId: userId });
+      if (!targetUser) {
+        console.error("User not found for query:", userId);
+        return NextResponse.json({ error: "User not found" }, { status: 400 });
+      }
       query.user = userId;
     }
 
-    // Fixed populate path - use the collection name directly
     const orders = await Order.find(query)
-      .populate({
-        path: "user",
-        select: "name email",
-        model: "authUsers",
-      })
+      .populate("user", "name email")
+      .populate("courseDetails.courseId", "title")
       .sort({ purchaseDate: -1 })
       .lean();
+
+    if (!orders || orders.length === 0) {
+      console.log("No orders found", { userId: userId || "all" });
+      return NextResponse.json({ orders: [] });
+    }
 
     console.log("Orders retrieved:", {
       count: orders.length,
       userId: userId || "all",
-      sampleOrder: orders[0]
-        ? {
-            id: orders[0]._id,
-            user: orders[0].user,
-            orderNumber: orders[0].orderNumber,
-          }
-        : null,
     });
-
-    return NextResponse.json({ orders: orders || [] });
+    return NextResponse.json({ orders });
   } catch (error) {
     console.error("Order retrieval failed:", {
       error: error.message,
@@ -214,74 +228,6 @@ export async function GET(request) {
     });
     return NextResponse.json(
       { error: `Order retrieval failed: ${error.message}` },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE method for deleting orders
-export async function DELETE(request) {
-  try {
-    console.log("Route hit: /api/order [DELETE]");
-    await connectMongoDB();
-
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized: Please log in" },
-        { status: 401 }
-      );
-    }
-
-    const user = await UserInfo.findOne({ authUserId: session.user.id });
-    if (!user || user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Forbidden: Admin access required" },
-        { status: 403 }
-      );
-    }
-
-    const { orderIds } = await request.json();
-
-    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
-      return NextResponse.json(
-        { error: "Invalid order IDs provided" },
-        { status: 400 }
-      );
-    }
-
-    // Validate all order IDs
-    for (const orderId of orderIds) {
-      if (!mongoose.Types.ObjectId.isValid(orderId)) {
-        return NextResponse.json(
-          { error: `Invalid order ID format: ${orderId}` },
-          { status: 400 }
-        );
-      }
-    }
-
-    const result = await Order.deleteMany({
-      _id: { $in: orderIds.map((id) => new mongoose.Types.ObjectId(id)) },
-    });
-
-    console.log("Orders deleted:", {
-      deletedCount: result.deletedCount,
-      orderIds,
-    });
-
-    return NextResponse.json({
-      success: true,
-      deletedCount: result.deletedCount,
-      message: `${result.deletedCount} order(s) deleted successfully`,
-    });
-  } catch (error) {
-    console.error("Order deletion failed:", {
-      error: error.message,
-      stack: error.stack,
-    });
-    return NextResponse.json(
-      { error: `Order deletion failed: ${error.message}` },
       { status: 500 }
     );
   }
