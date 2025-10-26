@@ -7,6 +7,8 @@ import { useRouter, useParams } from "next/navigation";
 import api from "axios";
 import { Plus, Trash2, Upload, Link } from "lucide-react";
 
+import ImageUploader from "@/components/dashboard/ImageUploader";
+
 // Main component for adding/editing questions
 const QuestionForm = () => {
   // Get route parameters
@@ -14,6 +16,9 @@ const QuestionForm = () => {
   // Extract examId and questionId from params
   const examId = params.examId;
   const questionId = params.questionId;
+
+  const [optionImage, setOptionImage] = useState(null);
+
   // Initialize router for navigation
   const router = useRouter();
 
@@ -526,26 +531,15 @@ const QuestionForm = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Question Image (Optional)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleQuestionImageChange}
-                className="w-full p-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {previewImages.question && (
-                <div className="mt-3">
-                  <img
-                    src={previewImages.question}
-                    alt="Question preview"
-                    className="h-40 object-contain border-2 border-gray-300 rounded-lg"
-                  />
-                </div>
-              )}
-            </div>
+            <div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Option Image (Optional)
+  </label>
+
+  {/* 🖼️ Reusable upload component */}
+  <ImageUploader onImageSelect={(file) => setOptionImage(file)} />
+</div>
+
           </div>
 
           {formData.questionType === "matching" ? (
