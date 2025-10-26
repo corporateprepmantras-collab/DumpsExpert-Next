@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import paypal from '@paypal/checkout-server-sdk';
+import { NextResponse } from "next/server";
+import paypal from "@paypal/checkout-server-sdk";
 
 const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -11,30 +11,36 @@ export async function POST(request) {
     const { amount, currency } = await request.json();
 
     if (!amount || !currency) {
-      console.error('Missing required fields:', { amount, currency });
-      return NextResponse.json({ error: 'Missing required order details' }, { status: 400 });
+      console.error("Missing required fields:", { amount, currency });
+      return NextResponse.json(
+        { error: "Missing required order details" },
+        { status: 400 }
+      );
     }
 
     const paypalRequest = new paypal.orders.OrdersCreateRequest();
     paypalRequest.requestBody({
-      intent: 'CAPTURE',
+      intent: "CAPTURE",
       purchase_units: [
         {
           amount: {
-            currency_code: currency || 'INR',
-            value: amount.toString()
-          }
-        }
-      ]
+            currency_code: currency || "INR",
+            value: amount.toString(),
+          },
+        },
+      ],
     });
 
     const order = await client.execute(paypalRequest);
     return NextResponse.json({
       success: true,
-      orderId: order.result.id
+      orderId: order.result.id,
     });
   } catch (error) {
-    console.error('PayPal order creation failed:', error);
-    return NextResponse.json({ error: 'Payment initiation failed' }, { status: 500 });
+    console.error("PayPal order creation failed:", error);
+    return NextResponse.json(
+      { error: "Payment initiation failed" },
+      { status: 500 }
+    );
   }
 }
