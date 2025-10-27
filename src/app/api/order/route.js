@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Order from "@/models/orderSchema";
 import UserInfo from "@/models/userInfoSchema";
+import Product from "@/models/productSchema"; // Add Product model
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/authOptions";
 
-// Define authUsers model to ensure it's registered before use
+// Define authUsers model
 const authUserModel =
   mongoose.models.authUsers ||
   mongoose.model(
@@ -31,24 +32,34 @@ export async function POST(request) {
     console.log("Session:", session);
 
     if (!session || !session.user?.id) {
-      console.error("Unauthorized: No valid session", {
-        sessionExists: !!session,
-        userId: session?.user?.id || "none",
-      });
+      console.error("Unauthorized: No valid session");
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
         { status: 401 }
       );
     }
 
-    const { userId, items, totalAmount, paymentMethod, paymentId } =
-      await request.json();
+    const {
+      userId,
+      items,
+      totalAmount,
+      paymentMethod,
+      paymentId,
+      discount,
+      paymentStatus,
+    } = await request.json();
+
+    console.log("Received order request:", {
+      userId,
+      itemCount: items?.length,
+      totalAmount,
+      paymentMethod,
+      paymentId,
+      items,
+    });
 
     if (userId !== session.user.id) {
-      console.error("User ID mismatch:", {
-        provided: userId,
-        session: session.user.id,
-      });
+      console.error("User ID mismatch");
       return NextResponse.json(
         { error: "Unauthorized: User ID mismatch" },
         { status: 403 }
@@ -63,13 +74,7 @@ export async function POST(request) {
       !paymentMethod ||
       !paymentId
     ) {
-      console.error("Missing required fields:", {
-        userId,
-        items,
-        totalAmount,
-        paymentMethod,
-        paymentId,
-      });
+      console.error("Missing required fields");
       return NextResponse.json(
         { error: "Missing required order details" },
         { status: 400 }
@@ -90,63 +95,134 @@ export async function POST(request) {
       return NextResponse.json({ error: "User not found" }, { status: 400 });
     }
 
-    if (
-      !Array.isArray(items) ||
-      items.some((item) => !item._id || !item.title || !item.price)
-    ) {
+    if (!Array.isArray(items) || items.length === 0) {
       console.error("Invalid items format:", items);
       return NextResponse.json(
-        { error: "Invalid items format" },
+        { error: "Items must be a non-empty array" },
         { status: 400 }
       );
     }
 
-    for (const item of items) {
-      if (!mongoose.Types.ObjectId.isValid(item._id)) {
-        console.error("Invalid courseId:", item._id);
-        return NextResponse.json(
-          { error: `Invalid course ID format: ${item._id}` },
-          { status: 400 }
-        );
-      }
+    const invalidItems = items.filter(
+      (item) => !item.title || item.price === undefined
+    );
+    if (invalidItems.length > 0) {
+      console.error("Items missing required fields:", invalidItems);
+      return NextResponse.json(
+        { error: "All items must have title and price" },
+        { status: 400 }
+      );
     }
 
-    const courseDetails = items.map((item) => ({
-      courseId: new mongoose.Types.ObjectId(item._id),
-      name: item.title,
-      price: item.price,
-      sapExamCode: item.sapExamCode || "",
-      category: item.category || "",
-      sku: item.sku || "",
-      samplePdfUrl: item.samplePdfUrl || "",
-      mainPdfUrl: item.mainPdfUrl || "",
-      slug: item.slug || "",
-    }));
+    // ENHANCED: Process items and fetch product details for slug
+    const courseDetails = await Promise.all(
+      items.map(async (item) => {
+        // Extract product ID
+        let productId = item.courseId || item.productId || item._id;
+        let productSlug = item.slug || "";
+
+        console.log(`Processing item: ${item.title}`, {
+          originalId: productId,
+          slugFromCart: item.slug,
+        });
+
+        // If no slug in cart, try to fetch from product database
+        if ((!productSlug || productSlug.trim() === "") && productId) {
+          try {
+            if (mongoose.Types.ObjectId.isValid(productId)) {
+              const product = await Product.findById(productId).select('slug title');
+              if (product && product.slug) {
+                productSlug = product.slug;
+                console.log(`✅ Fetched slug from product DB: "${productSlug}"`);
+              } else {
+                console.log(`⚠️ Product found but no slug: ${product?.title || productId}`);
+              }
+            }
+          } catch (err) {
+            console.log(`⚠️ Could not fetch product ${productId}:`, err.message);
+          }
+        }
+
+        // Validate or create ObjectId
+        let validCourseId;
+        if (productId && mongoose.Types.ObjectId.isValid(productId)) {
+          validCourseId = new mongoose.Types.ObjectId(productId);
+          console.log(`Valid ObjectId: ${validCourseId}`);
+        } else {
+          validCourseId = new mongoose.Types.ObjectId();
+          console.log(`Created placeholder ObjectId: ${validCourseId}`);
+        }
+
+        // Build course detail with slug
+        const courseDetail = {
+          courseId: validCourseId,
+          name: item.title || "Untitled Product",
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          type: item.type || "unknown",
+          sapExamCode: item.sapExamCode || "",
+          category: item.category || "",
+          sku: item.sku || "",
+          samplePdfUrl: item.samplePdfUrl || "",
+          mainPdfUrl: item.mainPdfUrl || "",
+          slug: productSlug, // NOW HAS SLUG FROM PRODUCT DB
+          imageUrl: item.imageUrl || "",
+          originalId: productId ? String(productId) : "",
+        };
+
+        // Log slug status
+        if (!courseDetail.slug || courseDetail.slug.trim() === "") {
+          console.warn(`⚠️ WARNING: Product "${item.title}" (ID: ${productId}) has no slug in cart OR database!`);
+        } else {
+          console.log(`✅ Slug saved: "${courseDetail.slug}" for "${item.title}"`);
+        }
+
+        return courseDetail;
+      })
+    );
+
+    console.log("Processed course details:", {
+      itemCount: courseDetails.length,
+      itemsWithSlugs: courseDetails.filter(item => item.slug && item.slug.trim() !== "").length,
+      itemsWithoutSlugs: courseDetails.filter(item => !item.slug || item.slug.trim() === "").length,
+      details: courseDetails.map(item => ({
+        name: item.name,
+        slug: item.slug || "MISSING",
+        productId: item.originalId,
+      })),
+    });
 
     const order = await Order.create({
       user: userId,
       courseDetails,
       totalAmount,
+      discount: discount || 0,
       paymentMethod,
       paymentId,
-      currency: "INR",
-      status: "completed",
+      currency: paymentMethod === "paypal" ? "USD" : "INR",
+      status: paymentStatus || "completed",
     });
 
-    console.log("Order created:", {
+    console.log("Order created successfully:", {
       orderId: order._id,
       orderNumber: order.orderNumber,
       userId,
+      itemCount: courseDetails.length,
+      totalAmount,
+      slugs: courseDetails.map(item => item.slug || "NO-SLUG"),
     });
+
     return NextResponse.json({
       success: true,
       orderId: order._id,
       orderNumber: order.orderNumber,
+      message: "Order created successfully",
     });
   } catch (error) {
     console.error("Order creation failed:", {
       error: error.message,
       stack: error.stack,
+      name: error.name,
     });
     return NextResponse.json(
       { error: `Order creation failed: ${error.message}` },
@@ -164,10 +240,7 @@ export async function GET(request) {
     console.log("Session:", session);
 
     if (!session || !session.user?.id) {
-      console.error("Unauthorized: No valid session", {
-        sessionExists: !!session,
-        userId: session?.user?.id || "none",
-      });
+      console.error("Unauthorized: No valid session");
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
         { status: 401 }
@@ -176,9 +249,7 @@ export async function GET(request) {
 
     const user = await UserInfo.findOne({ authUserId: session.user.id });
     if (!user || user.role !== "admin") {
-      console.error("Forbidden: User is not an admin", {
-        userId: session.user.id,
-      });
+      console.error("Forbidden: User is not an admin");
       return NextResponse.json(
         { error: "Forbidden: Admin access required" },
         { status: 403 }
@@ -207,7 +278,7 @@ export async function GET(request) {
 
     const orders = await Order.find(query)
       .populate("user", "name email")
-      .populate("courseDetails.courseId", "title")
+      .populate("courseDetails.courseId", "title slug")
       .sort({ purchaseDate: -1 })
       .lean();
 
@@ -219,7 +290,13 @@ export async function GET(request) {
     console.log("Orders retrieved:", {
       count: orders.length,
       userId: userId || "all",
+      sampleOrder: orders[0] ? {
+        id: orders[0]._id,
+        itemCount: orders[0].courseDetails?.length,
+        firstItemSlug: orders[0].courseDetails?.[0]?.slug,
+      } : null,
     });
+    
     return NextResponse.json({ orders });
   } catch (error) {
     console.error("Order retrieval failed:", {
