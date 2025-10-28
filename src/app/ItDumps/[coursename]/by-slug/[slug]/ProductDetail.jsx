@@ -49,33 +49,115 @@ export default function ProductDetailsPage() {
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
 
+    // ✅ Start with complete product object - ALL fields included
     let item = {
-      ...product,
+      ...product, // Spread ALL product fields first
       type,
-      title: product.title,
-      imageUrl: product.imageUrl,
+
+      // Core identifiers (ensure they exist)
+      _id: product._id,
+      productId: product._id,
+
+      // Pricing - ensure all variants are included
+      dumpsPriceInr: product.dumpsPriceInr,
+      dumpsPriceUsd: product.dumpsPriceUsd,
+      dumpsMrpInr: product.dumpsMrpInr,
+      dumpsMrpUsd: product.dumpsMrpUsd,
+      comboPriceInr: product.comboPriceInr,
+      comboPriceUsd: product.comboPriceUsd,
+      comboMrpInr: product.comboMrpInr,
+      comboMrpUsd: product.comboMrpUsd,
+
+      // ✅ CRITICAL: Ensure PDF URLs are explicitly included
       samplePdfUrl: product.samplePdfUrl,
       mainPdfUrl: product.mainPdfUrl,
-      slug:product.slug,
+      imageUrl: product.imageUrl,
+
+      // Other important fields
+      slug: product.slug,
+      category: product.category,
+      sapExamCode: product.sapExamCode,
+      code: product.code || product.sapExamCode,
+      sku: product.sku,
+
+      // Exam details
+      duration: product.duration,
+      eachQuestionMark: product.eachQuestionMark,
+      numberOfQuestions: product.numberOfQuestions,
+      passingScore: product.passingScore,
+
+      // Instructions
+      mainInstructions: product.mainInstructions,
+      sampleInstructions: product.sampleInstructions,
+
+      // Descriptions
+      Description: product.Description,
+      longDescription: product.longDescription,
+
+      // Status
+      status: product.status,
+      action: product.action,
+
+      // SEO
+      metaTitle: product.metaTitle,
+      metaKeywords: product.metaKeywords,
+      metaDescription: product.metaDescription,
+      schema: product.schema,
     };
 
+    // Now set title and price based on type
     switch (type) {
       case "regular":
         item.title = `${product.title} [PDF]`;
-        item.price = product.dumpsPriceInr || product.dumpsPriceUsd;
+        item.name = `${product.title} [PDF]`;
+        // ✅ Convert string prices to numbers
+        item.price = parseFloat(
+          product.dumpsPriceInr || product.dumpsPriceUsd || 0
+        );
+        item.priceINR = parseFloat(product.dumpsPriceInr || 0);
+        item.priceUSD = parseFloat(product.dumpsPriceUsd || 0);
         break;
+
       case "online":
         item.title = `${product.title} [Online Exam]`;
-        item.price = exams?.priceINR || exams?.priceUSD;
+        item.name = `${product.title} [Online Exam]`;
+        // ✅ Convert string prices to numbers
+        item.price = parseFloat(exams?.priceINR || exams?.priceUSD || 0);
+        item.priceINR = parseFloat(exams?.priceINR || 0);
+        item.priceUSD = parseFloat(exams?.priceUSD || 0);
         break;
+
       case "combo":
         item.title = `${product.title} [Combo]`;
-        item.price = product.comboPriceInr || product.comboPriceUsd;
+        item.name = `${product.title} [Combo]`;
+        // ✅ Convert string prices to numbers
+        item.price = parseFloat(
+          product.comboPriceInr || product.comboPriceUsd || 0
+        );
+        item.priceINR = parseFloat(product.comboPriceInr || 0);
+        item.priceUSD = parseFloat(product.comboPriceUsd || 0);
         break;
+
       default:
         item.title = product.title;
-        item.price = product.dumpsPriceInr || product.dumpsPriceUsd;
+        item.name = product.title;
+        // ✅ Convert string prices to numbers
+        item.price = parseFloat(
+          product.dumpsPriceInr || product.dumpsPriceUsd || 0
+        );
+        item.priceINR = parseFloat(product.dumpsPriceInr || 0);
+        item.priceUSD = parseFloat(product.dumpsPriceUsd || 0);
     }
+
+    // ✅ Debug log to verify PDF URLs are included
+    console.log("Adding to cart:", {
+      title: item.title,
+      type: item.type,
+      price: item.price,
+      samplePdfUrl: item.samplePdfUrl || "❌ MISSING",
+      mainPdfUrl: item.mainPdfUrl || "❌ MISSING",
+      allFields: Object.keys(item).length,
+    });
 
     useCartStore.getState().addToCart(item);
     toast.success(`Added ${item.title} to cart!`);

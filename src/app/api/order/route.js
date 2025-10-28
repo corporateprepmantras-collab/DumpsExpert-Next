@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Order from "@/models/orderSchema";
 import UserInfo from "@/models/userInfoSchema";
-import Product from "@/models/productSchema"; // Add Product model
+import Product from "@/models/productListSchema";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth/authOptions";
@@ -23,6 +23,7 @@ const authUserModel =
     )
   );
 
+// ================== POST ==================
 export async function POST(request) {
   try {
     console.log("Route hit: /api/order [POST]");
@@ -58,6 +59,7 @@ export async function POST(request) {
       items,
     });
 
+    // User check
     if (userId !== session.user.id) {
       console.error("User ID mismatch");
       return NextResponse.json(
@@ -66,6 +68,7 @@ export async function POST(request) {
       );
     }
 
+    // Validate required fields
     if (
       !userId ||
       !items ||
@@ -81,6 +84,7 @@ export async function POST(request) {
       );
     }
 
+    // Validate userId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       console.error("Invalid userId:", userId);
       return NextResponse.json(
@@ -89,12 +93,14 @@ export async function POST(request) {
       );
     }
 
+    // Verify user exists
     const user = await UserInfo.findOne({ authUserId: userId });
     if (!user) {
       console.error("User not found:", userId);
       return NextResponse.json({ error: "User not found" }, { status: 400 });
     }
 
+    // Validate items array
     if (!Array.isArray(items) || items.length === 0) {
       console.error("Invalid items format:", items);
       return NextResponse.json(
@@ -103,95 +109,53 @@ export async function POST(request) {
       );
     }
 
+    // Check for invalid items
     const invalidItems = items.filter(
-      (item) => !item.title || item.price === undefined
+      (item) => !item.title && !item.name && item.price === undefined
     );
     if (invalidItems.length > 0) {
       console.error("Items missing required fields:", invalidItems);
       return NextResponse.json(
-        { error: "All items must have title and price" },
+        { error: "All items must have a title or name and a price" },
         { status: 400 }
       );
     }
 
-    // ENHANCED: Process items and fetch product details for slug
-    const courseDetails = await Promise.all(
-      items.map(async (item) => {
-        // Extract product ID
-        let productId = item.courseId || item.productId || item._id;
-        let productSlug = item.slug || "";
-
-        console.log(`Processing item: ${item.title}`, {
-          originalId: productId,
-          slugFromCart: item.slug,
-        });
-
-        // If no slug in cart, try to fetch from product database
-        if ((!productSlug || productSlug.trim() === "") && productId) {
-          try {
-            if (mongoose.Types.ObjectId.isValid(productId)) {
-              const product = await Product.findById(productId).select('slug title');
-              if (product && product.slug) {
-                productSlug = product.slug;
-                console.log(`✅ Fetched slug from product DB: "${productSlug}"`);
-              } else {
-                console.log(`⚠️ Product found but no slug: ${product?.title || productId}`);
-              }
-            }
-          } catch (err) {
-            console.log(`⚠️ Could not fetch product ${productId}:`, err.message);
-          }
-        }
-
-        // Validate or create ObjectId
-        let validCourseId;
-        if (productId && mongoose.Types.ObjectId.isValid(productId)) {
-          validCourseId = new mongoose.Types.ObjectId(productId);
-          console.log(`Valid ObjectId: ${validCourseId}`);
-        } else {
-          validCourseId = new mongoose.Types.ObjectId();
-          console.log(`Created placeholder ObjectId: ${validCourseId}`);
-        }
-
-        // Build course detail with slug
-        const courseDetail = {
-          courseId: validCourseId,
-          name: item.title || "Untitled Product",
-          price: item.price || 0,
-          quantity: item.quantity || 1,
-          type: item.type || "unknown",
-          sapExamCode: item.sapExamCode || "",
-          category: item.category || "",
-          sku: item.sku || "",
-          samplePdfUrl: item.samplePdfUrl || "",
-          mainPdfUrl: item.mainPdfUrl || "",
-          slug: productSlug, // NOW HAS SLUG FROM PRODUCT DB
-          imageUrl: item.imageUrl || "",
-          originalId: productId ? String(productId) : "",
-        };
-
-        // Log slug status
-        if (!courseDetail.slug || courseDetail.slug.trim() === "") {
-          console.warn(`⚠️ WARNING: Product "${item.title}" (ID: ${productId}) has no slug in cart OR database!`);
-        } else {
-          console.log(`✅ Slug saved: "${courseDetail.slug}" for "${item.title}"`);
-        }
-
-        return courseDetail;
-      })
-    );
+    // ✅ FIXED: Ensure name always exists
+    const courseDetails = items.map((item) => ({
+      courseId: item._id,
+      name: item.name || item.title || "Untitled Course",
+      price: item.priceINR || item.priceUSD || item.price || 0,
+      quantity: item.quantity || 1,
+      duration: item.duration || "",
+      eachQuestionMark: item.eachQuestionMark || "",
+      code: item.code || "",
+      numberOfQuestions: item.numberOfQuestions || 0,
+      passingScore: item.passingScore || "",
+      status: item.status || "active",
+      productId: item.productId || item._id,
+      mainInstructions: item.mainInstructions || "",
+      sampleInstructions: item.sampleInstructions || "",
+      slug: item.slug || "",
+      imageUrl: item.imageUrl || "",
+      type: item.type || "exam",
+    }));
 
     console.log("Processed course details:", {
       itemCount: courseDetails.length,
-      itemsWithSlugs: courseDetails.filter(item => item.slug && item.slug.trim() !== "").length,
-      itemsWithoutSlugs: courseDetails.filter(item => !item.slug || item.slug.trim() === "").length,
-      details: courseDetails.map(item => ({
+      itemsWithNames: courseDetails.filter((i) => i.name).length,
+      itemsWithoutNames: courseDetails.filter((i) => !i.name).length,
+      itemsWithSlugs: courseDetails.filter(
+        (i) => i.slug && i.slug.trim() !== ""
+      ).length,
+      details: courseDetails.map((item) => ({
         name: item.name,
         slug: item.slug || "MISSING",
-        productId: item.originalId,
+        productId: item.productId,
       })),
     });
 
+    // Create Order
     const order = await Order.create({
       user: userId,
       courseDetails,
@@ -203,13 +167,12 @@ export async function POST(request) {
       status: paymentStatus || "completed",
     });
 
-    console.log("Order created successfully:", {
+    console.log("✅ Order created successfully:", {
       orderId: order._id,
       orderNumber: order.orderNumber,
       userId,
       itemCount: courseDetails.length,
       totalAmount,
-      slugs: courseDetails.map(item => item.slug || "NO-SLUG"),
     });
 
     return NextResponse.json({
@@ -219,7 +182,7 @@ export async function POST(request) {
       message: "Order created successfully",
     });
   } catch (error) {
-    console.error("Order creation failed:", {
+    console.error("❌ Order creation failed:", {
       error: error.message,
       stack: error.stack,
       name: error.name,
@@ -231,6 +194,7 @@ export async function POST(request) {
   }
 }
 
+// ================== GET ==================
 export async function GET(request) {
   try {
     console.log("Route hit: /api/order [GET]");
@@ -276,9 +240,10 @@ export async function GET(request) {
       query.user = userId;
     }
 
+    // ✅ CRITICAL FIX: Don't populate courseDetails - all data is already stored in the order
+    // Only populate user info since that's a simple reference
     const orders = await Order.find(query)
       .populate("user", "name email")
-      .populate("courseDetails.courseId", "title slug")
       .sort({ purchaseDate: -1 })
       .lean();
 
@@ -290,16 +255,18 @@ export async function GET(request) {
     console.log("Orders retrieved:", {
       count: orders.length,
       userId: userId || "all",
-      sampleOrder: orders[0] ? {
-        id: orders[0]._id,
-        itemCount: orders[0].courseDetails?.length,
-        firstItemSlug: orders[0].courseDetails?.[0]?.slug,
-      } : null,
+      sampleOrder: orders[0]
+        ? {
+            id: orders[0]._id,
+            itemCount: orders[0].courseDetails?.length,
+            firstItemFields: Object.keys(orders[0].courseDetails?.[0] || {}),
+          }
+        : null,
     });
-    
+
     return NextResponse.json({ orders });
   } catch (error) {
-    console.error("Order retrieval failed:", {
+    console.error("❌ Order retrieval failed:", {
       error: error.message,
       stack: error.stack,
     });
