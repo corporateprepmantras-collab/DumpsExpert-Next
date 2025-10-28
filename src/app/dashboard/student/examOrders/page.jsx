@@ -88,7 +88,7 @@ const ExamCoursesPage = () => {
 
   const handleStartExam = (slug) => {
     if (slug) {
-      router.push(`/exam/sample-instruction/${slug}`);
+      router.push(`/exam/mainExamPage/${slug}`);
     }
   };
 
