@@ -19,7 +19,7 @@ const Cart = () => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
   const [userId, setUserId] = useState(null);
-  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+  const [selectedCurrency, setSelectedCurrency] = useState("INR");
 
   const cartItems = useCartStore((state) => state.cartItems);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
@@ -28,12 +28,28 @@ const Cart = () => {
 
   const router = useRouter();
 
-  // Get actual item price based on currency
+  // Get actual item price based on currency - CHECKS COMBO PRICES FIRST
   const getItemPrice = (item, currency) => {
     if (currency === "USD") {
-      return item.dumpsPriceUsd || item.priceUSD || item.price || 0;
+      // Priority: combo -> dumps -> generic
+      return (
+        Number(
+          item.comboPriceUsd ||
+            item.dumpsPriceUsd ||
+            item.priceUSD ||
+            item.price
+        ) || 0
+      );
     } else {
-      return item.dumpsPriceInr || item.priceINR || item.price || 0;
+      // Priority: combo -> dumps -> generic
+      return (
+        Number(
+          item.comboPriceInr ||
+            item.dumpsPriceInr ||
+            item.priceINR ||
+            item.price
+        ) || 0
+      );
     }
   };
 
@@ -51,15 +67,21 @@ const Cart = () => {
   const calculateDiscount = () => {
     if (!appliedCoupon) return 0;
 
-    if (appliedCoupon.discountType === "percentage") {
+    // If discountValue is a small number (like 20), treat it as percentage
+    // If it's a large number (like 500), treat it as fixed amount
+    const isPercentage =
+      appliedCoupon.discountType === "percentage" ||
+      (appliedCoupon.discountValue > 0 && appliedCoupon.discountValue <= 100);
+
+    if (isPercentage) {
       const discountAmount = (subtotal * appliedCoupon.discountValue) / 100;
       return appliedCoupon.maxDiscount
         ? Math.min(discountAmount, appliedCoupon.maxDiscount)
         : discountAmount;
-    } else if (appliedCoupon.discountType === "fixed") {
+    } else {
+      // Fixed discount
       return appliedCoupon.discountValue;
     }
-    return 0;
   };
 
   const discount = calculateDiscount();
@@ -138,28 +160,61 @@ const Cart = () => {
         currency: selectedCurrency,
       });
 
-      if (response.data.success) {
+      // Check multiple response formats
+      const isValid =
+        response.data.success ||
+        response.data.message === "Coupon is valid" ||
+        response.data.coupon;
+
+      if (isValid && response.data.coupon) {
+        const couponData = response.data.coupon;
+
+        // Extract discount value and type
+        const discountValue =
+          couponData.discountValue ||
+          couponData.discount ||
+          response.data.discount ||
+          0;
+
+        const discountType =
+          couponData.discountType ||
+          response.data.discountType ||
+          // Auto-detect: if value <= 100, likely percentage
+          (discountValue > 0 && discountValue <= 100 ? "percentage" : "fixed");
+
         setAppliedCoupon({
           code: couponCode.trim(),
-          discountType: response.data.discountType,
-          discountValue: response.data.discountValue,
-          maxDiscount: response.data.maxDiscount,
+          discountType: discountType,
+          discountValue: discountValue,
+          maxDiscount: couponData.maxDiscount || response.data.maxDiscount,
         });
         setCouponError("");
+
+        // Calculate actual discount amount for display
+        const actualDiscount =
+          discountType === "percentage" ||
+          (discountValue > 0 && discountValue <= 100)
+            ? (subtotal * discountValue) / 100
+            : discountValue;
+
         toast.success(
           `Coupon applied! You saved ${formatPrice(
-            response.data.discount,
+            actualDiscount,
             selectedCurrency
           )}`
         );
       } else {
-        setCouponError(response.data.error || "Invalid coupon code");
-        toast.error(response.data.error || "Invalid coupon code");
+        const errorMsg =
+          response.data.error || response.data.message || "Invalid coupon code";
+        setCouponError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error("Coupon validation failed:", error);
       const errorMessage =
-        error.response?.data?.error || "Failed to validate coupon";
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Failed to validate coupon";
       setCouponError(errorMessage);
       toast.error(errorMessage);
     }
@@ -179,11 +234,6 @@ const Cart = () => {
       return;
     }
 
-    if (selectedCurrency !== "INR") {
-      toast.error("Razorpay only supports INR currency");
-      return;
-    }
-
     if (grandTotal <= 0) {
       toast.error("Cart total must be greater than zero");
       return;
@@ -195,10 +245,19 @@ const Cart = () => {
     }
 
     try {
+      // Convert USD to INR if needed (approximate conversion for Razorpay)
+      const razorpayCurrency = selectedCurrency === "USD" ? "INR" : "INR";
+      const razorpayAmount =
+        selectedCurrency === "USD"
+          ? Math.round(grandTotal * 83) // USD to INR conversion (approx rate)
+          : grandTotal;
+
       const response = await axios.post("/api/payments/razorpay/create-order", {
-        amount: grandTotal,
-        currency: "INR",
+        amount: razorpayAmount,
+        currency: razorpayCurrency,
         userId,
+        originalCurrency: selectedCurrency,
+        originalAmount: grandTotal,
       });
 
       const orderId =
@@ -220,8 +279,8 @@ const Cart = () => {
 
       const options = {
         key: razorpayKey,
-        amount: Math.round(grandTotal * 100),
-        currency: "INR",
+        amount: Math.round(razorpayAmount * 100), // Convert to paise
+        currency: razorpayCurrency,
         name: "DumpsExpert",
         description: "Purchase IT Certification Materials",
         order_id: orderId,
@@ -236,6 +295,7 @@ const Cart = () => {
                 razorpay_payment_id: razorpayResponse.razorpay_payment_id,
                 razorpay_signature: razorpayResponse.razorpay_signature,
                 amount: grandTotal,
+                originalCurrency: selectedCurrency,
                 userId,
               }
             );
@@ -260,8 +320,10 @@ const Cart = () => {
 
                 // All pricing fields
                 price: getItemPrice(item, selectedCurrency),
-                priceINR: item.priceINR || item.dumpsPriceInr,
-                priceUSD: item.priceUSD || item.dumpsPriceUsd,
+                priceINR:
+                  item.priceINR || item.dumpsPriceInr || item.comboPriceInr,
+                priceUSD:
+                  item.priceUSD || item.dumpsPriceUsd || item.comboPriceUsd,
                 dumpsPriceInr: item.dumpsPriceInr,
                 dumpsPriceUsd: item.dumpsPriceUsd,
                 dumpsMrpInr: item.dumpsMrpInr,
@@ -375,11 +437,6 @@ const Cart = () => {
       return;
     }
 
-    if (selectedCurrency !== "USD") {
-      toast.error("PayPal only supports USD currency");
-      return;
-    }
-
     if (grandTotal <= 0) {
       toast.error("Cart total must be greater than zero");
       return;
@@ -388,7 +445,7 @@ const Cart = () => {
     try {
       const response = await axios.post("/api/payments/paypal/create-order", {
         amount: grandTotal,
-        currency: "USD",
+        currency: selectedCurrency,
         userId,
       });
 
@@ -438,8 +495,8 @@ const Cart = () => {
           title: item.title,
 
           price: getItemPrice(item, selectedCurrency),
-          priceINR: item.priceINR || item.dumpsPriceInr,
-          priceUSD: item.priceUSD || item.dumpsPriceUsd,
+          priceINR: item.priceINR || item.dumpsPriceInr || item.comboPriceInr,
+          priceUSD: item.priceUSD || item.dumpsPriceUsd || item.comboPriceUsd,
           dumpsPriceInr: item.dumpsPriceInr,
           dumpsPriceUsd: item.dumpsPriceUsd,
           dumpsMrpInr: item.dumpsMrpInr,
@@ -620,11 +677,12 @@ const Cart = () => {
                     setAppliedCoupon(null);
                     setCouponCode("");
                     setCouponError("");
+                    toast.info(`Currency changed to ${e.target.value}`);
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="USD">$ US Dollar (USD)</option>
                   <option value="INR">₹ Indian Rupee (INR)</option>
+                  <option value="USD">$ US Dollar (USD)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   Prices will update based on selected currency
@@ -745,55 +803,67 @@ const Cart = () => {
                 </div>
               </div>
 
-              {selectedCurrency === "INR" && (
-                <button
-                  onClick={handleRazorpayPayment}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
-                >
-                  <span>💳</span>
-                  <span>Pay with Razorpay</span>
-                  <span className="ml-auto">
-                    {formatPrice(grandTotal, "INR")}
-                  </span>
-                </button>
+              {/* Razorpay Payment Option - Available for both USD and INR */}
+              <button
+                onClick={handleRazorpayPayment}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
+              >
+                <span>💳</span>
+                <span>Pay with Razorpay</span>
+                <span className="ml-auto">
+                  {formatPrice(grandTotal, selectedCurrency)}
+                </span>
+              </button>
+              {selectedCurrency === "USD" && (
+                <p className="text-xs text-amber-600 text-center -mt-2">
+                  Note: USD amount will be converted to INR for Razorpay payment
+                </p>
               )}
 
-              {selectedCurrency === "USD" && (
-                <div className="w-full">
-                  <PayPalScriptProvider
-                    options={{
-                      "client-id":
-                        process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ||
-                        "YOUR_PAYPAL_CLIENT_ID",
-                      currency: "USD",
-                      intent: "capture",
-                    }}
-                  >
-                    <PayPalButtons
-                      style={{
-                        layout: "vertical",
-                        color: "gold",
-                        shape: "rect",
-                        label: "paypal",
-                      }}
-                      createOrder={createPayPalOrder}
-                      onApprove={onPayPalApprove}
-                      onError={(error) => {
-                        console.error("PayPal error:", error);
-                        toast.error("PayPal payment failed");
-                      }}
-                      onCancel={() => {
-                        toast.info("Payment cancelled");
-                      }}
-                    />
-                  </PayPalScriptProvider>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
                 </div>
-              )}
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">OR</span>
+                </div>
+              </div>
+
+              {/* PayPal Payment Option - Available for both USD and INR */}
+              <div className="w-full">
+                <PayPalScriptProvider
+                  options={{
+                    "client-id":
+                      process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ||
+                      "YOUR_PAYPAL_CLIENT_ID",
+                    currency: selectedCurrency,
+                    intent: "capture",
+                  }}
+                >
+                  <PayPalButtons
+                    style={{
+                      layout: "vertical",
+                      color: "gold",
+                      shape: "rect",
+                      label: "paypal",
+                    }}
+                    createOrder={createPayPalOrder}
+                    onApprove={onPayPalApprove}
+                    onError={(error) => {
+                      console.error("PayPal error:", error);
+                      toast.error("PayPal payment failed");
+                    }}
+                    onCancel={() => {
+                      toast.info("Payment cancelled");
+                    }}
+                  />
+                </PayPalScriptProvider>
+              </div>
 
               <p className="text-xs text-gray-500 text-center">
-                {selectedCurrency === "INR"
-                  ? "Razorpay accepts UPI, Cards, Net Banking & Wallets"
-                  : "PayPal accepts Credit/Debit Cards & PayPal Balance"}
+                Razorpay: UPI, Cards, Net Banking & Wallets
+                <br />
+                PayPal: Credit/Debit Cards & PayPal Balance
               </p>
 
               <button
@@ -811,3 +881,4 @@ const Cart = () => {
 };
 
 export default Cart;
+ 

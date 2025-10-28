@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-let useCartStoreBase = (set, get) => ({
+// Store definition
+const cartStore = (set, get) => ({
   cartItems: [],
 
   addToCart: (item) => {
@@ -32,13 +33,18 @@ let useCartStoreBase = (set, get) => ({
         name: item.name || item.title,
 
         // ALL Pricing fields - CRITICAL for cart calculations
-        price: item.price || item.dumpsPriceInr || item.dumpsPriceUsd || 0,
-        priceINR: item.priceINR || item.dumpsPriceInr,
-        priceUSD: item.priceUSD || item.dumpsPriceUsd,
+        // Priority: combo prices first, then dumps prices
+        price: item.price || item.comboPriceInr || item.dumpsPriceInr || 0,
+        priceINR: item.priceINR || item.comboPriceInr || item.dumpsPriceInr,
+        priceUSD: item.priceUSD || item.comboPriceUsd || item.dumpsPriceUsd,
+        
+        // Dumps pricing
         dumpsPriceInr: item.dumpsPriceInr,
         dumpsPriceUsd: item.dumpsPriceUsd,
         dumpsMrpInr: item.dumpsMrpInr,
         dumpsMrpUsd: item.dumpsMrpUsd,
+        
+        // Combo pricing (PDF + Online Exam)
         comboPriceInr: item.comboPriceInr,
         comboPriceUsd: item.comboPriceUsd,
         comboMrpInr: item.comboMrpInr,
@@ -94,12 +100,11 @@ let useCartStoreBase = (set, get) => ({
       };
 
       console.log("✅ Stored complete item in cart:", completeItem);
-      console.log(
-        "💰 Pricing check - INR:",
-        completeItem.dumpsPriceInr,
-        "USD:",
-        completeItem.dumpsPriceUsd
-      );
+      console.log("💰 Pricing check:");
+      console.log("  - Combo INR:", completeItem.comboPriceInr);
+      console.log("  - Combo USD:", completeItem.comboPriceUsd);
+      console.log("  - Dumps INR:", completeItem.dumpsPriceInr);
+      console.log("  - Dumps USD:", completeItem.dumpsPriceUsd);
 
       set({
         cartItems: [...get().cartItems, completeItem],
@@ -135,10 +140,11 @@ let useCartStoreBase = (set, get) => ({
   // Helper to get cart total in specific currency
   getCartTotal: (currency = "INR") => {
     return get().cartItems.reduce((acc, item) => {
+      // Priority: combo prices first, then dumps prices
       const price =
         currency === "USD"
-          ? item.dumpsPriceUsd || item.priceUSD || item.price || 0
-          : item.dumpsPriceInr || item.priceINR || item.price || 0;
+          ? Number(item.comboPriceUsd || item.dumpsPriceUsd || item.priceUSD || item.price) || 0
+          : Number(item.comboPriceInr || item.dumpsPriceInr || item.priceINR || item.price) || 0;
       return acc + price * (item.quantity || 1);
     }, 0);
   },
@@ -149,44 +155,48 @@ let useCartStoreBase = (set, get) => ({
   },
 });
 
-// Persist cart data in local storage with migration support
-useCartStoreBase = persist(useCartStoreBase, {
-  name: "cart-storage",
-  version: 2, // Increment version to trigger migration
-  migrate: (persistedState, version) => {
-    // If old version or no version, clear the cart to avoid issues
-    if (version < 2) {
-      console.log("Migrating cart store to version 2 - clearing old data");
-      return {
-        cartItems: [],
-      };
-    }
-    return persistedState;
-  },
-  // Handle parse errors gracefully
-  onRehydrateStorage: () => (state, error) => {
-    if (error) {
-      console.error("Error rehydrating cart store:", error);
-      // Clear localStorage if there's an error
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("cart-storage");
+// Create store with persistence
+const useCartStore = create(
+  persist(cartStore, {
+    name: "cart-storage",
+    version: 2, // Increment version to trigger migration
+    migrate: (persistedState, version) => {
+      // If old version or no version, clear the cart to avoid issues
+      if (version < 2) {
+        console.log("🔄 Migrating cart store to version 2 - clearing old data");
+        return {
+          cartItems: [],
+        };
       }
-    } else {
-      console.log("Cart store rehydrated successfully");
-    }
-  },
-});
-
-const useCartStore = create(useCartStoreBase);
+      return persistedState;
+    },
+    // Handle parse errors gracefully
+    onRehydrateStorage: () => (state, error) => {
+      if (error) {
+        console.error("❌ Error rehydrating cart store:", error);
+        // Clear localStorage if there's an error
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("cart-storage");
+        }
+      } else {
+        console.log("✅ Cart store rehydrated successfully");
+        if (state?.cartItems?.length > 0) {
+          console.log(`📦 Cart has ${state.cartItems.length} items`);
+        }
+      }
+    },
+  })
+);
 
 // Selector: total price in specific currency
 export const getCartTotal = (currency = "INR") => {
   const state = useCartStore.getState();
   return state.cartItems.reduce((acc, item) => {
+    // Priority: combo prices first, then dumps prices
     const price =
       currency === "USD"
-        ? item.dumpsPriceUsd || item.priceUSD || item.price || 0
-        : item.dumpsPriceInr || item.priceINR || item.price || 0;
+        ? Number(item.comboPriceUsd || item.dumpsPriceUsd || item.priceUSD || item.price) || 0
+        : Number(item.comboPriceInr || item.dumpsPriceInr || item.priceINR || item.price) || 0;
     return acc + price * (item.quantity || 1);
   }, 0);
 };
