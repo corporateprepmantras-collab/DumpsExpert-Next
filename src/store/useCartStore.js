@@ -20,14 +20,19 @@ let useCartStoreBase = (set, get) => ({
         ),
       });
     } else {
-      // ✅ Store the complete product object with ALL fields
+      // Store the complete product object with ALL fields
       const completeItem = {
+        // Core identifiers
         _id: item._id,
+        productId: item.productId || item._id,
+        courseId: item._id,
+
+        // Names
         title: item.title,
         name: item.name || item.title,
 
-        // Pricing
-        price: item.price,
+        // ALL Pricing fields - CRITICAL for cart calculations
+        price: item.price || item.dumpsPriceInr || item.dumpsPriceUsd || 0,
         priceINR: item.priceINR || item.dumpsPriceInr,
         priceUSD: item.priceUSD || item.dumpsPriceUsd,
         dumpsPriceInr: item.dumpsPriceInr,
@@ -46,7 +51,7 @@ let useCartStoreBase = (set, get) => ({
         sku: item.sku,
         slug: item.slug,
 
-        // URLs and media
+        // URLs and media - CRITICAL for order access
         imageUrl: item.imageUrl,
         samplePdfUrl: item.samplePdfUrl,
         mainPdfUrl: item.mainPdfUrl,
@@ -68,26 +73,33 @@ let useCartStoreBase = (set, get) => ({
         // Status and meta
         status: item.status,
         action: item.action,
+        type: item.type || "exam",
 
-        // SEO
+        // SEO fields
         metaTitle: item.metaTitle,
         metaKeywords: item.metaKeywords,
         metaDescription: item.metaDescription,
         schema: item.schema,
 
-        // Additional fields
-        productId: item.productId || item._id,
-        type: item.type || "exam",
+        // Quantity
         quantity: 1,
 
-        // Store any other fields that might exist
-        ...item,
-
-        // Ensure quantity is set correctly
-        quantity: 1,
+        // Preserve any additional fields that might exist
+        ...Object.keys(item).reduce((acc, key) => {
+          if (!acc.hasOwnProperty(key)) {
+            acc[key] = item[key];
+          }
+          return acc;
+        }, {}),
       };
 
-      console.log("Stored complete item in cart:", completeItem);
+      console.log("✅ Stored complete item in cart:", completeItem);
+      console.log(
+        "💰 Pricing check - INR:",
+        completeItem.dumpsPriceInr,
+        "USD:",
+        completeItem.dumpsPriceUsd
+      );
 
       set({
         cartItems: [...get().cartItems, completeItem],
@@ -119,23 +131,70 @@ let useCartStoreBase = (set, get) => ({
   },
 
   clearCart: () => set({ cartItems: [] }),
+
+  // Helper to get cart total in specific currency
+  getCartTotal: (currency = "INR") => {
+    return get().cartItems.reduce((acc, item) => {
+      const price =
+        currency === "USD"
+          ? item.dumpsPriceUsd || item.priceUSD || item.price || 0
+          : item.dumpsPriceInr || item.priceINR || item.price || 0;
+      return acc + price * (item.quantity || 1);
+    }, 0);
+  },
+
+  // Get item count
+  getItemCount: () => {
+    return get().cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
+  },
 });
 
-// Persist cart data in local storage
+// Persist cart data in local storage with migration support
 useCartStoreBase = persist(useCartStoreBase, {
   name: "cart-storage",
+  version: 2, // Increment version to trigger migration
+  migrate: (persistedState, version) => {
+    // If old version or no version, clear the cart to avoid issues
+    if (version < 2) {
+      console.log("Migrating cart store to version 2 - clearing old data");
+      return {
+        cartItems: [],
+      };
+    }
+    return persistedState;
+  },
+  // Handle parse errors gracefully
+  onRehydrateStorage: () => (state, error) => {
+    if (error) {
+      console.error("Error rehydrating cart store:", error);
+      // Clear localStorage if there's an error
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("cart-storage");
+      }
+    } else {
+      console.log("Cart store rehydrated successfully");
+    }
+  },
 });
 
 const useCartStore = create(useCartStoreBase);
 
-// Selector: total price
-export const getCartTotal = () =>
-  useCartStore
-    .getState()
-    .cartItems.reduce(
-      (acc, item) =>
-        acc + (item.priceINR || item.price || 0) * (item.quantity || 1),
-      0
-    );
+// Selector: total price in specific currency
+export const getCartTotal = (currency = "INR") => {
+  const state = useCartStore.getState();
+  return state.cartItems.reduce((acc, item) => {
+    const price =
+      currency === "USD"
+        ? item.dumpsPriceUsd || item.priceUSD || item.price || 0
+        : item.dumpsPriceInr || item.priceINR || item.price || 0;
+    return acc + price * (item.quantity || 1);
+  }, 0);
+};
+
+// Selector: get item count
+export const getCartItemCount = () => {
+  const state = useCartStore.getState();
+  return state.cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
+};
 
 export default useCartStore;

@@ -16,18 +16,10 @@ const Cart = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [couponApplicable, setCouponApplicable] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
   const [userId, setUserId] = useState(null);
-  const [paypalOrderId, setPaypalOrderId] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
-
-  // Currency options with conversion rates
-  const currencies = {
-    USD: { symbol: "$", rate: 1, name: "US Dollar" },
-    INR: { symbol: "₹", rate: 83, name: "Indian Rupee" },
-  };
 
   const cartItems = useCartStore((state) => state.cartItems);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
@@ -36,23 +28,53 @@ const Cart = () => {
 
   const router = useRouter();
 
-  // Calculate totals
-  const subtotal = cartItems.reduce(
-    (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
-    0
-  );
-  const grandTotal = subtotal - discount;
+  // Get actual item price based on currency
+  const getItemPrice = (item, currency) => {
+    if (currency === "USD") {
+      return item.dumpsPriceUsd || item.priceUSD || item.price || 0;
+    } else {
+      return item.dumpsPriceInr || item.priceINR || item.price || 0;
+    }
+  };
 
-  // Calculate converted amounts
-  const convertedSubtotal = (
-    subtotal * currencies[selectedCurrency].rate
-  ).toFixed(2);
-  const convertedDiscount = (
-    discount * currencies[selectedCurrency].rate
-  ).toFixed(2);
-  const convertedGrandTotal = (
-    grandTotal * currencies[selectedCurrency].rate
-  ).toFixed(2);
+  // Calculate subtotal in selected currency
+  const calculateSubtotal = () => {
+    return cartItems.reduce((acc, item) => {
+      const itemPrice = getItemPrice(item, selectedCurrency);
+      return acc + itemPrice * (item.quantity || 1);
+    }, 0);
+  };
+
+  const subtotal = calculateSubtotal();
+
+  // Calculate discount based on coupon
+  const calculateDiscount = () => {
+    if (!appliedCoupon) return 0;
+
+    if (appliedCoupon.discountType === "percentage") {
+      const discountAmount = (subtotal * appliedCoupon.discountValue) / 100;
+      return appliedCoupon.maxDiscount
+        ? Math.min(discountAmount, appliedCoupon.maxDiscount)
+        : discountAmount;
+    } else if (appliedCoupon.discountType === "fixed") {
+      return appliedCoupon.discountValue;
+    }
+    return 0;
+  };
+
+  const discount = calculateDiscount();
+  const grandTotal = Math.max(0, subtotal - discount);
+
+  // Currency symbol helper
+  const getCurrencySymbol = (currency) => {
+    return currency === "USD" ? "$" : "₹";
+  };
+
+  // Format price helper
+  const formatPrice = (amount, currency) => {
+    const numAmount = Number(amount) || 0;
+    return `${getCurrencySymbol(currency)}${numAmount.toFixed(2)}`;
+  };
 
   // Fetch userId from /api/user/me
   useEffect(() => {
@@ -61,7 +83,6 @@ const Cart = () => {
         try {
           const response = await axios.get("/api/user/me");
           setUserId(response.data.id);
-          console.log("Fetched userId from /api/user/me:", response.data.id);
         } catch (error) {
           console.error("Failed to fetch userId:", error);
           toast.error("Failed to fetch user details. Please try again.");
@@ -79,24 +100,32 @@ const Cart = () => {
     script.async = true;
     document.body.appendChild(script);
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
   const handleDelete = (id, type) => {
     removeFromCart(id, type);
     toast.success("Item removed from cart");
+
+    // Reset coupon if cart becomes empty
+    if (cartItems.length === 1) {
+      setAppliedCoupon(null);
+      setCouponCode("");
+    }
   };
 
   const handleQuantityChange = (id, type, operation) => {
     updateQuantity(id, type, operation);
     toast.success(
-      `Quantity ${operation === "inc" ? "increased" : "decreased"} for item`
+      `Quantity ${operation === "inc" ? "increased" : "decreased"}`
     );
   };
 
   const handleCoupon = async () => {
-    if (!couponCode) {
+    if (!couponCode.trim()) {
       setCouponError("Please enter a coupon code");
       toast.error("Please enter a coupon code");
       return;
@@ -104,15 +133,25 @@ const Cart = () => {
 
     try {
       const response = await axios.post("/api/coupons/validate", {
-        code: couponCode,
-        totalAmount: grandTotal,
+        code: couponCode.trim(),
+        totalAmount: subtotal,
+        currency: selectedCurrency,
       });
 
       if (response.data.success) {
-        setDiscount(response.data.discount);
-        setCouponApplicable(true);
+        setAppliedCoupon({
+          code: couponCode.trim(),
+          discountType: response.data.discountType,
+          discountValue: response.data.discountValue,
+          maxDiscount: response.data.maxDiscount,
+        });
         setCouponError("");
-        toast.success(`Coupon applied! You saved ₹${response.data.discount}`);
+        toast.success(
+          `Coupon applied! You saved ${formatPrice(
+            response.data.discount,
+            selectedCurrency
+          )}`
+        );
       } else {
         setCouponError(response.data.error || "Invalid coupon code");
         toast.error(response.data.error || "Invalid coupon code");
@@ -125,42 +164,23 @@ const Cart = () => {
       toast.error(errorMessage);
     }
   };
-console.log("=== FULL CART DIAGNOSTIC ===");
 
-cartItems.forEach((item, index) => {
-  console.log(`\n📦 Cart Item ${index + 1}:`);
-  console.log("  ID:", item._id);
-  console.log("  Name:", item.name);
-  console.log("  Title:", item.title);
-  console.log("  Type:", item.type);
-  console.log("  Price:", item.price);
-  
-  // Check PDF URLs
-  console.log("\n  📄 PDF URLs:");
-  console.log("    Sample PDF:", item.samplePdfUrl || "❌ MISSING");
-  console.log("    Main PDF:", item.mainPdfUrl || "❌ MISSING");
-  console.log("    Image URL:", item.imageUrl || "❌ MISSING");
-  
-  // Check pricing fields
-  console.log("\n  💰 Pricing Fields:");
-  console.log("    dumpsPriceInr:", item.dumpsPriceInr);
-  console.log("    dumpsPriceUsd:", item.dumpsPriceUsd);
-  console.log("    priceINR:", item.priceINR);
-  console.log("    priceUSD:", item.priceUSD);
-  
-  // Show all available keys
-  console.log("\n  🔑 All Available Fields:", Object.keys(item).sort());
-  console.log("  📊 Total Fields:", Object.keys(item).length);
-});
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+    toast.info("Coupon removed");
+  };
 
-console.log("\n=== END DIAGNOSTIC ===\n");
-
-  // TEMPORARY DIAGNOSTIC VERSION - Use this to debug the API response
   const handleRazorpayPayment = async () => {
-    // Validation checks
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
       router.push("/auth/signin");
+      return;
+    }
+
+    if (selectedCurrency !== "INR") {
+      toast.error("Razorpay only supports INR currency");
       return;
     }
 
@@ -175,22 +195,12 @@ console.log("\n=== END DIAGNOSTIC ===\n");
     }
 
     try {
-      console.log("Creating Razorpay order:", {
-        amount: grandTotal,
-        userId,
-        itemCount: cartItems.length,
-      });
-
-      // Create order on backend
       const response = await axios.post("/api/payments/razorpay/create-order", {
         amount: grandTotal,
         currency: "INR",
         userId,
       });
 
-      console.log("Razorpay order created:", response.data);
-
-      // Extract order ID (try multiple possible keys)
       const orderId =
         response.data.orderId ||
         response.data.order_id ||
@@ -198,11 +208,9 @@ console.log("\n=== END DIAGNOSTIC ===\n");
         response.data.data?.orderId;
 
       if (!orderId) {
-        console.error("No order ID in response:", response.data);
         throw new Error("Order ID not received from server");
       }
 
-      // Check if Razorpay SDK is loaded
       if (typeof window.Razorpay === "undefined") {
         throw new Error("Razorpay SDK not loaded. Please refresh the page.");
       }
@@ -212,22 +220,15 @@ console.log("\n=== END DIAGNOSTIC ===\n");
 
       const options = {
         key: razorpayKey,
-        amount: grandTotal * 100, // Amount in paise
+        amount: Math.round(grandTotal * 100),
         currency: "INR",
         name: "DumpsExpert",
         description: "Purchase IT Certification Materials",
         order_id: orderId,
         handler: async (razorpayResponse) => {
           try {
-            console.log("Payment completed. Verifying...", {
-              orderId: razorpayResponse.razorpay_order_id,
-              paymentId: razorpayResponse.razorpay_payment_id,
-            });
-
-            // Show loading toast
             toast.loading("Verifying payment...");
 
-            // Verify payment signature
             const paymentVerification = await axios.post(
               "/api/payments/razorpay/verify",
               {
@@ -239,36 +240,26 @@ console.log("\n=== END DIAGNOSTIC ===\n");
               }
             );
 
-            console.log(
-              "Payment verification result:",
-              paymentVerification.data
-            );
-
             if (!paymentVerification.data.success) {
               throw new Error(
                 paymentVerification.data.error || "Payment verification failed"
               );
             }
 
-            // Dismiss loading toast
             toast.dismiss();
             toast.loading("Creating your order...");
 
-            // Create order in database
             const orderPayload = {
               userId,
               items: cartItems.map((item) => ({
-                // Core identifiers
                 _id: item._id,
                 productId: item.productId || item._id,
                 courseId: item._id,
-
-                // Names and titles
                 name: item.name || item.title || "Unnamed Course",
                 title: item.title,
 
-                // Pricing (all variants)
-                price: item.price || item.priceINR || item.dumpsPriceInr || 0,
+                // All pricing fields
+                price: getItemPrice(item, selectedCurrency),
                 priceINR: item.priceINR || item.dumpsPriceInr,
                 priceUSD: item.priceUSD || item.dumpsPriceUsd,
                 dumpsPriceInr: item.dumpsPriceInr,
@@ -280,65 +271,45 @@ console.log("\n=== END DIAGNOSTIC ===\n");
                 comboMrpInr: item.comboMrpInr,
                 comboMrpUsd: item.comboMrpUsd,
 
-                // Product details
                 category: item.category,
                 code: item.code || item.sapExamCode,
                 sapExamCode: item.sapExamCode,
                 sku: item.sku,
                 slug: item.slug,
-
-                // URLs - CRITICAL for order access
                 imageUrl: item.imageUrl || "",
                 samplePdfUrl: item.samplePdfUrl || "",
                 mainPdfUrl: item.mainPdfUrl || "",
-
-                // Exam details
                 duration: item.duration || "",
                 eachQuestionMark: item.eachQuestionMark || "",
                 numberOfQuestions: item.numberOfQuestions || "0",
                 passingScore: item.passingScore || "",
-
-                // Instructions
                 mainInstructions: item.mainInstructions || "",
                 sampleInstructions: item.sampleInstructions || "",
-
-                // Descriptions
                 Description: item.Description || "",
                 longDescription: item.longDescription || "",
-
-                // Status and type
                 status: item.status || "active",
                 action: item.action,
                 type: item.type || "exam",
-
-                // SEO fields
                 metaTitle: item.metaTitle,
                 metaKeywords: item.metaKeywords,
                 metaDescription: item.metaDescription,
                 schema: item.schema,
-
-                // Quantity
                 quantity: item.quantity || 1,
               })),
               totalAmount: grandTotal,
-              discount: discount || 0,
+              subtotal: subtotal,
+              discount: discount,
+              currency: selectedCurrency,
+              couponCode: appliedCoupon?.code || null,
               paymentMethod: "razorpay",
               paymentId: paymentVerification.data.paymentId,
               paymentStatus: "completed",
             };
 
-            console.log("Creating order with full payload:", orderPayload);
-
-            console.log("Creating order with payload:", orderPayload);
-
             const orderResponse = await axios.post("/api/order", orderPayload);
 
-            console.log("Order created successfully:", orderResponse.data);
-
-            // Clear cart
             clearCart();
 
-            // Update session if needed
             if (paymentVerification.data.user) {
               await update({
                 user: {
@@ -349,35 +320,20 @@ console.log("\n=== END DIAGNOSTIC ===\n");
               });
             }
 
-            // Dismiss loading and show success
             toast.dismiss();
-            toast.success("Payment successful! Order created.", {
-              duration: 3000,
-            });
-
-            // Close modal and redirect
+            toast.success("Payment successful! Order created.");
             setShowPaymentModal(false);
 
-            // Small delay before redirect for better UX
             setTimeout(() => {
               router.push("/dashboard");
             }, 1000);
           } catch (error) {
             console.error("Order creation failed:", error);
-            console.error("Error response:", error?.response?.data);
-
             toast.dismiss();
-
-            const errorMessage =
+            toast.error(
               error.response?.data?.error ||
-              error.response?.data?.message ||
-              error.message ||
-              "Failed to create order. Please contact support with your payment ID.";
-
-            toast.error(errorMessage, { duration: 5000 });
-
-            // Don't clear cart or redirect on error
-            // User can try again or contact support
+                "Failed to create order. Please contact support."
+            );
           }
         },
         prefill: {
@@ -385,33 +341,22 @@ console.log("\n=== END DIAGNOSTIC ===\n");
           email: session?.user?.email || "",
           contact: session?.user?.phone || "",
         },
-        notes: {
-          userId: userId,
-          cartItemCount: cartItems.length,
-        },
         theme: {
           color: "#4F46E5",
         },
         modal: {
-          ondismiss: function () {
-            console.log("Payment modal closed by user");
+          ondismiss: () => {
             toast.info("Payment cancelled");
             setShowPaymentModal(false);
           },
-          escape: true,
-          backdropclose: false,
         },
       };
-
-      console.log("Opening Razorpay checkout...");
 
       const rzp = new window.Razorpay(options);
 
       rzp.on("payment.failed", (response) => {
         console.error("Payment failed:", response.error);
-        toast.error(`Payment failed: ${response.error.description}`, {
-          duration: 5000,
-        });
+        toast.error(`Payment failed: ${response.error.description}`);
         setShowPaymentModal(false);
       });
 
@@ -419,30 +364,10 @@ console.log("\n=== END DIAGNOSTIC ===\n");
       setShowPaymentModal(false);
     } catch (error) {
       console.error("Payment initiation failed:", error);
-      console.error("Error details:", {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-      });
-
-      let errorMessage = "Failed to initiate payment";
-
-      if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.status === 500) {
-        errorMessage = "Server error. Please try again later.";
-      } else if (error?.response?.status === 401) {
-        errorMessage = "Authentication failed. Please log in again.";
-      }
-
-      toast.error(errorMessage, { duration: 5000 });
+      toast.error(error.response?.data?.error || "Failed to initiate payment");
     }
   };
-  // PayPal payment handlers
+
   const createPayPalOrder = async () => {
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
@@ -450,23 +375,20 @@ console.log("\n=== END DIAGNOSTIC ===\n");
       return;
     }
 
-    const convertedAmount = parseFloat(convertedGrandTotal);
+    if (selectedCurrency !== "USD") {
+      toast.error("PayPal only supports USD currency");
+      return;
+    }
 
-    if (convertedAmount <= 0) {
+    if (grandTotal <= 0) {
       toast.error("Cart total must be greater than zero");
       return;
     }
 
     try {
-      console.log("Creating PayPal order:", {
-        amount: convertedAmount,
-        currency: selectedCurrency,
-        userId,
-      });
-
       const response = await axios.post("/api/payments/paypal/create-order", {
-        amount: convertedAmount,
-        currency: selectedCurrency,
+        amount: grandTotal,
+        currency: "USD",
         userId,
       });
 
@@ -474,7 +396,6 @@ console.log("\n=== END DIAGNOSTIC ===\n");
         throw new Error(response.data.error || "Failed to create PayPal order");
       }
 
-      setPaypalOrderId(response.data.orderId);
       return response.data.orderId;
     } catch (error) {
       console.error("PayPal order creation failed:", error);
@@ -487,80 +408,114 @@ console.log("\n=== END DIAGNOSTIC ===\n");
 
   const onPayPalApprove = async (data) => {
     try {
-      console.log("PayPal payment approved:", data);
-      console.log("User ID sent to verify:", userId);
+      toast.loading("Verifying payment...");
 
       const paymentVerification = await axios.post(
         "/api/payments/paypal/verify",
         {
           orderId: data.orderID,
-          amount: parseFloat(convertedGrandTotal),
+          amount: grandTotal,
           userId,
         }
       );
 
-      if (paymentVerification.data.success) {
-        console.log("Creating order with:", {
-          userId,
-          items: cartItems,
-          totalAmount: grandTotal,
-        });
-
-        await axios.post("/api/order", {
-          userId,
-          items: cartItems.map((item) => ({
-            ...item,
-            name: item.name || item.title || "Unnamed Course",
-            quantity: item.quantity || 1,
-          })),
-          totalAmount: grandTotal,
-          paymentMethod: "paypal",
-          paymentId: paymentVerification.data.paymentId,
-        });
-
-        clearCart();
-
-        if (paymentVerification.data.user) {
-          await update({
-            user: {
-              ...session.user,
-              role: paymentVerification.data.user.role,
-              subscription: paymentVerification.data.user.subscription,
-            },
-          });
-        }
-
-        toast.success("Payment successful! Order created.");
-        setShowPaymentModal(false);
-        router.push("/dashboard");
-      } else {
+      if (!paymentVerification.data.success) {
         throw new Error(
           paymentVerification.data.error || "Payment verification failed"
         );
       }
+
+      toast.dismiss();
+      toast.loading("Creating your order...");
+
+      const orderPayload = {
+        userId,
+        items: cartItems.map((item) => ({
+          _id: item._id,
+          productId: item.productId || item._id,
+          courseId: item._id,
+          name: item.name || item.title || "Unnamed Course",
+          title: item.title,
+
+          price: getItemPrice(item, selectedCurrency),
+          priceINR: item.priceINR || item.dumpsPriceInr,
+          priceUSD: item.priceUSD || item.dumpsPriceUsd,
+          dumpsPriceInr: item.dumpsPriceInr,
+          dumpsPriceUsd: item.dumpsPriceUsd,
+          dumpsMrpInr: item.dumpsMrpInr,
+          dumpsMrpUsd: item.dumpsMrpUsd,
+          comboPriceInr: item.comboPriceInr,
+          comboPriceUsd: item.comboPriceUsd,
+          comboMrpInr: item.comboMrpInr,
+          comboMrpUsd: item.comboMrpUsd,
+
+          category: item.category,
+          code: item.code || item.sapExamCode,
+          sapExamCode: item.sapExamCode,
+          sku: item.sku,
+          slug: item.slug,
+          imageUrl: item.imageUrl || "",
+          samplePdfUrl: item.samplePdfUrl || "",
+          mainPdfUrl: item.mainPdfUrl || "",
+          duration: item.duration || "",
+          eachQuestionMark: item.eachQuestionMark || "",
+          numberOfQuestions: item.numberOfQuestions || "0",
+          passingScore: item.passingScore || "",
+          mainInstructions: item.mainInstructions || "",
+          sampleInstructions: item.sampleInstructions || "",
+          Description: item.Description || "",
+          longDescription: item.longDescription || "",
+          status: item.status || "active",
+          action: item.action,
+          type: item.type || "exam",
+          metaTitle: item.metaTitle,
+          metaKeywords: item.metaKeywords,
+          metaDescription: item.metaDescription,
+          schema: item.schema,
+          quantity: item.quantity || 1,
+        })),
+        totalAmount: grandTotal,
+        subtotal: subtotal,
+        discount: discount,
+        currency: selectedCurrency,
+        couponCode: appliedCoupon?.code || null,
+        paymentMethod: "paypal",
+        paymentId: paymentVerification.data.paymentId,
+        paymentStatus: "completed",
+      };
+
+      await axios.post("/api/order", orderPayload);
+
+      clearCart();
+
+      if (paymentVerification.data.user) {
+        await update({
+          user: {
+            ...session.user,
+            role: paymentVerification.data.user.role,
+            subscription: paymentVerification.data.user.subscription,
+          },
+        });
+      }
+
+      toast.dismiss();
+      toast.success("Payment successful! Order created.");
+      setShowPaymentModal(false);
+      router.push("/dashboard");
     } catch (error) {
       console.error("PayPal payment verification failed:", error);
+      toast.dismiss();
       toast.error(error.response?.data?.error || "Payment verification failed");
     }
   };
 
-  const onPayPalError = (error) => {
-    console.error("PayPal payment error:", error);
-    toast.error("PayPal payment failed. Please try again.");
-  };
-
-  const onPayPalCancel = () => {
-    console.log("PayPal payment cancelled");
-    toast.info("Payment cancelled");
-  };
-
   if (!isMounted) {
-    return <div className="text-center">Loading...</div>;
+    return <div className="text-center py-8">Loading...</div>;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" richColors />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-center mb-8">Shopping Cart</h1>
 
@@ -588,102 +543,106 @@ console.log("\n=== END DIAGNOSTIC ===\n");
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <div
-                  key={`${item._id}-${item.type}`}
-                  className="bg-white rounded-lg shadow-sm p-6 flex items-center space-x-4"
-                >
-                  <div className="flex-shrink-0">
-                    <Image
-                      src={item.imageUrl || "/placeholder-image.jpg"}
-                      alt={item.title}
-                      width={80}
-                      height={80}
-                      className="rounded-lg object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-medium text-gray-900 truncate">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm text-gray-500 capitalize">
-                      Type: {item.type}
-                    </p>
-                    <p className="text-lg font-semibold text-green-600">
-                      {currencies[selectedCurrency].symbol}
-                      {(item.price * currencies[selectedCurrency].rate).toFixed(
-                        2
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() =>
-                        handleQuantityChange(item._id, item.type, "dec")
-                      }
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                      disabled={item.quantity <= 1}
-                    >
-                      -
-                    </button>
-                    <span className="w-8 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() =>
-                        handleQuantityChange(item._id, item.type, "inc")
-                      }
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(item._id, item.type)}
-                    className="text-red-500 hover:text-red-700 p-2"
+              {cartItems.map((item) => {
+                const itemPrice = getItemPrice(item, selectedCurrency);
+                return (
+                  <div
+                    key={`${item._id}-${item.type}`}
+                    className="bg-white rounded-lg shadow-sm p-6 flex items-center space-x-4"
                   >
-                    🗑️
-                  </button>
-                </div>
-              ))}
+                    <div className="flex-shrink-0">
+                      <Image
+                        src={item.imageUrl || "/placeholder-image.jpg"}
+                        alt={item.title}
+                        width={80}
+                        height={80}
+                        className="rounded-lg object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-medium text-gray-900 truncate">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 capitalize">
+                        Type: {item.type}
+                      </p>
+                      <p className="text-lg font-semibold text-green-600">
+                        {formatPrice(itemPrice, selectedCurrency)}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() =>
+                          handleQuantityChange(item._id, item.type, "dec")
+                        }
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 disabled:opacity-50"
+                        disabled={item.quantity <= 1}
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-medium">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          handleQuantityChange(item._id, item.type, "inc")
+                        }
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(item._id, item.type)}
+                      className="text-red-500 hover:text-red-700 p-2"
+                      title="Remove item"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Order Summary */}
-            <div className="bg-white rounded-lg shadow-sm p-6 h-fit">
+            <div className="bg-white rounded-lg shadow-sm p-6 h-fit sticky top-4">
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
 
               {/* Currency Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Display Currency
+                  Currency
                 </label>
                 <select
                   value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCurrency(e.target.value);
+                    setAppliedCoupon(null);
+                    setCouponCode("");
+                    setCouponError("");
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  {Object.entries(currencies).map(
-                    ([code, { symbol, name }]) => (
-                      <option key={code} value={code}>
-                        {symbol} {name} ({code})
-                      </option>
-                    )
-                  )}
+                  <option value="USD">$ US Dollar (USD)</option>
+                  <option value="INR">₹ Indian Rupee (INR)</option>
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Prices will update based on selected currency
+                </p>
               </div>
 
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between">
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between text-gray-700">
                   <span>Subtotal:</span>
-                  <span>
-                    {currencies[selectedCurrency].symbol}
-                    {convertedSubtotal}
+                  <span className="font-medium">
+                    {formatPrice(subtotal, selectedCurrency)}
                   </span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
-                    <span>Discount:</span>
-                    <span>
-                      -{currencies[selectedCurrency].symbol}
-                      {convertedDiscount}
+                    <span>Discount ({appliedCoupon?.code}):</span>
+                    <span className="font-medium">
+                      -{formatPrice(discount, selectedCurrency)}
                     </span>
                   </div>
                 )}
@@ -691,100 +650,122 @@ console.log("\n=== END DIAGNOSTIC ===\n");
 
               {/* Coupon Section */}
               <div className="mb-4">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Enter coupon code"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                  <Button onClick={handleCoupon} variant="default">
-                    Apply
-                  </Button>
-                </div>
-                {couponError && (
-                  <p className="text-red-500 text-sm mt-2">{couponError}</p>
+                {!appliedCoupon ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Have a coupon?
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder="Enter coupon code"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase());
+                          setCouponError("");
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <Button
+                        onClick={handleCoupon}
+                        variant="default"
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                    {couponError && (
+                      <p className="text-red-500 text-sm mt-2">{couponError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm font-medium text-green-800">
+                          Coupon Applied: {appliedCoupon.code}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          You saved {formatPrice(discount, selectedCurrency)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-red-500 hover:text-red-700 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
 
               <hr className="my-4" />
 
-              <p className="font-medium text-lg">
-                Grand Total:{" "}
-                <span className="float-right text-green-600">
-                  {currencies[selectedCurrency].symbol}
-                  {convertedGrandTotal} {selectedCurrency}
+              <div className="flex justify-between items-center mb-6">
+                <span className="text-lg font-semibold">Grand Total:</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {formatPrice(grandTotal, selectedCurrency)}
                 </span>
-              </p>
+              </div>
 
-              {cartItems.length > 0 && (
-                <div className="mt-6">
-                  <Button
-                    variant="default"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700"
-                    onClick={() => setShowPaymentModal(true)}
-                  >
-                    Continue to Payment
-                  </Button>
-                </div>
-              )}
+              <Button
+                variant="default"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3"
+                onClick={() => setShowPaymentModal(true)}
+              >
+                Proceed to Payment
+              </Button>
+
+              <p className="text-xs text-gray-500 text-center mt-3">
+                Secure checkout powered by Razorpay & PayPal
+              </p>
             </div>
           </div>
         )}
 
+        {/* Payment Modal */}
         {showPaymentModal && (
           <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
-              <h3 className="text-xl font-semibold text-center">
+              <h3 className="text-xl font-semibold text-center mb-4">
                 Select Payment Method
               </h3>
 
-              {/* Currency Selection */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Currency
-                </label>
-                <select
-                  value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {Object.entries(currencies).map(
-                    ([code, { symbol, name }]) => (
-                      <option key={code} value={code}>
-                        {symbol} {name} ({code})
-                      </option>
-                    )
-                  )}
-                </select>
-                <p className="text-sm text-gray-600">
-                  Total: {currencies[selectedCurrency].symbol}
-                  {convertedGrandTotal} {selectedCurrency}
-                </p>
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Currency:</span>
+                  <span className="font-medium">{selectedCurrency}</span>
+                </div>
+                <div className="flex justify-between text-lg">
+                  <span className="font-semibold">Total:</span>
+                  <span className="font-bold text-green-600">
+                    {formatPrice(grandTotal, selectedCurrency)}
+                  </span>
+                </div>
               </div>
 
-              {/* Razorpay Button (Only for INR) */}
               {selectedCurrency === "INR" && (
                 <button
                   onClick={handleRazorpayPayment}
                   className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
                 >
-                  💳 Pay with Razorpay ({currencies[selectedCurrency].symbol}
-                  {convertedGrandTotal})
+                  <span>💳</span>
+                  <span>Pay with Razorpay</span>
+                  <span className="ml-auto">
+                    {formatPrice(grandTotal, "INR")}
+                  </span>
                 </button>
               )}
 
-              {/* PayPal Button (Only for USD) */}
               {selectedCurrency === "USD" && (
                 <div className="w-full">
                   <PayPalScriptProvider
-                    key={selectedCurrency} // ensures re-render on currency change
                     options={{
                       "client-id":
                         process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ||
-                        "YOUR_REAL_SANDBOX_CLIENT_ID",
-                      currency: selectedCurrency,
+                        "YOUR_PAYPAL_CLIENT_ID",
+                      currency: "USD",
                       intent: "capture",
                     }}
                   >
@@ -797,17 +778,27 @@ console.log("\n=== END DIAGNOSTIC ===\n");
                       }}
                       createOrder={createPayPalOrder}
                       onApprove={onPayPalApprove}
-                      onError={onPayPalError}
-                      onCancel={onPayPalCancel}
-                      forceReRender={[selectedCurrency, convertedGrandTotal]}
+                      onError={(error) => {
+                        console.error("PayPal error:", error);
+                        toast.error("PayPal payment failed");
+                      }}
+                      onCancel={() => {
+                        toast.info("Payment cancelled");
+                      }}
                     />
                   </PayPalScriptProvider>
                 </div>
               )}
 
+              <p className="text-xs text-gray-500 text-center">
+                {selectedCurrency === "INR"
+                  ? "Razorpay accepts UPI, Cards, Net Banking & Wallets"
+                  : "PayPal accepts Credit/Debit Cards & PayPal Balance"}
+              </p>
+
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="block mx-auto mt-2 text-sm text-gray-500 hover:underline"
+                className="block mx-auto mt-4 text-sm text-gray-500 hover:text-gray-700 hover:underline"
               >
                 Cancel
               </button>

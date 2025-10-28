@@ -9,32 +9,88 @@ const PdfCoursesClient = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchPdfCourses = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:3000/api/student/orders",
-          { withCredentials: true }
-        );
+        // Step 1: Get user orders
+        const { data } = await axios.get("/api/student/orders");
+        const orders = data?.orders || [];
 
-        console.log("📦 Full API Response:", res.data);
-        console.log("📦 Orders:", res.data.orders);
+        if (orders.length === 0) {
+          setLoading(false);
+          return;
+        }
 
-        const orders = res.data.orders || res.data || [];
-        console.log("📦 Processing orders:", orders);
+        // Step 2: Extract courses and check if PDF was purchased
+        const coursesWithPdf = [];
 
-        const { pdfCourses } = await separateCoursesByType(orders);
+        for (const order of orders) {
+          for (const course of order.courseDetails || []) {
+            const slug = course.slug;
+            const purchaseType = course.type || "";
 
-        console.log("✅ Final pdfCourses:", pdfCourses);
-        setPdfCourses(pdfCourses);
+            // Skip if no slug
+            if (!slug || slug.trim() === "") {
+              console.log(`Skipping course without slug: ${course.name}`);
+              continue;
+            }
+
+            // IMPORTANT: Only show if user bought PDF (regular) or COMBO (not just online/exam)
+            // type: "regular" = PDF only
+            // type: "online" = Exam only
+            // type: "combo" = Both PDF + Exam
+            const hasPdfAccess =
+              purchaseType.toLowerCase() === "regular" ||
+              purchaseType.toLowerCase() === "combo";
+
+            if (!hasPdfAccess) {
+              console.log(
+                `Skipping - User only bought Exam (type: ${purchaseType}) for: ${course.name}`
+              );
+              continue;
+            }
+
+            try {
+              // Step 3: Check if product exists and get PDF URL
+              const productResponse = await axios.get(
+                `/api/products/get-by-slug/${slug}`
+              );
+
+              if (productResponse.data?.data) {
+                const product = productResponse.data.data;
+
+                // Only add if mainPdfUrl exists
+                if (product.mainPdfUrl && product.mainPdfUrl.trim() !== "") {
+                  coursesWithPdf.push({
+                    name: product.title || course.name || "Unknown Course",
+                    slug: slug,
+                    productId: product._id,
+                    examCode: product.sapExamCode || course.code || "N/A",
+                    purchaseDate: order.purchaseDate,
+                    purchaseType: purchaseType,
+                    category: product.category || "",
+                    imageUrl: product.imageUrl || "",
+                    downloadUrl: product.mainPdfUrl,
+                  });
+                } else {
+                  console.warn(`⚠️ No PDF URL found for: ${product.title}`);
+                }
+              }
+            } catch (err) {
+              console.log(`Product not found for slug: ${slug}`);
+            }
+          }
+        }
+
+        setPdfCourses(coursesWithPdf);
       } catch (err) {
-        console.error("❌ Error fetching orders:", err);
+        console.error("Error fetching courses:", err);
         toast.error("Failed to fetch courses");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOrders();
+    fetchPdfCourses();
   }, []);
 
   const handleDownload = async (url, filename) => {
@@ -55,121 +111,132 @@ const PdfCoursesClient = () => {
   };
 
   return (
-    <div className="bg-white text-gray-900 p-6 rounded-xl shadow-lg max-w-4xl mx-auto mt-10 border border-gray-200">
-      <h1 className="text-2xl font-bold mb-4 text-center text-gray-800">
-        My PDF Courses
-      </h1>
+    <div className="max-w-6xl mx-auto mt-10 p-6">
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h1 className="text-3xl font-bold mb-8 text-center text-gray-900">
+          My PDF Courses
+        </h1>
 
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
-          <p className="mt-2 text-gray-600">Loading courses...</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {pdfCourses.length === 0 ? (
-            <div>
-              <p className="text-gray-500 text-center">
-                No downloadable PDF courses found.
-              </p>
-              <p className="text-xs text-gray-400 text-center mt-2">
-                Check console for debugging information
-              </p>
-            </div>
-          ) : (
-            pdfCourses.map((course, index) => (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
+            <p className="text-gray-600 text-lg">Loading your courses...</p>
+          </div>
+        ) : pdfCourses.length === 0 ? (
+          <div className="text-center py-16 bg-gray-50 rounded-lg">
+            <svg
+              className="mx-auto h-16 w-16 text-gray-400 mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+              />
+            </svg>
+            <p className="text-gray-600 text-xl font-semibold mb-2">
+              No PDF Courses Available
+            </p>
+            <p className="text-gray-500">
+              You haven't purchased any PDF courses yet. Only Exam purchases
+              won't show here.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {pdfCourses.map((course, index) => (
               <div
                 key={index}
-                className="flex flex-col sm:flex-row sm:items-center justify-between border border-gray-300 p-4 rounded-lg shadow-sm hover:shadow-md transition bg-gray-50"
+                className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow bg-gradient-to-r from-green-50 to-white"
               >
-                <span className="text-sm text-gray-500 sm:w-32 mb-2 sm:mb-0">
-                  {course.date}
-                </span>
-                <span className="text-blue-600 font-semibold text-center flex-1 mx-2">
-                  {course.name}
-                </span>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex gap-4 flex-1">
+                    {course.imageUrl && (
+                      <img
+                        src={course.imageUrl}
+                        alt={course.name}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    )}
 
-                {course.downloadUrl ? (
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        {course.name}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          {new Date(course.purchaseDate).toLocaleDateString(
+                            "en-GB"
+                          )}
+                        </span>
+
+                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+                          {course.examCode}
+                        </span>
+
+                        {course.purchaseType && (
+                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium uppercase">
+                            {course.purchaseType === "regular"
+                              ? "PDF Access"
+                              : course.purchaseType}
+                          </span>
+                        )}
+
+                        {course.category && (
+                          <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                            {course.category}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     onClick={() =>
-                      handleDownload(
-                        course.downloadUrl,
-                        `${course.name.replace(/\[PDF\]/gi, "").trim()}.pdf`
-                      )
+                      handleDownload(course.downloadUrl, `${course.name}.pdf`)
                     }
-                    className="bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition text-sm font-medium shadow-sm"
+                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
                   >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
                     Download PDF
                   </button>
-                ) : (
-                  <span className="text-gray-400 text-sm italic">
-                    File not available
-                  </span>
-                )}
+                </div>
               </div>
-            ))
-          )}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default PdfCoursesClient;
-
-/* ✅ Helper Function with detailed logging */
-// ✅ Helper Function
-async function separateCoursesByType(orders = []) {
-  const pdfCourses = [];
-  const examCourses = [];
-
-  const fetchPromises = [];
-
-  orders.forEach((order) => {
-    order.courseDetails?.forEach((course) => {
-      if (course.name?.toLowerCase().includes("[pdf]")) {
-        const apiUrl = `http://localhost:3000/api/products/get-by-slug/${course.slug}`;
-
-        const promise = axios
-          .get(apiUrl)
-          .then((response) => {
-            // ✅ FIXED: Accessing the nested data
-            const productData = response.data?.data;
-
-            if (!productData) {
-              console.warn("⚠️ Product data missing for slug:", course.slug);
-              return;
-            }
-
-            console.log("🧾 Product Data:", productData);
-
-            // ✅ Check if mainPdfUrl exists
-            if (
-              productData.mainPdfUrl &&
-              productData.mainPdfUrl.trim() !== ""
-            ) {
-              pdfCourses.push({
-                name: course.name,
-                code: course.code || productData.sapExamCode,
-                date: new Date(order.purchaseDate).toLocaleDateString("en-GB"),
-                downloadUrl: productData.mainPdfUrl, // ✅ mainPdfUrl found
-              });
-            } else {
-              console.warn(`⚠️ No mainPdfUrl found for ${course.name}`);
-            }
-          })
-          .catch((err) => {
-            console.error(
-              `❌ Error fetching product by slug: ${course.slug}`,
-              err
-            );
-          });
-
-        fetchPromises.push(promise);
-      }
-    });
-  });
-
-  await Promise.all(fetchPromises);
-  return { pdfCourses, examCourses };
-}
