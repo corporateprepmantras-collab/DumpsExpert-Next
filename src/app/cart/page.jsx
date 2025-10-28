@@ -28,28 +28,28 @@ const Cart = () => {
 
   const router = useRouter();
 
-  // Get actual item price based on currency - CHECKS COMBO PRICES FIRST
+  // Get actual item price based on currency and TYPE
   const getItemPrice = (item, currency) => {
     if (currency === "USD") {
-      // Priority: combo -> dumps -> generic
-      return (
-        Number(
-          item.comboPriceUsd ||
-            item.dumpsPriceUsd ||
-            item.priceUSD ||
-            item.price
-        ) || 0
-      );
+      // Check type and use appropriate price
+      if (item.type === "combo") {
+        return Number(item.comboPriceUsd || item.priceUSD || item.price) || 0;
+      } else if (item.type === "online") {
+        return Number(item.dumpsPriceUsd || item.priceUSD || item.price) || 0;
+      } else {
+        // For 'exam' or 'regular' type
+        return Number(item.priceUSD || item.dumpsPriceUsd || item.price) || 0;
+      }
     } else {
-      // Priority: combo -> dumps -> generic
-      return (
-        Number(
-          item.comboPriceInr ||
-            item.dumpsPriceInr ||
-            item.priceINR ||
-            item.price
-        ) || 0
-      );
+      // Check type and use appropriate price
+      if (item.type === "combo") {
+        return Number(item.comboPriceInr || item.priceINR || item.price) || 0;
+      } else if (item.type === "online") {
+        return Number(item.dumpsPriceInr || item.priceINR || item.price) || 0;
+      } else {
+        // For 'exam' or 'regular' type
+        return Number(item.priceINR || item.dumpsPriceInr || item.price) || 0;
+      }
     }
   };
 
