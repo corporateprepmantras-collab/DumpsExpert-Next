@@ -533,7 +533,7 @@ export default function MainExamTestPage() {
                       <option value="">Select match...</option>
                       {currentMatchingOptions.map((rightItem) => (
                         <option key={rightItem._id} value={rightItem.id}>
-                          {rightItem.text}
+                          {rightItem.text} <span className="text-white-500 rounded-full bg-gray-300">({rightItem.id})</span>
                         </option>
                       ))}
                     </select>
@@ -571,7 +571,7 @@ export default function MainExamTestPage() {
                 className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"
               >
                 <div className="font-medium text-gray-700 mb-2">
-                  {rightItem.text}
+                  {rightItem.text} 
                 </div>
                 {rightItem.image && (
                   <img

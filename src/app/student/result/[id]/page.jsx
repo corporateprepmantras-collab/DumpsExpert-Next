@@ -14,20 +14,52 @@ export default function SavedResultPage() {
   const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
-    const fetchResult = async () => {
-      try {
-        const res = await axios.get(`/api/results/${params.id}`);
-        if (res.data.success) {
-          setResult(res.data.data);
+const fetchResult = async () => {
+  try {
+    const res = await axios.get(`/api/results/${params.id}`);
+    if (res.data.success) {
+      const rawResult = res.data.data;
+
+      // Process questions to ensure each has isCorrect and consistent structure
+      const processedQuestions = (rawResult.questions || []).map((q) => {
+        let isCorrect = false;
+
+        if (q.questionType === "matching") {
+          // Compare both objects (correctAnswer vs selectedAnswer)
+          const correct = JSON.stringify(q.correctAnswer || {});
+          const selected = JSON.stringify(q.selectedAnswer || {});
+          isCorrect = correct === selected;
+        } else if (q.questionType === "checkbox") {
+          const correctAnswers = q.correctAnswer || [];
+          const selectedAnswers = q.selectedAnswer || [];
+          isCorrect =
+            correctAnswers.length === selectedAnswers.length &&
+            correctAnswers.every((ans) => selectedAnswers.includes(ans));
         } else {
-          console.error("Failed to fetch result:", res.data.message);
+          // Single choice / radio
+          isCorrect = q.correctAnswer === q.selectedAnswer;
         }
-      } catch (error) {
-        console.error("Error fetching result:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+
+        return {
+          ...q,
+          isCorrect,
+        };
+      });
+
+      setResult({
+        ...rawResult,
+        questions: processedQuestions,
+      });
+    } else {
+      console.error("Failed to fetch result:", res.data.message);
+    }
+  } catch (error) {
+    console.error("Error fetching result:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
     if (params.id) {
       fetchResult();
@@ -89,70 +121,42 @@ export default function SavedResultPage() {
 
   // Render answer based on question type
   const renderAnswer = (question) => {
-    if (question.questionType === "matching") {
-      const correctMatches = question.correctAnswer || {};
-      const selectedMatches = question.selectedAnswer || {};
-      const leftItems = question.matchingPairs?.leftItems || [];
-      const rightItems = question.matchingPairs?.rightItems || [];
+ if (question.questionType === "matching") {
+  const correctPairs = question.correctAnswer || {};
+  const selectedPairs = question.selectedAnswer || {};
 
-      return (
-        <div className="space-y-4 mt-4">
-          <h4 className="font-semibold text-gray-800">Your Matches:</h4>
-          {leftItems.map((leftItem) => {
-            const correctRightId = correctMatches[leftItem.id];
-            const selectedRightId = selectedMatches[leftItem.id];
-            const correctRightItem = rightItems.find(r => r.id === correctRightId);
-            const selectedRightItem = rightItems.find(r => r.id === selectedRightId);
-            const isMatch = correctRightId === selectedRightId;
+  const allKeys = Object.keys(correctPairs);
 
-            return (
-              <div key={leftItem.id} className={`p-4 rounded-lg border-2 ${isMatch ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-                  {/* Left Item */}
-                  <div className="font-medium text-gray-900">
-                    <div className="text-sm text-gray-600 mb-1">Question:</div>
-                    <div>{leftItem.text}</div>
-                    {leftItem.image && (
-                      <img src={leftItem.image} alt="" className="mt-2 max-h-20 rounded border" />
-                    )}
-                  </div>
+  return (
+    <div className="space-y-2 mt-2">
+      {allKeys.map((key, idx) => {
+        const selected = selectedPairs[key];
+        const correct = correctPairs[key];
+        const isCorrect = selected === correct;
 
-                  {/* Arrow */}
-                  <div className="text-center text-2xl text-gray-400 hidden md:block">→</div>
+        return (
+          <div
+            key={idx}
+            className={`flex justify-between items-center px-3 py-2 rounded-md border ${
+              isCorrect ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"
+            }`}
+          >
+            <span className="font-medium text-gray-700">{key}</span>
+            <span className="text-gray-600">→</span>
+            <span className="font-semibold text-gray-800">{selected || "—"}</span>
 
-                  {/* Right Item */}
-                  <div>
-                    {/* User's Answer */}
-                    <div className={`p-3 rounded-lg mb-2 ${selectedRightItem ? (isMatch ? 'bg-green-100 border border-green-400' : 'bg-red-100 border border-red-400') : 'bg-gray-100 border border-gray-300'}`}>
-                      <div className="text-xs font-semibold text-gray-600 mb-1">
-                        {isMatch ? '✓ Your Answer (Correct)' : (selectedRightItem ? '✗ Your Answer (Wrong)' : 'Not Answered')}
-                      </div>
-                      <div className={`font-medium ${isMatch ? 'text-green-700' : (selectedRightItem ? 'text-red-700' : 'text-gray-500')}`}>
-                        {selectedRightItem?.text || "Not answered"}
-                      </div>
-                      {selectedRightItem?.image && (
-                        <img src={selectedRightItem.image} alt="" className="mt-2 max-h-16 rounded" />
-                      )}
-                    </div>
+            {!isCorrect && (
+              <span className="text-sm text-gray-500 ml-2">
+                (Correct: <b>{correct}</b>)
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-                    {/* Correct Answer (if wrong) */}
-                    {!isMatch && correctRightItem && (
-                      <div className="p-3 rounded-lg bg-green-50 border border-green-300">
-                        <div className="text-xs font-semibold text-green-700 mb-1">✓ Correct Answer:</div>
-                        <div className="font-medium text-green-800">{correctRightItem.text}</div>
-                        {correctRightItem.image && (
-                          <img src={correctRightItem.image} alt="" className="mt-2 max-h-16 rounded" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
 
     if (question.questionType === "checkbox") {
       const correctAnswers = Array.isArray(question.correctAnswer) ? question.correctAnswer : [];
