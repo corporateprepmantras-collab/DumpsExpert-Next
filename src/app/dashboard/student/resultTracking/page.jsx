@@ -20,9 +20,9 @@ const ResultHistoryPage = () => {
         const studentData = studentRes.data;
         setStudent(studentData);
 
-        if (studentData && studentData.userInfoId) {
+        if (studentData && studentData.id) {
           // Fetch result history using student ID
-          const historyRes = await axios.get(`/api/results?studentId=${studentData.userInfoId}`);
+          const historyRes = await axios.get(`/api/results?studentId=${studentData.id}`);
           console.log("📊 History API response:", historyRes.data);
           
           if (historyRes.data.success) {

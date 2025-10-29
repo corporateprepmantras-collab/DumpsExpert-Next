@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
+import { toast } from "sonner";
 
 export default function TestPage() {
   const [questions, setQuestions] = useState([]);
@@ -347,102 +348,187 @@ export default function TestPage() {
     return { correct, attempted, wrong };
   };
 
-  const handleSubmit = async () => {
-    console.log("🚀 Submitting test...");
-    console.log("📊 Current state:", { 
-      isDataReady, 
-      hasExam: !!exam, 
-      hasQuestions: questions.length > 0, 
-      hasStudent: !!student 
-    });
+// TestPage.jsx - Updated handleSubmit function
 
-    if (!isDataReady || questions.length === 0) {
-      console.error("❌ Cannot submit: Data not ready or no questions");
-      alert("Test data is not ready. Please wait...");
-      return;
-    }
+const handleSubmit = async () => {
+  console.log("🚀 Submitting test...");
+  console.log("📊 Current state:", { 
+    isDataReady, 
+    hasExam: !!exam, 
+    hasQuestions: questions.length > 0, 
+    hasStudent: !!student 
+  });
 
-    // Create student object if not available
-    let submitStudent;
-    let submitExam;
+  if (!isDataReady || questions.length === 0) {
+    console.error("❌ Cannot submit: Data not ready or no questions");
+    alert("Test data is not ready. Please wait...");
+    return;
+  }
 
-    if (!student) {
-      submitStudent = { 
-        _id: `temp_${Date.now()}`,
-        name: "Guest Student"
-      };
+  // Create student object if not available
+  let submitStudent;
+  let submitExam;
 
-      submitExam = {
-        id: `temp_exam_${slug}`,
-        code: slug,
-        sampleDuration: 60
-      };
-    } else {
-      submitStudent = student;
-      submitExam = exam;
-    }
-    console.log("👤 Submitting for student:", submitStudent);
-
-    const { correct, attempted, wrong } = calculateScore();
-    const totalQuestions = questions.length;
-
-    const payload = {
-      studentId: submitStudent.id,
-      examCode: submitExam.code || slug,
-      examId: submitExam._id,
-      totalQuestions,
-      attempted,
-      correct,
-      wrong,
-      percentage: totalQuestions > 0 ? ((correct / totalQuestions) * 100).toFixed(2) : 0,
-      duration: (submitExam.sampleDuration || 60) * 60 - timeLeft,
-      questions: questions.map((q) => ({
-        question: q.questionText,
-        questionType: q.questionType,
-        correctAnswer: q.questionType === "matching" 
-          ? q.matchingPairs?.correctMatches 
-          : q.correctAnswers,
-        selectedAnswer: q.questionType === "matching" 
-          ? matchingAnswers[q._id] 
-          : answers[q._id] || null,
-      })),
-      userAnswers: {
-        singleChoice: answers,
-        matching: matchingAnswers
-      },
+  if (!student) {
+    submitStudent = { 
+      userInfoId: `temp_${Date.now()}`,
+      name: "Guest Student"
     };
 
-    console.log("📤 Submission payload:", payload);
+    submitExam = {
+      _id: `temp_exam_${slug}`,
+      code: slug,
+      sampleDuration: 60
+    };
+  } else {
+    submitStudent = student;
+    submitExam = exam;
+  }
+  console.log("👤 Submitting for student:", submitStudent);
 
-    try {
-      const res = await fetch("/api/results/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+  const { correct, attempted, wrong } = calculateScore();
+  const totalQuestions = questions.length;
+
+  // ✨ UPDATED: Include full question details matching your schema
+  const detailedQuestions = questions.map((q) => {
+    let correctAnswer;
+    let selectedAnswer;
+    let isCorrect = false;
+
+    if (q.questionType === "matching") {
+      correctAnswer = q.matchingPairs?.correctMatches || {};
+      selectedAnswer = matchingAnswers[q._id] || {};
+      
+      // Check if all matches are correct
+      const correctMatches = q.matchingPairs?.correctMatches || {};
+      const userMatches = matchingAnswers[q._id] || {};
+      
+      let allMatched = true;
+      Object.keys(correctMatches).forEach(leftId => {
+        if (userMatches[leftId] !== correctMatches[leftId]) {
+          allMatched = false;
+        }
       });
       
-      const data = await res.json();
-      console.log("✅ Save result response:", data);
+      isCorrect = allMatched && Object.keys(userMatches).length === Object.keys(correctMatches).length;
       
-      if (data.success) {
-        // For both real and temp students, redirect to result page
-        if (data.isTempStudent) {
-          // For temp students, use local result page with query params
-          router.push(`/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`);
-        } else {
-          // For real students, use the saved result ID
-          router.push(`/student/result/${data.data._id}`);
-        }
-      } else {
-        // If save fails, show results with local data
-        router.push(`/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`);
-      }
-    } catch (error) {
-      console.error("❌ Error saving result:", error);
-      // Fallback: show results with local data
-      router.push(`/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`);
+    } else if (q.questionType === "checkbox") {
+      correctAnswer = q.correctAnswers || [];
+      selectedAnswer = answers[q._id] || [];
+      isCorrect = JSON.stringify([...selectedAnswer].sort()) === JSON.stringify([...correctAnswer].sort());
+      
+    } else {
+      // Single choice (radio/mcq)
+      correctAnswer = q.correctAnswers?.[0] || null;
+      selectedAnswer = answers[q._id] || null;
+      isCorrect = selectedAnswer === correctAnswer;
     }
+
+    // ✅ Map options with complete data (matching your schema)
+    const mappedOptions = q.options?.map(opt => ({
+      label: opt.label,
+      text: opt.text,
+      images: opt.images || [], // ✅ Array of images
+    })) || [];
+
+    // ✅ Map matching pairs properly
+    const mappedMatchingPairs = q.questionType === "matching" && q.matchingPairs ? {
+      leftItems: q.matchingPairs.leftItems?.map(item => ({
+        id: item.id,
+        text: item.text,
+        images: item.images || [] // ✅ Array of images
+      })) || [],
+      rightItems: q.matchingPairs.rightItems?.map(item => ({
+        id: item.id,
+        text: item.text,
+        images: item.images || [] // ✅ Array of images
+      })) || [],
+      correctMatches: q.matchingPairs.correctMatches || {}
+    } : null;
+
+    return {
+      questionId: q._id,
+      questionText: q.questionText, // ✅ Correct field name
+      questionImages: q.questionImages || [], // ✅ Array of images
+      questionType: q.questionType,
+      options: mappedOptions, // ✅ Complete options with images array
+      matchingPairs: mappedMatchingPairs, // ✅ Complete matching data
+      correctAnswer,
+      selectedAnswer,
+      isCorrect,
+      marks: q.marks || 1,
+      negativeMarks: q.negativeMarks || 0,
+      explanation: q.explanation || null,
+      subject: q.subject || null,
+      topic: q.topic || null
+    };
+  });
+
+  const payload = {
+    studentId: submitStudent.userInfoId,
+    examCode: submitExam.code || slug,
+    examId: submitExam._id,
+    totalQuestions,
+    attempted,
+    correct,
+    wrong,
+    percentage: totalQuestions > 0 ? ((correct / totalQuestions) * 100).toFixed(2) : 0,
+    duration: (submitExam.sampleDuration || 60) * 60 - timeLeft,
+    questions: detailedQuestions, // ✅ Now includes full details
+    userAnswers: {
+      singleChoice: answers,
+      matching: matchingAnswers
+    },
   };
+
+  console.log("📤 Submission payload:", payload);
+  console.log("🔍 First question details:", detailedQuestions[0]);
+  console.log("📝 First question options:", detailedQuestions[0]?.options);
+
+  try {
+    const res = await fetch("/api/results/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    
+    const data = await res.json();
+    console.log("✅ Save result response:", data);
+    
+    if (data.success) {
+      if (data.isTempStudent) {
+        // For temp students, pass detailed results in URL (base64 encoded for complex data)
+        const resultsData = btoa(JSON.stringify({
+          correct,
+          total: totalQuestions,
+          attempted,
+          questions: detailedQuestions
+        }));
+        router.push(`/student/result/local?data=${resultsData}`);
+      } else {
+        router.push(`/student/result/${data.data._id}`);
+      }
+    } else {
+      const resultsData = btoa(JSON.stringify({
+        correct,
+        total: totalQuestions,
+        attempted,
+        questions: detailedQuestions
+      }));
+      router.push(`/student/result/local?data=${resultsData}`);
+    }
+  } catch (error) {
+    console.error("❌ Error saving result:", error);
+    toast.error(error?.message);
+    const resultsData = btoa(JSON.stringify({
+      correct,
+      total: totalQuestions,
+      attempted,
+      questions: detailedQuestions
+    }));
+    router.push(`/student/result/local?data=${resultsData}`);
+  }
+};
 
   const renderMatchingQuestion = (question) => {
     const leftItems = question.matchingPairs?.leftItems || [];
