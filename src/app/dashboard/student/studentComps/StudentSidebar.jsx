@@ -17,7 +17,7 @@ import {
 const menuItems = [
   {
     name: "Dashboard",
-    to: "/dashboard/student/dashboard",
+    to: "/dashboard/student",
     icon: <FaTachometerAlt />,
   },
   {
