@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
+import { toast } from "sonner";
 
 export default function TestPage() {
   const [questions, setQuestions] = useState([]);
@@ -368,12 +369,12 @@ export default function TestPage() {
 
     if (!student) {
       submitStudent = { 
-        _id: `temp_${Date.now()}`,
+        userInfoId: `temp_${Date.now()}`,
         name: "Guest Student"
       };
 
       submitExam = {
-        id: `temp_exam_${slug}`,
+        _id: `temp_exam_${slug}`,
         code: slug,
         sampleDuration: 60
       };
@@ -387,9 +388,9 @@ export default function TestPage() {
     const totalQuestions = questions.length;
 
     const payload = {
-      studentId: submitStudent.id,
+      studentId: submitStudent.userInfoId,
       examCode: submitExam.code || slug,
-      examId: submitExam._id,
+      examId: submitExam._id ,
       totalQuestions,
       attempted,
       correct,
@@ -399,6 +400,7 @@ export default function TestPage() {
       questions: questions.map((q) => ({
         question: q.questionText,
         questionType: q.questionType,
+        
         correctAnswer: q.questionType === "matching" 
           ? q.matchingPairs?.correctMatches 
           : q.correctAnswers,
@@ -439,6 +441,7 @@ export default function TestPage() {
       }
     } catch (error) {
       console.error("❌ Error saving result:", error);
+      toast.error(error?.message);
       // Fallback: show results with local data
       router.push(`/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`);
     }

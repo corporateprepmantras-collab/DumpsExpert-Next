@@ -7,7 +7,7 @@ export async function GET(request, { params }) {
   try {
     await connectMongoDB();
     
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -15,6 +15,7 @@ export async function GET(request, { params }) {
         { status: 400 }
       );
     }
+    console.log("📥 Fetching result for ID:", id);
 
     const result = await Result.findById(id);
 console.log("📥 Fetched result:", result);

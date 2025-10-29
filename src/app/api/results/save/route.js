@@ -39,25 +39,21 @@ export async function POST(req) {
     // Handle temporary student IDs
     let finalStudentId = studentId;
     let isTempStudent = false;
-    
-    if (studentId.startsWith('temp_')) {
+
+    if (studentId.startsWith("temp_")) {
       isTempStudent = true;
       console.log("👤 Using temporary student ID");
     }
 
     // Find exam by code or use provided examId
     let exam = null;
-    if (examId && !examId.startsWith('temp_exam_')) {
+    if (examId && !examId.startsWith("temp_exam_")) {
       exam = await Exam.findById(examId);
     }
-    
+
     if (!exam) {
-      exam = await Exam.findOne({ 
-        $or: [
-          { code: examCode }, 
-          { slug: examCode },
-          { _id: examId }
-        ] 
+      exam = await Exam.findOne({
+        $or: [{ code: examCode }, { slug: examCode }, { _id: examId }],
       });
     }
 
@@ -66,18 +62,35 @@ export async function POST(req) {
       exam = {
         _id: examId || `temp_exam_${examCode}`,
         code: examCode,
-        name: `Exam: ${examCode}`
+        name: `Exam: ${examCode}`,
       };
     }
 
-    // Count previous attempts for real students
+    // Count and determine attempt number for real students
     let attemptNumber = 1;
+
     if (!isTempStudent) {
-      const existingAttempts = await Result.countDocuments({
-        studentId,
-        examCode,
-      });
-      attemptNumber = existingAttempts + 1;
+      // Find the last saved result for this student & exam
+      const lastResult = await Result.findOne({ studentId, examCode })
+        .sort({ attempt: -1 }) // highest attempt first
+        .select("attempt");
+
+      if (lastResult) {
+        attemptNumber = lastResult.attempt + 1;
+      } else {
+        attemptNumber = 1;
+      }
+
+      // ✅ Limit to max 4 attempts
+      if (attemptNumber > 4) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: "Maximum 4 attempts allowed for this exam",
+          }),
+          { status: 400 }
+        );
+      }
     }
 
     // Create result object
@@ -109,7 +122,7 @@ export async function POST(req) {
         ...resultData,
         _id: `temp_result_${Date.now()}`,
         createdAt: new Date(),
-        isTemp: true
+        isTemp: true,
       };
       console.log("✅ Temporary result created (not saved to DB)");
     }
@@ -127,10 +140,10 @@ export async function POST(req) {
   } catch (error) {
     console.error("❌ Error saving result:", error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
+      JSON.stringify({
+        success: false,
         message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
       }),
       { status: 500 }
     );
@@ -161,11 +174,11 @@ export async function GET(req) {
     const results = await Result.find(query).sort({ createdAt: -1 });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         data: results,
-        count: results.length 
-      }), 
+        count: results.length,
+      }),
       { status: 200 }
     );
   } catch (error) {
