@@ -2,6 +2,78 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+// Image Gallery Component for multiple images
+const ImageGallery = ({ images, alt = "Image" }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  if (!images || images.length === 0) return null;
+  
+  const validImages = images.filter(img => img && img.trim() !== '');
+  
+  if (validImages.length === 0) return null;
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % validImages.length);
+  };
+
+  const goToPrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+  };
+
+  return (
+    <div className="my-4">
+      <div className="relative group">
+        <img
+          src={validImages[currentIndex]}
+          alt={`${alt} ${currentIndex + 1}`}
+          className="w-full h-auto max-h-64 object-contain rounded-lg border border-gray-300 bg-gray-50"
+        />
+        
+        {validImages.length > 1 && (
+          <>
+            {/* Navigation Buttons */}
+            <button
+              type="button"
+              onClick={goToPrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <button
+              type="button"
+              onClick={goToNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <ChevronRight size={20} />
+            </button>
+
+            {/* Image Counter */}
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+              {currentIndex + 1} / {validImages.length}
+            </div>
+
+            {/* Thumbnail Dots */}
+            <div className="flex justify-center gap-1 mt-2">
+              {validImages.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setCurrentIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function MainExamTestPage() {
   const [questions, setQuestions] = useState([]);
@@ -82,7 +154,6 @@ export default function MainExamTestPage() {
         if (studentData) setStudent(studentData);
         if (examData) {
           setExam(examData);
-          // Use main exam duration (not sample duration)
           setTimeLeft((examData.duration || 60) * 60);
         }
         if (questionsData.length > 0) {
@@ -99,7 +170,6 @@ export default function MainExamTestPage() {
           setMatchingAnswers(initialMatching);
         }
 
-        // Check if we have minimum required data
         const hasQuestions = questionsData.length > 0;
         const hasExam = examData !== null;
         const hasStudent = studentData !== null;
@@ -127,7 +197,6 @@ export default function MainExamTestPage() {
     if (slug) initializeData();
   }, [slug]);
 
-  // Initialize matching options when questions load
   useEffect(() => {
     if (questions.length > 0) {
       const initializedOptions = {};
@@ -192,7 +261,6 @@ export default function MainExamTestPage() {
     return () => clearInterval(timer);
   }, [isDataReady, exam, questions]);
 
-  // Security measures
   useEffect(() => {
     const blockAction = (e) => {
       e.preventDefault();
@@ -369,12 +437,6 @@ export default function MainExamTestPage() {
 
   const handleSubmit = async () => {
     console.log("🚀 Submitting main exam...");
-    console.log("📊 Current state:", {
-      isDataReady,
-      hasExam: !!exam,
-      hasQuestions: questions.length > 0,
-      hasStudent: !!student,
-    });
 
     if (!isDataReady || questions.length === 0) {
       console.error("❌ Cannot submit: Data not ready or no questions");
@@ -400,7 +462,6 @@ export default function MainExamTestPage() {
       submitStudent = student;
       submitExam = exam;
     }
-    console.log("👤 Submitting for student:", submitStudent);
 
     const { correct, attempted, wrong } = calculateScore();
     const totalQuestions = questions.length;
@@ -416,7 +477,7 @@ export default function MainExamTestPage() {
       percentage:
         totalQuestions > 0 ? ((correct / totalQuestions) * 100).toFixed(2) : 0,
       duration: (submitExam.duration || 60) * 60 - timeLeft,
-      examType: "main", // Mark as main exam
+      examType: "main",
       questions: questions.map((q) => ({
         question: q.questionText,
         questionType: q.questionType,
@@ -435,8 +496,6 @@ export default function MainExamTestPage() {
       },
     };
 
-    console.log("📤 Main exam submission payload:", payload);
-
     try {
       const res = await fetch("/api/results/save", {
         method: "POST",
@@ -445,7 +504,6 @@ export default function MainExamTestPage() {
       });
 
       const data = await res.json();
-      console.log("✅ Save result response:", data);
 
       if (data.success) {
         if (data.isTempStudent) {
@@ -491,10 +549,10 @@ export default function MainExamTestPage() {
 
             return (
               <div
-                key={leftItem._id}
+                key={leftItem._id || leftItem.id}
                 className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
                       {index + 1}
@@ -505,13 +563,8 @@ export default function MainExamTestPage() {
                     <div className="text-gray-800 font-medium mb-2">
                       {leftItem.text}
                     </div>
-                    {leftItem.image && (
-                      <img
-                        src={leftItem.image}
-                        alt={leftItem.text}
-                        className="max-w-full h-auto max-h-32 rounded border"
-                      />
-                    )}
+                    {/* 🆕 Multiple images for left item */}
+                    <ImageGallery images={leftItem.images} alt={`Left item ${leftItem.id}`} />
                   </div>
 
                   <div className="hidden lg:flex text-gray-500 font-bold text-xl mx-2">
@@ -532,24 +585,21 @@ export default function MainExamTestPage() {
                     >
                       <option value="">Select match...</option>
                       {currentMatchingOptions.map((rightItem) => (
-                        <option key={rightItem._id} value={rightItem.id}>
-                          {rightItem.text} <span className="text-white-500 rounded-full bg-gray-300">({rightItem.id})</span>
+                        <option key={rightItem._id || rightItem.id} value={rightItem.id}>
+                          {rightItem.text}
                         </option>
                       ))}
                     </select>
 
+                    {/* 🆕 Show selected right item images */}
                     {currentMatches[leftItem.id] &&
                       (() => {
                         const selectedRightItem = rightItems.find(
                           (item) => item.id === currentMatches[leftItem.id]
                         );
-                        return selectedRightItem?.image ? (
+                        return selectedRightItem?.images?.length > 0 ? (
                           <div className="mt-3 p-2 bg-gray-50 rounded border">
-                            <img
-                              src={selectedRightItem.image}
-                              alt={selectedRightItem.text}
-                              className="max-w-full h-auto max-h-24 rounded mx-auto"
-                            />
+                            <ImageGallery images={selectedRightItem.images} alt={`Selected ${selectedRightItem.id}`} />
                           </div>
                         ) : null;
                       })()}
@@ -567,19 +617,14 @@ export default function MainExamTestPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {rightItems.map((rightItem) => (
               <div
-                key={rightItem._id}
+                key={rightItem._id || rightItem.id}
                 className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm"
               >
                 <div className="font-medium text-gray-700 mb-2">
-                  {rightItem.text} 
+                  {rightItem.text}
                 </div>
-                {rightItem.image && (
-                  <img
-                    src={rightItem.image}
-                    alt={rightItem.text}
-                    className="max-w-full h-auto max-h-24 rounded border mx-auto"
-                  />
-                )}
+                {/* 🆕 Multiple images for right item */}
+                <ImageGallery images={rightItem.images} alt={`Right item ${rightItem.id}`} />
               </div>
             ))}
           </div>
@@ -605,13 +650,8 @@ export default function MainExamTestPage() {
           />
         </div>
 
-        {question.questionImage && (
-          <img
-            src={question.questionImage}
-            alt="Question"
-            className="my-4 rounded-lg border max-w-full h-auto max-h-64"
-          />
-        )}
+        {/* 🆕 Multiple question images */}
+        <ImageGallery images={question.questionImages} alt="Question" />
 
         <div className="space-y-3 mt-6">
           {question.options.map((opt, i) => (
@@ -636,13 +676,8 @@ export default function MainExamTestPage() {
                   {opt.label}.{" "}
                   <span dangerouslySetInnerHTML={{ __html: opt.text }} />
                 </div>
-                {opt.image && (
-                  <img
-                    src={opt.image}
-                    alt={`Option ${opt.label}`}
-                    className="mt-2 max-w-full h-auto max-h-32 rounded border"
-                  />
-                )}
+                {/* 🆕 Multiple option images */}
+                <ImageGallery images={opt.images} alt={`Option ${opt.label}`} />
               </div>
             </label>
           ))}
@@ -708,7 +743,6 @@ export default function MainExamTestPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 pt-20">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-        {/* Question Area */}
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-gray-800">
@@ -745,7 +779,6 @@ export default function MainExamTestPage() {
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="w-full lg:w-80 bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit lg:sticky lg:top-24">
           <h2 className="font-semibold text-gray-800 mb-4 text-lg">
             Question Palette
@@ -787,7 +820,6 @@ export default function MainExamTestPage() {
             </button>
           </div>
 
-          {/* Status Legend */}
           <div className="mt-6 pt-4 border-t border-gray-200">
             <h3 className="font-medium text-gray-700 mb-3">Status Legend</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
