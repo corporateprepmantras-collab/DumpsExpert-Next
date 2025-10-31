@@ -6,13 +6,14 @@ const cartStore = (set, get) => ({
   cartItems: [],
 
   addToCart: (item) => {
-    console.log("Adding to cart - Full item:", item);
+    console.log("🛒 Adding to cart - Full item:", item);
 
     const existing = get().cartItems.find(
       (i) => i._id === item._id && i.type === item.type
     );
 
     if (existing) {
+      console.log("📦 Item already exists, incrementing quantity");
       set({
         cartItems: get().cartItems.map((i) =>
           i._id === item._id && i.type === item.type
@@ -21,6 +22,13 @@ const cartStore = (set, get) => ({
         ),
       });
     } else {
+      // Helper to safely convert to number
+      const toNum = (val) => {
+        if (val === null || val === undefined || val === "") return 0;
+        const num = Number(val);
+        return isNaN(num) ? 0 : num;
+      };
+
       // Store the complete product object with ALL fields
       const completeItem = {
         // Core identifiers
@@ -32,28 +40,28 @@ const cartStore = (set, get) => ({
         title: item.title,
         name: item.name || item.title,
 
-        // ALL Pricing fields - Store as numbers
-        price: Number(item.price) || 0,
-        priceINR: Number(item.priceINR) || 0,
-        priceUSD: Number(item.priceUSD) || 0,
+        // ALL Pricing fields - Store as numbers with safe conversion
+        price: toNum(item.price),
+        priceINR: toNum(item.priceINR),
+        priceUSD: toNum(item.priceUSD),
 
         // Dumps pricing (Regular PDF)
-        dumpsPriceInr: Number(item.dumpsPriceInr) || 0,
-        dumpsPriceUsd: Number(item.dumpsPriceUsd) || 0,
-        dumpsMrpInr: Number(item.dumpsMrpInr) || 0,
-        dumpsMrpUsd: Number(item.dumpsMrpUsd) || 0,
+        dumpsPriceInr: toNum(item.dumpsPriceInr),
+        dumpsPriceUsd: toNum(item.dumpsPriceUsd),
+        dumpsMrpInr: toNum(item.dumpsMrpInr),
+        dumpsMrpUsd: toNum(item.dumpsMrpUsd),
 
         // Combo pricing (PDF + Online Exam)
-        comboPriceInr: Number(item.comboPriceInr) || 0,
-        comboPriceUsd: Number(item.comboPriceUsd) || 0,
-        comboMrpInr: Number(item.comboMrpInr) || 0,
-        comboMrpUsd: Number(item.comboMrpUsd) || 0,
+        comboPriceInr: toNum(item.comboPriceInr),
+        comboPriceUsd: toNum(item.comboPriceUsd),
+        comboMrpInr: toNum(item.comboMrpInr),
+        comboMrpUsd: toNum(item.comboMrpUsd),
 
-        // Exam pricing (Online Exam Only)
-        examPriceInr: Number(item.examPriceInr) || 0,
-        examPriceUsd: Number(item.examPriceUsd) || 0,
-        examMrpInr: Number(item.examMrpInr) || 0,
-        examMrpUsd: Number(item.examMrpUsd) || 0,
+        // Exam pricing (Online Exam Only) - CRITICAL
+        examPriceInr: toNum(item.examPriceInr),
+        examPriceUsd: toNum(item.examPriceUsd),
+        examMrpInr: toNum(item.examMrpInr),
+        examMrpUsd: toNum(item.examMrpUsd),
 
         // Product details
         category: item.category,
@@ -116,6 +124,33 @@ const cartStore = (set, get) => ({
       console.log("  - Combo INR:", completeItem.comboPriceInr);
       console.log("  - Combo USD:", completeItem.comboPriceUsd);
 
+      // UPDATED VALIDATION: Check the correct price fields based on type
+      if (completeItem.type === "online") {
+        // For online type, check if EITHER examPriceInr OR examPriceUsd OR priceINR OR priceUSD has value
+        const hasValidPrice = 
+          completeItem.examPriceInr > 0 || 
+          completeItem.examPriceUsd > 0 ||
+          completeItem.priceINR > 0 ||
+          completeItem.priceUSD > 0;
+        
+        if (!hasValidPrice) {
+          console.error("⚠️ WARNING: Online exam added with 0 price!");
+          console.error("Debug info:", {
+            examPriceInr: completeItem.examPriceInr,
+            examPriceUsd: completeItem.examPriceUsd,
+            priceINR: completeItem.priceINR,
+            priceUSD: completeItem.priceUSD,
+          });
+        } else {
+          console.log("✅ Online exam has valid pricing:", {
+            examPriceInr: completeItem.examPriceInr,
+            examPriceUsd: completeItem.examPriceUsd,
+            priceINR: completeItem.priceINR,
+            priceUSD: completeItem.priceUSD,
+          });
+        }
+      }
+
       set({
         cartItems: [...get().cartItems, completeItem],
       });
@@ -123,6 +158,7 @@ const cartStore = (set, get) => ({
   },
 
   removeFromCart: (id, type) => {
+    console.log(`🗑️ Removing item from cart: ${id} (${type})`);
     set({
       cartItems: get().cartItems.filter(
         (item) => !(item._id === id && item.type === type)
@@ -131,6 +167,7 @@ const cartStore = (set, get) => ({
   },
 
   updateQuantity: (id, type, operation) => {
+    console.log(`📊 Updating quantity for ${id} (${type}): ${operation}`);
     set({
       cartItems: get().cartItems.map((item) => {
         if (item._id === id && item.type === type) {
@@ -145,18 +182,33 @@ const cartStore = (set, get) => ({
     });
   },
 
-  clearCart: () => set({ cartItems: [] }),
+  clearCart: () => {
+    console.log("🧹 Clearing cart");
+    set({ cartItems: [] });
+  },
 
   // Helper to get the correct price based on item type and currency
   getItemPrice: (item, currency = "INR") => {
     const type = item.type || "regular";
-    
+
+    console.log(`💰 Getting price for ${item.title || item.name}:`, {
+      type,
+      currency,
+      examPriceInr: item.examPriceInr,
+      examPriceUsd: item.examPriceUsd,
+      priceINR: item.priceINR,
+      priceUSD: item.priceUSD,
+    });
+
     if (currency === "USD") {
       switch (type) {
         case "combo":
           return Number(item.comboPriceUsd) || Number(item.priceUSD) || 0;
         case "online":
-          return Number(item.examPriceUsd) || Number(item.priceUSD) || 0;
+          const usdPrice =
+            Number(item.examPriceUsd) || Number(item.priceUSD) || 0;
+          console.log(`  → Online USD price: ${usdPrice}`);
+          return usdPrice;
         case "regular":
         default:
           return Number(item.dumpsPriceUsd) || Number(item.priceUSD) || 0;
@@ -166,7 +218,10 @@ const cartStore = (set, get) => ({
         case "combo":
           return Number(item.comboPriceInr) || Number(item.priceINR) || 0;
         case "online":
-          return Number(item.examPriceInr) || Number(item.priceINR) || 0;
+          const inrPrice =
+            Number(item.examPriceInr) || Number(item.priceINR) || 0;
+          console.log(`  → Online INR price: ${inrPrice}`);
+          return inrPrice;
         case "regular":
         default:
           return Number(item.dumpsPriceInr) || Number(item.priceINR) || 0;
@@ -177,15 +232,22 @@ const cartStore = (set, get) => ({
   // Get cart total in specific currency
   getCartTotal: (currency = "INR") => {
     const state = get();
-    return state.cartItems.reduce((acc, item) => {
+    const total = state.cartItems.reduce((acc, item) => {
       const price = state.getItemPrice(item, currency);
       return acc + price * (item.quantity || 1);
     }, 0);
+
+    console.log(`💵 Cart total (${currency}): ${total}`);
+    return total;
   },
 
   // Get item count
   getItemCount: () => {
-    return get().cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
+    const count = get().cartItems.reduce(
+      (acc, item) => acc + (item.quantity || 1),
+      0
+    );
+    return count;
   },
 });
 
@@ -193,10 +255,10 @@ const cartStore = (set, get) => ({
 const useCartStore = create(
   persist(cartStore, {
     name: "cart-storage",
-    version: 3, // Increment version for new pricing structure
+    version: 5, // Increment version for updated validation
     migrate: (persistedState, version) => {
-      if (version < 3) {
-        console.log("🔄 Migrating cart store to version 3 - clearing old data");
+      if (version < 5) {
+        console.log("🔄 Migrating cart store to version 5 - clearing old data");
         return {
           cartItems: [],
         };
@@ -213,6 +275,14 @@ const useCartStore = create(
         console.log("✅ Cart store rehydrated successfully");
         if (state?.cartItems?.length > 0) {
           console.log(`📦 Cart has ${state.cartItems.length} items`);
+          state.cartItems.forEach((item) => {
+            console.log(`  - ${item.title} (${item.type}):`, {
+              examPriceInr: item.examPriceInr,
+              examPriceUsd: item.examPriceUsd,
+              priceINR: item.priceINR,
+              priceUSD: item.priceUSD,
+            });
+          });
         }
       }
     },

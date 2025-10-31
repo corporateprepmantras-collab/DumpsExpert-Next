@@ -118,7 +118,9 @@ export default function ProductDetailsPage() {
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
 
-    console.log("🔍 Adding to cart - Debug Info:");
+    console.log("═".repeat(80));
+    console.log("🔍 ADDING TO CART - DEBUG INFO");
+    console.log("═".repeat(80));
     console.log("Product:", product);
     console.log("Exams array:", exams);
     console.log("Type:", type);
@@ -136,12 +138,14 @@ export default function ProductDetailsPage() {
     let examMrpInr = 0;
     let examMrpUsd = 0;
 
-    // STEP 1: Try to get from exams array first (HIGHEST PRIORITY)
+    // PRIORITY 1: Extract from exams array (most reliable source)
     if (Array.isArray(exams) && exams.length > 0) {
       const examData = exams[0];
-      console.log("📊 Getting prices from exam data:", examData);
+      console.log("━".repeat(80));
+      console.log("📊 EXAM DATA EXTRACTION:");
+      console.log("Raw exam object:", examData);
 
-      // Try all possible field variations for exam prices
+      // Try all possible price field variations
       examPriceInr = toNum(
         examData.priceINR ||
           examData.priceInr ||
@@ -160,25 +164,32 @@ export default function ProductDetailsPage() {
           examData.onlineExamPriceUsd
       );
 
+      // If USD not found, convert from INR
+      if (examPriceInr > 0 && examPriceUsd === 0) {
+        examPriceUsd = parseFloat((examPriceInr / 83).toFixed(2));
+      }
+
       examMrpInr = toNum(
         examData.mrpINR ||
           examData.mrpInr ||
           examData.mrp_inr ||
           examData.mrp ||
-          examData.examMrp ||
-          examData.onlineExamMrp ||
-          examData.onlineExamMrpInr
+          examData.examMrp
       );
 
       examMrpUsd = toNum(
         examData.mrpUSD ||
           examData.mrpUsd ||
           examData.mrp_usd ||
-          examData.examMrpUsd ||
-          examData.onlineExamMrpUsd
+          examData.examMrpUsd
       );
 
-      console.log("✅ Extracted prices from exam data:", {
+      // If USD MRP not found, convert from INR
+      if (examMrpInr > 0 && examMrpUsd === 0) {
+        examMrpUsd = parseFloat((examMrpInr / 83).toFixed(2));
+      }
+
+      console.log("✅ Extracted from exam data:", {
         examPriceInr,
         examPriceUsd,
         examMrpInr,
@@ -186,12 +197,9 @@ export default function ProductDetailsPage() {
       });
     }
 
-    // STEP 2: FALLBACK - Try product fields if exam prices are still 0
-    if (
-      (!examPriceInr && !examPriceUsd) ||
-      (examPriceInr === 0 && examPriceUsd === 0)
-    ) {
-      console.log("⚠️ No exam prices from exam data, trying product fields...");
+    // PRIORITY 2: Fallback to product fields if exam prices still 0
+    if (examPriceInr === 0 && examPriceUsd === 0) {
+      console.log("⚠️ FALLBACK: Using product exam fields...");
 
       examPriceInr = toNum(
         product.examPriceInr ||
@@ -207,21 +215,25 @@ export default function ProductDetailsPage() {
           product.onlineExamPriceUSD
       );
 
+      // Convert if needed
+      if (examPriceInr > 0 && examPriceUsd === 0) {
+        examPriceUsd = parseFloat((examPriceInr / 83).toFixed(2));
+      }
+
       examMrpInr = toNum(
-        product.examMrpInr ||
-          product.onlineExamMrpInr ||
-          product.examMrp ||
-          product.onlineExamMrp
+        product.examMrpInr || product.onlineExamMrpInr || product.examMrp
       );
 
       examMrpUsd = toNum(
-        product.examMrpUsd ||
-          product.onlineExamMrpUsd ||
-          product.examMrpUSD ||
-          product.onlineExamMrpUSD
+        product.examMrpUsd || product.onlineExamMrpUsd || product.examMrpUSD
       );
 
-      console.log("✅ Got prices from product fields:", {
+      // Convert if needed
+      if (examMrpInr > 0 && examMrpUsd === 0) {
+        examMrpUsd = parseFloat((examMrpInr / 83).toFixed(2));
+      }
+
+      console.log("✅ Got from product fields:", {
         examPriceInr,
         examPriceUsd,
         examMrpInr,
@@ -229,38 +241,35 @@ export default function ProductDetailsPage() {
       });
     }
 
-    console.log("💰 Final Exam Prices:", {
-      priceInr: examPriceInr,
-      priceUsd: examPriceUsd,
-      mrpInr: examMrpInr,
-      mrpUsd: examMrpUsd,
-    });
+    console.log("━".repeat(80));
+    console.log("💰 FINAL EXAM PRICES:");
+    console.log("  INR:", examPriceInr);
+    console.log("  USD:", examPriceUsd);
+    console.log("  MRP INR:", examMrpInr);
+    console.log("  MRP USD:", examMrpUsd);
+    console.log("═".repeat(80));
 
-    // VALIDATION before adding
-    if (type === "online" && !examPriceInr && !examPriceUsd) {
+    // VALIDATION - Only check for online type
+    if (type === "online" && examPriceInr === 0 && examPriceUsd === 0) {
       toast.error("⚠️ Online exam pricing not available for this product");
-      console.error("❌ No exam prices found!", {
-        examData: exams[0],
-        productExamFields: {
-          examPriceInr: product.examPriceInr,
-          examPriceUsd: product.examPriceUsd,
-          onlineExamPriceInr: product.onlineExamPriceInr,
-          onlineExamPriceUsd: product.onlineExamPriceUsd,
-        },
-      });
+      console.error("❌ VALIDATION FAILED: No exam prices found!");
       return;
     }
 
-    if (type === "combo" && !product.comboPriceInr && !product.comboPriceUsd) {
+    if (
+      type === "combo" &&
+      product.comboPriceInr === 0 &&
+      product.comboPriceUsd === 0
+    ) {
       toast.error("⚠️ Combo package is not available for this product");
-      console.error("❌ No combo prices found!");
+      console.error("❌ VALIDATION FAILED: No combo prices found!");
       return;
     }
 
     // Get exam details from first exam if available
     const examDetails = exams.length > 0 ? exams[0] : {};
 
-    // Build complete item object
+    // Build complete item object with ALL price fields
     let item = {
       _id: product._id,
       productId: product._id,
@@ -268,27 +277,28 @@ export default function ProductDetailsPage() {
       title: product.title,
       name: product.title,
 
-      // ALL Pricing fields - Ensure numbers
+      // Dumps pricing (ensure numbers)
       dumpsPriceInr: toNum(product.dumpsPriceInr),
       dumpsPriceUsd: toNum(product.dumpsPriceUsd),
       dumpsMrpInr: toNum(product.dumpsMrpInr),
       dumpsMrpUsd: toNum(product.dumpsMrpUsd),
 
+      // Combo pricing (ensure numbers)
       comboPriceInr: toNum(product.comboPriceInr),
       comboPriceUsd: toNum(product.comboPriceUsd),
       comboMrpInr: toNum(product.comboMrpInr),
       comboMrpUsd: toNum(product.comboMrpUsd),
 
-      // CRITICAL: Exam prices must be correctly set
+      // CRITICAL: Exam prices (already validated as numbers)
       examPriceInr: examPriceInr,
       examPriceUsd: examPriceUsd,
       examMrpInr: examMrpInr,
       examMrpUsd: examMrpUsd,
 
+      // Product details
       samplePdfUrl: product.samplePdfUrl || "",
       mainPdfUrl: product.mainPdfUrl || "",
       imageUrl: product.imageUrl || "",
-
       slug: product.slug,
       category: product.category,
       sapExamCode: product.sapExamCode,
@@ -313,12 +323,12 @@ export default function ProductDetailsPage() {
       quantity: 1,
     };
 
-    // Set title and active price based on type
+    // Set active price based on type
     switch (type) {
       case "regular":
         item.title = `${product.title} [PDF]`;
         item.name = `${product.title} [PDF]`;
-        item.price = item.dumpsPriceInr || item.dumpsPriceUsd;
+        item.price = item.dumpsPriceInr;
         item.priceINR = item.dumpsPriceInr;
         item.priceUSD = item.dumpsPriceUsd;
         break;
@@ -326,43 +336,44 @@ export default function ProductDetailsPage() {
       case "online":
         item.title = `${product.title} [Online Exam]`;
         item.name = `${product.title} [Online Exam]`;
-        item.price = item.examPriceInr || item.examPriceUsd;
+        item.price = item.examPriceInr;
         item.priceINR = item.examPriceInr;
         item.priceUSD = item.examPriceUsd;
-
-        console.log("🎯 Setting online exam item:", {
-          title: item.title,
+        console.log("🎯 Setting online exam prices:", {
           priceINR: item.priceINR,
           priceUSD: item.priceUSD,
-          price: item.price,
-          examPriceInr: item.examPriceInr,
-          examPriceUsd: item.examPriceUsd,
         });
         break;
 
       case "combo":
         item.title = `${product.title} [Combo]`;
         item.name = `${product.title} [Combo]`;
-        item.price = item.comboPriceInr || item.comboPriceUsd;
+        item.price = item.comboPriceInr;
         item.priceINR = item.comboPriceInr;
         item.priceUSD = item.comboPriceUsd;
         break;
 
       default:
-        item.price = item.dumpsPriceInr || item.dumpsPriceUsd;
+        item.price = item.dumpsPriceInr;
         item.priceINR = item.dumpsPriceInr;
         item.priceUSD = item.dumpsPriceUsd;
     }
 
     console.log("✅ Final item to add to cart:", item);
-    console.log("💰 Item pricing check:", {
+    console.log("💰 Final pricing verification:", {
       type: item.type,
-      price: item.price,
       priceINR: item.priceINR,
       priceUSD: item.priceUSD,
       examPriceInr: item.examPriceInr,
       examPriceUsd: item.examPriceUsd,
     });
+
+    // Final validation before adding
+    if (type === "online" && (item.priceINR === 0 || item.examPriceInr === 0)) {
+      console.error("❌ CRITICAL: Online exam price is 0 after all checks!");
+      toast.error("Failed to add online exam - pricing error");
+      return;
+    }
 
     useCartStore.getState().addToCart(item);
     toast.success(`✅ Added ${item.title} to cart!`);
@@ -377,28 +388,56 @@ export default function ProductDetailsPage() {
         const productData = await fetchProduct(slug);
         setProduct(productData);
 
-        console.log("=".repeat(80));
-        console.log("📦 PRODUCT DATA:");
-        console.log("Dumps:", {
+        console.log("═".repeat(80));
+        console.log("📦 PRODUCT DATA LOADED:");
+        console.log("═".repeat(80));
+        console.log("Full product object:", productData);
+        console.log("\n🏷️ PRODUCT PRICING:");
+        console.log("Dumps (Regular PDF):", {
           inr: productData?.dumpsPriceInr,
           usd: productData?.dumpsPriceUsd,
         });
-        console.log("Exam:", {
+        console.log("Exam (Online Exam):", {
           inr: productData?.examPriceInr,
           usd: productData?.examPriceUsd,
+          onlineInr: productData?.onlineExamPriceInr,
+          onlineUsd: productData?.onlineExamPriceUsd,
         });
-        console.log("Combo:", {
+        console.log("Combo (PDF + Exam):", {
           inr: productData?.comboPriceInr,
           usd: productData?.comboPriceUsd,
         });
-        console.log("=".repeat(80));
+        console.log("═".repeat(80));
 
         // Fetch exams by slug
         const examsData = await fetchExamsByProductSlug(slug);
         setExams(examsData);
         setIsLoadingExams(false);
 
-        console.log("📚 EXAM DATA LOADED:", examsData);
+        console.log("\n═".repeat(80));
+        console.log("📚 EXAM DATA LOADED:");
+        console.log("═".repeat(80));
+        console.log("Number of exams:", examsData.length);
+        if (examsData.length > 0) {
+          console.log("\n📝 First Exam - ALL FIELDS:");
+          console.log(JSON.stringify(examsData[0], null, 2));
+          console.log("\n💰 First Exam - PRICE FIELDS:");
+          console.log({
+            priceINR: examsData[0].priceINR,
+            priceInr: examsData[0].priceInr,
+            price: examsData[0].price,
+            priceUSD: examsData[0].priceUSD,
+            priceUsd: examsData[0].priceUsd,
+            mrpINR: examsData[0].mrpINR,
+            mrpInr: examsData[0].mrpInr,
+            mrp: examsData[0].mrp,
+            mrpUSD: examsData[0].mrpUSD,
+            mrpUsd: examsData[0].mrpUsd,
+          });
+        } else {
+          console.log("⚠️ No exams found for this product");
+        }
+        console.log("═".repeat(80));
 
         // Set reviews
         setReviews(productData?.reviews || []);
@@ -673,6 +712,7 @@ export default function ProductDetailsPage() {
                   >
                     Try Online Exam
                   </button>
+
                   <button
                     onClick={() => handleAddToCart("online")}
                     className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
