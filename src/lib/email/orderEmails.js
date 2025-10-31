@@ -189,29 +189,45 @@ export async function sendOrderUpdateEmail({
   pdfChanges,
   expiryDate,
 }) {
-  const changesHtml = pdfChanges
-    .map(
-      (change) => {
-        // Safe URL check
-        const isValidUrl = change.newUrl && (change.newUrl.startsWith('http') || change.newUrl.startsWith('/'));
-        
-        return `
-    <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-      <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">${change.courseName || 'Course'}</h3>
-      <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
-        A new PDF has been uploaded for this course.
-      </p>
-      ${isValidUrl ? `
-      <a href="${change.newUrl}" 
-         style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">
-        📥 Download New PDF
-      </a>
-      ` : `<p style="color: #6b7280; font-size: 14px;">PDF URL: ${change.newUrl || 'Pending'}</p>`}
-    </div>
-  `;
-      }
-    )
-    .join("");
+const changesHtml = pdfChanges
+  .map((change) => {
+    // 1️⃣ Choose final URL (prefer downloadUrl)
+    const finalUrl = change.downloadUrl || change.newUrl;
+
+    // 2️⃣ Validate URL (starts with http or /)
+    const isValidUrl = finalUrl && (finalUrl.startsWith("http") || finalUrl.startsWith("/"));
+
+    // 3️⃣ Agar filename me extension missing hai to ".pdf" lagao
+    let fileName = change.filename || "File";
+    if (!fileName.toLowerCase().endsWith(".pdf")) {
+      fileName += ".pdf";
+    }
+
+    // 4️⃣ Return styled HTML card
+    return `
+      <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">
+          ${change.courseName || "Course"}
+        </h3>
+        <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
+          A new PDF has been uploaded for this course.
+        </p>
+        ${
+          isValidUrl
+            ? `
+          <a href="${finalUrl}"
+             style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+            📥 Download ${fileName}
+          </a>
+          `
+            : `<p style="color: #6b7280; font-size: 14px;">PDF URL: ${finalUrl || "Pending"}</p>`
+        }
+      </div>
+    `;
+  })
+  .join("");
+
+
 
   const htmlContent = `
 <!DOCTYPE html>
