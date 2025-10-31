@@ -191,18 +191,25 @@ export async function sendOrderUpdateEmail({
 }) {
   const changesHtml = pdfChanges
     .map(
-      (change) => `
+      (change) => {
+        // Safe URL check
+        const isValidUrl = change.newUrl && (change.newUrl.startsWith('http') || change.newUrl.startsWith('/'));
+        
+        return `
     <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-      <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">${change.courseName}</h3>
+      <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">${change.courseName || 'Course'}</h3>
       <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
         A new PDF has been uploaded for this course.
       </p>
+      ${isValidUrl ? `
       <a href="${change.newUrl}" 
          style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">
         📥 Download New PDF
       </a>
+      ` : `<p style="color: #6b7280; font-size: 14px;">PDF URL: ${change.newUrl || 'Pending'}</p>`}
     </div>
-  `
+  `;
+      }
     )
     .join("");
 
