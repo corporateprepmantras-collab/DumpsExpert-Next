@@ -5,8 +5,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 // Import axios instance for API calls
 import api from "axios";
-import { Plus, Trash2, Upload, Link } from "lucide-react";
+import { Plus, Trash2, Link } from "lucide-react";
 
+// Import the Multiple Image Uploader component
 import ImageUploader from "@/components/dashboard/ImageUploader";
 
 // Main component for adding/editing questions
@@ -16,8 +17,6 @@ const QuestionForm = () => {
   // Extract examId and questionId from params
   const examId = params.examId;
   const questionId = params.questionId;
-
-  const [optionImage, setOptionImage] = useState(null);
 
   // Initialize router for navigation
   const router = useRouter();
@@ -34,20 +33,20 @@ const QuestionForm = () => {
     topic: "",
     tags: [],
     options: [
-      { label: "A", text: "", image: "" },
-      { label: "B", text: "", image: "" },
-      { label: "C", text: "", image: "" },
-      { label: "D", text: "", image: "" },
+      { label: "A", text: "", images: [] },
+      { label: "B", text: "", images: [] },
+      { label: "C", text: "", images: [] },
+      { label: "D", text: "", images: [] },
     ],
     correctAnswers: [],
     matchingPairs: {
       leftItems: [
-        { id: "L1", text: "", image: "", imageUrl: "" },
-        { id: "L2", text: "", image: "", imageUrl: "" },
+        { id: "L1", text: "", images: [] },
+        { id: "L2", text: "", images: [] },
       ],
       rightItems: [
-        { id: "R1", text: "", image: "", imageUrl: "" },
-        { id: "R2", text: "", image: "", imageUrl: "" },
+        { id: "R1", text: "", images: [] },
+        { id: "R2", text: "", images: [] },
       ],
       correctMatches: {},
     },
@@ -56,14 +55,14 @@ const QuestionForm = () => {
     status: "draft",
   });
 
-  // State for image files
-  const [questionImageFile, setQuestionImageFile] = useState(null);
+  // State for image files (now arrays)
+  const [questionImageFiles, setQuestionImageFiles] = useState([]);
   const [optionImageFiles, setOptionImageFiles] = useState({});
   const [matchingImageFiles, setMatchingImageFiles] = useState({});
+  // State for pasted image URLs
+  const [pastedImageUrls, setPastedImageUrls] = useState({});
   // State for loading status
   const [loading, setLoading] = useState(false);
-  // State for preview images
-  const [previewImages, setPreviewImages] = useState({});
   // State for tracking if we're editing an existing question
   const [isEditing, setIsEditing] = useState(false);
   const [imageUploadMode, setImageUploadMode] = useState({});
@@ -79,94 +78,81 @@ const QuestionForm = () => {
           setLoading(true);
           // API call to get question by ID
           const { data } = await api.get(`/api/questions/${questionId}`);
-          // Update form data with fetched question
-    if (data.success) {
-  // Ensure options array has at least 4 items
-  const options = data.data.options || [];
-  while (options.length < 4) {
-    options.push({
-      label: String.fromCharCode(65 + options.length),
-      text: "",
-      image: "",
-    });
-  }
 
-  // Clean up matchingPairs data if it exists
-  let matchingPairs = {
-    leftItems: [
-      { id: "L1", text: "", image: "", imageUrl: "" },
-      { id: "L2", text: "", image: "", imageUrl: "" },
-    ],
-    rightItems: [
-      { id: "R1", text: "", image: "", imageUrl: "" },
-      { id: "R2", text: "", image: "", imageUrl: "" },
-    ],
-    correctMatches: {},
-  };
-
-  if (data.data.matchingPairs) {
-    // Clean leftItems - remove MongoDB _id fields
-    const cleanLeftItems = (data.data.matchingPairs.leftItems || []).map(item => ({
-      id: item.id,
-      text: item.text || "",
-      image: item.image || "",
-      imageUrl: item.imageUrl || ""
-    }));
-
-    // Clean rightItems - remove MongoDB _id fields
-    const cleanRightItems = (data.data.matchingPairs.rightItems || []).map(item => ({
-      id: item.id,
-      text: item.text || "",
-      image: item.image || "",
-      imageUrl: item.imageUrl || ""
-    }));
-
-    matchingPairs = {
-      leftItems: cleanLeftItems.length > 0 ? cleanLeftItems : matchingPairs.leftItems,
-      rightItems: cleanRightItems.length > 0 ? cleanRightItems : matchingPairs.rightItems,
-      correctMatches: data.data.matchingPairs.correctMatches || {},
-    };
-  }
-
-            // Update form state with the fetched data
-  setFormData({
-    questionText: data.data.questionText || "",
-    questionCode: data.data.questionCode || "",
-    questionType: data.data.questionType || "radio",
-    difficulty: data.data.difficulty || "medium",
-    marks: data.data.marks || 1,
-    negativeMarks: data.data.negativeMarks || 0,
-    subject: data.data.subject || "",
-    topic: data.data.topic || "",
-    tags: data.data.tags || [],
-    options: options,
-    correctAnswers: data.data.correctAnswers || [],
-    matchingPairs: matchingPairs,
-    isSample: data.data.isSample || false,
-    explanation: data.data.explanation || "",
-    status: data.data.status || "draft",
-  });
-
-            // Set preview images for existing images
-            if (data.data.questionImage) {
-              setPreviewImages((prev) => ({
-                ...prev,
-                question: data.data.questionImage,
-              }));
+          if (data.success) {
+            // Ensure options array has at least 4 items
+            const options = data.data.options || [];
+            while (options.length < 4) {
+              options.push({
+                label: String.fromCharCode(65 + options.length),
+                text: "",
+                images: [],
+              });
             }
 
-            // Set preview images for option images
-            data.data.options?.forEach((option, index) => {
-              if (option.image) {
-                setPreviewImages((prev) => ({
-                  ...prev,
-                  [`option-${index}`]: option.image,
-                }));
-              }
+            // Clean up matchingPairs data if it exists
+            let matchingPairs = {
+              leftItems: [
+                { id: "L1", text: "", images: [] },
+                { id: "L2", text: "", images: [] },
+              ],
+              rightItems: [
+                { id: "R1", text: "", images: [] },
+                { id: "R2", text: "", images: [] },
+              ],
+              correctMatches: {},
+            };
+
+            if (data.data.matchingPairs) {
+              const cleanLeftItems = (
+                data.data.matchingPairs.leftItems || []
+              ).map((item) => ({
+                id: item.id,
+                text: item.text || "",
+                images: item.images || [],
+              }));
+
+              const cleanRightItems = (
+                data.data.matchingPairs.rightItems || []
+              ).map((item) => ({
+                id: item.id,
+                text: item.text || "",
+                images: item.images || [],
+              }));
+
+              matchingPairs = {
+                leftItems:
+                  cleanLeftItems.length > 0
+                    ? cleanLeftItems
+                    : matchingPairs.leftItems,
+                rightItems:
+                  cleanRightItems.length > 0
+                    ? cleanRightItems
+                    : matchingPairs.rightItems,
+                correctMatches: data.data.matchingPairs.correctMatches || {},
+              };
+            }
+
+            // Update form state with the fetched data
+            setFormData({
+              questionText: data.data.questionText || "",
+              questionCode: data.data.questionCode || "",
+              questionType: data.data.questionType || "radio",
+              difficulty: data.data.difficulty || "medium",
+              marks: data.data.marks || 1,
+              negativeMarks: data.data.negativeMarks || 0,
+              subject: data.data.subject || "",
+              topic: data.data.topic || "",
+              tags: data.data.tags || [],
+              options: options,
+              correctAnswers: data.data.correctAnswers || [],
+              matchingPairs: matchingPairs,
+              isSample: data.data.isSample || false,
+              explanation: data.data.explanation || "",
+              status: data.data.status || "draft",
             });
           }
         } catch (err) {
-          // Log error
           console.error("Failed to fetch question", err);
           alert("Failed to load question data");
         } finally {
@@ -174,7 +160,6 @@ const QuestionForm = () => {
         }
       };
 
-      // Call fetch function
       fetchQuestion();
     } else {
       setIsEditing(false);
@@ -184,7 +169,6 @@ const QuestionForm = () => {
   // Function to handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    // Update form data based on input type
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -193,14 +177,11 @@ const QuestionForm = () => {
 
   // Function to handle option changes
   const handleOptionChange = (index, field, value) => {
-    // Create updated options array
     const updatedOptions = [...formData.options];
-    // Update specific option field
     updatedOptions[index] = {
       ...updatedOptions[index],
       [field]: value,
     };
-    // Update form data with new options
     setFormData((prev) => ({
       ...prev,
       options: updatedOptions,
@@ -209,28 +190,29 @@ const QuestionForm = () => {
 
   // Function to handle correct answer selection
   const handleCorrectAnswerChange = (label) => {
-    // Create updated correct answers array
     let updatedAnswers;
     if (formData.questionType === "radio") {
-      // For radio, only one correct answer
       updatedAnswers = [label];
     } else {
-      // For checkbox, toggle selection
       updatedAnswers = formData.correctAnswers.includes(label)
         ? formData.correctAnswers.filter((a) => a !== label)
         : [...formData.correctAnswers, label];
     }
-    // Update form data with new correct answers
     setFormData((prev) => ({
       ...prev,
       correctAnswers: updatedAnswers,
     }));
   };
-    const addMatchingItem = (side) => {
-    const items = side === "left" ? formData.matchingPairs.leftItems : formData.matchingPairs.rightItems;
-    const newId = side === "left" ? `L${items.length + 1}` : `R${items.length + 1}`;
-    const newItem = { id: newId, text: "", image: "", imageUrl: "" };
-    
+
+  const addMatchingItem = (side) => {
+    const items =
+      side === "left"
+        ? formData.matchingPairs.leftItems
+        : formData.matchingPairs.rightItems;
+    const newId =
+      side === "left" ? `L${items.length + 1}` : `R${items.length + 1}`;
+    const newItem = { id: newId, text: "", images: [] };
+
     setFormData((prev) => ({
       ...prev,
       matchingPairs: {
@@ -241,26 +223,29 @@ const QuestionForm = () => {
   };
 
   const removeMatchingItem = (side, index) => {
-    const items = side === "left" ? formData.matchingPairs.leftItems : formData.matchingPairs.rightItems;
+    const items =
+      side === "left"
+        ? formData.matchingPairs.leftItems
+        : formData.matchingPairs.rightItems;
     if (items.length <= 2) {
       alert("Minimum 2 items required!");
       return;
     }
-    
+
     const itemId = items[index].id;
     const updatedItems = items.filter((_, i) => i !== index);
     const updatedMatches = { ...formData.matchingPairs.correctMatches };
-    
+
     if (side === "left") {
       delete updatedMatches[itemId];
     } else {
-      Object.keys(updatedMatches).forEach(key => {
+      Object.keys(updatedMatches).forEach((key) => {
         if (updatedMatches[key] === itemId) {
           delete updatedMatches[key];
         }
       });
     }
-    
+
     setFormData((prev) => ({
       ...prev,
       matchingPairs: {
@@ -272,12 +257,15 @@ const QuestionForm = () => {
   };
 
   const handleMatchingItemChange = (side, index, field, value) => {
-    const items = side === "left" ? [...formData.matchingPairs.leftItems] : [...formData.matchingPairs.rightItems];
+    const items =
+      side === "left"
+        ? [...formData.matchingPairs.leftItems]
+        : [...formData.matchingPairs.rightItems];
     items[index] = {
       ...items[index],
       [field]: value,
     };
-    
+
     setFormData((prev) => ({
       ...prev,
       matchingPairs: {
@@ -287,20 +275,30 @@ const QuestionForm = () => {
     }));
   };
 
-  const handleMatchingImageUpload = (side, index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const key = `${side}-${index}`;
-      setMatchingImageFiles((prev) => ({
-        ...prev,
-        [key]: file,
-      }));
-      const previewUrl = URL.createObjectURL(file);
-      setPreviewImages((prev) => ({
-        ...prev,
-        [`matching-${key}`]: previewUrl,
-      }));
-    }
+  // Handler for matching image uploads (multiple)
+  const handleMatchingImagesSelect = (side, itemId, files) => {
+    const key = `${side}-${itemId}`;
+    setMatchingImageFiles((prev) => ({
+      ...prev,
+      [key]: files,
+    }));
+  };
+
+  // Handler for pasted image URLs
+  const handlePastedImageUrl = (key, url) => {
+    if (!url.trim()) return;
+
+    setPastedImageUrls((prev) => ({
+      ...prev,
+      [key]: [...(prev[key] || []), url.trim()],
+    }));
+  };
+
+  const handleRemovePastedUrl = (key, urlIndex) => {
+    setPastedImageUrls((prev) => ({
+      ...prev,
+      [key]: (prev[key] || []).filter((_, i) => i !== urlIndex),
+    }));
   };
 
   const handleCorrectMatchChange = (leftId, rightId) => {
@@ -316,40 +314,19 @@ const QuestionForm = () => {
     }));
   };
 
-  // Function to handle image upload for question
-  const handleQuestionImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Set question image file
-      setQuestionImageFile(file);
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      // Update preview images
-      setPreviewImages((prev) => ({
-        ...prev,
-        question: previewUrl,
-      }));
-    }
+  // Handler for question images (multiple)
+  const handleQuestionImagesSelect = (files) => {
+    setQuestionImageFiles(files);
   };
 
-  // Function to handle image upload for options
-  const handleOptionImageChange = (index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Update option image files
-      setOptionImageFiles((prev) => ({
-        ...prev,
-        [index]: file,
-      }));
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      // Update preview images
-      setPreviewImages((prev) => ({
-        ...prev,
-        [`option-${index}`]: previewUrl,
-      }));
-    }
+  // Handler for option images (multiple)
+  const handleOptionImagesSelect = (index, files) => {
+    setOptionImageFiles((prev) => ({
+      ...prev,
+      [index]: files,
+    }));
   };
+
   // Function to handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -357,59 +334,94 @@ const QuestionForm = () => {
 
     try {
       const submitData = new FormData();
-      
+
       // Append basic form data
-      submitData.append('examId', examId);
-      submitData.append('questionText', formData.questionText);
-      submitData.append('questionCode', formData.questionCode);
-      submitData.append('questionType', formData.questionType);
-      submitData.append('difficulty', formData.difficulty);
-      submitData.append('marks', formData.marks.toString());
-      submitData.append('negativeMarks', formData.negativeMarks.toString());
-      submitData.append('subject', formData.subject);
-      submitData.append('topic', formData.topic);
-      submitData.append('tags', JSON.stringify(formData.tags));
-      submitData.append('options', JSON.stringify(formData.options));
-      submitData.append('correctAnswers', JSON.stringify(formData.correctAnswers));
-      submitData.append('isSample', formData.isSample.toString());
-      submitData.append('explanation', formData.explanation);
-      submitData.append('status', formData.status);
+      submitData.append("examId", examId);
+      submitData.append("questionText", formData.questionText);
+      submitData.append("questionCode", formData.questionCode);
+      submitData.append("questionType", formData.questionType);
+      submitData.append("difficulty", formData.difficulty);
+      submitData.append("marks", formData.marks.toString());
+      submitData.append("negativeMarks", formData.negativeMarks.toString());
+      submitData.append("subject", formData.subject);
+      submitData.append("topic", formData.topic);
+      submitData.append("tags", JSON.stringify(formData.tags));
+      submitData.append("options", JSON.stringify(formData.options));
+      submitData.append(
+        "correctAnswers",
+        JSON.stringify(formData.correctAnswers)
+      );
+      submitData.append("isSample", formData.isSample.toString());
+      submitData.append("explanation", formData.explanation);
+      submitData.append("status", formData.status);
 
-      // Append question image if exists
-      if (questionImageFile) {
-        submitData.append('questionImage', questionImageFile);
-      }
+      // Append multiple question images
+      questionImageFiles.forEach((file) => {
+        submitData.append("questionImages", file);
+      });
 
-      // Append option images
-      Object.entries(optionImageFiles).forEach(([index, file]) => {
-        submitData.append(`optionImage-${index}`, file);
+      // Append multiple option images
+      Object.entries(optionImageFiles).forEach(([index, files]) => {
+        files.forEach((file) => {
+          submitData.append(`optionImages-${index}`, file);
+        });
       });
 
       // Append matching type data if applicable
-      if (formData.questionType === 'matching') {
-        submitData.append('matchingPairs', JSON.stringify(formData.matchingPairs));
-        
-        // Append matching images
-        Object.entries(matchingImageFiles).forEach(([key, file]) => {
-          submitData.append(`matchingImage-${key}`, file);
+      if (formData.questionType === "matching") {
+        submitData.append(
+          "matchingPairs",
+          JSON.stringify(formData.matchingPairs)
+        );
+
+        // Append matching images for each item
+        formData.matchingPairs.leftItems.forEach((item) => {
+          const key = `left-${item.id}`;
+          const files = matchingImageFiles[key] || [];
+          files.forEach((file) => {
+            submitData.append(`matchingImages-left-${item.id}`, file);
+          });
+
+          // Append pasted URLs
+          const pastedUrls = pastedImageUrls[key] || [];
+          submitData.append(
+            `pastedImages-left-${item.id}`,
+            JSON.stringify(pastedUrls)
+          );
+        });
+
+        formData.matchingPairs.rightItems.forEach((item) => {
+          const key = `right-${item.id}`;
+          const files = matchingImageFiles[key] || [];
+          files.forEach((file) => {
+            submitData.append(`matchingImages-right-${item.id}`, file);
+          });
+
+          // Append pasted URLs
+          const pastedUrls = pastedImageUrls[key] || [];
+          submitData.append(
+            `pastedImages-right-${item.id}`,
+            JSON.stringify(pastedUrls)
+          );
         });
       }
 
-      const url = isEditing && questionId !== 'new' 
-        ? `/api/questions/${questionId}`
-        : '/api/questions';
+      const url =
+        isEditing && questionId !== "new"
+          ? `/api/questions/${questionId}`
+          : "/api/questions";
 
-      const method = isEditing && questionId !== 'new' ? 'PUT' : 'POST';
+      const method = isEditing && questionId !== "new" ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         body: submitData,
       });
-     console.log(submitData);
+
       const result = await response.json();
- 
+
       if (result.success) {
-        alert(`Question ${isEditing ? 'updated' : 'created'} successfully!`);
+        alert(`Question ${isEditing ? "updated" : "created"} successfully!`);
         if (!isEditing) {
           // Reset form after successful creation
           setFormData({
@@ -423,20 +435,20 @@ const QuestionForm = () => {
             topic: "",
             tags: [],
             options: [
-              { label: "A", text: "", image: "" },
-              { label: "B", text: "", image: "" },
-              { label: "C", text: "", image: "" },
-              { label: "D", text: "", image: "" },
+              { label: "A", text: "", images: [] },
+              { label: "B", text: "", images: [] },
+              { label: "C", text: "", images: [] },
+              { label: "D", text: "", images: [] },
             ],
             correctAnswers: [],
             matchingPairs: {
               leftItems: [
-                { id: "L1", text: "", image: "", imageUrl: "" },
-                { id: "L2", text: "", image: "", imageUrl: "" },
+                { id: "L1", text: "", images: [] },
+                { id: "L2", text: "", images: [] },
               ],
               rightItems: [
-                { id: "R1", text: "", image: "", imageUrl: "" },
-                { id: "R2", text: "", image: "", imageUrl: "" },
+                { id: "R1", text: "", images: [] },
+                { id: "R2", text: "", images: [] },
               ],
               correctMatches: {},
             },
@@ -444,17 +456,17 @@ const QuestionForm = () => {
             explanation: "",
             status: "draft",
           });
-          setQuestionImageFile(null);
+          setQuestionImageFiles([]);
           setOptionImageFiles({});
           setMatchingImageFiles({});
-          setPreviewImages({});
+          setPastedImageUrls({});
         }
       } else {
         alert(`Error: ${result.message}`);
       }
     } catch (error) {
-      console.error('Submission error:', error);
-      alert('Failed to submit question. Please try again.');
+      console.error("Submission error:", error);
+      alert("Failed to submit question. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -470,7 +482,7 @@ const QuestionForm = () => {
   }
 
   // Render component
- return (
+  return (
     <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">
@@ -480,7 +492,9 @@ const QuestionForm = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
             <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-              <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span>
+              <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                1
+              </span>
               Basic Information
             </h2>
 
@@ -532,27 +546,28 @@ const QuestionForm = () => {
             </div>
 
             <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Option Image (Optional)
-  </label>
-
-  {/* 🖼️ Reusable upload component */}
-  <ImageUploader onImageSelect={(file) => setOptionImage(file)} />
-</div>
-
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Question Images (Optional - Multiple)
+              </label>
+              <ImageUploader onImagesSelect={handleQuestionImagesSelect} />
+            </div>
           </div>
 
           {formData.questionType === "matching" ? (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg border border-purple-200">
               <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-                <span className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+                <span className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                  2
+                </span>
                 Matching Items
               </h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-purple-300">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-gray-700 text-lg">Column A (Questions)</h3>
+                    <h3 className="font-semibold text-gray-700 text-lg">
+                      Column A (Questions)
+                    </h3>
                     <button
                       type="button"
                       onClick={() => addMatchingItem("left")}
@@ -561,11 +576,16 @@ const QuestionForm = () => {
                       <Plus size={18} /> Add Item
                     </button>
                   </div>
-                  
+
                   {formData.matchingPairs.leftItems.map((item, index) => (
-                    <div key={item.id} className="mb-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50 hover:shadow-md transition-shadow">
+                    <div
+                      key={item.id}
+                      className="mb-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50 hover:shadow-md transition-shadow"
+                    >
                       <div className="flex justify-between items-start mb-3">
-                        <span className="font-bold text-purple-700 bg-white px-3 py-1 rounded-full">{item.id}</span>
+                        <span className="font-bold text-purple-700 bg-white px-3 py-1 rounded-full">
+                          {item.id}
+                        </span>
                         {formData.matchingPairs.leftItems.length > 2 && (
                           <button
                             type="button"
@@ -576,90 +596,108 @@ const QuestionForm = () => {
                           </button>
                         )}
                       </div>
-                      
+
                       <textarea
                         value={item.text}
-                        onChange={(e) => handleMatchingItemChange("left", index, "text", e.target.value)}
+                        onChange={(e) =>
+                          handleMatchingItemChange(
+                            "left",
+                            index,
+                            "text",
+                            e.target.value
+                          )
+                        }
                         className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         rows="2"
                         placeholder="Enter question text..."
                       />
-                      
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setImageUploadMode(prev => ({
-                              ...prev,
-                              [`left-${index}`]: imageUploadMode[`left-${index}`] === 'file' ? '' : 'file'
-                            }))}
-                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              imageUploadMode[`left-${index}`] === 'file' 
-                                ? 'bg-blue-500 text-white shadow-md' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            <Upload size={16} /> Upload File
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setImageUploadMode(prev => ({
-                              ...prev,
-                              [`left-${index}`]: imageUploadMode[`left-${index}`] === 'url' ? '' : 'url'
-                            }))}
-                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              imageUploadMode[`left-${index}`] === 'url' 
-                                ? 'bg-blue-500 text-white shadow-md' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            <Link size={16} /> Image URL
-                          </button>
+
+                      <div className="space-y-3">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Images (Multiple)
+                        </label>
+                        <ImageUploader
+                          onImagesSelect={(files) =>
+                            handleMatchingImagesSelect("left", item.id, files)
+                          }
+                        />
+
+                        <div className="mt-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Or paste image URLs:
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="url"
+                              placeholder="https://example.com/image.jpg"
+                              className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handlePastedImageUrl(
+                                    `left-${item.id}`,
+                                    e.target.value
+                                  );
+                                  e.target.value = "";
+                                }
+                              }}
+                            />
+                          </div>
+                          {pastedImageUrls[`left-${item.id}`]?.map(
+                            (url, urlIndex) => (
+                              <div
+                                key={urlIndex}
+                                className="flex items-center gap-2 mt-2 p-2 bg-gray-100 rounded"
+                              >
+                                <img
+                                  src={url}
+                                  alt=""
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                                <span className="flex-1 text-xs truncate">
+                                  {url}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRemovePastedUrl(
+                                      `left-${item.id}`,
+                                      urlIndex
+                                    )
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )
+                          )}
                         </div>
-                        
-                        {imageUploadMode[`left-${index}`] === 'file' && (
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleMatchingImageUpload("left", index, e)}
-                            className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
-                          />
-                        )}
-                        
-                        {imageUploadMode[`left-${index}`] === 'url' && (
-                          <input
-                            type="url"
-                            value={item.imageUrl || ''}
-                            onChange={(e) => handleMatchingItemChange("left", index, "imageUrl", e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="https://example.com/image.jpg"
-                          />
-                        )}
-                        
-                        {(previewImages[`matching-left-${index}`] || item.imageUrl) && (
-                          <img
-                            src={previewImages[`matching-left-${index}`] || item.imageUrl}
-                            alt={`Left ${item.id}`}
-                            className="w-full h-32 object-contain border-2 border-purple-300 rounded-lg bg-white p-2"
-                          />
-                        )}
                       </div>
-                      
+
                       <div className="mt-3">
                         <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase">
                           Correct Match:
                         </label>
                         <select
-                          value={formData.matchingPairs.correctMatches[item.id] || ""}
-                          onChange={(e) => handleCorrectMatchChange(item.id, e.target.value)}
+                          value={
+                            formData.matchingPairs.correctMatches[item.id] || ""
+                          }
+                          onChange={(e) =>
+                            handleCorrectMatchChange(item.id, e.target.value)
+                          }
                           className="w-full p-2 border-2 border-purple-300 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         >
                           <option value="">Select matching answer</option>
-                          {formData.matchingPairs.rightItems.map((rightItem) => (
-                            <option key={rightItem.id} value={rightItem.id}>
-                              {rightItem.id} - {rightItem.text.substring(0, 30)}{rightItem.text.length > 30 ? '...' : ''}
-                            </option>
-                          ))}
+                          {formData.matchingPairs.rightItems.map(
+                            (rightItem) => (
+                              <option key={rightItem.id} value={rightItem.id}>
+                                {rightItem.id} -{" "}
+                                {rightItem.text.substring(0, 30)}
+                                {rightItem.text.length > 30 ? "..." : ""}
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
                     </div>
@@ -668,7 +706,9 @@ const QuestionForm = () => {
 
                 <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-pink-300">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-gray-700 text-lg">Column B (Answers)</h3>
+                    <h3 className="font-semibold text-gray-700 text-lg">
+                      Column B (Answers)
+                    </h3>
                     <button
                       type="button"
                       onClick={() => addMatchingItem("right")}
@@ -677,11 +717,16 @@ const QuestionForm = () => {
                       <Plus size={18} /> Add Item
                     </button>
                   </div>
-                  
+
                   {formData.matchingPairs.rightItems.map((item, index) => (
-                    <div key={item.id} className="mb-4 p-4 border-2 border-pink-200 rounded-lg bg-pink-50 hover:shadow-md transition-shadow">
+                    <div
+                      key={item.id}
+                      className="mb-4 p-4 border-2 border-pink-200 rounded-lg bg-pink-50 hover:shadow-md transition-shadow"
+                    >
                       <div className="flex justify-between items-start mb-3">
-                        <span className="font-bold text-pink-700 bg-white px-3 py-1 rounded-full">{item.id}</span>
+                        <span className="font-bold text-pink-700 bg-white px-3 py-1 rounded-full">
+                          {item.id}
+                        </span>
                         {formData.matchingPairs.rightItems.length > 2 && (
                           <button
                             type="button"
@@ -692,73 +737,83 @@ const QuestionForm = () => {
                           </button>
                         )}
                       </div>
-                      
+
                       <textarea
                         value={item.text}
-                        onChange={(e) => handleMatchingItemChange("right", index, "text", e.target.value)}
+                        onChange={(e) =>
+                          handleMatchingItemChange(
+                            "right",
+                            index,
+                            "text",
+                            e.target.value
+                          )
+                        }
                         className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         rows="2"
                         placeholder="Enter answer text..."
                       />
-                      
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setImageUploadMode(prev => ({
-                              ...prev,
-                              [`right-${index}`]: imageUploadMode[`right-${index}`] === 'file' ? '' : 'file'
-                            }))}
-                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              imageUploadMode[`right-${index}`] === 'file' 
-                                ? 'bg-blue-500 text-white shadow-md' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            <Upload size={16} /> Upload File
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setImageUploadMode(prev => ({
-                              ...prev,
-                              [`right-${index}`]: imageUploadMode[`right-${index}`] === 'url' ? '' : 'url'
-                            }))}
-                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              imageUploadMode[`right-${index}`] === 'url' 
-                                ? 'bg-blue-500 text-white shadow-md' 
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            <Link size={16} /> Image URL
-                          </button>
+
+                      <div className="space-y-3">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Images (Multiple)
+                        </label>
+                        <ImageUploader
+                          onImagesSelect={(files) =>
+                            handleMatchingImagesSelect("right", item.id, files)
+                          }
+                        />
+
+                        <div className="mt-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Or paste image URLs:
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="url"
+                              placeholder="https://example.com/image.jpg"
+                              className="flex-1 p-2 border border-gray-300 rounded-lg text-sm"
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handlePastedImageUrl(
+                                    `right-${item.id}`,
+                                    e.target.value
+                                  );
+                                  e.target.value = "";
+                                }
+                              }}
+                            />
+                          </div>
+                          {pastedImageUrls[`right-${item.id}`]?.map(
+                            (url, urlIndex) => (
+                              <div
+                                key={urlIndex}
+                                className="flex items-center gap-2 mt-2 p-2 bg-gray-100 rounded"
+                              >
+                                <img
+                                  src={url}
+                                  alt=""
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                                <span className="flex-1 text-xs truncate">
+                                  {url}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRemovePastedUrl(
+                                      `right-${item.id}`,
+                                      urlIndex
+                                    )
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )
+                          )}
                         </div>
-                        
-                        {imageUploadMode[`right-${index}`] === 'file' && (
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleMatchingImageUpload("right", index, e)}
-                            className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-100 file:text-pink-700 hover:file:bg-pink-200"
-                          />
-                        )}
-                        
-                        {imageUploadMode[`right-${index}`] === 'url' && (
-                          <input
-                            type="url"
-                            value={item.imageUrl || ''}
-                            onChange={(e) => handleMatchingItemChange("right", index, "imageUrl", e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                            placeholder="https://example.com/image.jpg"
-                          />
-                        )}
-                        
-                        {(previewImages[`matching-right-${index}`] || item.imageUrl) && (
-                          <img
-                            src={previewImages[`matching-right-${index}`] || item.imageUrl}
-                            alt={`Right ${item.id}`}
-                            className="w-full h-32 object-contain border-2 border-pink-300 rounded-lg bg-white p-2"
-                          />
-                        )}
                       </div>
                     </div>
                   ))}
@@ -768,32 +823,45 @@ const QuestionForm = () => {
           ) : (
             <div className="bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-lg border border-green-200">
               <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-                <span className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+                <span className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                  2
+                </span>
                 Answer Options
               </h2>
 
               {formData.options.map((option, index) => (
-                <div key={index} className="mb-4 p-4 border-2 border-green-200 rounded-lg bg-white hover:shadow-md transition-shadow">
+                <div
+                  key={index}
+                  className="mb-4 p-4 border-2 border-green-200 rounded-lg bg-white hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center mb-3">
                     <span className="font-bold text-lg mr-4 bg-green-100 text-green-700 px-3 py-1 rounded-full">
                       {option.label}
                     </span>
                     <label className="flex items-center cursor-pointer">
                       <input
-                        type={formData.questionType === "radio" ? "radio" : "checkbox"}
+                        type={
+                          formData.questionType === "radio"
+                            ? "radio"
+                            : "checkbox"
+                        }
                         name="correctAnswers"
                         checked={formData.correctAnswers.includes(option.label)}
                         onChange={() => handleCorrectAnswerChange(option.label)}
                         className="mr-2 w-5 h-5 text-green-500 focus:ring-green-500"
                       />
-                      <span className="font-medium text-green-700">Mark as Correct Answer</span>
+                      <span className="font-medium text-green-700">
+                        Mark as Correct Answer
+                      </span>
                     </label>
                   </div>
 
                   <div className="mb-3">
                     <textarea
                       value={option.text}
-                      onChange={(e) => handleOptionChange(index, "text", e.target.value)}
+                      onChange={(e) =>
+                        handleOptionChange(index, "text", e.target.value)
+                      }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       rows="2"
                       placeholder={`Enter option ${option.label} text...`}
@@ -803,23 +871,13 @@ const QuestionForm = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Option Image (Optional)
+                      Option Images (Optional - Multiple)
                     </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleOptionImageChange(index, e)}
-                      className="w-full p-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-100 file:text-green-700 hover:file:bg-green-200"
+                    <ImageUploader
+                      onImagesSelect={(files) =>
+                        handleOptionImagesSelect(index, files)
+                      }
                     />
-                    {previewImages[`option-${index}`] && (
-                      <div className="mt-3">
-                        <img
-                          src={previewImages[`option-${index}`]}
-                          alt={`Option ${option.label} preview`}
-                          className="h-32 object-contain border-2 border-green-300 rounded-lg"
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
@@ -828,7 +886,9 @@ const QuestionForm = () => {
 
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-lg border border-amber-200">
             <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-              <span className="bg-amber-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">3</span>
+              <span className="bg-amber-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                3
+              </span>
               Additional Details
             </h2>
 
@@ -918,7 +978,10 @@ const QuestionForm = () => {
                 type="text"
                 value={formData.tags.join(", ")}
                 onChange={(e) => {
-                  const tagsArray = e.target.value.split(",").map((tag) => tag.trim()).filter((tag) => tag);
+                  const tagsArray = e.target.value
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter((tag) => tag);
                   setFormData((prev) => ({ ...prev, tags: tagsArray }));
                 }}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
@@ -949,7 +1012,9 @@ const QuestionForm = () => {
                   onChange={handleInputChange}
                   className="mr-2 w-5 h-5 text-amber-500 focus:ring-amber-500"
                 />
-                <span className="font-medium text-gray-700">Mark as Sample Question</span>
+                <span className="font-medium text-gray-700">
+                  Mark as Sample Question
+                </span>
               </label>
 
               <div>
@@ -988,9 +1053,7 @@ const QuestionForm = () => {
                   {isEditing ? "Updating..." : "Creating..."}
                 </>
               ) : (
-                <>
-                  {isEditing ? "Update Question" : "Create Question"}
-                </>
+                <>{isEditing ? "Update Question" : "Create Question"}</>
               )}
             </button>
           </div>
@@ -1001,9 +1064,3 @@ const QuestionForm = () => {
 };
 
 export default QuestionForm;
-
-
-
-
-
-

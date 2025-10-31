@@ -32,23 +32,28 @@ const cartStore = (set, get) => ({
         title: item.title,
         name: item.name || item.title,
 
-        // ALL Pricing fields - CRITICAL for cart calculations
-        // Priority: combo prices first, then dumps prices
-        price: item.price || item.comboPriceInr || item.dumpsPriceInr || 0,
-        priceINR: item.priceINR || item.comboPriceInr || item.dumpsPriceInr,
-        priceUSD: item.priceUSD || item.comboPriceUsd || item.dumpsPriceUsd,
-        
-        // Dumps pricing
-        dumpsPriceInr: item.dumpsPriceInr,
-        dumpsPriceUsd: item.dumpsPriceUsd,
-        dumpsMrpInr: item.dumpsMrpInr,
-        dumpsMrpUsd: item.dumpsMrpUsd,
-        
+        // ALL Pricing fields - Store as numbers
+        price: Number(item.price) || 0,
+        priceINR: Number(item.priceINR) || 0,
+        priceUSD: Number(item.priceUSD) || 0,
+
+        // Dumps pricing (Regular PDF)
+        dumpsPriceInr: Number(item.dumpsPriceInr) || 0,
+        dumpsPriceUsd: Number(item.dumpsPriceUsd) || 0,
+        dumpsMrpInr: Number(item.dumpsMrpInr) || 0,
+        dumpsMrpUsd: Number(item.dumpsMrpUsd) || 0,
+
         // Combo pricing (PDF + Online Exam)
-        comboPriceInr: item.comboPriceInr,
-        comboPriceUsd: item.comboPriceUsd,
-        comboMrpInr: item.comboMrpInr,
-        comboMrpUsd: item.comboMrpUsd,
+        comboPriceInr: Number(item.comboPriceInr) || 0,
+        comboPriceUsd: Number(item.comboPriceUsd) || 0,
+        comboMrpInr: Number(item.comboMrpInr) || 0,
+        comboMrpUsd: Number(item.comboMrpUsd) || 0,
+
+        // Exam pricing (Online Exam Only)
+        examPriceInr: Number(item.examPriceInr) || 0,
+        examPriceUsd: Number(item.examPriceUsd) || 0,
+        examMrpInr: Number(item.examMrpInr) || 0,
+        examMrpUsd: Number(item.examMrpUsd) || 0,
 
         // Product details
         category: item.category,
@@ -57,7 +62,7 @@ const cartStore = (set, get) => ({
         sku: item.sku,
         slug: item.slug,
 
-        // URLs and media - CRITICAL for order access
+        // URLs and media
         imageUrl: item.imageUrl,
         samplePdfUrl: item.samplePdfUrl,
         mainPdfUrl: item.mainPdfUrl,
@@ -79,7 +84,7 @@ const cartStore = (set, get) => ({
         // Status and meta
         status: item.status,
         action: item.action,
-        type: item.type || "exam",
+        type: item.type || "regular",
 
         // SEO fields
         metaTitle: item.metaTitle,
@@ -90,7 +95,7 @@ const cartStore = (set, get) => ({
         // Quantity
         quantity: 1,
 
-        // Preserve any additional fields that might exist
+        // Preserve any additional fields
         ...Object.keys(item).reduce((acc, key) => {
           if (!acc.hasOwnProperty(key)) {
             acc[key] = item[key];
@@ -101,10 +106,15 @@ const cartStore = (set, get) => ({
 
       console.log("✅ Stored complete item in cart:", completeItem);
       console.log("💰 Pricing check:");
-      console.log("  - Combo INR:", completeItem.comboPriceInr);
-      console.log("  - Combo USD:", completeItem.comboPriceUsd);
+      console.log("  - Type:", completeItem.type);
+      console.log("  - Price INR:", completeItem.priceINR);
+      console.log("  - Price USD:", completeItem.priceUSD);
       console.log("  - Dumps INR:", completeItem.dumpsPriceInr);
       console.log("  - Dumps USD:", completeItem.dumpsPriceUsd);
+      console.log("  - Exam INR:", completeItem.examPriceInr);
+      console.log("  - Exam USD:", completeItem.examPriceUsd);
+      console.log("  - Combo INR:", completeItem.comboPriceInr);
+      console.log("  - Combo USD:", completeItem.comboPriceUsd);
 
       set({
         cartItems: [...get().cartItems, completeItem],
@@ -137,14 +147,38 @@ const cartStore = (set, get) => ({
 
   clearCart: () => set({ cartItems: [] }),
 
-  // Helper to get cart total in specific currency
+  // Helper to get the correct price based on item type and currency
+  getItemPrice: (item, currency = "INR") => {
+    const type = item.type || "regular";
+    
+    if (currency === "USD") {
+      switch (type) {
+        case "combo":
+          return Number(item.comboPriceUsd) || Number(item.priceUSD) || 0;
+        case "online":
+          return Number(item.examPriceUsd) || Number(item.priceUSD) || 0;
+        case "regular":
+        default:
+          return Number(item.dumpsPriceUsd) || Number(item.priceUSD) || 0;
+      }
+    } else {
+      switch (type) {
+        case "combo":
+          return Number(item.comboPriceInr) || Number(item.priceINR) || 0;
+        case "online":
+          return Number(item.examPriceInr) || Number(item.priceINR) || 0;
+        case "regular":
+        default:
+          return Number(item.dumpsPriceInr) || Number(item.priceINR) || 0;
+      }
+    }
+  },
+
+  // Get cart total in specific currency
   getCartTotal: (currency = "INR") => {
-    return get().cartItems.reduce((acc, item) => {
-      // Priority: combo prices first, then dumps prices
-      const price =
-        currency === "USD"
-          ? Number(item.comboPriceUsd || item.dumpsPriceUsd || item.priceUSD || item.price) || 0
-          : Number(item.comboPriceInr || item.dumpsPriceInr || item.priceINR || item.price) || 0;
+    const state = get();
+    return state.cartItems.reduce((acc, item) => {
+      const price = state.getItemPrice(item, currency);
       return acc + price * (item.quantity || 1);
     }, 0);
   },
@@ -159,22 +193,19 @@ const cartStore = (set, get) => ({
 const useCartStore = create(
   persist(cartStore, {
     name: "cart-storage",
-    version: 2, // Increment version to trigger migration
+    version: 3, // Increment version for new pricing structure
     migrate: (persistedState, version) => {
-      // If old version or no version, clear the cart to avoid issues
-      if (version < 2) {
-        console.log("🔄 Migrating cart store to version 2 - clearing old data");
+      if (version < 3) {
+        console.log("🔄 Migrating cart store to version 3 - clearing old data");
         return {
           cartItems: [],
         };
       }
       return persistedState;
     },
-    // Handle parse errors gracefully
     onRehydrateStorage: () => (state, error) => {
       if (error) {
         console.error("❌ Error rehydrating cart store:", error);
-        // Clear localStorage if there's an error
         if (typeof window !== "undefined") {
           localStorage.removeItem("cart-storage");
         }
@@ -188,23 +219,15 @@ const useCartStore = create(
   })
 );
 
-// Selector: total price in specific currency
+// Export selector functions
 export const getCartTotal = (currency = "INR") => {
   const state = useCartStore.getState();
-  return state.cartItems.reduce((acc, item) => {
-    // Priority: combo prices first, then dumps prices
-    const price =
-      currency === "USD"
-        ? Number(item.comboPriceUsd || item.dumpsPriceUsd || item.priceUSD || item.price) || 0
-        : Number(item.comboPriceInr || item.dumpsPriceInr || item.priceINR || item.price) || 0;
-    return acc + price * (item.quantity || 1);
-  }, 0);
+  return state.getCartTotal(currency);
 };
 
-// Selector: get item count
 export const getCartItemCount = () => {
   const state = useCartStore.getState();
-  return state.cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
+  return state.getItemCount();
 };
 
 export default useCartStore;

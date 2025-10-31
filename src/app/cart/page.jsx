@@ -28,35 +28,130 @@ const Cart = () => {
 
   const router = useRouter();
 
-  // Get actual item price based on currency and TYPE
+  // IMPROVED: Get actual item price based on currency and TYPE
   const getItemPrice = (item, currency) => {
+    const type = item.type || "regular";
+
+    console.log(`🔍 Getting price for ${item.title}:`, {
+      type,
+      currency,
+      allPrices: {
+        dumps: { inr: item.dumpsPriceInr, usd: item.dumpsPriceUsd },
+        exam: { inr: item.examPriceInr, usd: item.examPriceUsd },
+        combo: { inr: item.comboPriceInr, usd: item.comboPriceUsd },
+      },
+    });
+
+    // Convert to number safely
+    const toNum = (val) => {
+      if (val === null || val === undefined || val === "") return 0;
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+
     if (currency === "USD") {
-      // Check type and use appropriate price
-      if (item.type === "combo") {
-        return Number(item.comboPriceUsd || item.priceUSD || item.price) || 0;
-      } else if (item.type === "online") {
-        return Number(item.dumpsPriceUsd || item.priceUSD || item.price) || 0;
-      } else {
-        // For 'exam' or 'regular' type
-        return Number(item.priceUSD || item.dumpsPriceUsd || item.price) || 0;
+      switch (type) {
+        case "combo":
+          return (
+            toNum(item.comboPriceUsd) ||
+            toNum(item.priceUSD) ||
+            toNum(item.price) ||
+            0
+          );
+        case "online":
+          return (
+            toNum(item.examPriceUsd) ||
+            toNum(item.priceUSD) ||
+            toNum(item.price) ||
+            0
+          );
+        case "regular":
+        default:
+          return (
+            toNum(item.dumpsPriceUsd) ||
+            toNum(item.priceUSD) ||
+            toNum(item.price) ||
+            0
+          );
       }
     } else {
-      // Check type and use appropriate price
-      if (item.type === "combo") {
-        return Number(item.comboPriceInr || item.priceINR || item.price) || 0;
-      } else if (item.type === "online") {
-        return Number(item.dumpsPriceInr || item.priceINR || item.price) || 0;
-      } else {
-        // For 'exam' or 'regular' type
-        return Number(item.priceINR || item.dumpsPriceInr || item.price) || 0;
+      // INR
+      switch (type) {
+        case "combo":
+          return (
+            toNum(item.comboPriceInr) ||
+            toNum(item.priceINR) ||
+            toNum(item.price) ||
+            0
+          );
+        case "online":
+          return (
+            toNum(item.examPriceInr) ||
+            toNum(item.priceINR) ||
+            toNum(item.price) ||
+            0
+          );
+        case "regular":
+        default:
+          return (
+            toNum(item.dumpsPriceInr) ||
+            toNum(item.priceINR) ||
+            toNum(item.price) ||
+            0
+          );
       }
     }
+  };
+
+  // Helper to get MRP (original price) based on type
+  const getItemMRP = (item, currency) => {
+    const type = item.type || "regular";
+
+    const toNum = (val) => {
+      if (val === null || val === undefined || val === "") return 0;
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+
+    if (currency === "USD") {
+      switch (type) {
+        case "combo":
+          return toNum(item.comboMrpUsd) || 0;
+        case "online":
+          return toNum(item.examMrpUsd) || 0;
+        case "regular":
+        default:
+          return toNum(item.dumpsMrpUsd) || 0;
+      }
+    } else {
+      switch (type) {
+        case "combo":
+          return toNum(item.comboMrpInr) || 0;
+        case "online":
+          return toNum(item.examMrpInr) || 0;
+        case "regular":
+        default:
+          return toNum(item.dumpsMrpInr) || 0;
+      }
+    }
+  };
+
+  // Calculate discount percentage
+  const calculateItemDiscount = (item, currency) => {
+    const price = getItemPrice(item, currency);
+    const mrp = getItemMRP(item, currency);
+
+    if (!mrp || mrp <= price) return 0;
+    return Math.round(((mrp - price) / mrp) * 100);
   };
 
   // Calculate subtotal in selected currency
   const calculateSubtotal = () => {
     return cartItems.reduce((acc, item) => {
       const itemPrice = getItemPrice(item, selectedCurrency);
+      console.log(
+        `💰 Item: ${item.title} (${item.type}) - Price: ${itemPrice}`
+      );
       return acc + itemPrice * (item.quantity || 1);
     }, 0);
   };
@@ -67,8 +162,6 @@ const Cart = () => {
   const calculateDiscount = () => {
     if (!appliedCoupon) return 0;
 
-    // If discountValue is a small number (like 20), treat it as percentage
-    // If it's a large number (like 500), treat it as fixed amount
     const isPercentage =
       appliedCoupon.discountType === "percentage" ||
       (appliedCoupon.discountValue > 0 && appliedCoupon.discountValue <= 100);
@@ -79,7 +172,6 @@ const Cart = () => {
         ? Math.min(discountAmount, appliedCoupon.maxDiscount)
         : discountAmount;
     } else {
-      // Fixed discount
       return appliedCoupon.discountValue;
     }
   };
@@ -128,11 +220,28 @@ const Cart = () => {
     };
   }, []);
 
+  // Log cart items on mount and when they change
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      console.log("🛒 CART ITEMS:", cartItems);
+      console.log("📊 CART SUMMARY:");
+      cartItems.forEach((item) => {
+        console.log(`  - ${item.title} (${item.type}):`, {
+          examPriceInr: item.examPriceInr,
+          examPriceUsd: item.examPriceUsd,
+          dumpsPriceInr: item.dumpsPriceInr,
+          dumpsPriceUsd: item.dumpsPriceUsd,
+          comboPriceInr: item.comboPriceInr,
+          comboPriceUsd: item.comboPriceUsd,
+        });
+      });
+    }
+  }, [cartItems]);
+
   const handleDelete = (id, type) => {
     removeFromCart(id, type);
     toast.success("Item removed from cart");
 
-    // Reset coupon if cart becomes empty
     if (cartItems.length === 1) {
       setAppliedCoupon(null);
       setCouponCode("");
@@ -160,7 +269,6 @@ const Cart = () => {
         currency: selectedCurrency,
       });
 
-      // Check multiple response formats
       const isValid =
         response.data.success ||
         response.data.message === "Coupon is valid" ||
@@ -169,7 +277,6 @@ const Cart = () => {
       if (isValid && response.data.coupon) {
         const couponData = response.data.coupon;
 
-        // Extract discount value and type
         const discountValue =
           couponData.discountValue ||
           couponData.discount ||
@@ -179,7 +286,6 @@ const Cart = () => {
         const discountType =
           couponData.discountType ||
           response.data.discountType ||
-          // Auto-detect: if value <= 100, likely percentage
           (discountValue > 0 && discountValue <= 100 ? "percentage" : "fixed");
 
         setAppliedCoupon({
@@ -190,7 +296,6 @@ const Cart = () => {
         });
         setCouponError("");
 
-        // Calculate actual discount amount for display
         const actualDiscount =
           discountType === "percentage" ||
           (discountValue > 0 && discountValue <= 100)
@@ -227,6 +332,92 @@ const Cart = () => {
     toast.info("Coupon removed");
   };
 
+  // Create order payload helper
+  const createOrderPayload = (paymentMethod, paymentId) => {
+    return {
+      userId,
+      items: cartItems.map((item) => {
+        const actualPrice = getItemPrice(item, selectedCurrency);
+
+        console.log(`📦 Creating order item for ${item.title}:`, {
+          type: item.type,
+          actualPrice,
+          currency: selectedCurrency,
+          examPrices: {
+            inr: item.examPriceInr,
+            usd: item.examPriceUsd,
+          },
+        });
+
+        return {
+          _id: item._id,
+          productId: item.productId || item._id,
+          courseId: item._id,
+          name: item.name || item.title || "Unnamed Course",
+          title: item.title,
+
+          price: actualPrice,
+          priceINR:
+            selectedCurrency === "INR"
+              ? actualPrice
+              : getItemPrice(item, "INR"),
+          priceUSD:
+            selectedCurrency === "USD"
+              ? actualPrice
+              : getItemPrice(item, "USD"),
+
+          dumpsPriceInr: Number(item.dumpsPriceInr) || 0,
+          dumpsPriceUsd: Number(item.dumpsPriceUsd) || 0,
+          dumpsMrpInr: Number(item.dumpsMrpInr) || 0,
+          dumpsMrpUsd: Number(item.dumpsMrpUsd) || 0,
+
+          comboPriceInr: Number(item.comboPriceInr) || 0,
+          comboPriceUsd: Number(item.comboPriceUsd) || 0,
+          comboMrpInr: Number(item.comboMrpInr) || 0,
+          comboMrpUsd: Number(item.comboMrpUsd) || 0,
+
+          examPriceInr: Number(item.examPriceInr) || 0,
+          examPriceUsd: Number(item.examPriceUsd) || 0,
+          examMrpInr: Number(item.examMrpInr) || 0,
+          examMrpUsd: Number(item.examMrpUsd) || 0,
+
+          category: item.category,
+          code: item.code || item.sapExamCode,
+          sapExamCode: item.sapExamCode,
+          sku: item.sku,
+          slug: item.slug,
+          imageUrl: item.imageUrl || "",
+          samplePdfUrl: item.samplePdfUrl || "",
+          mainPdfUrl: item.mainPdfUrl || "",
+          duration: item.duration || "",
+          eachQuestionMark: item.eachQuestionMark || "",
+          numberOfQuestions: item.numberOfQuestions || "0",
+          passingScore: item.passingScore || "",
+          mainInstructions: item.mainInstructions || "",
+          sampleInstructions: item.sampleInstructions || "",
+          Description: item.Description || "",
+          longDescription: item.longDescription || "",
+          status: item.status || "active",
+          action: item.action,
+          type: item.type || "regular",
+          metaTitle: item.metaTitle,
+          metaKeywords: item.metaKeywords,
+          metaDescription: item.metaDescription,
+          schema: item.schema,
+          quantity: item.quantity || 1,
+        };
+      }),
+      totalAmount: grandTotal,
+      subtotal: subtotal,
+      discount: discount,
+      currency: selectedCurrency,
+      couponCode: appliedCoupon?.code || null,
+      paymentMethod: paymentMethod,
+      paymentId: paymentId,
+      paymentStatus: "completed",
+    };
+  };
+
   const handleRazorpayPayment = async () => {
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
@@ -245,12 +436,9 @@ const Cart = () => {
     }
 
     try {
-      // Convert USD to INR if needed (approximate conversion for Razorpay)
       const razorpayCurrency = selectedCurrency === "USD" ? "INR" : "INR";
       const razorpayAmount =
-        selectedCurrency === "USD"
-          ? Math.round(grandTotal * 83) // USD to INR conversion (approx rate)
-          : grandTotal;
+        selectedCurrency === "USD" ? Math.round(grandTotal * 83) : grandTotal;
 
       const response = await axios.post("/api/payments/razorpay/create-order", {
         amount: razorpayAmount,
@@ -279,7 +467,7 @@ const Cart = () => {
 
       const options = {
         key: razorpayKey,
-        amount: Math.round(razorpayAmount * 100), // Convert to paise
+        amount: Math.round(razorpayAmount * 100),
         currency: razorpayCurrency,
         name: "DumpsExpert",
         description: "Purchase IT Certification Materials",
@@ -309,64 +497,12 @@ const Cart = () => {
             toast.dismiss();
             toast.loading("Creating your order...");
 
-            const orderPayload = {
-              userId,
-              items: cartItems.map((item) => ({
-                _id: item._id,
-                productId: item.productId || item._id,
-                courseId: item._id,
-                name: item.name || item.title || "Unnamed Course",
-                title: item.title,
+            const orderPayload = createOrderPayload(
+              "razorpay",
+              paymentVerification.data.paymentId
+            );
 
-                // All pricing fields
-                price: getItemPrice(item, selectedCurrency),
-                priceINR:
-                  item.priceINR || item.dumpsPriceInr || item.comboPriceInr,
-                priceUSD:
-                  item.priceUSD || item.dumpsPriceUsd || item.comboPriceUsd,
-                dumpsPriceInr: item.dumpsPriceInr,
-                dumpsPriceUsd: item.dumpsPriceUsd,
-                dumpsMrpInr: item.dumpsMrpInr,
-                dumpsMrpUsd: item.dumpsMrpUsd,
-                comboPriceInr: item.comboPriceInr,
-                comboPriceUsd: item.comboPriceUsd,
-                comboMrpInr: item.comboMrpInr,
-                comboMrpUsd: item.comboMrpUsd,
-
-                category: item.category,
-                code: item.code || item.sapExamCode,
-                sapExamCode: item.sapExamCode,
-                sku: item.sku,
-                slug: item.slug,
-                imageUrl: item.imageUrl || "",
-                samplePdfUrl: item.samplePdfUrl || "",
-                mainPdfUrl: item.mainPdfUrl || "",
-                duration: item.duration || "",
-                eachQuestionMark: item.eachQuestionMark || "",
-                numberOfQuestions: item.numberOfQuestions || "0",
-                passingScore: item.passingScore || "",
-                mainInstructions: item.mainInstructions || "",
-                sampleInstructions: item.sampleInstructions || "",
-                Description: item.Description || "",
-                longDescription: item.longDescription || "",
-                status: item.status || "active",
-                action: item.action,
-                type: item.type || "exam",
-                metaTitle: item.metaTitle,
-                metaKeywords: item.metaKeywords,
-                metaDescription: item.metaDescription,
-                schema: item.schema,
-                quantity: item.quantity || 1,
-              })),
-              totalAmount: grandTotal,
-              subtotal: subtotal,
-              discount: discount,
-              currency: selectedCurrency,
-              couponCode: appliedCoupon?.code || null,
-              paymentMethod: "razorpay",
-              paymentId: paymentVerification.data.paymentId,
-              paymentStatus: "completed",
-            };
+            console.log("📤 Sending order payload:", orderPayload);
 
             const orderResponse = await axios.post("/api/order", orderPayload);
 
@@ -485,61 +621,12 @@ const Cart = () => {
       toast.dismiss();
       toast.loading("Creating your order...");
 
-      const orderPayload = {
-        userId,
-        items: cartItems.map((item) => ({
-          _id: item._id,
-          productId: item.productId || item._id,
-          courseId: item._id,
-          name: item.name || item.title || "Unnamed Course",
-          title: item.title,
+      const orderPayload = createOrderPayload(
+        "paypal",
+        paymentVerification.data.paymentId
+      );
 
-          price: getItemPrice(item, selectedCurrency),
-          priceINR: item.priceINR || item.dumpsPriceInr || item.comboPriceInr,
-          priceUSD: item.priceUSD || item.dumpsPriceUsd || item.comboPriceUsd,
-          dumpsPriceInr: item.dumpsPriceInr,
-          dumpsPriceUsd: item.dumpsPriceUsd,
-          dumpsMrpInr: item.dumpsMrpInr,
-          dumpsMrpUsd: item.dumpsMrpUsd,
-          comboPriceInr: item.comboPriceInr,
-          comboPriceUsd: item.comboPriceUsd,
-          comboMrpInr: item.comboMrpInr,
-          comboMrpUsd: item.comboMrpUsd,
-
-          category: item.category,
-          code: item.code || item.sapExamCode,
-          sapExamCode: item.sapExamCode,
-          sku: item.sku,
-          slug: item.slug,
-          imageUrl: item.imageUrl || "",
-          samplePdfUrl: item.samplePdfUrl || "",
-          mainPdfUrl: item.mainPdfUrl || "",
-          duration: item.duration || "",
-          eachQuestionMark: item.eachQuestionMark || "",
-          numberOfQuestions: item.numberOfQuestions || "0",
-          passingScore: item.passingScore || "",
-          mainInstructions: item.mainInstructions || "",
-          sampleInstructions: item.sampleInstructions || "",
-          Description: item.Description || "",
-          longDescription: item.longDescription || "",
-          status: item.status || "active",
-          action: item.action,
-          type: item.type || "exam",
-          metaTitle: item.metaTitle,
-          metaKeywords: item.metaKeywords,
-          metaDescription: item.metaDescription,
-          schema: item.schema,
-          quantity: item.quantity || 1,
-        })),
-        totalAmount: grandTotal,
-        subtotal: subtotal,
-        discount: discount,
-        currency: selectedCurrency,
-        couponCode: appliedCoupon?.code || null,
-        paymentMethod: "paypal",
-        paymentId: paymentVerification.data.paymentId,
-        paymentStatus: "completed",
-      };
+      console.log("📤 Sending order payload:", orderPayload);
 
       await axios.post("/api/order", orderPayload);
 
@@ -602,60 +689,127 @@ const Cart = () => {
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item) => {
                 const itemPrice = getItemPrice(item, selectedCurrency);
+                const itemMRP = getItemMRP(item, selectedCurrency);
+                const itemDiscount = calculateItemDiscount(
+                  item,
+                  selectedCurrency
+                );
+
                 return (
                   <div
                     key={`${item._id}-${item.type}`}
-                    className="bg-white rounded-lg shadow-sm p-6 flex items-center space-x-4"
+                    className="bg-white rounded-lg shadow-sm p-6 flex items-start gap-4"
                   >
                     <div className="flex-shrink-0">
                       <Image
                         src={item.imageUrl || "/placeholder-image.jpg"}
                         alt={item.title}
-                        width={80}
-                        height={80}
+                        width={100}
+                        height={100}
                         className="rounded-lg object-cover"
                       />
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-medium text-gray-900 truncate">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
                         {item.title}
                       </h3>
-                      <p className="text-sm text-gray-500 capitalize">
-                        Type: {item.type}
-                      </p>
-                      <p className="text-lg font-semibold text-green-600">
-                        {formatPrice(itemPrice, selectedCurrency)}
-                      </p>
+
+                      <div className="space-y-1 text-sm text-gray-600 mb-3">
+                        <p className="capitalize">
+                          <span className="font-medium">Type:</span> {item.type}
+                        </p>
+                        {item.sapExamCode && (
+                          <p>
+                            <span className="font-medium">Code:</span>{" "}
+                            {item.sapExamCode}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Pricing Display */}
+                      <div className="flex items-baseline gap-2 mb-3 flex-wrap">
+                        <span className="text-2xl font-bold text-green-600">
+                          {formatPrice(itemPrice, selectedCurrency)}
+                        </span>
+
+                        {itemMRP > itemPrice && (
+                          <>
+                            <span className="text-lg text-gray-400 line-through">
+                              {formatPrice(itemMRP, selectedCurrency)}
+                            </span>
+                            <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+                              {itemDiscount}% OFF
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* All Available Prices - Debug Info */}
+                      <details className="text-xs text-gray-500 mb-3">
+                        <summary className="cursor-pointer hover:text-gray-700 font-medium">
+                          View all prices
+                        </summary>
+                        <div className="mt-2 space-y-1 pl-4 bg-gray-50 p-2 rounded">
+                          <p className="font-medium text-gray-700">
+                            Regular PDF:
+                          </p>
+                          <p className="pl-2">
+                            ₹{item.dumpsPriceInr || 0} / $
+                            {item.dumpsPriceUsd || 0}
+                          </p>
+
+                          <p className="font-medium text-gray-700 mt-2">
+                            Online Exam:
+                          </p>
+                          <p className="pl-2">
+                            ₹{item.examPriceInr || 0} / $
+                            {item.examPriceUsd || 0}
+                          </p>
+
+                          <p className="font-medium text-gray-700 mt-2">
+                            Combo:
+                          </p>
+                          <p className="pl-2">
+                            ₹{item.comboPriceInr || 0} / $
+                            {item.comboPriceUsd || 0}
+                          </p>
+                        </div>
+                      </details>
+
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center space-x-2 border rounded-lg px-2 bg-white">
+                          <button
+                            onClick={() =>
+                              handleQuantityChange(item._id, item.type, "dec")
+                            }
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 rounded"
+                            disabled={item.quantity <= 1}
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-medium">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() =>
+                              handleQuantityChange(item._id, item.type, "inc")
+                            }
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => handleDelete(item._id, item.type)}
+                          className="text-red-500 hover:text-red-700 px-3 py-2 rounded hover:bg-red-50 text-sm font-medium"
+                        >
+                          🗑️ Remove
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() =>
-                          handleQuantityChange(item._id, item.type, "dec")
-                        }
-                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 disabled:opacity-50"
-                        disabled={item.quantity <= 1}
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center font-medium">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() =>
-                          handleQuantityChange(item._id, item.type, "inc")
-                        }
-                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(item._id, item.type)}
-                      className="text-red-500 hover:text-red-700 p-2"
-                      title="Remove item"
-                    >
-                      🗑️
-                    </button>
                   </div>
                 );
               })}
@@ -803,7 +957,7 @@ const Cart = () => {
                 </div>
               </div>
 
-              {/* Razorpay Payment Option - Available for both USD and INR */}
+              {/* Razorpay Payment Option */}
               <button
                 onClick={handleRazorpayPayment}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
@@ -829,7 +983,7 @@ const Cart = () => {
                 </div>
               </div>
 
-              {/* PayPal Payment Option - Available for both USD and INR */}
+              {/* PayPal Payment Option */}
               <div className="w-full">
                 <PayPalScriptProvider
                   options={{
