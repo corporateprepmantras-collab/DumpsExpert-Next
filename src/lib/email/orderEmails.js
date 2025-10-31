@@ -1,4 +1,3 @@
-// lib/email/orderEmails.js
 import nodemailer from "nodemailer";
 
 // Configure your email transporter using your existing environment variables
@@ -14,10 +13,13 @@ const transporter = nodemailer.createTransport({
 
 // Format currency
 const formatCurrency = (amount, currency) => {
+  // Convert to number if it's a string or other type
+  const numAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
+  
   if (currency === "USD") {
-    return `$${amount.toFixed(2)}`;
+    return `$${numAmount.toFixed(2)}`;
   }
-  return `₹${amount.toFixed(2)}`;
+  return `₹${numAmount.toFixed(2)}`;
 };
 
 // Format date
