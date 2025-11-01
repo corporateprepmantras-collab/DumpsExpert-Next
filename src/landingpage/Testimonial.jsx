@@ -6,25 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
-
-// Local Images
 import heading from "@/assets/landingassets/testimonial.webp";
-import group from "@/assets/landingassets/testimonial-group.png";
 
 const testimonials = [
   {
     name: "Yogesh Upadhyay",
-    feedback: "This platform changed my life. The support and resources are unmatched.",
+    feedback:
+      "This platform changed my life. The support and resources are unmatched.",
     image: "https://randomuser.me/api/portraits/men/75.jpg",
   },
   {
     name: "Priya Sharma",
-    feedback: "Highly recommended! The courses are comprehensive and easy to follow.",
+    feedback:
+      "Highly recommended! The courses are comprehensive and easy to follow.",
     image: "https://randomuser.me/api/portraits/women/65.jpg",
   },
   {
     name: "Amit Verma",
-    feedback: "A fantastic learning experience with great community support.",
+    feedback:
+      "A fantastic learning experience with great community support.",
     image: "https://randomuser.me/api/portraits/men/76.jpg",
   },
 ];
@@ -48,15 +48,16 @@ export default function TestimonialSection() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-        {/* LEFT SIDE – Now with a Card and Gradient */}
+        {/* LEFT SIDE – Card with Gradient */}
         <Card className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white shadow-xl">
           <CardContent className="p-8 space-y-6 text-center md:text-left">
             <h2 className="text-3xl md:text-4xl font-bold">
               Why Students Love Us
             </h2>
             <p className="text-white/90 text-lg leading-relaxed">
-              We believe in providing value and support that goes beyond just education.
-              Our testimonials are a reflection of the trust and satisfaction of our learners.
+              We believe in providing value and support that goes beyond just
+              education. Our testimonials are a reflection of the trust and
+              satisfaction of our learners.
             </p>
           </CardContent>
         </Card>
@@ -87,7 +88,6 @@ export default function TestimonialSection() {
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-
                   <p className="text-lg font-medium mt-4 text-gray-900 dark:text-white">
                     "{testimonials[current].feedback}"
                   </p>

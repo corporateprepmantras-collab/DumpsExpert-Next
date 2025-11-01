@@ -1,40 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
-export default function ProductSlider() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export default function ExamDumpsSlider({ products = [] }) {
   const [startIndex, setStartIndex] = useState(0);
   const [visibleCards, setVisibleCards] = useState(3);
-
-  // ✅ Fetch products
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch("/api/products");
-        const data = await res.json();
-        setProducts(Array.isArray(data.data) ? data.data : []);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError("Failed to load products.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, []);
 
   // ✅ Responsive visible cards
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) setVisibleCards(1);
+      if (window.innerWidth < 640) setVisibleCards(1);
+      else if (window.innerWidth < 1024) setVisibleCards(2);
       else setVisibleCards(3);
     };
+
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -42,135 +23,230 @@ export default function ProductSlider() {
 
   // ✅ Auto slide
   useEffect(() => {
-    if (!products.length) return;
-    const interval = setInterval(() => nextSlide(), 4000);
-    return () => clearInterval(interval);
-  }, [products, startIndex, visibleCards]);
+    if (!products.length || products.length <= visibleCards) return;
 
-  // ✅ Navigation
-  const nextSlide = () =>
+    const interval = setInterval(() => {
+      setStartIndex((prev) =>
+        prev + visibleCards < products.length ? prev + visibleCards : 0
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [products.length, visibleCards]);
+
+  // ✅ Navigation callbacks
+  const nextSlide = useCallback(() => {
     setStartIndex((prev) =>
       prev + visibleCards < products.length ? prev + visibleCards : 0
     );
+  }, [products.length, visibleCards]);
 
-  const prevSlide = () =>
+  const prevSlide = useCallback(() => {
     setStartIndex((prev) =>
       prev - visibleCards >= 0
         ? prev - visibleCards
         : Math.max(0, products.length - visibleCards)
     );
+  }, [products.length, visibleCards]);
 
-  if (loading) return <p className="text-center text-gray-500">Loading...</p>;
-  if (error) return <p className="text-center text-red-500">{error}</p>;
-  if (!products.length)
-    return <p className="text-center text-gray-500">No products found.</p>;
+  // ✅ Memoize visible products
+  const visibleProducts = useMemo(() => {
+    return products.slice(startIndex, startIndex + visibleCards);
+  }, [products, startIndex, visibleCards]);
+
+  // ✅ Memoize pagination
+  const totalPages = useMemo(() => {
+    return Math.ceil(products.length / visibleCards);
+  }, [products.length, visibleCards]);
+
+  const currentPage = useMemo(() => {
+    return Math.floor(startIndex / visibleCards);
+  }, [startIndex, visibleCards]);
+
+  if (!products.length) {
+    return (
+      <div className="w-full py-16 px-4 bg-gradient-to-b from-gray-50 to-white">
+        <p className="text-center text-gray-500 py-10">No products found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full py-12 flex flex-col items-center bg-white text-gray-900">
-      <h2 className="text-2xl md:text-4xl font-bold text-center mb-8">
-        Most Popular IT Certification{" "}
-        <span className="text-orange-500">Dumps</span>
-      </h2>
-
-      {/* Navigation Buttons */}
-      <div className="flex justify-between gap-4 mb-6">
-        <button
-          onClick={prevSlide}
-          className="bg-white border border-gray-300 rounded-full p-2 shadow-sm hover:shadow-md transition"
-        >
-          <ChevronLeft className="w-6 h-6 text-orange-400" />
-        </button>
-        <button
-          onClick={nextSlide}
-          className="bg-white border border-gray-300 rounded-full p-2 shadow-sm hover:shadow-md transition"
-        >
-          <ChevronRight className="w-6 h-6 text-orange-400" />
-        </button>
-      </div>
-
-      {/* Product Cards */}
-      <div className="relative w-full max-w-6xl overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={startIndex}
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -100, opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className={`grid gap-8 grid-cols-1 md:grid-cols-${visibleCards}`}
+    <div className="w-full py-16 px-4 bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <motion.h2
+            initial={{ opacity: 0, y: -20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            className="text-3xl md:text-5xl font-bold text-gray-900 mb-3"
           >
-            {products
-              .slice(startIndex, startIndex + visibleCards)
-              .map((product) => {
+            Most Popular IT Certification{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">
+              Dumps
+            </span>
+          </motion.h2>
+          <p className="text-gray-600 text-lg">
+            Get certified with our premium exam preparation materials
+          </p>
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-center gap-4 mb-10">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={prevSlide}
+            className="bg-white border-2 border-orange-500 rounded-full p-3 shadow-lg hover:bg-orange-50 transition-all"
+            aria-label="Previous products"
+          >
+            <ChevronLeft className="w-6 h-6 text-orange-500" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={nextSlide}
+            className="bg-orange-500 border-2 border-orange-500 rounded-full p-3 shadow-lg hover:bg-orange-600 transition-all"
+            aria-label="Next products"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </motion.button>
+        </div>
+
+        {/* Product Cards */}
+        <div className="relative overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={startIndex}
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {visibleProducts.map((product, index) => {
                 const slug = encodeURIComponent(product.slug || product.title);
                 return (
                   <motion.div
                     key={product._id}
-                    whileHover={{
-                      scale: 1.04,
-                      boxShadow: "0 8px 24px rgba(255, 145, 0, 0.2)",
-                    }}
-                    transition={{ type: "spring", stiffness: 180, damping: 12 }}
-                    className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ y: -8 }}
+                    className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100"
                   >
-                    <Link href={`/ItDumps/sap/by-slug/${slug}`}>
-                      {/* Image */}
-                      <div className="relative overflow-hidden">
+                    <a href={`/ItDumps/sap/by-slug/${slug}`} className="block">
+                      <div className="relative h-64 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden">
                         <img
                           src={product.imageUrl || "/placeholder.png"}
                           alt={product.title}
-                          className="h-52 w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                          loading="lazy"
+                          decoding="async"
+                          style={{ objectFit: "cover" }}
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                          Popular
+                        </div>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-5 flex flex-col justify-between flex-1">
-                        <h3 className="text-lg font-semibold text-gray-800 group-hover:text-orange-500 transition-colors duration-300">
+                      <div className="p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors duration-300 line-clamp-1">
                           {product.sapExamCode || product.title}
                         </h3>
 
-                        <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[40px]">
                           {product.Description?.replace(/<[^>]+>/g, "") ||
-                            "No description available."}
+                            "Comprehensive exam preparation material with real practice questions."}
                         </p>
 
-                        <div className="mt-4">
-                          <p className="text-orange-500 font-bold text-lg">
-                            ₹{product.dumpsPriceInr?.trim() || "N/A"}/ $
-                            {product.dumpsPriceUsd?.trim() || "N/A"}
-                          </p>
-
-                          {product.dumpsMrpInr && (
-                            <div className="flex gap-1 items-center">
-                            <p className="line-through text-sm text-gray-400">
-                              ₹{product.dumpsMrpInr}/
-                            </p>
-                             <p className="line-through text-sm text-gray-400">
-                              ${product.dumpsMrpUsd}
-                            </p>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-1 mb-4">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className="w-4 h-4 fill-orange-400 text-orange-400"
+                            />
+                          ))}
+                          <span className="text-sm text-gray-600 ml-1">
+                            (4.8)
+                          </span>
                         </div>
-                    
 
-                        <span className="mt-5 bg-orange-500 text-white text-center font-medium py-2 px-4 rounded-lg hover:bg-orange-600 transition duration-300">
-                          View More
-                        </span>
+                        <div className="border-t border-gray-100 pt-4 mb-4"></div>
+
+                        <div className="flex items-baseline gap-3 mb-5">
+                          <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-bold text-orange-500">
+                                ₹{product.dumpsPriceInr?.trim() || "N/A"}
+                              </span>
+                              <span className="text-lg font-semibold text-orange-500">
+                                ${product.dumpsPriceUsd?.trim() || "N/A"}
+                              </span>
+                            </div>
+                            {product.dumpsMrpInr && (
+                              <div className="flex items-center gap-2">
+                                <span className="line-through text-sm text-gray-400">
+                                  ₹{product.dumpsMrpInr}
+                                </span>
+                                <span className="line-through text-sm text-gray-400">
+                                  ${product.dumpsMrpUsd}
+                                </span>
+                                <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">
+                                  Save{" "}
+                                  {Math.round(
+                                    ((product.dumpsMrpInr -
+                                      product.dumpsPriceInr) /
+                                      product.dumpsMrpInr) *
+                                      100
+                                  )}
+                                  %
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                        >
+                          View Details →
+                        </motion.button>
                       </div>
 
-                      {/* Animated bottom line */}
                       <motion.div
-                        className="absolute bottom-0 left-0 h-[3px] bg-orange-500"
+                        className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-orange-500 to-orange-600"
                         initial={{ width: "0%" }}
                         whileHover={{ width: "100%" }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
                       />
-                    </Link>
+                    </a>
                   </motion.div>
                 );
               })}
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Pagination Dots */}
+        <div className="flex justify-center gap-2 mt-10">
+          {Array.from({ length: totalPages }).map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setStartIndex(idx * visibleCards)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                currentPage === idx
+                  ? "w-8 bg-orange-500"
+                  : "w-2 bg-gray-300 hover:bg-gray-400"
+              }`}
+              aria-label={`Go to page ${idx + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

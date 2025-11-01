@@ -9,7 +9,7 @@ const orderSchema = new mongoose.Schema(
     },
     orderNumber: {
       type: String,
-      unique: true,
+      // ✅ REMOVED: unique: true (preventing duplicate index warning)
     },
     courseDetails: [
       {
@@ -112,9 +112,9 @@ orderSchema.pre("save", async function (next) {
   next();
 });
 
-// Index for efficient queries
+// ✅ Index for efficient queries (FIXED - unique moved here)
 orderSchema.index({ user: 1, purchaseDate: -1 });
-orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ orderNumber: 1 }, { unique: true }); // ✅ Unique constraint here only
 orderSchema.index({ expiryDate: 1 });
 orderSchema.index({ "courseDetails.expiryDate": 1 });
 

@@ -1,36 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-
-const ContentBoxSecond = () => {
-  const [content, setContent] = useState("");
-
-  useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const res = await fetch("/api/content2");
-
-        if (!res.ok) throw new Error("Failed to fetch content");
-
-        const data = await res.json();
-        setContent(data?.html || "");
-      } catch (error) {
-        console.error("Error fetching content:", error);
-      }
-    };
-
-    fetchContent();
-  }, []);
-
+export default function ContentBoxSecond({ content = "" }) {
   return (
     <section className="bg-white text-black p-6 md:p-10 rounded-lg shadow-md space-y-8">
       <div
-        style={{
-          lineHeight: "1.6",
-        }}
-        dangerouslySetInnerHTML={{
-          __html: content,
-        }}
+        style={{ lineHeight: "1.6" }}
+        dangerouslySetInnerHTML={{ __html: content }}
       />
 
       <style jsx>{`
@@ -67,6 +42,4 @@ const ContentBoxSecond = () => {
       `}</style>
     </section>
   );
-};
-
-export default ContentBoxSecond;
+}

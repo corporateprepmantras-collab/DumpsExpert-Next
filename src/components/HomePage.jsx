@@ -2,215 +2,401 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
-import Link from "next/link";
+import { Check, X, Wifi, WifiOff, AlertCircle } from "lucide-react";
 import Image from "next/image";
-import Head from "next/head";
-import { motion } from "framer-motion";
-import axios from "axios"; // ✅ add this
-
+import dynamic from "next/dynamic";
 import banner from "@/assets/landingassets/banner.webp";
-import ExamDumpsSlider from "@/landingpage/ExamDumpsSlider";
-import UnlockGoals from "@/landingpage/UnlockGoals";
-import GeneralFAQs from "@/landingpage/GeneralFAQs";
-import ContentDumpsFirst from "@/landingpage/ContentBoxFirst";
-import ContentDumpsSecond from "@/landingpage/ContentBoxSecond";
-import Testimonial from "@/landingpage/Testimonial";
 
-export default function HomePage() {
-  const [seo, setSeo] = useState({});
-  const [categories, setCategories] = useState([]);
-  const [blogs, setBlogs] = useState([]);
-  const [announcement, setAnnouncement] = useState(null);
+// ✅ Lazy load components ONLY after data loads
+const BlogSection = dynamic(() => import("@/landingpage/BlogSection"), {
+  loading: () => <div className="h-64 bg-gray-50 animate-pulse rounded-lg" />,
+  ssr: false,
+});
+
+const ExamDumpsSlider = dynamic(() => import("@/landingpage/ExamDumpsSlider"), {
+  loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded-lg" />,
+  ssr: false,
+});
+
+const UnlockGoals = dynamic(() => import("@/landingpage/UnlockGoals"), {
+  ssr: false,
+});
+
+const GeneralFAQs = dynamic(() => import("@/landingpage/GeneralFAQs"), {
+  ssr: false,
+});
+
+const ContentDumpsFirst = dynamic(
+  () => import("@/landingpage/ContentBoxFirst"),
+  { ssr: false }
+);
+
+const ContentDumpsSecond = dynamic(
+  () => import("@/landingpage/ContentBoxSecond"),
+  { ssr: false }
+);
+
+const Testimonial = dynamic(() => import("@/landingpage/Testimonial"), {
+  ssr: false,
+});
+
+const BENEFITS = [
+  "100% Verified & Up-to-Date Prepmantras",
+  "100% Money Back Guarantee",
+  "24/7 Expert Support",
+  "Free Updates for 3 Months",
+  "Realistic Practice Test Interface",
+];
+
+export default function HomePage({
+  seo = {},
+  dumps = [],
+  categories = [],
+  blogs = [],
+  faqs = [],
+  content1 = "",
+  content2 = "",
+  products = [],
+  announcement = null,
+}) {
+  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [dumps, setDumps] = useState([]); // ✅ Added missing state
+  const [isOnline, setIsOnline] = useState(true);
+  const [dataSource, setDataSource] = useState(null);
+  const [showDebug, setShowDebug] = useState(false);
 
-  // ✅ Fetch trending dumps
-  const getDumps = async () => {
-    try {
-      const res = await axios.get("/api/trending");
-      setDumps(res.data);
-    } catch (error) {
-      console.error("Error fetching dumps:", error);
+  // ✅ Check if all data is loaded
+  useEffect(() => {
+    // Wait for all critical data
+    const hasAllData =
+      Object.keys(seo).length > 0 &&
+      dumps.length > 0 &&
+      categories.length > 0 &&
+      blogs.length > 0 &&
+      faqs.length > 0;
+
+    if (hasAllData) {
+      console.log("✅ ALL DATA LOADED - Showing page");
+      setIsLoading(false);
+    } else {
+      console.log("⏳ Waiting for data...", {
+        seo: Object.keys(seo).length,
+        dumps: dumps.length,
+        categories: categories.length,
+        blogs: blogs.length,
+        faqs: faqs.length,
+      });
+      // Don't set loading to true if already showing something
+      if (isLoading) {
+        setIsLoading(true);
+      }
+    }
+  }, [seo, dumps, categories, blogs, faqs, isLoading]);
+
+  // ✅ Detect data source
+  useEffect(() => {
+    const checkDataSource = () => {
+      const hasCachedSEO = localStorage.getItem("pm_seo");
+      const hasCachedDumps = localStorage.getItem("pm_dumps");
+
+      if (hasCachedSEO || hasCachedDumps) {
+        try {
+          const seoCache = JSON.parse(localStorage.getItem("pm_seo") || "{}");
+          const now = Date.now();
+          const cacheAge = now - (seoCache.timestamp || 0);
+
+          if (cacheAge < 5 * 60 * 1000) {
+            setDataSource("cache");
+            console.log("📦 Data from CACHE");
+          } else {
+            setDataSource("api");
+            console.log("🌐 Data from API (cache expired)");
+          }
+        } catch {
+          setDataSource("api");
+          console.log("🌐 Data from API (cache error)");
+        }
+      } else {
+        setDataSource("api");
+        console.log("🌐 Data from API (no cache)");
+      }
+    };
+
+    checkDataSource();
+  }, []);
+
+  // ✅ Online/Offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // ✅ Show announcement on mount
+  useEffect(() => {
+    if (announcement?.active) {
+      const lastShown = localStorage.getItem("announcementShownAt");
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000;
+
+      if (!lastShown || now - parseInt(lastShown, 10) > oneHour) {
+        setTimeout(() => {
+          setShowModal(true);
+          localStorage.setItem("announcementShownAt", now.toString());
+        }, parseFloat(announcement.delay || "1.00") * 1000);
+      }
+    }
+  }, [announcement]);
+
+  const closeModal = () => setShowModal(false);
+
+  const clearAllCache = () => {
+    if (confirm("Clear cache and reload?")) {
+      localStorage.removeItem("pm_seo");
+      localStorage.removeItem("pm_dumps");
+      localStorage.removeItem("pm_categories");
+      localStorage.removeItem("pm_blogs");
+      localStorage.removeItem("pm_faqs");
+      localStorage.removeItem("pm_content1");
+      localStorage.removeItem("pm_content2");
+      localStorage.removeItem("pm_products");
+      localStorage.removeItem("pm_announcement");
+      console.log("🧹 Cache cleared!");
+      window.location.reload();
     }
   };
 
   useEffect(() => {
-    getDumps();
-  }, []);
-
-  useEffect(() => {
-    getDumps();
-  }, []);
-
-  /* ---------- Cache Helpers ---------- */
-  function getCacheItem(key) {
-    try {
-      const raw = sessionStorage.getItem(key);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      sessionStorage.removeItem(key);
-      return null;
-    }
-  }
-
-  function setCacheItem(key, value) {
-    try {
-      sessionStorage.setItem(key, JSON.stringify(value));
-    } catch {}
-  }
-
-  /* ---------- Smart Fetch With Cache ---------- */
-  async function fetchWithSmartCache(key, url, setState, normalize = (d) => d) {
-    const cached = getCacheItem(key);
-    if (cached) setState(normalize(cached));
-
-    try {
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-      const data = await res.json();
-      const normalized = normalize(data);
-
-      if (JSON.stringify(normalize(cached)) !== JSON.stringify(normalized)) {
-        setCacheItem(key, normalized);
-        setState(normalized);
+    const handleKeyPress = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") {
+        e.preventDefault();
+        clearAllCache();
       }
-
-      return normalized;
-    } catch (err) {
-      console.error(`❌ Fetch failed for ${key}:`, err);
-      return cached || null;
-    }
-  }
-
-  /* ---------- Fetch All Data ---------- */
-  useEffect(() => {
-    async function loadAll() {
-      try {
-        const baseUrl =
-          typeof window !== "undefined"
-            ? window.location.origin
-            : process.env.NEXT_PUBLIC_BASE_URL || "";
-
-        await Promise.all([
-          // ✅ SEO
-          fetchWithSmartCache(
-            "seo_home",
-            `${baseUrl}/api/seo/home`,
-            setSeo,
-            (d) => d.data || d
-          ),
-
-          // ✅ Blog Categories
-          fetchWithSmartCache(
-            "blog_categories",
-            `${baseUrl}/api/blogs/blog-categories`,
-            setCategories,
-            (d) =>
-              Array.isArray(d)
-                ? d
-                : Array.isArray(d?.data)
-                ? d.data
-                : Array.isArray(d?.categories)
-                ? d.categories
-                : []
-          ),
-
-          // ✅ Blogs (handles all API formats)
-          fetchWithSmartCache(
-            "blogs_data",
-            `${baseUrl}/api/blogs`,
-            setBlogs,
-            (d) =>
-              Array.isArray(d)
-                ? d
-                : Array.isArray(d?.blogs)
-                ? d.blogs
-                : Array.isArray(d?.data)
-                ? d.data
-                : []
-          ),
-        ]);
-
-        // ✅ Announcement
-        try {
-          const res = await fetch(`${baseUrl}/api/announcement`, {
-            cache: "no-store",
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setAnnouncement(data);
-
-            if (data?.active) {
-              const lastShown = localStorage.getItem("announcementShownAt");
-              const now = Date.now();
-              const oneHour = 60 * 60 * 1000;
-
-              if (!lastShown || now - parseInt(lastShown, 10) > oneHour) {
-                setTimeout(() => {
-                  setShowModal(true);
-                  localStorage.setItem("announcementShownAt", now.toString());
-                }, parseFloat(data.delay || "1.00") * 1000);
-              }
-            }
-          }
-        } catch (err) {
-          console.error("❌ Announcement fetch failed:", err);
-        }
-      } catch (err) {
-        console.error("❌ Main data fetch failed:", err);
-      } finally {
-        setLoading(false);
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "B") {
+        e.preventDefault();
+        setShowDebug(!showDebug);
       }
-    }
+    };
 
-    loadAll();
-  }, []);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [showDebug]);
 
-  /* ---------- Loading Screen ---------- */
-  if (loading) {
+  // ✅ SHOW LOADING SCREEN UNTIL ALL DATA LOADS
+  if (isLoading) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-white text-gray-700">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-800 mb-4"></div>
-        <p className="text-sm font-medium">Loading content, please wait...</p>
+      <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600"></div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading...</h2>
+          <p className="text-gray-600 mb-4">
+            Preparing your certification prep materials
+          </p>
+
+          {/* Show what's loading */}
+          <div className="text-sm text-gray-500 max-w-md mx-auto">
+            <div className="mb-2">
+              {Object.keys(seo).length > 0 ? "✓" : "⏳"} SEO Data
+            </div>
+            <div className="mb-2">
+              {dumps.length > 0 ? "✓" : "⏳"} Certification Dumps
+            </div>
+            <div className="mb-2">
+              {categories.length > 0 ? "✓" : "⏳"} Blog Categories
+            </div>
+            <div className="mb-2">
+              {blogs.length > 0 ? "✓" : "⏳"} Blog Posts
+            </div>
+            <div className="mb-2">{faqs.length > 0 ? "✓" : "⏳"} FAQs</div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  /* ---------- Render Page ---------- */
   return (
     <>
-      <Head>
-        <title>{seo.title || "Prepmantras – #1 IT Exam Prep Provider"}</title>
-        <meta
-          name="description"
-          content={
-            seo.description ||
-            "Pass your IT certifications in first attempt with trusted exam Prep, practice tests & PDF guides by Prepmantras."
-          }
-        />
-      </Head>
+      {/* ---------- Debug Panel (Ctrl+Shift+B) ---------- */}
+      {showDebug && (
+        <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono">
+          <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
+            <h3 className="font-bold text-sm">Debug Info</h3>
+            <button
+              onClick={() => setShowDebug(false)}
+              className="text-gray-400 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-400">SEO Data:</span>
+              <span
+                className={
+                  seo && Object.keys(seo).length > 0
+                    ? "text-green-400"
+                    : "text-red-400"
+                }
+              >
+                {seo && Object.keys(seo).length > 0
+                  ? `✓ ${Object.keys(seo).length} keys`
+                  : "✗ Empty"}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-400">Dumps:</span>
+              <span
+                className={
+                  dumps?.length > 0 ? "text-green-400" : "text-red-400"
+                }
+              >
+                {dumps?.length > 0 ? `✓ ${dumps.length} items` : "✗ Empty"}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-400">Categories:</span>
+              <span
+                className={
+                  categories?.length > 0 ? "text-green-400" : "text-red-400"
+                }
+              >
+                {categories?.length > 0
+                  ? `✓ ${categories.length} items`
+                  : "✗ Empty"}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-400">Blogs:</span>
+              <span
+                className={
+                  blogs?.length > 0 ? "text-green-400" : "text-red-400"
+                }
+              >
+                {blogs?.length > 0 ? `✓ ${blogs.length} items` : "✗ Empty"}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-400">FAQs:</span>
+              <span
+                className={faqs?.length > 0 ? "text-green-400" : "text-red-400"}
+              >
+                {faqs?.length > 0 ? `✓ ${faqs.length} items` : "✗ Empty"}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-400">Products:</span>
+              <span
+                className={
+                  products?.length > 0 ? "text-green-400" : "text-red-400"
+                }
+              >
+                {products?.length > 0
+                  ? `✓ ${products.length} items`
+                  : "✗ Empty"}
+              </span>
+            </div>
+
+            <div className="pt-2 border-t border-gray-700">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Cache Status:</span>
+                <span className="text-blue-400">{dataSource || "Unknown"}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-gray-700 text-gray-400 text-[10px]">
+            Press Ctrl+Shift+B to close
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Data Source Indicator ---------- */}
+      {dataSource && (
+        <div className="fixed top-4 left-4 z-40 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 text-xs">
+          {dataSource === "cache" ? (
+            <>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-gray-600">Cached</span>
+            </>
+          ) : (
+            <>
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-600">Fresh</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ---------- Developer Controls ---------- */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
+            title="Show debug info (Ctrl+Shift+B)"
+          >
+            <AlertCircle size={16} />
+            Debug
+          </button>
+
+          <button
+            onClick={clearAllCache}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
+            title="Clear cache (Ctrl+Shift+D)"
+          >
+            <X size={16} />
+            Clear Cache
+          </button>
+        </div>
+      )}
+
+      {/* ---------- Offline Indicator ---------- */}
+      {!isOnline && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <WifiOff size={16} />
+          <span className="text-sm font-medium">Offline - cached content</span>
+        </div>
+      )}
 
       {/* ---------- Announcement Modal ---------- */}
       {showModal && announcement?.active && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={closeModal}
+        >
+          <div
+            className="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
-              onClick={() => setShowModal(false)}
+              onClick={closeModal}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
             >
               <X size={20} />
             </button>
-
             {announcement?.imageUrl && (
               <img
                 src={announcement.imageUrl}
                 alt="Announcement"
                 className="w-full h-auto rounded mb-4"
+                loading="lazy"
               />
             )}
-
             {announcement?.message && (
               <p className="text-gray-700 text-center">
                 {announcement.message}
@@ -220,29 +406,25 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ---------- Hero Section ---------- */}
       <div className="p-2">
+        {/* ---------- Hero Section ---------- */}
         <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
           <div className="w-full lg:w-1/2 mt-10 lg:mt-0">
             <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4">
               Pass Your IT Certification Exam{" "}
               <span className="text-[#13677c]">On the First Try</span>
             </h1>
+
             <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6">
               Prepmantras offers industry-validated study materials, real exam
               Prep, and browser-based practice tests to help you get certified
               faster — and smarter.
             </p>
+
             <ul className="space-y-3 text-gray-700 mb-6 text-sm sm:text-base">
-              {[
-                "100% Verified & Up-to-Date Prepmantras",
-                "100% Money Back Guarantee",
-                "24/7 Expert Support",
-                "Free Updates for 3 Months",
-                "Realistic Practice Test Interface",
-              ].map((item, index) => (
+              {BENEFITS.map((item, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <div className="bg-[#7aa93c] rounded-full p-1.5 flex items-center justify-center w-7 h-7">
+                  <div className="bg-[#7aa93c] rounded-full p-1.5 flex items-center justify-center w-7 h-7 flex-shrink-0">
                     <Check className="text-white w-4 h-4" />
                   </div>
                   <span>{item}</span>
@@ -258,11 +440,12 @@ export default function HomePage() {
               className="w-full max-w-[600px] h-auto object-contain"
               placeholder="blur"
               priority
+              quality={85}
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
             />
           </div>
         </section>
 
-        {/* ---------- Popular Dumps ---------- */}
         {/* ---------- Trending Dumps ---------- */}
         <section className="py-16 px-4 md:px-12 bg-white">
           <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
@@ -270,114 +453,32 @@ export default function HomePage() {
           </h2>
 
           <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {dumps.length > 0 ? (
+            {dumps && dumps.length > 0 ? (
               dumps.map((dump) => (
                 <Button
                   key={dump._id}
                   variant="secondary"
-                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2"
+                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2 transition-colors"
                 >
                   {dump.title}
                 </Button>
               ))
             ) : (
-              <p className="text-gray-500 text-sm">Loading dumps...</p>
+              <p className="text-gray-500 text-sm">No dumps available</p>
             )}
           </div>
         </section>
 
-        {/* ---------- Blog Section ---------- */}
-        <section className="py-20 px-4 md:px-20 bg-white">
-          <h2 className="text-4xl font-bold mb-14 text-center text-gray-800">
-            Latest Exam Tips & Insights
-          </h2>
-
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {categories?.map((cat) => (
-              <Button
-                key={cat._id || cat.category}
-                variant="outline"
-                asChild
-                className="capitalize rounded-full"
-              >
-                <Link href={`/blogsPages/${cat.category}`}>{cat.category}</Link>
-              </Button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
-            {!blogs || blogs.length === 0 ? (
-              <p className="text-center text-gray-500 col-span-full">
-                No blogs found.
-              </p>
-            ) : (
-              blogs
-                .slice()
-                .reverse()
-                .slice(0, 6)
-                .map((blog) => (
-                  <motion.div
-                    key={blog._id}
-                    whileHover={{
-                      scale: 1.04,
-                      boxShadow: "0px 0px 30px rgba(255, 145, 0, 0.25)",
-                    }}
-                    transition={{ type: "spring", stiffness: 180, damping: 12 }}
-                    className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg cursor-pointer transition-all"
-                  >
-                    <Link href={`/blogsPages/blog/${blog.slug || blog._id}`}>
-                      {blog.imageUrl && (
-                        <div className="relative overflow-hidden aspect-square">
-                          <img
-                            src={blog.imageUrl}
-                            alt={blog.title || blog.sectionName}
-                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        </div>
-                      )}
-
-                      <div className="p-5 flex flex-col justify-between h-full">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-orange-500 transition-colors duration-300 line-clamp-1">
-                          {blog.title || blog.sectionName}
-                        </h3>
-
-                        <p className="text-sm text-gray-500 mb-2">
-                          {blog.createdAt
-                            ? new Date(blog.createdAt).toLocaleDateString()
-                            : ""}
-                        </p>
-
-                        <p className="text-gray-600 text-sm flex-grow line-clamp-3">
-                          {blog.metaDescription || "No description available."}
-                        </p>
-
-                        <p className="text-orange-500 mt-4 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all duration-300">
-                          Read More →
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-            )}
-          </div>
-
-          <div className="mt-10 text-center">
-            <Button
-              asChild
-              className="bg-[#1f424b] hover:bg-[#2f5058] text-white"
-            >
-              <Link href="blogsPages/blog-categories">See All Blogs</Link>
-            </Button>
-          </div>
-        </section>
-
-        <ExamDumpsSlider />
-        <ContentDumpsFirst />
+        {/* ---------- Lazy Loaded Sections ---------- */}
+        {blogs.length > 0 && (
+          <BlogSection blogs={blogs} categories={categories} />
+        )}
+        {products.length > 0 && <ExamDumpsSlider products={products} />}
+        {content1 && <ContentDumpsFirst content={content1} />}
         <UnlockGoals />
-        <ContentDumpsSecond />
+        {content2 && <ContentDumpsSecond content={content2} />}
         <Testimonial />
-        <GeneralFAQs />
+        {faqs.length > 0 && <GeneralFAQs faqs={faqs} />}
       </div>
     </>
   );

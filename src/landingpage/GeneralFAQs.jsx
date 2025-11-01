@@ -1,42 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaChevronRight, FaQuestionCircle } from "react-icons/fa";
-import axios from "axios";
 
-export default function GeneralFAQs() {
-  const [faqs, setFaqs] = useState([]);
+export default function GeneralFAQs({ faqs = [] }) {
   const [activeIndex, setActiveIndex] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const toggleAccordion = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
   };
-
-  useEffect(() => {
-    const fetchFaqs = async () => {
-      try {
-        const res = await axios.get("/api/general-faqs");
-        const data = Array.isArray(res.data) ? [...res.data].reverse() : [];
-
-        setFaqs(data);
-      } catch (error) {
-        console.error("Error fetching FAQs:", error);
-        setFaqs([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFaqs();
-  }, []);
-
-  if (loading) {
-    return (
-      <section className="w-full py-16 px-4 md:px-12 text-center">
-        <p>Loading FAQs...</p>
-      </section>
-    );
-  }
 
   if (faqs.length === 0) {
     return (
