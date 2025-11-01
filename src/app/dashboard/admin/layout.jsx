@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
 
 export default function AdminLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { user, loading } = useUser();
@@ -25,30 +24,40 @@ export default function AdminLayout({ children }) {
   }, [mounted, loading, user, router]);
 
   if (loading || !user) {
-    return <div className="min-h-screen flex items-center justify-center"><span>Loading...</span></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <span className="text-lg font-semibold text-gray-700">
+            Loading...
+          </span>
+        </div>
+      </div>
+    );
   }
 
   if (user.error) {
-    return <div className="min-h-screen flex items-center justify-center text-red-600">{user.error}</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="text-center">
+          <p className="text-xl font-semibold">{user.error}</p>
+        </div>
+      </div>
+    );
   }
 
   if (user.role !== "admin") {
-    return null; // Prevent rendering until redirect
+    return null;
   }
 
-  const sidebarWidth = sidebarOpen ? "ml-64" : "ml-16";
-
   return (
-    <div className="bg-gray-100">
-      <div
-        className={`fixed top-0 left-0 h-screen bg-white border-r shadow-md transition-all duration-300 ${
-          sidebarOpen ? "w-64" : "w-16"
-        }`}
-      >
-        <AdminSidebar />
-      </div>
-      <div className={`transition-all duration-300 ${sidebarWidth} mt-20 p-2`}>
-        {children}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Sidebar */}
+      <AdminSidebar />
+
+      {/* Main Content Area - No extra padding top since navbar is already there */}
+      <div className="lg:pl-64">
+        <main className="min-h-screen">{children}</main>
       </div>
     </div>
   );

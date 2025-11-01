@@ -447,8 +447,8 @@ export default function HomePage({
         </section>
 
         {/* ---------- Trending Dumps ---------- */}
-        <section className="py-16 px-4 md:px-12 bg-white">
-          <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
+        <section className="py-14 px-4 md:px-12 bg-white">
+          <h2 className="text-3xl pb-4 font-bold text-center mb-10 text-gray-900">
             Top Trending Certification Dumps
           </h2>
 

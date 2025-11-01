@@ -5,7 +5,7 @@ import { ArrowRight, Calendar, Tag } from "lucide-react";
 
 export default function BlogSection({ blogs = [], categories = [] }) {
   return (
-    <section className="py-20 px-4 md:px-20 bg-gradient-to-b from-white to-gray-50">
+    <section className="pb-4 px-4 md:px-20 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div

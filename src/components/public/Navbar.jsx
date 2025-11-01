@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import dumpslogo from "../../assets/landingassets/dumplogo.webp";
+import dumpslogo from "../../assets/logo/premantras_logo.png";
 import NavbarSearch from "./NavbarSearch";
 import { ShoppingCart, Menu, X } from "lucide-react";
 import {
@@ -36,8 +36,7 @@ export default function Navbar() {
   const [dropdownData, setDropdownData] = useState({ ItDumps: [], blogs: [] });
   const [cartItemCount, setCartItemCount] = useState(0);
 
-  // Subscribe to cart changes
-  // Subscribe to cart changes
+  // ✅ SAME AS BEFORE: Subscribe to cart changes
   useEffect(() => {
     // Initial cart count
     setCartItemCount(useCartStore.getState().cartItems.length);
@@ -50,30 +49,51 @@ export default function Navbar() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch categories dynamically
+  // ✅ OPTIMIZED: Fetch categories with sessionStorage caching (SAME UI)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // Blogs categories
-        const blogRes = await fetch("/api/blogs/blog-categories");
-        const blogData = blogRes.ok ? await blogRes.json() : [];
+        // ✅ NEW: Check sessionStorage first (instant load)
+        const cached = sessionStorage.getItem("navbar_categories_cache");
+        if (cached) {
+          console.log("📦 Categories from cache");
+          setDropdownData(JSON.parse(cached));
+          return; // Don't fetch if cached
+        }
 
-        // Product categories
-        const productRes = await fetch("/api/product-categories");
+        // ✅ OPTIMIZED: Parallel requests (same as before)
+        const [blogRes, productRes] = await Promise.all([
+          fetch("/api/blogs/blog-categories"),
+          fetch("/api/product-categories"),
+        ]);
+
+        const blogData = blogRes.ok ? await blogRes.json() : [];
         const productData = productRes.ok ? await productRes.json() : [];
 
-        setDropdownData({
-          blogs: blogData.map((c) => c.category), // your API returns { category: "xyz" }
-          ItDumps: productData.map((p) => p.name), // your API returns { name: "AWS" }
-        });
+        // ✅ SAME: Data transformation
+        const categories = {
+          blogs: blogData.map((c) => c.category),
+          ItDumps: productData.map((p) => p.name),
+        };
+
+        setDropdownData(categories);
+
+        // ✅ NEW: Cache for this session
+        sessionStorage.setItem(
+          "navbar_categories_cache",
+          JSON.stringify(categories)
+        );
+
+        console.log("🌐 Categories fetched and cached");
       } catch (err) {
         console.error("Error fetching categories:", err);
       }
     };
 
     fetchCategories();
-  }, []);
+  }, []); // SAME: Only run once
 
+  // ✅ SAME: Fetch user data (no changes)
   useEffect(() => {
     if (status === "authenticated" && session?.user?.email) {
       const fetchUserData = async () => {
@@ -90,6 +110,7 @@ export default function Navbar() {
     }
   }, [status, session]);
 
+  // ✅ SAME: Logout handler (no changes)
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -99,7 +120,7 @@ export default function Navbar() {
     }
   };
 
-  // Dashboard redirect
+  // ✅ SAME: Dashboard redirect logic (no changes)
   const getDashboardPath = () => {
     if (!userData) return "/dashboard/guest";
     const { role, subscription } = userData;
@@ -109,6 +130,7 @@ export default function Navbar() {
     return "/dashboard/guest";
   };
 
+  // ✅ SAME: All UI exactly the same as before
   return (
     <>
       <nav className="bg-white fixed w-full shadow z-50 flex justify-between items-center py-2 lg:px-28 px-4">
@@ -253,6 +275,7 @@ export default function Navbar() {
         } lg:hidden`}
         onClick={() => setIsOpen(false)}
       ></div>
+
       {/* Mobile Nav Drawer */}
       <aside
         className={`fixed top-0 right-0 h-full w-3/4 max-w-xs bg-white shadow-lg z-50 transform transition-transform duration-300 ${
