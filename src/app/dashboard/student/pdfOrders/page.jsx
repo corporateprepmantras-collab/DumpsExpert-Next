@@ -93,22 +93,32 @@ const PdfCoursesClient = () => {
     fetchPdfCourses();
   }, []);
 
-  const handleDownload = async (url, filename) => {
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success("Download started!");
-    } catch (err) {
-      console.error("Download error:", err);
-      toast.error("Failed to download file.");
+const handleDownload = async (url, filename) => {
+  try {
+    // 🧩 Agar filename me extension nahi hai to ".pdf" lagao
+    if (!filename.toLowerCase().endsWith(".pdf")) {
+      filename += ".pdf";
     }
-  };
+
+    // 🔽 Fetch file from URL
+    const res = await fetch(url);
+    const blob = await res.blob();
+
+    // 📥 Create temporary link and trigger download
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    toast.success("Download started!");
+  } catch (err) {
+    console.error("Download error:", err);
+    toast.error("Failed to download file.");
+  }
+};
+
 
   return (
     <div className="max-w-6xl mx-auto mt-10 p-6">
