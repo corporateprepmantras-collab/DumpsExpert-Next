@@ -521,12 +521,14 @@ export default function ProductDetailsPage() {
     exams.length > 0 || product.examPriceInr || product.examPriceUsd;
 
   return (
-    <div className="min-h-screen mt-20 bg-white py-10 px-4 md:px-20 text-gray-800">
-      <div className="max-w-5xl mx-auto mb-6">
+    <div className="min-h-screen bg-white text-gray-800">
+      {/* Breadcrumbs */}
+      <div className="container mx-auto px-4 pt-2 pb-3">
         <Breadcrumbs />
       </div>
 
-      <div className="flex flex-col md:flex-row gap-10">
+      {/* Main Content */}
+      <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10">
         {/* Left Column */}
         <div className="md:w-[40%]">
           <img
@@ -536,7 +538,7 @@ export default function ProductDetailsPage() {
           />
 
           {/* Features */}
-          <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-5 mt-8 text-gray-900 text-sm font-medium">
+          <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
             {[
               "Instant Download After Purchase",
               "100% Real & Updated Dumps",
@@ -767,7 +769,7 @@ export default function ProductDetailsPage() {
       </div>
 
       {/* Long Description */}
-      <div className="my-10">
+      <div className="container mx-auto px-4 my-10">
         <h2 className="text-lg font-semibold mb-2">Detailed Overview:</h2>
         <div
           className="prose max-w-none text-sm"
@@ -778,47 +780,53 @@ export default function ProductDetailsPage() {
       </div>
 
       {/* Reviews */}
-      <ReviewsSection
-        reviews={reviews}
-        reviewForm={reviewForm}
-        setReviewForm={setReviewForm}
-        handleAddReview={handleAddReview}
-      />
+      <div className="container mx-auto px-4">
+        <ReviewsSection
+          reviews={reviews}
+          reviewForm={reviewForm}
+          setReviewForm={setReviewForm}
+          handleAddReview={handleAddReview}
+        />
+      </div>
 
       {/* FAQs */}
-      {product.faqs && product.faqs.length > 0 && (
-        <FAQSection
-          faqs={product.faqs}
-          activeIndex={activeIndex}
-          toggleAccordion={toggleAccordion}
-        />
-      )}
+      <div className="container mx-auto px-4">
+        {product.faqs && product.faqs.length > 0 && (
+          <FAQSection
+            faqs={product.faqs}
+            activeIndex={activeIndex}
+            toggleAccordion={toggleAccordion}
+          />
+        )}
+      </div>
 
       {/* Related Products */}
-      {relatedProducts.length > 0 && (
-        <div className="mt-16">
-          <h2 className="text-xl font-bold mb-4">Related Products</h2>
-          <div className="flex gap-4 overflow-x-auto">
-            {relatedProducts.map((p) => (
-              <div
-                key={p._id}
-                className="min-w-[200px] bg-white border rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md"
-                onClick={() => router.push(`/product/${p.slug}`)}
-              >
-                <img
-                  src={p.imageUrl}
-                  alt={p.title}
-                  className="h-32 object-contain w-full mb-2"
-                />
-                <h3 className="text-sm font-semibold truncate">{p.title}</h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  ₹ {p.dumpsPriceInr}
-                </p>
-              </div>
-            ))}
+      <div className="container mx-auto px-4">
+        {relatedProducts.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-xl font-bold mb-4">Related Products</h2>
+            <div className="flex gap-4 overflow-x-auto">
+              {relatedProducts.map((p) => (
+                <div
+                  key={p._id}
+                  className="min-w-[200px] bg-white border rounded-lg shadow-sm p-4 cursor-pointer hover:shadow-md"
+                  onClick={() => router.push(`/product/${p.slug}`)}
+                >
+                  <img
+                    src={p.imageUrl}
+                    alt={p.title}
+                    className="h-32 object-contain w-full mb-2"
+                  />
+                  <h3 className="text-sm font-semibold truncate">{p.title}</h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    ₹ {p.dumpsPriceInr}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <Toaster />
     </div>
@@ -833,7 +841,7 @@ function ReviewsSection({
   handleAddReview,
 }) {
   return (
-    <div className="container mx-auto mt-10 grid md:grid-cols-2 gap-10">
+    <div className="mt-10 grid md:grid-cols-2 gap-10">
       <div>
         <h3 className="text-lg font-semibold mb-4">User Reviews</h3>
         <div className="max-h-72 overflow-y-auto p-2">
