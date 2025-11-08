@@ -21,18 +21,11 @@ const ExamCoursesPage = () => {
         }
 
         // Step 2: Extract courses and check if EXAM was purchased
-        const coursesWithExams = [];
+        const coursesMap = new Map(); // Use Map to deduplicate by productId
 
         for (const order of orders) {
           for (const course of order.courseDetails || []) {
-            const slug = course.slug;
             const purchaseType = course.type || "";
-
-            // Skip if no slug
-            if (!slug || slug.trim() === "") {
-              console.log(`Skipping course without slug: ${course.name}`);
-              continue;
-            }
 
             // IMPORTANT: Only show if user bought EXAM (online) or COMBO (not PDF/regular)
             // type: "regular" = PDF only
@@ -49,32 +42,68 @@ const ExamCoursesPage = () => {
               continue;
             }
 
+            // Use productId as the unique key
+            const productId = course.productId || course.courseId;
+
+            if (!productId) {
+              console.log(`Skipping course without identifier: ${course.name}`);
+              continue;
+            }
+
+            // Use slug from course if available, otherwise use productId as fallback
+            const slug = course.slug?.trim() || productId;
+
             try {
-              // Step 3: Check if product exists using the slug
-              const productResponse = await axios.get(
-                `/api/products/get-by-slug/${slug}`
-              );
+              // Step 3: Try to fetch product details if slug is valid
+              let product = null;
 
-              if (productResponse.data?.data) {
-                const product = productResponse.data.data;
+              // Only fetch if slug looks like a proper slug (not an ID)
+              if (course.slug?.trim()) {
+                try {
+                  const productResponse = await axios.get(
+                    `/api/products/get-by-slug/${course.slug}`
+                  );
+                  product = productResponse.data?.data;
+                } catch (err) {
+                  console.log(`Product not found for slug: ${course.slug}`);
+                }
+              }
 
-                coursesWithExams.push({
-                  name: product.title || course.name || "Unknown Course",
+              // Check if this product already exists in our map
+              const existingCourse = coursesMap.get(productId);
+
+              // Priority: combo > online > regular
+              const typePriority = { combo: 3, online: 2, regular: 1 };
+              const currentPriority =
+                typePriority[purchaseType.toLowerCase()] || 0;
+              const existingPriority = existingCourse
+                ? typePriority[existingCourse.purchaseType.toLowerCase()] || 0
+                : 0;
+
+              // Only add/update if this is a new course or has higher priority
+              if (!existingCourse || currentPriority > existingPriority) {
+                const courseData = {
+                  name: product?.title || course.name || "Unknown Course",
                   slug: slug,
-                  productId: product._id,
-                  examCode: product.sapExamCode || course.sapExamCode || "N/A",
+                  productId: product?._id || productId,
+                  examCode: product?.sapExamCode || course.code || "N/A",
                   purchaseDate: order.purchaseDate,
                   purchaseType: purchaseType,
-                  category: product.category || "",
-                  imageUrl: product.imageUrl || "",
-                });
+                  category: product?.category || "",
+                  imageUrl: product?.imageUrl || course.imageUrl || "",
+                  expiryDate: course.expiryDate || order.expiryDate,
+                };
+
+                coursesMap.set(productId, courseData);
               }
             } catch (err) {
-              console.log(`Product not found for slug: ${slug}`);
+              console.log(`Error processing course: ${course.name}`, err);
             }
           }
         }
 
+        // Convert Map to Array
+        const coursesWithExams = Array.from(coursesMap.values());
         setExamCourses(coursesWithExams);
       } catch (err) {
         console.error("Error fetching courses:", err);
@@ -90,6 +119,24 @@ const ExamCoursesPage = () => {
     if (slug) {
       router.push(`/exam/mainExamPage/${slug}`);
     }
+  };
+
+  const getPurchaseTypeDisplay = (type) => {
+    const typeMap = {
+      online: "Exam Access",
+      combo: "Combo (PDF + Exam)",
+      regular: "PDF Only",
+    };
+    return typeMap[type?.toLowerCase()] || type;
+  };
+
+  const getPurchaseTypeBadgeColor = (type) => {
+    const colorMap = {
+      online: "bg-blue-100 text-blue-700",
+      combo: "bg-purple-100 text-purple-700",
+      regular: "bg-gray-100 text-gray-700",
+    };
+    return colorMap[type?.toLowerCase()] || "bg-green-100 text-green-700";
   };
 
   return (
@@ -174,16 +221,40 @@ const ExamCoursesPage = () => {
                         </span>
 
                         {course.purchaseType && (
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium uppercase">
-                            {course.purchaseType === "online"
-                              ? "Exam Access"
-                              : course.purchaseType}
+                          <span
+                            className={`${getPurchaseTypeBadgeColor(
+                              course.purchaseType
+                            )} px-3 py-1 rounded-full text-xs font-medium`}
+                          >
+                            {getPurchaseTypeDisplay(course.purchaseType)}
                           </span>
                         )}
 
                         {course.category && (
                           <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
                             {course.category}
+                          </span>
+                        )}
+
+                        {course.expiryDate && (
+                          <span className="flex items-center gap-1 text-orange-600">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            Expires:{" "}
+                            {new Date(course.expiryDate).toLocaleDateString(
+                              "en-GB"
+                            )}
                           </span>
                         )}
                       </div>

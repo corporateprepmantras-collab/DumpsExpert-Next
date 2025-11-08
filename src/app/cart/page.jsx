@@ -463,14 +463,17 @@ const Cart = () => {
       }
 
       const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-      
+
       if (!razorpayKey) {
         console.error("❌ NEXT_PUBLIC_RAZORPAY_KEY_ID not configured");
         toast.error("Razorpay is not configured. Please contact support.");
         return;
       }
-      
-      console.log("✅ Using Razorpay Key:", razorpayKey.substring(0, 10) + "...");
+
+      console.log(
+        "✅ Using Razorpay Key:",
+        razorpayKey.substring(0, 10) + "..."
+      );
 
       const options = {
         key: razorpayKey,
@@ -588,7 +591,7 @@ const Cart = () => {
     try {
       // PayPal always uses USD in sandbox
       const amountInUSD = grandTotal; // Ensure this is already in USD or convert it
-      
+
       console.log("🔵 Creating PayPal order:", {
         amount: amountInUSD,
         userId,
@@ -615,14 +618,15 @@ const Cart = () => {
         errorDetails: error.response?.data?.details,
         hint: error.response?.data?.hint,
       });
-      
+
       // Show user-friendly error
-      const errorMsg = error.response?.data?.hint 
-        || error.response?.data?.details 
-        || error.response?.data?.error 
-        || error.message 
-        || "Failed to create PayPal order";
-      
+      const errorMsg =
+        error.response?.data?.hint ||
+        error.response?.data?.details ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to create PayPal order";
+
       toast.error(errorMsg);
       throw error;
     }
@@ -1015,7 +1019,8 @@ const Cart = () => {
               {/* PayPal Payment Option */}
               <div className="w-full">
                 {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID &&
-                process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID !== "YOUR_PAYPAL_CLIENT_ID" ? (
+                process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID !==
+                  "YOUR_PAYPAL_CLIENT_ID" ? (
                   <PayPalScriptProvider
                     options={{
                       "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
@@ -1051,7 +1056,8 @@ const Cart = () => {
                 ) : (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
                     <p className="text-sm text-yellow-800">
-                      PayPal is currently unavailable. Please use Razorpay or contact support.
+                      PayPal is currently unavailable. Please use Razorpay or
+                      contact support.
                     </p>
                   </div>
                 )}

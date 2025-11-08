@@ -21,66 +21,83 @@ const PdfCoursesClient = () => {
         }
 
         // Step 2: Extract courses and check if PDF was purchased
-        const coursesWithPdf = [];
+        const coursesMap = new Map(); // Use Map to deduplicate by productId
 
         for (const order of orders) {
           for (const course of order.courseDetails || []) {
-            const slug = course.slug;
             const purchaseType = course.type || "";
 
-            // Skip if no slug
-            if (!slug || slug.trim() === "") {
-              console.log(`Skipping course without slug: ${course.name}`);
-              continue;
-            }
-
             // IMPORTANT: Only show if user bought PDF (regular) or COMBO (not just online/exam)
-            // type: "regular" = PDF only
-            // type: "online" = Exam only
-            // type: "combo" = Both PDF + Exam
             const hasPdfAccess =
               purchaseType.toLowerCase() === "regular" ||
               purchaseType.toLowerCase() === "combo";
 
             if (!hasPdfAccess) {
-              console.log(
-                `Skipping - User only bought Exam (type: ${purchaseType}) for: ${course.name}`
-              );
               continue;
             }
 
-            try {
-              // Step 3: Check if product exists and get PDF URL
-              const productResponse = await axios.get(
-                `/api/products/get-by-slug/${slug}`
-              );
+            // Use productId as the unique key
+            const productId = course.productId || course.courseId;
 
-              if (productResponse.data?.data) {
-                const product = productResponse.data.data;
+            if (!productId) {
+              continue;
+            }
 
-                // Only add if mainPdfUrl exists
-                if (product.mainPdfUrl && product.mainPdfUrl.trim() !== "") {
-                  coursesWithPdf.push({
-                    name: product.title || course.name || "Unknown Course",
-                    slug: slug,
-                    productId: product._id,
-                    examCode: product.sapExamCode || course.code || "N/A",
-                    purchaseDate: order.purchaseDate,
-                    purchaseType: purchaseType,
-                    category: product.category || "",
-                    imageUrl: product.imageUrl || "",
-                    downloadUrl: product.mainPdfUrl,
-                  });
-                } else {
-                  console.warn(`⚠️ No PDF URL found for: ${product.title}`);
-                }
+            // Use slug from course if available, otherwise use productId as fallback
+            const slug = course.slug?.trim() || productId;
+
+            // Step 3: Try to fetch product details if slug is valid
+            let product = null;
+
+            // Only fetch if slug looks like a proper slug (not an ID)
+            if (course.slug?.trim()) {
+              try {
+                const productResponse = await axios.get(
+                  `/api/products/get-by-slug/${course.slug}`
+                );
+                product = productResponse.data?.data;
+              } catch (err) {
+                console.log(`Product not found for slug: ${course.slug}`);
               }
-            } catch (err) {
-              console.log(`Product not found for slug: ${slug}`);
+            }
+
+            // Use PDF URL from product or course
+            const pdfUrl = (product?.mainPdfUrl || course.mainPdfUrl || "").trim();
+
+            // Check if this product already exists in our map
+            const existingCourse = coursesMap.get(productId);
+
+            // Priority: combo > regular > online
+            const typePriority = { combo: 3, regular: 2, online: 1 };
+            const currentPriority =
+              typePriority[purchaseType.toLowerCase()] || 0;
+            const existingPriority = existingCourse
+              ? typePriority[existingCourse.purchaseType.toLowerCase()] || 0
+              : 0;
+
+            // Only add/update if this is a new course or has higher priority
+            if (!existingCourse || currentPriority > existingPriority) {
+              const courseData = {
+                name: product?.title || course.name || "Unknown Course",
+                slug: slug,
+                productId: product?._id || productId,
+                examCode: product?.sapExamCode || course.code || "N/A",
+                purchaseDate: order.purchaseDate,
+                purchaseType: purchaseType,
+                category: product?.category || "",
+                imageUrl: product?.imageUrl || course.imageUrl || "",
+                downloadUrl: pdfUrl,
+                expiryDate: course.expiryDate || order.expiryDate,
+                hasPdfUrl: pdfUrl !== "",
+              };
+
+              coursesMap.set(productId, courseData);
             }
           }
         }
 
+        // Convert Map to Array
+        const coursesWithPdf = Array.from(coursesMap.values());
         setPdfCourses(coursesWithPdf);
       } catch (err) {
         console.error("Error fetching courses:", err);
@@ -93,32 +110,83 @@ const PdfCoursesClient = () => {
     fetchPdfCourses();
   }, []);
 
-const handleDownload = async (url, filename) => {
-  try {
-    // 🧩 Agar filename me extension nahi hai to ".pdf" lagao
-    if (!filename.toLowerCase().endsWith(".pdf")) {
-      filename += ".pdf";
+  const handleDownload = async (url, filename) => {
+    // Check if URL is valid
+    if (!url || url.trim() === "") {
+      toast.error("PDF is not yet available for this course. Please contact support or check back later.");
+      return;
     }
 
-    // 🔽 Fetch file from URL
-    const res = await fetch(url);
-    const blob = await res.blob();
+    try {
+      // Validate URL format
+      try {
+        new URL(url);
+      } catch (e) {
+        toast.error("Invalid PDF URL. Please contact support.");
+        return;
+      }
 
-    // 📥 Create temporary link and trigger download
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      // Ensure filename has .pdf extension
+      if (!filename.toLowerCase().endsWith(".pdf")) {
+        filename += ".pdf";
+      }
 
-    toast.success("Download started!");
-  } catch (err) {
-    console.error("Download error:", err);
-    toast.error("Failed to download file.");
-  }
-};
+      // Show loading toast
+      toast.loading("Downloading PDF...");
 
+      // Fetch file from URL
+      const res = await fetch(url);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const blob = await res.blob();
+
+      // Check if blob is valid
+      if (blob.size === 0) {
+        throw new Error("Downloaded file is empty");
+      }
+
+      // Create temporary link and trigger download
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        link.remove();
+        URL.revokeObjectURL(link.href);
+      }, 100);
+
+      toast.dismiss();
+      toast.success("PDF downloaded successfully!");
+    } catch (err) {
+      console.error("Download error:", err);
+      toast.dismiss();
+      toast.error("Failed to download PDF. Please try again or contact support.");
+    }
+  };
+
+  const getPurchaseTypeDisplay = (type) => {
+    const typeMap = {
+      regular: "PDF Access",
+      combo: "Combo (PDF + Exam)",
+      online: "Exam Only",
+    };
+    return typeMap[type?.toLowerCase()] || type;
+  };
+
+  const getPurchaseTypeBadgeColor = (type) => {
+    const colorMap = {
+      regular: "bg-green-100 text-green-700",
+      combo: "bg-purple-100 text-purple-700",
+      online: "bg-blue-100 text-blue-700",
+    };
+    return colorMap[type?.toLowerCase()] || "bg-gray-100 text-gray-700";
+  };
 
   return (
     <div className="max-w-6xl mx-auto mt-10 p-6">
@@ -202,10 +270,12 @@ const handleDownload = async (url, filename) => {
                         </span>
 
                         {course.purchaseType && (
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium uppercase">
-                            {course.purchaseType === "regular"
-                              ? "PDF Access"
-                              : course.purchaseType}
+                          <span
+                            className={`${getPurchaseTypeBadgeColor(
+                              course.purchaseType
+                            )} px-3 py-1 rounded-full text-xs font-medium`}
+                          >
+                            {getPurchaseTypeDisplay(course.purchaseType)}
                           </span>
                         )}
 
@@ -214,15 +284,61 @@ const handleDownload = async (url, filename) => {
                             {course.category}
                           </span>
                         )}
+
+                        {course.expiryDate && (
+                          <span className="flex items-center gap-1 text-orange-600">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            Expires:{" "}
+                            {new Date(course.expiryDate).toLocaleDateString(
+                              "en-GB"
+                            )}
+                          </span>
+                        )}
+
+                        {!course.hasPdfUrl && (
+                          <span className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            PDF Coming Soon
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <button
                     onClick={() =>
-                      handleDownload(course.downloadUrl, `${course.name}.pdf`)
+                      handleDownload(course.downloadUrl, course.name)
                     }
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+                    disabled={!course.hasPdfUrl}
+                    className={`${
+                      course.hasPdfUrl
+                        ? "bg-green-600 hover:bg-green-700 cursor-pointer"
+                        : "bg-gray-400 cursor-not-allowed opacity-60"
+                    } text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-md flex items-center justify-center gap-2 whitespace-nowrap min-w-[200px]`}
                   >
                     <svg
                       className="w-5 h-5"
@@ -237,7 +353,7 @@ const handleDownload = async (url, filename) => {
                         d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    Download PDF
+                    {course.hasPdfUrl ? "Download PDF" : "PDF Not Available"}
                   </button>
                 </div>
               </div>
