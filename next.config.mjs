@@ -137,6 +137,15 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "origin-when-cross-origin" },
         ],
       },
+      {
+        source: "/cart",
+        headers: [
+          { 
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com; frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com;"
+          },
+        ],
+      },
     ];
   },
 

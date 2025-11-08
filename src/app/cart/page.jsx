@@ -462,8 +462,15 @@ const Cart = () => {
         throw new Error("Razorpay SDK not loaded. Please refresh the page.");
       }
 
-      const razorpayKey =
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_7kAotmP1o8JR8V";
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      
+      if (!razorpayKey) {
+        console.error("❌ NEXT_PUBLIC_RAZORPAY_KEY_ID not configured");
+        toast.error("Razorpay is not configured. Please contact support.");
+        return;
+      }
+      
+      console.log("✅ Using Razorpay Key:", razorpayKey.substring(0, 10) + "...");
 
       const options = {
         key: razorpayKey,
@@ -579,9 +586,17 @@ const Cart = () => {
     }
 
     try {
+      // PayPal always uses USD in sandbox
+      const amountInUSD = grandTotal; // Ensure this is already in USD or convert it
+      
+      console.log("🔵 Creating PayPal order:", {
+        amount: amountInUSD,
+        userId,
+      });
+
       const response = await axios.post("/api/payments/paypal/create-order", {
-        amount: grandTotal,
-        currency: selectedCurrency,
+        amount: amountInUSD,
+        currency: "USD",
         userId,
       });
 
@@ -589,12 +604,26 @@ const Cart = () => {
         throw new Error(response.data.error || "Failed to create PayPal order");
       }
 
+      console.log("✅ PayPal order created:", response.data.orderId);
       return response.data.orderId;
     } catch (error) {
-      console.error("PayPal order creation failed:", error);
-      toast.error(
-        error.response?.data?.error || "Failed to create PayPal order"
-      );
+      console.error("❌ PayPal order creation failed:", error);
+      console.error("❌ Error details:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorMessage: error.response?.data?.error,
+        errorDetails: error.response?.data?.details,
+        hint: error.response?.data?.hint,
+      });
+      
+      // Show user-friendly error
+      const errorMsg = error.response?.data?.hint 
+        || error.response?.data?.details 
+        || error.response?.data?.error 
+        || error.message 
+        || "Failed to create PayPal order";
+      
+      toast.error(errorMsg);
       throw error;
     }
   };
@@ -985,33 +1014,47 @@ const Cart = () => {
 
               {/* PayPal Payment Option */}
               <div className="w-full">
-                <PayPalScriptProvider
-                  options={{
-                    "client-id":
-                      process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ||
-                      "YOUR_PAYPAL_CLIENT_ID",
-                    currency: selectedCurrency,
-                    intent: "capture",
-                  }}
-                >
-                  <PayPalButtons
-                    style={{
-                      layout: "vertical",
-                      color: "gold",
-                      shape: "rect",
-                      label: "paypal",
+                {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID &&
+                process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID !== "YOUR_PAYPAL_CLIENT_ID" ? (
+                  <PayPalScriptProvider
+                    options={{
+                      "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+                      currency: "USD", // PayPal sandbox works best with USD
+                      intent: "capture",
+                      vault: false,
+                      commit: true,
                     }}
-                    createOrder={createPayPalOrder}
-                    onApprove={onPayPalApprove}
-                    onError={(error) => {
-                      console.error("PayPal error:", error);
-                      toast.error("PayPal payment failed");
-                    }}
-                    onCancel={() => {
-                      toast.info("Payment cancelled");
-                    }}
-                  />
-                </PayPalScriptProvider>
+                  >
+                    <PayPalButtons
+                      style={{
+                        layout: "vertical",
+                        color: "gold",
+                        shape: "rect",
+                        label: "paypal",
+                        height: 45,
+                      }}
+                      createOrder={createPayPalOrder}
+                      onApprove={onPayPalApprove}
+                      onError={(error) => {
+                        console.error("PayPal error:", error);
+                        toast.error("PayPal payment failed. Please try again.");
+                      }}
+                      onCancel={() => {
+                        toast.info("Payment cancelled");
+                      }}
+                      onInit={(data, actions) => {
+                        console.log("PayPal buttons initialized");
+                      }}
+                      forceReRender={[grandTotal]}
+                    />
+                  </PayPalScriptProvider>
+                ) : (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                    <p className="text-sm text-yellow-800">
+                      PayPal is currently unavailable. Please use Razorpay or contact support.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <p className="text-xs text-gray-500 text-center">

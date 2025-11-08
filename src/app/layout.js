@@ -187,7 +187,7 @@ export default function RootLayout({ children }) {
         {/* ✅ Security headers */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://www.paypal.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://www.paypal.com https://*.paypal.com https://www.sandbox.paypal.com; style-src 'self' 'unsafe-inline' https://checkout.razorpay.com; img-src 'self' data: https:; connect-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://lumberjack.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://www.sandbox.paypal.com; frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://www.sandbox.paypal.com; frame-ancestors 'self';"
         />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
