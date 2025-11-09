@@ -7,96 +7,72 @@ import { toast } from "react-hot-toast";
 const PdfCoursesClient = () => {
   const [pdfCourses, setPdfCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(null);
+
+  // Calculate days remaining until expiry (90 days from purchase)
+  const calculateDaysRemaining = (purchaseDate) => {
+    const purchase = new Date(purchaseDate);
+    const expiryDate = new Date(purchase);
+    expiryDate.setDate(expiryDate.getDate() + 90);
+
+    const today = new Date();
+    const timeDiff = expiryDate - today;
+    const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+    return {
+      daysRemaining: Math.max(0, daysRemaining),
+      expiryDate: expiryDate.toLocaleDateString("en-GB"),
+      isExpiringSoon: daysRemaining <= 7 && daysRemaining > 0,
+      isExpired: daysRemaining <= 0,
+    };
+  };
 
   useEffect(() => {
     const fetchPdfCourses = async () => {
       try {
-        // Step 1: Get user orders
         const { data } = await axios.get("/api/student/orders");
         const orders = data?.orders || [];
 
         if (orders.length === 0) {
+          setPdfCourses([]);
           setLoading(false);
           return;
         }
 
-        // Step 2: Extract courses and check if PDF was purchased
-        const coursesMap = new Map(); // Use Map to deduplicate by productId
+        const coursesMap = new Map();
 
         for (const order of orders) {
           for (const course of order.courseDetails || []) {
-            const purchaseType = course.type || "";
+            const purchaseType = course.type?.toLowerCase() || "";
 
-            // IMPORTANT: Only show if user bought PDF (regular) or COMBO (not just online/exam)
-            const hasPdfAccess =
-              purchaseType.toLowerCase() === "regular" ||
-              purchaseType.toLowerCase() === "combo";
-
-            if (!hasPdfAccess) {
+            if (purchaseType !== "regular" && purchaseType !== "combo")
               continue;
-            }
 
-            // Use productId as the unique key
+            if (!course.mainPdfUrl || course.mainPdfUrl.trim() === "") continue;
+
+            const expiryInfo = calculateDaysRemaining(order.purchaseDate);
+
             const productId = course.productId || course.courseId;
+            
+            // Create unique key combining productId and purchaseType
+            const uniqueKey = `${productId}-${purchaseType}`;
 
-            if (!productId) {
-              continue;
-            }
-
-            // Use slug from course if available, otherwise use productId as fallback
-            const slug = course.slug?.trim() || productId;
-
-            // Step 3: Try to fetch product details if slug is valid
-            let product = null;
-
-            // Only fetch if slug looks like a proper slug (not an ID)
-            if (course.slug?.trim()) {
-              try {
-                const productResponse = await axios.get(
-                  `/api/products/get-by-slug/${course.slug}`
-                );
-                product = productResponse.data?.data;
-              } catch (err) {
-                console.log(`Product not found for slug: ${course.slug}`);
-              }
-            }
-
-            // Use PDF URL from product or course
-            const pdfUrl = (product?.mainPdfUrl || course.mainPdfUrl || "").trim();
-
-            // Check if this product already exists in our map
-            const existingCourse = coursesMap.get(productId);
-
-            // Priority: combo > regular > online
-            const typePriority = { combo: 3, regular: 2, online: 1 };
-            const currentPriority =
-              typePriority[purchaseType.toLowerCase()] || 0;
-            const existingPriority = existingCourse
-              ? typePriority[existingCourse.purchaseType.toLowerCase()] || 0
-              : 0;
-
-            // Only add/update if this is a new course or has higher priority
-            if (!existingCourse || currentPriority > existingPriority) {
-              const courseData = {
-                name: product?.title || course.name || "Unknown Course",
-                slug: slug,
-                productId: product?._id || productId,
-                examCode: product?.sapExamCode || course.code || "N/A",
+            // Only add if this specific combination doesn't exist
+            if (!coursesMap.has(uniqueKey)) {
+              coursesMap.set(uniqueKey, {
+                name: course.title || course.name || "Unknown Course",
+                code: course.code || "N/A",
                 purchaseDate: order.purchaseDate,
                 purchaseType: purchaseType,
-                category: product?.category || "",
-                imageUrl: product?.imageUrl || course.imageUrl || "",
-                downloadUrl: pdfUrl,
-                expiryDate: course.expiryDate || order.expiryDate,
-                hasPdfUrl: pdfUrl !== "",
-              };
-
-              coursesMap.set(productId, courseData);
+                category: course.category || "",
+                imageUrl: course.imageUrl || "",
+                downloadUrl: course.mainPdfUrl,
+                ...expiryInfo,
+              });
             }
           }
         }
 
-        // Convert Map to Array
         const coursesWithPdf = Array.from(coursesMap.values());
         setPdfCourses(coursesWithPdf);
       } catch (err) {
@@ -111,89 +87,96 @@ const PdfCoursesClient = () => {
   }, []);
 
   const handleDownload = async (url, filename) => {
-    // Check if URL is valid
-    if (!url || url.trim() === "") {
-      toast.error("PDF is not yet available for this course. Please contact support or check back later.");
-      return;
-    }
-
     try {
-      // Validate URL format
-      try {
-        new URL(url);
-      } catch (e) {
-        toast.error("Invalid PDF URL. Please contact support.");
-        return;
-      }
+      setDownloading(url);
+      toast.loading("Preparing download...", { id: "download-toast" });
 
-      // Ensure filename has .pdf extension
-      if (!filename.toLowerCase().endsWith(".pdf")) {
-        filename += ".pdf";
-      }
+      const cleanFilename = filename.endsWith(".pdf")
+        ? filename
+        : `${filename}.pdf`;
 
-      // Show loading toast
-      toast.loading("Downloading PDF...");
+      const proxyUrl = `/api/download-pdf?url=${encodeURIComponent(
+        url
+      )}&filename=${encodeURIComponent(cleanFilename)}`;
 
-      // Fetch file from URL
-      const res = await fetch(url);
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const blob = await res.blob();
-
-      // Check if blob is valid
-      if (blob.size === 0) {
-        throw new Error("Downloaded file is empty");
-      }
-
-      // Create temporary link and trigger download
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
+      link.href = proxyUrl;
+      link.download = cleanFilename;
+      link.style.display = "none";
+
       document.body.appendChild(link);
       link.click();
-      
-      // Cleanup
+
       setTimeout(() => {
-        link.remove();
-        URL.revokeObjectURL(link.href);
+        document.body.removeChild(link);
       }, 100);
 
-      toast.dismiss();
-      toast.success("PDF downloaded successfully!");
+      toast.success("Download started!", { id: "download-toast" });
     } catch (err) {
       console.error("Download error:", err);
-      toast.dismiss();
-      toast.error("Failed to download PDF. Please try again or contact support.");
+      toast.error("Failed to download PDF. Please try again.", {
+        id: "download-toast",
+      });
+    } finally {
+      setTimeout(() => setDownloading(null), 1000);
     }
   };
 
-  const getPurchaseTypeDisplay = (type) => {
-    const typeMap = {
-      regular: "PDF Access",
-      combo: "Combo (PDF + Exam)",
-      online: "Exam Only",
-    };
-    return typeMap[type?.toLowerCase()] || type;
-  };
+  const getExpiryBadge = (course) => {
+    if (course.isExpired) {
+      return (
+        <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Expired
+        </span>
+      );
+    }
 
-  const getPurchaseTypeBadgeColor = (type) => {
-    const colorMap = {
-      regular: "bg-green-100 text-green-700",
-      combo: "bg-purple-100 text-purple-700",
-      online: "bg-blue-100 text-blue-700",
-    };
-    return colorMap[type?.toLowerCase()] || "bg-gray-100 text-gray-700";
+    if (course.isExpiringSoon) {
+      return (
+        <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {course.daysRemaining} {course.daysRemaining === 1 ? "day" : "days"}{" "}
+          left
+        </span>
+      );
+    }
+
+    return (
+      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+            clipRule="evenodd"
+          />
+        </svg>
+        {course.daysRemaining} days left
+      </span>
+    );
   };
 
   return (
     <div className="max-w-6xl mx-auto mt-10 p-6">
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h1 className="text-3xl font-bold mb-8 text-center text-gray-900">
+        <h1 className="text-3xl font-bold mb-2 text-center text-gray-900">
           My PDF Courses
         </h1>
+        <p className="text-center text-gray-600 mb-8 text-sm">
+          PDF courses expire 90 days after purchase
+        </p>
 
         {loading ? (
           <div className="text-center py-12">
@@ -228,7 +211,13 @@ const PdfCoursesClient = () => {
             {pdfCourses.map((course, index) => (
               <div
                 key={index}
-                className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow bg-gradient-to-r from-green-50 to-white"
+                className={`border rounded-lg p-6 hover:shadow-lg transition-shadow ${
+                  course.isExpired
+                    ? "bg-gradient-to-r from-red-50 to-gray-50 border-red-200 opacity-75"
+                    : course.isExpiringSoon
+                    ? "bg-gradient-to-r from-orange-50 to-white border-orange-200"
+                    : "bg-gradient-to-r from-green-50 to-white border-gray-200"
+                }`}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex gap-4 flex-1">
@@ -239,90 +228,47 @@ const PdfCoursesClient = () => {
                         className="w-20 h-20 object-cover rounded-lg"
                       />
                     )}
-
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-gray-900 mb-2">
                         {course.name}
+                        {course.isExpired && (
+                          <span className="ml-2 text-sm text-red-600 font-normal">
+                            (Access Expired)
+                          </span>
+                        )}
                       </h3>
-
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
                         <span className="flex items-center gap-1">
                           <svg
                             className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
                           >
                             <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              fillRule="evenodd"
+                              d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                              clipRule="evenodd"
                             />
                           </svg>
+                          Purchased:{" "}
                           {new Date(course.purchaseDate).toLocaleDateString(
                             "en-GB"
                           )}
                         </span>
-
                         <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-                          {course.examCode}
+                          {course.code}
                         </span>
-
-                        {course.purchaseType && (
-                          <span
-                            className={`${getPurchaseTypeBadgeColor(
-                              course.purchaseType
-                            )} px-3 py-1 rounded-full text-xs font-medium`}
-                          >
-                            {getPurchaseTypeDisplay(course.purchaseType)}
-                          </span>
-                        )}
-
-                        {course.category && (
-                          <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                            {course.category}
-                          </span>
-                        )}
-
-                        {course.expiryDate && (
-                          <span className="flex items-center gap-1 text-orange-600">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            Expires:{" "}
-                            {new Date(course.expiryDate).toLocaleDateString(
-                              "en-GB"
-                            )}
-                          </span>
-                        )}
-
-                        {!course.hasPdfUrl && (
-                          <span className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            PDF Coming Soon
+                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium uppercase">
+                          {course.purchaseType === "regular"
+                            ? "PDF Access"
+                            : "Combo"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        {getExpiryBadge(course)}
+                        {!course.isExpired && (
+                          <span className="text-xs text-gray-500">
+                            Expires: {course.expiryDate}
                           </span>
                         )}
                       </div>
@@ -331,29 +277,55 @@ const PdfCoursesClient = () => {
 
                   <button
                     onClick={() =>
-                      handleDownload(course.downloadUrl, course.name)
+                      handleDownload(course.downloadUrl, `${course.name}.pdf`)
                     }
-                    disabled={!course.hasPdfUrl}
-                    className={`${
-                      course.hasPdfUrl
-                        ? "bg-green-600 hover:bg-green-700 cursor-pointer"
-                        : "bg-gray-400 cursor-not-allowed opacity-60"
-                    } text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-md flex items-center justify-center gap-2 whitespace-nowrap min-w-[200px]`}
+                    disabled={
+                      downloading === course.downloadUrl || course.isExpired
+                    }
+                    className={`px-8 py-3 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
+                      course.isExpired
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white"
+                    }`}
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    {course.hasPdfUrl ? "Download PDF" : "PDF Not Available"}
+                    {course.isExpired ? (
+                      <>
+                        <svg
+                          className="w-5 h-5"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Expired
+                      </>
+                    ) : downloading === course.downloadUrl ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        Download PDF
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

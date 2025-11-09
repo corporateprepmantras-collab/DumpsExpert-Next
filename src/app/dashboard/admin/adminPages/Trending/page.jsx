@@ -28,7 +28,7 @@ export default function ManageTrendingCerts() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black p-8">
+    <div className="min-h-screen pt-20 bg-white text-black p-8">
       <div className="max-w-2xl mx-auto">
         <h2 className="text-3xl font-semibold mb-6 text-center">
           Manage Top Trending Certifications

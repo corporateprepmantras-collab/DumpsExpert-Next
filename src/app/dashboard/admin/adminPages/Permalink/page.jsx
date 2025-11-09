@@ -62,7 +62,7 @@ const Permalink = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen text-gray-800">
+    <div className="p-6 pt-20 bg-gray-50 min-h-screen text-gray-800">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-gray-200 pb-3">

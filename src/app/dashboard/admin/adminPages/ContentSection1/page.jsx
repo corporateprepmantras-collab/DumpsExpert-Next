@@ -95,7 +95,7 @@ export default function ContentEditor1() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white pt-20 p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-bold mb-4">Edit Content Section</h2>
 
       <ReactQuill

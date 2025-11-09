@@ -82,7 +82,7 @@ const SEOSiteMap = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    <div className="p-6 pt-20 min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Upload Form */}
         <div className="bg-white rounded shadow p-6">

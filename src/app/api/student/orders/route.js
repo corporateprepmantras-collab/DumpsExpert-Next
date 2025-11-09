@@ -7,7 +7,7 @@ import Order from "@/models/orderSchema";
 import UserInfo from "@/models/userInfoSchema";
 import Product from "@/models/productListSchema";
 
-// ✅ Ensure authUsers model is registered once
+// Ensure authUsers model is registered once
 const authUserModel =
   mongoose.models.authUsers ||
   mongoose.model(
@@ -28,7 +28,7 @@ export async function GET(request) {
     console.log("📡 Route hit: /api/student/orders [GET]");
     await connectMongoDB();
 
-    // ✅ Check session
+    // Check session
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.id) {
       return NextResponse.json(
@@ -45,13 +45,13 @@ export async function GET(request) {
       );
     }
 
-    // ✅ Fetch user info
+    // Fetch user info
     const user = await UserInfo.findOne({ authUserId: userId }).select("role");
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // ✅ Allow only students and admins
+    // Allow only students and admins
     if (user.role !== "student" && user.role !== "admin") {
       return NextResponse.json(
         { error: "Forbidden: Access restricted to students or admins" },
@@ -59,7 +59,7 @@ export async function GET(request) {
       );
     }
 
-    // ✅ Auto-delete expired PDF orders (older than 90 days)
+    // Auto-delete expired PDF orders (older than 90 days)
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
@@ -72,18 +72,61 @@ export async function GET(request) {
       console.log(`🧹 Deleted ${deleted.deletedCount} expired PDF orders`);
     }
 
-    // ✅ Fetch active orders
+    // Fetch active orders
     const orders = await Order.find({ user: userId })
       .populate("user", "name email")
-      .populate("courseDetails.courseId", "title")
       .sort({ purchaseDate: -1 })
       .lean();
 
-    console.log(
-      `✅ Retrieved ${orders.length} active orders for user ${userId}`
+    // Enrich orders with current product data (including mainPdfUrl)
+    const enrichedOrders = await Promise.all(
+      orders.map(async (order) => {
+        const enrichedCourseDetails = await Promise.all(
+          order.courseDetails.map(async (course) => {
+            try {
+              // Fetch latest product data
+              const product = await Product.findById(
+                course.productId || course.courseId
+              ).lean();
+
+              if (product) {
+                // Merge current product data with order course data
+                return {
+                  ...course,
+                  mainPdfUrl: product.mainPdfUrl || course.mainPdfUrl || "",
+                  samplePdfUrl:
+                    product.samplePdfUrl || course.samplePdfUrl || "",
+                  imageUrl: product.imageUrl || course.imageUrl || "",
+                  // Keep other fields updated too
+                  title: product.title || course.name,
+                  name: course.name, // Keep original purchase name
+                  status: product.status || course.status,
+                };
+              }
+
+              return course;
+            } catch (err) {
+              console.error(
+                `Error fetching product for course ${course.courseId}:`,
+                err
+              );
+              return course;
+            }
+          })
+        );
+
+        return {
+          ...order,
+          courseDetails: enrichedCourseDetails,
+        };
+      })
     );
 
-    return NextResponse.json({ orders });
+    console.log(
+      `✅ Retrieved ${enrichedOrders.length} active orders for user ${userId}`
+    );
+
+    return NextResponse.json({ orders: enrichedOrders });
   } catch (error) {
     console.error("❌ Order retrieval failed:", {
       message: error.message,

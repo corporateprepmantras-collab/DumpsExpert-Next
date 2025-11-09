@@ -7,7 +7,67 @@ import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
 
-// Helper function to fetch product data
+// Helper function to safely convert to number
+const toNum = (val) => {
+  if (val === null || val === undefined || val === "") return 0;
+  const num = Number(val);
+  return isNaN(num) ? 0 : num;
+};
+
+// Helper function to extract exam prices
+const extractExamPrices = (examData) => {
+  if (!examData) return { priceInr: 0, priceUsd: 0, mrpInr: 0, mrpUsd: 0 };
+
+  const priceInr = toNum(
+    examData.priceINR ||
+      examData.priceInr ||
+      examData.price_inr ||
+      examData.price ||
+      examData.examPrice ||
+      examData.onlineExamPrice ||
+      examData.onlineExamPriceInr ||
+      examData.examPriceInr ||
+      examData.examPriceINR
+  );
+
+  const priceUsd = toNum(
+    examData.priceUSD ||
+      examData.priceUsd ||
+      examData.price_usd ||
+      examData.examPriceUsd ||
+      examData.onlineExamPriceUsd ||
+      examData.examPriceUSD ||
+      examData.onlineExamPriceUSD
+  );
+
+  const mrpInr = toNum(
+    examData.mrpINR ||
+      examData.mrpInr ||
+      examData.mrp_inr ||
+      examData.mrp ||
+      examData.examMrp ||
+      examData.examMrpInr ||
+      examData.examMrpINR
+  );
+
+  const mrpUsd = toNum(
+    examData.mrpUSD ||
+      examData.mrpUsd ||
+      examData.mrp_usd ||
+      examData.examMrpUsd ||
+      examData.examMrpUSD
+  );
+
+  return {
+    priceInr: priceInr || (priceUsd > 0 ? priceUsd * 83 : 0),
+    priceUsd:
+      priceUsd || (priceInr > 0 ? parseFloat((priceInr / 83).toFixed(2)) : 0),
+    mrpInr: mrpInr || (mrpUsd > 0 ? mrpUsd * 83 : 0),
+    mrpUsd: mrpUsd || (mrpInr > 0 ? parseFloat((mrpInr / 83).toFixed(2)) : 0),
+  };
+};
+
+// Helper functions
 async function fetchProduct(slug) {
   try {
     const response = await fetch(`/api/products/get-by-slug/${slug}`);
@@ -19,32 +79,16 @@ async function fetchProduct(slug) {
   }
 }
 
-// Helper function to fetch exams by product slug
 async function fetchExamsByProductSlug(slug) {
   try {
-    console.log("📊 Fetching exams for slug:", slug);
-
-    const endpoints = [
-      `/api/exams/byslug/${encodeURIComponent(slug)}`,
-      `/api/exams?slug=${encodeURIComponent(slug)}`,
-      `/api/exams/${encodeURIComponent(slug)}`,
-    ];
+    const endpoints = [`/api/exams/byslug/${encodeURIComponent(slug)}`];
 
     for (const endpoint of endpoints) {
       try {
-        console.log(`🔄 Trying endpoint: ${endpoint}`);
         const response = await fetch(endpoint);
-
-        if (!response.ok) {
-          console.warn(
-            `⚠️ Endpoint ${endpoint} returned status ${response.status}`
-          );
-          continue;
-        }
+        if (!response.ok) continue;
 
         const data = await response.json();
-        console.log(`✅ Response from ${endpoint}:`, data);
-
         let exams = [];
 
         if (data.data && Array.isArray(data.data) && data.data.length > 0) {
@@ -59,35 +103,18 @@ async function fetchExamsByProductSlug(slug) {
           exams = data.exams;
         }
 
-        if (exams.length > 0) {
-          console.log("✅ Exams found:", exams.length, "exams");
-          console.log(
-            "📋 Exam details:",
-            exams.map((e) => ({
-              name: e.name,
-              code: e.code,
-              priceINR: e.priceINR || e.priceInr,
-              priceUSD: e.priceUSD || e.priceUsd,
-              duration: e.duration,
-            }))
-          );
-          return exams;
-        }
-      } catch (endpointError) {
-        console.warn(`⚠️ Error trying endpoint ${endpoint}:`, endpointError);
+        if (exams.length > 0) return exams;
+      } catch (err) {
         continue;
       }
     }
-
-    console.warn("⚠️ No exams found from any endpoint");
     return [];
   } catch (error) {
-    console.error("❌ Error fetching exams:", error);
+    console.error("Error fetching exams:", error);
     return [];
   }
 }
 
-// Helper function to fetch all products for related products
 async function fetchAllProducts() {
   try {
     const response = await fetch(`/api/products`);
@@ -104,6 +131,12 @@ export default function ProductDetailsPage() {
   const router = useRouter();
   const [product, setProduct] = useState(null);
   const [exams, setExams] = useState([]);
+  const [examPrices, setExamPrices] = useState({
+    priceInr: 0,
+    priceUsd: 0,
+    mrpInr: 0,
+    mrpUsd: 0,
+  });
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({
     name: "",
@@ -118,186 +151,55 @@ export default function ProductDetailsPage() {
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
 
-    console.log("═".repeat(80));
-    console.log("🔍 ADDING TO CART - DEBUG INFO");
-    console.log("═".repeat(80));
-    console.log("Product:", product);
-    console.log("Exams array:", exams);
-    console.log("Type:", type);
-
-    // Helper to safely convert to number
-    const toNum = (val) => {
-      if (val === null || val === undefined || val === "") return 0;
-      const num = Number(val);
-      return isNaN(num) ? 0 : num;
-    };
-
-    // Initialize exam prices
-    let examPriceInr = 0;
-    let examPriceUsd = 0;
-    let examMrpInr = 0;
-    let examMrpUsd = 0;
-
-    // PRIORITY 1: Extract from exams array (most reliable source)
-    if (Array.isArray(exams) && exams.length > 0) {
-      const examData = exams[0];
-      console.log("━".repeat(80));
-      console.log("📊 EXAM DATA EXTRACTION:");
-      console.log("Raw exam object:", examData);
-
-      // Try all possible price field variations
-      examPriceInr = toNum(
-        examData.priceINR ||
-          examData.priceInr ||
-          examData.price_inr ||
-          examData.price ||
-          examData.examPrice ||
-          examData.onlineExamPrice ||
-          examData.onlineExamPriceInr
-      );
-
-      examPriceUsd = toNum(
-        examData.priceUSD ||
-          examData.priceUsd ||
-          examData.price_usd ||
-          examData.examPriceUsd ||
-          examData.onlineExamPriceUsd
-      );
-
-      // If USD not found, convert from INR
-      if (examPriceInr > 0 && examPriceUsd === 0) {
-        examPriceUsd = parseFloat((examPriceInr / 83).toFixed(2));
-      }
-
-      examMrpInr = toNum(
-        examData.mrpINR ||
-          examData.mrpInr ||
-          examData.mrp_inr ||
-          examData.mrp ||
-          examData.examMrp
-      );
-
-      examMrpUsd = toNum(
-        examData.mrpUSD ||
-          examData.mrpUsd ||
-          examData.mrp_usd ||
-          examData.examMrpUsd
-      );
-
-      // If USD MRP not found, convert from INR
-      if (examMrpInr > 0 && examMrpUsd === 0) {
-        examMrpUsd = parseFloat((examMrpInr / 83).toFixed(2));
-      }
-
-      console.log("✅ Extracted from exam data:", {
-        examPriceInr,
-        examPriceUsd,
-        examMrpInr,
-        examMrpUsd,
-      });
-    }
-
-    // PRIORITY 2: Fallback to product fields if exam prices still 0
-    if (examPriceInr === 0 && examPriceUsd === 0) {
-      console.log("⚠️ FALLBACK: Using product exam fields...");
-
-      examPriceInr = toNum(
-        product.examPriceInr ||
-          product.onlineExamPriceInr ||
-          product.examPrice ||
-          product.onlineExamPrice
-      );
-
-      examPriceUsd = toNum(
-        product.examPriceUsd ||
-          product.onlineExamPriceUsd ||
-          product.examPriceUSD ||
-          product.onlineExamPriceUSD
-      );
-
-      // Convert if needed
-      if (examPriceInr > 0 && examPriceUsd === 0) {
-        examPriceUsd = parseFloat((examPriceInr / 83).toFixed(2));
-      }
-
-      examMrpInr = toNum(
-        product.examMrpInr || product.onlineExamMrpInr || product.examMrp
-      );
-
-      examMrpUsd = toNum(
-        product.examMrpUsd || product.onlineExamMrpUsd || product.examMrpUSD
-      );
-
-      // Convert if needed
-      if (examMrpInr > 0 && examMrpUsd === 0) {
-        examMrpUsd = parseFloat((examMrpInr / 83).toFixed(2));
-      }
-
-      console.log("✅ Got from product fields:", {
-        examPriceInr,
-        examPriceUsd,
-        examMrpInr,
-        examMrpUsd,
-      });
-    }
-
-    console.log("━".repeat(80));
-    console.log("💰 FINAL EXAM PRICES:");
-    console.log("  INR:", examPriceInr);
-    console.log("  USD:", examPriceUsd);
-    console.log("  MRP INR:", examMrpInr);
-    console.log("  MRP USD:", examMrpUsd);
-    console.log("═".repeat(80));
-
-    // VALIDATION - Only check for online type
-    if (type === "online" && examPriceInr === 0 && examPriceUsd === 0) {
+    // Validate pricing
+    if (
+      type === "online" &&
+      examPrices.priceInr === 0 &&
+      examPrices.priceUsd === 0
+    ) {
       toast.error("⚠️ Online exam pricing not available for this product");
-      console.error("❌ VALIDATION FAILED: No exam prices found!");
       return;
     }
 
     if (
       type === "combo" &&
-      product.comboPriceInr === 0 &&
-      product.comboPriceUsd === 0
+      toNum(product.comboPriceInr) === 0 &&
+      toNum(product.comboPriceUsd) === 0
     ) {
       toast.error("⚠️ Combo package is not available for this product");
-      console.error("❌ VALIDATION FAILED: No combo prices found!");
       return;
     }
 
-    // Get exam details from first exam if available
     const examDetails = exams.length > 0 ? exams[0] : {};
 
-    // Build complete item object with ALL price fields
+    // Build complete item with ALL required fields
     let item = {
       _id: product._id,
       productId: product._id,
+      courseId: product._id, // Add for order lookup
       type: type,
       title: product.title,
       name: product.title,
 
-      // Dumps pricing (ensure numbers)
+      // PDF URLs - CRITICAL for orders
+      mainPdfUrl: product.mainPdfUrl || "",
+      samplePdfUrl: product.samplePdfUrl || "",
+
+      // Pricing
       dumpsPriceInr: toNum(product.dumpsPriceInr),
       dumpsPriceUsd: toNum(product.dumpsPriceUsd),
       dumpsMrpInr: toNum(product.dumpsMrpInr),
       dumpsMrpUsd: toNum(product.dumpsMrpUsd),
-
-      // Combo pricing (ensure numbers)
       comboPriceInr: toNum(product.comboPriceInr),
       comboPriceUsd: toNum(product.comboPriceUsd),
       comboMrpInr: toNum(product.comboMrpInr),
       comboMrpUsd: toNum(product.comboMrpUsd),
-
-      // CRITICAL: Exam prices (already validated as numbers)
-      examPriceInr: examPriceInr,
-      examPriceUsd: examPriceUsd,
-      examMrpInr: examMrpInr,
-      examMrpUsd: examMrpUsd,
+      examPriceInr: examPrices.priceInr,
+      examPriceUsd: examPrices.priceUsd,
+      examMrpInr: examPrices.mrpInr,
+      examMrpUsd: examPrices.mrpUsd,
 
       // Product details
-      samplePdfUrl: product.samplePdfUrl || "",
-      mainPdfUrl: product.mainPdfUrl || "",
       imageUrl: product.imageUrl || "",
       slug: product.slug,
       category: product.category,
@@ -314,16 +216,16 @@ export default function ProductDetailsPage() {
       sampleInstructions: product.sampleInstructions || "",
       Description: product.Description || "",
       longDescription: product.longDescription || "",
-      status: product.status,
-      action: product.action,
-      metaTitle: product.metaTitle,
-      metaKeywords: product.metaKeywords,
-      metaDescription: product.metaDescription,
-      schema: product.schema,
+      status: product.status || "active",
+      action: product.action || "",
+      metaTitle: product.metaTitle || "",
+      metaKeywords: product.metaKeywords || "",
+      metaDescription: product.metaDescription || "",
+      schema: product.schema || "",
       quantity: 1,
     };
 
-    // Set active price based on type
+    // Set type-specific pricing and names
     switch (type) {
       case "regular":
         item.title = `${product.title} [PDF]`;
@@ -339,10 +241,6 @@ export default function ProductDetailsPage() {
         item.price = item.examPriceInr;
         item.priceINR = item.examPriceInr;
         item.priceUSD = item.examPriceUsd;
-        console.log("🎯 Setting online exam prices:", {
-          priceINR: item.priceINR,
-          priceUSD: item.priceUSD,
-        });
         break;
 
       case "combo":
@@ -359,22 +257,6 @@ export default function ProductDetailsPage() {
         item.priceUSD = item.dumpsPriceUsd;
     }
 
-    console.log("✅ Final item to add to cart:", item);
-    console.log("💰 Final pricing verification:", {
-      type: item.type,
-      priceINR: item.priceINR,
-      priceUSD: item.priceUSD,
-      examPriceInr: item.examPriceInr,
-      examPriceUsd: item.examPriceUsd,
-    });
-
-    // Final validation before adding
-    if (type === "online" && (item.priceINR === 0 || item.examPriceInr === 0)) {
-      console.error("❌ CRITICAL: Online exam price is 0 after all checks!");
-      toast.error("Failed to add online exam - pricing error");
-      return;
-    }
-
     useCartStore.getState().addToCart(item);
     toast.success(`✅ Added ${item.title} to cart!`);
   };
@@ -384,62 +266,35 @@ export default function ProductDetailsPage() {
       try {
         setIsLoadingExams(true);
 
-        // Fetch product
         const productData = await fetchProduct(slug);
         setProduct(productData);
 
-        console.log("═".repeat(80));
-        console.log("📦 PRODUCT DATA LOADED:");
-        console.log("═".repeat(80));
-        console.log("Full product object:", productData);
-        console.log("\n🏷️ PRODUCT PRICING:");
-        console.log("Dumps (Regular PDF):", {
-          inr: productData?.dumpsPriceInr,
-          usd: productData?.dumpsPriceUsd,
-        });
-        console.log("Exam (Online Exam):", {
-          inr: productData?.examPriceInr,
-          usd: productData?.examPriceUsd,
-          onlineInr: productData?.onlineExamPriceInr,
-          onlineUsd: productData?.onlineExamPriceUsd,
-        });
-        console.log("Combo (PDF + Exam):", {
-          inr: productData?.comboPriceInr,
-          usd: productData?.comboPriceUsd,
-        });
-        console.log("═".repeat(80));
-
-        // Fetch exams by slug
         const examsData = await fetchExamsByProductSlug(slug);
         setExams(examsData);
+
+        if (examsData.length > 0) {
+          const prices = extractExamPrices(examsData[0]);
+          setExamPrices(prices);
+        } else {
+          const prices = {
+            priceInr: toNum(
+              productData?.examPriceInr || productData?.onlineExamPriceInr
+            ),
+            priceUsd: toNum(
+              productData?.examPriceUsd || productData?.onlineExamPriceUsd
+            ),
+            mrpInr: toNum(
+              productData?.examMrpInr || productData?.onlineExamMrpInr
+            ),
+            mrpUsd: toNum(
+              productData?.examMrpUsd || productData?.onlineExamMrpUsd
+            ),
+          };
+          setExamPrices(prices);
+        }
+
         setIsLoadingExams(false);
 
-        console.log("\n═".repeat(80));
-        console.log("📚 EXAM DATA LOADED:");
-        console.log("═".repeat(80));
-        console.log("Number of exams:", examsData.length);
-        if (examsData.length > 0) {
-          console.log("\n📝 First Exam - ALL FIELDS:");
-          console.log(JSON.stringify(examsData[0], null, 2));
-          console.log("\n💰 First Exam - PRICE FIELDS:");
-          console.log({
-            priceINR: examsData[0].priceINR,
-            priceInr: examsData[0].priceInr,
-            price: examsData[0].price,
-            priceUSD: examsData[0].priceUSD,
-            priceUsd: examsData[0].priceUsd,
-            mrpINR: examsData[0].mrpINR,
-            mrpInr: examsData[0].mrpInr,
-            mrp: examsData[0].mrp,
-            mrpUSD: examsData[0].mrpUSD,
-            mrpUsd: examsData[0].mrpUsd,
-          });
-        } else {
-          console.log("⚠️ No exams found for this product");
-        }
-        console.log("═".repeat(80));
-
-        // Set reviews
         setReviews(productData?.reviews || []);
 
         if (productData?.reviews?.length) {
@@ -448,14 +303,7 @@ export default function ProductDetailsPage() {
             0
           );
           setAvgRating((total / productData.reviews.length).toFixed(1));
-        }
-
-        // Fetch related products
-        const allProducts = await fetchAllProducts();
-        setRelatedProducts(allProducts.filter((p) => p.slug !== slug));
-
-        // Set mock reviews if none exist
-        if (!productData?.reviews?.length) {
+        } else {
           const mockReviews = [
             {
               name: "Amit",
@@ -477,12 +325,12 @@ export default function ProductDetailsPage() {
             },
           ];
           setReviews(mockReviews);
-
-          if (mockReviews.length > 0) {
-            const total = mockReviews.reduce((sum, r) => sum + r.rating, 0);
-            setAvgRating((total / mockReviews.length).toFixed(1));
-          }
+          const total = mockReviews.reduce((sum, r) => sum + r.rating, 0);
+          setAvgRating((total / mockReviews.length).toFixed(1));
         }
+
+        const allProducts = await fetchAllProducts();
+        setRelatedProducts(allProducts.filter((p) => p.slug !== slug));
       } catch (err) {
         console.error("❌ Error loading data:", err);
         setIsLoadingExams(false);
@@ -498,16 +346,21 @@ export default function ProductDetailsPage() {
   };
 
   const handleDownload = (url, filename) => {
+    if (!url) {
+      toast.error("Download link not available");
+      return;
+    }
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
+    link.target = "_blank";
     link.click();
   };
 
   const handleAddReview = async (e) => {
     e.preventDefault();
     toast.success("Review submitted successfully 🎉");
-    setReviewForm({ name: "", comment: "", rating: "" });
+    setReviewForm({ name: "", comment: "", rating: 0 });
   };
 
   const toggleAccordion = (index) => {
@@ -516,18 +369,14 @@ export default function ProductDetailsPage() {
 
   if (!product) return <div className="text-center py-20">Loading...</div>;
 
-  // Check if online exam should be shown
-  const hasOnlineExam =
-    exams.length > 0 || product.examPriceInr || product.examPriceUsd;
+  const hasOnlineExam = examPrices.priceInr > 0 || examPrices.priceUsd > 0;
 
   return (
     <div className="min-h-screen bg-white text-gray-800">
-      {/* Breadcrumbs */}
       <div className="container mx-auto px-4 pt-2 pb-3">
         <Breadcrumbs />
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10">
         {/* Left Column */}
         <div className="md:w-[40%]">
@@ -537,7 +386,6 @@ export default function ProductDetailsPage() {
             className="w-full rounded-xl object-contain shadow-md max-h-[400px]"
           />
 
-          {/* Features */}
           <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
             {[
               "Instant Download After Purchase",
@@ -566,29 +414,26 @@ export default function ProductDetailsPage() {
             Category: <strong>{product.category}</strong>
           </p>
 
-          {/* Exam Details if available */}
-          {!isLoadingExams && exams.length > 0 && (
+          {!isLoadingExams && hasOnlineExam && exams.length > 0 && (
             <div className="pt-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
               <p className="font-semibold text-sm md:text-base mb-2">
-                📚 Online Exams Available: {exams.length}
+                📚 Online Exam Available
               </p>
-              {exams.map((exam) => (
-                <div key={exam._id} className="text-xs md:text-sm">
-                  <p>
-                    <strong>Name:</strong> {exam.name || "Online Exam"}
-                  </p>
-                  <p>
-                    <strong>Duration:</strong> {exam.duration || 0} mins
-                  </p>
-                  <p>
-                    <strong>Passing Score:</strong> {exam.passingScore || "N/A"}
-                  </p>
-                </div>
-              ))}
+              <div className="text-xs md:text-sm">
+                <p>
+                  <strong>Name:</strong> {exams[0].name || "Online Exam"}
+                </p>
+                <p>
+                  <strong>Duration:</strong> {exams[0].duration || 0} mins
+                </p>
+                <p>
+                  <strong>Passing Score:</strong>{" "}
+                  {exams[0].passingScore || "N/A"}
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Ratings */}
           {avgRating && (
             <div className="flex items-center gap-2 flex-wrap">
               {[1, 2, 3, 4, 5].map((v) => (
@@ -609,12 +454,12 @@ export default function ProductDetailsPage() {
 
           {/* Pricing Sections */}
           <div className="mt-4 space-y-6">
-            {/* Regular PDF */}
+            {/* PDF Download */}
             {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
               <div className="flex flex-col md:flex-row md:justify-between gap-4 p-3 border rounded-lg bg-white shadow-sm">
                 <div className="w-full">
                   <p className="font-semibold text-base md:text-lg">
-                    Downloadable File
+                    📄 Downloadable PDF File
                   </p>
                   <p className="text-blue-600 font-bold text-sm md:text-base">
                     ₹{product.dumpsPriceInr ?? "N/A"}
@@ -641,14 +486,14 @@ export default function ProductDetailsPage() {
                           `${product.title}-Sample.pdf`
                         )
                       }
-                      className="bg-gray-800 text-white px-4 py-2 rounded text-sm"
+                      className="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-700"
                     >
                       Download Sample
                     </button>
                   )}
                   <button
                     onClick={() => handleAddToCart("regular")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm hover:shadow-lg"
                   >
                     🛒 Add to Cart
                   </button>
@@ -656,52 +501,39 @@ export default function ProductDetailsPage() {
               </div>
             )}
 
-            {/* Online Exam - Only show if prices exist */}
-            {hasOnlineExam && !isLoadingExams && exams.length > 0 && (
+            {/* Online Exam */}
+            {hasOnlineExam && !isLoadingExams && (
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4">
                 <div className="w-full">
                   <p className="font-semibold text-base mb-2">📝 Online Exam</p>
                   {exams[0] && (
-                    <>
-                      <p className="text-xs text-gray-600 mb-1">
-                        {exams[0].name || "Online Exam"}
-                      </p>
-                      <p className="text-blue-600 font-bold text-sm md:text-base">
-                        ₹
-                        {exams[0].priceINR ||
-                          exams[0].priceInr ||
-                          exams[0].price ||
-                          "N/A"}
-                        {(exams[0].mrpINR ||
-                          exams[0].mrpInr ||
-                          exams[0].mrp) && (
-                          <>
-                            <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
-                              ₹
-                              {exams[0].mrpINR ||
-                                exams[0].mrpInr ||
-                                exams[0].mrp}
-                            </span>
-                            <span className="text-gray-600 text-xs md:text-sm ml-1">
-                              (
-                              {calculateDiscount(
-                                exams[0].mrpINR ||
-                                  exams[0].mrpInr ||
-                                  exams[0].mrp,
-                                exams[0].priceINR ||
-                                  exams[0].priceInr ||
-                                  exams[0].price
-                              )}
-                              % off)
-                            </span>
-                          </>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Duration: {exams[0].duration || 0} mins | Questions:{" "}
-                        {exams[0].numberOfQuestions || 0}
-                      </p>
-                    </>
+                    <p className="text-xs text-gray-600 mb-1">
+                      {exams[0].name || "Online Exam"}
+                    </p>
+                  )}
+                  <p className="text-blue-600 font-bold text-sm md:text-base">
+                    ₹{examPrices.priceInr || "N/A"}
+                    {examPrices.mrpInr > 0 && (
+                      <>
+                        <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
+                          ₹{examPrices.mrpInr}
+                        </span>
+                        <span className="text-gray-600 text-xs md:text-sm ml-1">
+                          (
+                          {calculateDiscount(
+                            examPrices.mrpInr,
+                            examPrices.priceInr
+                          )}
+                          % off)
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  {exams[0] && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Duration: {exams[0].duration || 0} mins | Questions:{" "}
+                      {exams[0].numberOfQuestions || 0}
+                    </p>
                   )}
                 </div>
 
@@ -710,14 +542,14 @@ export default function ProductDetailsPage() {
                     onClick={() =>
                       router.push(`/exam/sample-instruction/${slug}`)
                     }
-                    className="bg-blue-600 text-white px-3 py-2 rounded text-sm"
+                    className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
                   >
                     Try Online Exam
                   </button>
 
                   <button
                     onClick={() => handleAddToCart("online")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm hover:shadow-lg"
                   >
                     🛒 Add to Cart
                   </button>
@@ -725,7 +557,7 @@ export default function ProductDetailsPage() {
               </div>
             )}
 
-            {/* Combo - Only show if online exam exists */}
+            {/* Combo */}
             {hasOnlineExam &&
               (product.comboPriceInr || product.comboPriceUsd) && (
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4">
@@ -738,13 +570,21 @@ export default function ProductDetailsPage() {
                       <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
                         ₹{product.comboMrpInr ?? "N/A"}
                       </span>
+                      <span className="text-gray-600 text-xs md:text-sm ml-1">
+                        (
+                        {calculateDiscount(
+                          product.comboMrpInr,
+                          product.comboPriceInr
+                        )}
+                        % off)
+                      </span>
                     </p>
                   </div>
 
                   <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
                     <button
                       onClick={() => handleAddToCart("combo")}
-                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm"
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm hover:shadow-lg"
                     >
                       🛒 Add to Cart
                     </button>
@@ -753,7 +593,6 @@ export default function ProductDetailsPage() {
               )}
           </div>
 
-          {/* Description */}
           <div className="mt-6">
             <h2 className="text-lg md:text-xl font-semibold mb-2">
               Description:
@@ -768,7 +607,6 @@ export default function ProductDetailsPage() {
         </div>
       </div>
 
-      {/* Long Description */}
       <div className="container mx-auto px-4 my-10">
         <h2 className="text-lg font-semibold mb-2">Detailed Overview:</h2>
         <div
@@ -779,7 +617,6 @@ export default function ProductDetailsPage() {
         />
       </div>
 
-      {/* Reviews */}
       <div className="container mx-auto px-4">
         <ReviewsSection
           reviews={reviews}
@@ -789,7 +626,6 @@ export default function ProductDetailsPage() {
         />
       </div>
 
-      {/* FAQs */}
       <div className="container mx-auto px-4">
         {product.faqs && product.faqs.length > 0 && (
           <FAQSection
@@ -800,7 +636,6 @@ export default function ProductDetailsPage() {
         )}
       </div>
 
-      {/* Related Products */}
       <div className="container mx-auto px-4">
         {relatedProducts.length > 0 && (
           <div className="mt-16">
@@ -833,7 +668,7 @@ export default function ProductDetailsPage() {
   );
 }
 
-/* --- Subcomponents --- */
+/* Subcomponents */
 function ReviewsSection({
   reviews,
   reviewForm,

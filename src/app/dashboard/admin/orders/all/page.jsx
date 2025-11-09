@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 const OrdersAll = () => {
   const [orders, setOrders] = useState([]);
@@ -49,12 +49,13 @@ const OrdersAll = () => {
       }
     } finally {
       setLoading(false);
-    }}
+    }
+  };
   const handleSelectAll = () => {
     if (selectedOrders.length === paginatedOrders.length) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(paginatedOrders.map(order => order._id));
+      setSelectedOrders(paginatedOrders.map((order) => order._id));
     }
   };
 
@@ -62,14 +63,14 @@ const OrdersAll = () => {
     if (selectedOrders.length === filteredOrders.length) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(filteredOrders.map(order => order._id));
+      setSelectedOrders(filteredOrders.map((order) => order._id));
     }
   };
 
   const handleDeleteOrders = async () => {
     try {
       setIsDeleting(true);
-      
+
       const response = await axios.delete("/api/order", {
         data: { orderIds: selectedOrders },
         withCredentials: true,
@@ -77,12 +78,12 @@ const OrdersAll = () => {
 
       if (response.data.success) {
         // Remove deleted orders from state
-        setOrders(prevOrders => 
-          prevOrders.filter(order => !selectedOrders.includes(order._id))
+        setOrders((prevOrders) =>
+          prevOrders.filter((order) => !selectedOrders.includes(order._id))
         );
         setSelectedOrders([]);
         setShowDeleteConfirm(false);
-        
+
         // Show success message
         alert(`${response.data.deletedCount} order(s) deleted successfully`);
       }
@@ -95,9 +96,9 @@ const OrdersAll = () => {
   };
 
   const handleSelectOrder = (orderId) => {
-    setSelectedOrders(prev => {
+    setSelectedOrders((prev) => {
       if (prev.includes(orderId)) {
-        return prev.filter(id => id !== orderId);
+        return prev.filter((id) => id !== orderId);
       } else {
         return [...prev, orderId];
       }
@@ -109,9 +110,10 @@ const OrdersAll = () => {
       setIsExporting(true);
 
       // Get orders to export (selected orders or all filtered orders if none selected)
-      const ordersToExport = selectedOrders.length > 0 
-        ? orders.filter(order => selectedOrders.includes(order._id))
-        : filteredOrders;
+      const ordersToExport =
+        selectedOrders.length > 0
+          ? orders.filter((order) => selectedOrders.includes(order._id))
+          : filteredOrders;
 
       if (ordersToExport.length === 0) {
         alert("No orders to export");
@@ -120,22 +122,32 @@ const OrdersAll = () => {
 
       // Prepare data for Excel
       const excelData = ordersToExport.map((order, index) => ({
-        'S.No': index + 1,
-        'Order Number': order.orderNumber || 'N/A',
-        'Customer Name': order.user?.name || 'N/A',
-        'Customer Email': order.user?.email || 'N/A',
-        'Total Amount': `₹${order.totalAmount?.toFixed(2) || '0.00'}`,
-        'Payment Method': order.paymentMethod || 'N/A',
-        'Payment ID': order.paymentId || 'N/A',
-        'Status': order.status || 'N/A',
-        'Purchase Date': new Date(order.purchaseDate || order.createdAt).toLocaleDateString(),
-        'Currency': order.currency || 'INR',
-        'Total Courses': order.courseDetails?.length || 0,
-        'Course Names': order.courseDetails?.map(c => c.name).join(', ') || 'N/A',
-        'Course Prices': order.courseDetails?.map(c => `₹${c.price?.toFixed(2)}`).join(', ') || 'N/A',
-        'SAP Exam Codes': order.courseDetails?.map(c => c.sapExamCode || 'N/A').join(', '),
-        'Categories': order.courseDetails?.map(c => c.category || 'N/A').join(', '),
-        'SKUs': order.courseDetails?.map(c => c.sku || 'N/A').join(', ')
+        "S.No": index + 1,
+        "Order Number": order.orderNumber || "N/A",
+        "Customer Name": order.user?.name || "N/A",
+        "Customer Email": order.user?.email || "N/A",
+        "Total Amount": `₹${order.totalAmount?.toFixed(2) || "0.00"}`,
+        "Payment Method": order.paymentMethod || "N/A",
+        "Payment ID": order.paymentId || "N/A",
+        Status: order.status || "N/A",
+        "Purchase Date": new Date(
+          order.purchaseDate || order.createdAt
+        ).toLocaleDateString(),
+        Currency: order.currency || "INR",
+        "Total Courses": order.courseDetails?.length || 0,
+        "Course Names":
+          order.courseDetails?.map((c) => c.name).join(", ") || "N/A",
+        "Course Prices":
+          order.courseDetails
+            ?.map((c) => `₹${c.price?.toFixed(2)}`)
+            .join(", ") || "N/A",
+        "SAP Exam Codes": order.courseDetails
+          ?.map((c) => c.sapExamCode || "N/A")
+          .join(", "),
+        Categories: order.courseDetails
+          ?.map((c) => c.category || "N/A")
+          .join(", "),
+        SKUs: order.courseDetails?.map((c) => c.sku || "N/A").join(", "),
       }));
 
       // Create workbook and worksheet
@@ -145,25 +157,26 @@ const OrdersAll = () => {
       // Auto-size columns
       const colWidths = [];
       const headers = Object.keys(excelData[0] || {});
-      
+
       headers.forEach((header, i) => {
         const maxLength = Math.max(
           header.length,
-          ...excelData.map(row => String(row[header] || '').length)
+          ...excelData.map((row) => String(row[header] || "").length)
         );
         colWidths[i] = { wch: Math.min(maxLength + 2, 50) };
       });
-      
-      ws['!cols'] = colWidths;
+
+      ws["!cols"] = colWidths;
 
       // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+      XLSX.utils.book_append_sheet(wb, ws, "Orders");
 
       // Generate filename with current date
-      const currentDate = new Date().toISOString().split('T')[0];
-      const filename = selectedOrders.length > 0 
-        ? `selected_orders_${currentDate}.xlsx`
-        : `all_orders_${currentDate}.xlsx`;
+      const currentDate = new Date().toISOString().split("T")[0];
+      const filename =
+        selectedOrders.length > 0
+          ? `selected_orders_${currentDate}.xlsx`
+          : `all_orders_${currentDate}.xlsx`;
 
       // Save file
       XLSX.writeFile(wb, filename);
@@ -171,7 +184,6 @@ const OrdersAll = () => {
       // Show success message
       const exportedCount = ordersToExport.length;
       alert(`Successfully exported ${exportedCount} order(s) to ${filename}`);
-      
     } catch (error) {
       console.error("Export failed:", error);
       alert("Failed to export orders. Please try again.");
@@ -223,7 +235,7 @@ const OrdersAll = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-sm">
+    <div className="p-6 pt-20 bg-white rounded-xl shadow-sm">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-semibold">All Orders</h2>
 
@@ -281,15 +293,16 @@ const OrdersAll = () => {
                   {selectedOrders.length} order(s) selected
                 </span>
               )}
-              
-              {filteredOrders.length > selectedOrders.length && selectedOrders.length > 0 && (
-                <button
-                  onClick={handleSelectAllFiltered}
-                  className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                >
-                  Select All Filtered ({filteredOrders.length})
-                </button>
-              )}
+
+              {filteredOrders.length > selectedOrders.length &&
+                selectedOrders.length > 0 && (
+                  <button
+                    onClick={handleSelectAllFiltered}
+                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                  >
+                    Select All Filtered ({filteredOrders.length})
+                  </button>
+                )}
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -305,7 +318,7 @@ const OrdersAll = () => {
                   </>
                 ) : (
                   <>
-                    📊 Export {selectedOrders.length > 0 ? 'Selected' : 'All'}
+                    📊 Export {selectedOrders.length > 0 ? "Selected" : "All"}
                   </>
                 )}
               </button>
@@ -337,7 +350,10 @@ const OrdersAll = () => {
                   <th className="px-4 py-2 border">
                     <input
                       type="checkbox"
-                      checked={selectedOrders.length === paginatedOrders.length && paginatedOrders.length > 0}
+                      checked={
+                        selectedOrders.length === paginatedOrders.length &&
+                        paginatedOrders.length > 0
+                      }
                       onChange={handleSelectAll}
                       className="w-4 h-4"
                     />
@@ -406,10 +422,7 @@ const OrdersAll = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="8"
-                      className="text-center py-4 text-gray-500"
-                    >
+                    <td colSpan="8" className="text-center py-4 text-gray-500">
                       No orders found
                     </td>
                   </tr>
@@ -423,11 +436,8 @@ const OrdersAll = () => {
             <div className="mt-6 flex justify-between items-center">
               <div>
                 Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(
-                  currentPage * itemsPerPage,
-                  filteredOrders.length
-                )}{" "}
-                of {filteredOrders.length} orders
+                {Math.min(currentPage * itemsPerPage, filteredOrders.length)} of{" "}
+                {filteredOrders.length} orders
               </div>
               <div className="flex gap-2">
                 <button
@@ -437,35 +447,32 @@ const OrdersAll = () => {
                 >
                   Previous
                 </button>
-                {Array.from(
-                  { length: Math.min(5, totalPages) },
-                  (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1 rounded ${
-                          currentPage === pageNum
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200"
-                        } hover:bg-gray-300`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
                   }
-                )}
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === pageNum
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200"
+                      } hover:bg-gray-300`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
@@ -485,7 +492,7 @@ const OrdersAll = () => {
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete {selectedOrders.length} order(s)? 
+              Are you sure you want to delete {selectedOrders.length} order(s)?
               This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">

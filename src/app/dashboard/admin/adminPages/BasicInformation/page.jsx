@@ -50,8 +50,8 @@ export default function BasicInformation() {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Update Basic Info</h2>
+    <div className="max-w-xl pt-20 mx-auto p-4">
+    <h2 className="text-2xl font-bold mb-4">Update Basic Info</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <input

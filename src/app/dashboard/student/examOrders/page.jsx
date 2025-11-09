@@ -21,16 +21,12 @@ const ExamCoursesPage = () => {
         }
 
         // Step 2: Extract courses and check if EXAM was purchased
-        const coursesMap = new Map(); // Use Map to deduplicate by productId
+        const coursesMap = new Map();
 
         for (const order of orders) {
           for (const course of order.courseDetails || []) {
             const purchaseType = course.type || "";
 
-            // IMPORTANT: Only show if user bought EXAM (online) or COMBO (not PDF/regular)
-            // type: "regular" = PDF only
-            // type: "online" = Exam only
-            // type: "combo" = Both PDF + Exam
             const hasExamAccess =
               purchaseType.toLowerCase() === "online" ||
               purchaseType.toLowerCase() === "combo";
@@ -42,7 +38,6 @@ const ExamCoursesPage = () => {
               continue;
             }
 
-            // Use productId as the unique key
             const productId = course.productId || course.courseId;
 
             if (!productId) {
@@ -50,60 +45,82 @@ const ExamCoursesPage = () => {
               continue;
             }
 
-            // Use slug from course if available, otherwise use productId as fallback
-            const slug = course.slug?.trim() || productId;
-
             try {
-              // Step 3: Try to fetch product details if slug is valid
+              // Step 3: ALWAYS fetch the product to get slug and latest data
               let product = null;
+              let slug = null;
 
-              // Only fetch if slug looks like a proper slug (not an ID)
-              if (course.slug?.trim()) {
+              // Try fetching by productId first (most reliable)
+              try {
+                console.log(`Fetching product by ID: ${productId}`);
+                const productResponse = await axios.get(
+                  `/api/products/${productId}`
+                );
+                product = productResponse.data?.data;
+                slug = product?.slug?.trim();
+
+                console.log(`Found product: ${product?.title}, slug: ${slug}`);
+              } catch (err) {
+                console.error(
+                  `Failed to fetch product for ID: ${productId}`,
+                  err.message
+                );
+              }
+
+              // If product fetch failed, try by slug as fallback (if exists)
+              if (!product && course.slug?.trim()) {
                 try {
+                  console.log(`Trying to fetch by slug: ${course.slug}`);
                   const productResponse = await axios.get(
                     `/api/products/get-by-slug/${course.slug}`
                   );
                   product = productResponse.data?.data;
+                  slug = product?.slug?.trim();
                 } catch (err) {
                   console.log(`Product not found for slug: ${course.slug}`);
                 }
               }
 
-              // Check if this product already exists in our map
-              const existingCourse = coursesMap.get(productId);
+              // Skip course if we couldn't get product or slug
+              if (!product || !slug) {
+                console.warn(
+                  `⚠️ Skipping course "${course.name}" - Product not found or missing slug (ID: ${productId})`
+                );
+                continue;
+              }
 
-              // Priority: combo > online > regular
-              const typePriority = { combo: 3, online: 2, regular: 1 };
-              const currentPriority =
-                typePriority[purchaseType.toLowerCase()] || 0;
-              const existingPriority = existingCourse
-                ? typePriority[existingCourse.purchaseType.toLowerCase()] || 0
-                : 0;
+              // Create a unique key combining productId and purchaseType
+              const uniqueKey = `${productId}-${purchaseType.toLowerCase()}`;
 
-              // Only add/update if this is a new course or has higher priority
-              if (!existingCourse || currentPriority > existingPriority) {
+              // Check if this specific combination already exists
+              const existingCourse = coursesMap.get(uniqueKey);
+
+              if (!existingCourse) {
                 const courseData = {
-                  name: product?.title || course.name || "Unknown Course",
+                  name: product.title || course.name || "Unknown Course",
                   slug: slug,
-                  productId: product?._id || productId,
-                  examCode: product?.sapExamCode || course.code || "N/A",
+                  productId: product._id || productId,
+                  examCode: product.sapExamCode || course.code || "N/A",
                   purchaseDate: order.purchaseDate,
                   purchaseType: purchaseType,
-                  category: product?.category || "",
-                  imageUrl: product?.imageUrl || course.imageUrl || "",
+                  category: product.category || "",
+                  imageUrl: product.imageUrl || course.imageUrl || "",
                   expiryDate: course.expiryDate || order.expiryDate,
                 };
 
-                coursesMap.set(productId, courseData);
+                console.log(
+                  `✅ Added course: ${courseData.name} with type: ${courseData.purchaseType} and slug: ${courseData.slug}`
+                );
+                coursesMap.set(uniqueKey, courseData);
               }
             } catch (err) {
-              console.log(`Error processing course: ${course.name}`, err);
+              console.error(`Error processing course: ${course.name}`, err);
             }
           }
         }
 
-        // Convert Map to Array
         const coursesWithExams = Array.from(coursesMap.values());
+        console.log(`Total exam courses found: ${coursesWithExams.length}`);
         setExamCourses(coursesWithExams);
       } catch (err) {
         console.error("Error fetching courses:", err);

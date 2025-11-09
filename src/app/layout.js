@@ -125,7 +125,7 @@ export const viewport = {
   themeColor: "#13677c",
 };
 
-// ✅ OPTIMIZED: Root Layout
+// ✅ OPTIMIZED: Root Layout with Sticky Navbar
 export default function RootLayout({ children }) {
   return (
     <html
@@ -233,21 +233,26 @@ export default function RootLayout({ children }) {
       </head>
 
       <body
-        className={`${inter.className} antialiased bg-white`}
+        className={`${inter.className} antialiased bg-white min-h-screen flex flex-col`}
         suppressHydrationWarning
       >
         {/* ✅ Skip to main content (accessibility) */}
-        <a href="#main-content" className="sr-only focus:not-sr-only">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded"
+        >
           Skip to main content
         </a>
 
         {/* ✅ Providers with error boundary */}
         <Providers>
-          {/* ✅ Navbar - Fixed, not lazy loaded (critical for UX) */}
-          <Navbar />
+          {/* ✅ STICKY NAVBAR - Fixed at top, z-index ensures it's above content */}
+          <header className="sticky top-0 z-50 w-full">
+            <Navbar />
+          </header>
 
-          {/* ✅ Main content area */}
-          <main id="main-content" className="flex-1">
+          {/* ✅ Main content area with proper spacing for sticky navbar */}
+          <main id="main-content" className="flex-1 w-full">
             {children}
           </main>
 

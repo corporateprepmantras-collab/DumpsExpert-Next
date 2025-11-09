@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import RichTextEditor from "../../../../../components/public/RichTextEditor"
+import RichTextEditor from "../../../../../components/public/RichTextEditor";
 const ProductForm = ({ mode }) => {
   // Next.js navigation hooks
   const params = useParams();
@@ -184,7 +184,7 @@ const ProductForm = ({ mode }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded shadow">
+    <div className="max-w-4xl pt-20 mx-auto p-6 bg-white rounded shadow">
       {/* Form Header */}
       <h2 className="text-xl font-bold mb-4">
         {mode === "add" ? "Add New Product" : "Edit Product"}
@@ -353,92 +353,95 @@ const ProductForm = ({ mode }) => {
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold mb-3">File Uploads</h3>
           <div className="grid grid-cols-2 gap 4">
-          {/* Product Image */}
-          <div className="mb-4">
-            <label className="block mb-2 font-medium">Product Image</label>
-            {mode === "edit" && existingFiles.imageUrl && (
-              <div className="mb-2">
-                <img
-                  src={existingFiles.imageUrl}
-                  alt="Current product"
-                  className="w-32 h-32 object-contain border rounded"
-                />
-                <p className="text-sm text-gray-500 mt-1">Current Image</p>
-              </div>
-            )}
-            <input
-              type="file"
-              name="image"
-              accept="image/*"
-              onChange={handleChange}
-              className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-              required={mode === "add"}
-            />
-          </div>
+            {/* Product Image */}
+            <div className="mb-4">
+              <label className="block mb-2 font-medium">Product Image</label>
+              {mode === "edit" && existingFiles.imageUrl && (
+                <div className="mb-2">
+                  <img
+                    src={existingFiles.imageUrl}
+                    alt="Current product"
+                    className="w-32 h-32 object-contain border rounded"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">Current Image</p>
+                </div>
+              )}
+              <input
+                type="file"
+                name="image"
+                accept="image/*"
+                onChange={handleChange}
+                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                required={mode === "add"}
+              />
+            </div>
 
-          {/* Sample PDF */}
-          <div className="mb-4">
-            <label className="block mb-2 font-medium">Sample PDF</label>
-            {mode === "edit" && existingFiles.samplePdfUrl && (
-              <div className="mb-2">
-                <a
-                  href={existingFiles.samplePdfUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  View Current Sample PDF
-                </a>
-              </div>
-            )}
-            <input
-              type="file"
-              name="samplePdf"
-              accept="application/pdf"
-              onChange={handleChange}
-              className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-            />
-          </div>
+            {/* Sample PDF */}
+            <div className="mb-4">
+              <label className="block mb-2 font-medium">Sample PDF</label>
+              {mode === "edit" && existingFiles.samplePdfUrl && (
+                <div className="mb-2">
+                  <a
+                    href={existingFiles.samplePdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View Current Sample PDF
+                  </a>
+                </div>
+              )}
+              <input
+                type="file"
+                name="samplePdf"
+                accept="application/pdf"
+                onChange={handleChange}
+                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+              />
+            </div>
 
-          {/* Main PDF */}
-          <div className="mb-4">
-            <label className="block mb-2 font-medium">Main PDF</label>
-            {mode === "edit" && existingFiles.mainPdfUrl && (
-              <div className="mb-2">
-                <a
-                  href={existingFiles.mainPdfUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  View Current Main PDF
-                </a>
-              </div>
-            )}
-            <input
-              type="file"
-              name="mainPdf"
-              accept="application/pdf"
-              onChange={handleChange}
-              className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-            />
+            {/* Main PDF */}
+            <div className="mb-4">
+              <label className="block mb-2 font-medium">Main PDF</label>
+              {mode === "edit" && existingFiles.mainPdfUrl && (
+                <div className="mb-2">
+                  <a
+                    href={existingFiles.mainPdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View Current Main PDF
+                  </a>
+                </div>
+              )}
+              <input
+                type="file"
+                name="mainPdf"
+                accept="application/pdf"
+                onChange={handleChange}
+                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+              />
+            </div>
           </div>
-          </div>
-
         </div>
 
         {/* Custom Rich Text Editors */}
         <RichTextEditor
           label="Description"
           value={form.Description}
-          onChange={(value) => setForm(prev => ({ ...prev, Description: value }))}
+          onChange={(value) =>
+            setForm((prev) => ({ ...prev, Description: value }))
+          }
           error={""}
         />
-        
+
         <RichTextEditor
           label="Long Description"
           value={form.longDescription}
-          onChange={(value) => setForm(prev => ({ ...prev, longDescription: value }))}
+          onChange={(value) =>
+            setForm((prev) => ({ ...prev, longDescription: value }))
+          }
           error={""}
         />
 
@@ -549,9 +552,5 @@ const ProductForm = ({ mode }) => {
 
 // Custom Rich Text Editor Component
 // Custom Rich Text Editor Component
-
-
-
-
 
 export default ProductForm;

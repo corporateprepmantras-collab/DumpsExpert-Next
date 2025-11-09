@@ -41,7 +41,7 @@ const ProductList = () => {
   );
 
   return (
-    <div className="p-6 bg-white min-h-screen">
+    <div className="p-6 pt-20 bg-white min-h-screen">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Products</h2>
         <div className="flex items-center gap-2">

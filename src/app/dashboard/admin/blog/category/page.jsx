@@ -145,8 +145,8 @@ const CategoryPage = () => {
     p.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  return (
-    <div className="container flex flex-col items-center mx-auto p-4">
+return (
+    <div className="container pt-20 flex flex-col items-center mx-auto p-4">
       <Toaster position="top-right" />
       <h1 className="text-xl font-bold mb-4">Category Management</h1>
 

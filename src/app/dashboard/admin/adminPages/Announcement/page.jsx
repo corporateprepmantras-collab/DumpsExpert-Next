@@ -55,10 +55,10 @@ const Announcement = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-xl space-y-6 mt-10">
+    <div className="max-w-2xl pt-20 mx-auto p-6 bg-white shadow-lg rounded-xl space-y-6 ">
       <h2 className="text-lg font-semibold">Update Announcement Popup</h2>
 
-      {/* Toggle */}
+    {/* Toggle */}
       <div className="flex items-center justify-between">
         <label className="font-semibold">
           Announcement Popup <span className="text-red-500">*</span>

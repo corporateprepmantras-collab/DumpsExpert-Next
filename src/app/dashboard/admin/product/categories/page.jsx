@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -227,7 +228,7 @@ export default function ProductCategories() {
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 pt-20 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6">Manage Product Categories</h1>
 
       {/* ✅ Form */}

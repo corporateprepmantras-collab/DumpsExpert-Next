@@ -31,7 +31,7 @@ const AdminContacts = () => {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6 mt-20">
       <h2 className="text-3xl font-bold mb-6">📩 Contact Messages</h2>
 
       {messages.length === 0 ? (

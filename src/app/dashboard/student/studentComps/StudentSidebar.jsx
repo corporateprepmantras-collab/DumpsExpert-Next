@@ -57,7 +57,7 @@ export default function StudentSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 pt-20 min-h-screen bg-white p-2 shadow-md">
+    <aside className="w-64 pt-10 min-h-screen bg-white p-2 shadow-md">
       <h2 className="text-2xl font-bold text-center mb-6">🎓 Student Panel</h2>
       <nav className="flex flex-col gap-2">
         {menuItems.map((item, i) => (

@@ -351,10 +351,6 @@ const sidebarItems = [
             to: "/dashboard/admin/adminPages/refund-policy",
           },
           {
-            label: "Contact Messages",
-            to: "/dashboard/admin/adminPages/contactMessages",
-          },
-          {
             label: "Trending Section",
             to: "/dashboard/admin/adminPages/Trending",
           },

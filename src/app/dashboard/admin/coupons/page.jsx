@@ -149,23 +149,26 @@ const CouponManagement = () => {
   const calculateDiscount = (coupon, subtotal) => {
     let discountAmount = 0;
     let percentage = 0;
-    
+
     if (coupon.discountType === "percentage") {
       percentage = coupon.discount;
-    } else if (coupon.discountType === "fixed_inr" || coupon.discountType === "fixed_usd") {
+    } else if (
+      coupon.discountType === "fixed_inr" ||
+      coupon.discountType === "fixed_usd"
+    ) {
       // Convert fixed amount to equivalent percentage
       percentage = (coupon.discount / subtotal) * 100;
     }
-    
+
     discountAmount = (subtotal * percentage) / 100;
     return {
       amount: discountAmount,
-      percentage: percentage.toFixed(2)
+      percentage: percentage.toFixed(2),
     };
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 pt-20 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Coupon Management</h1>
@@ -189,7 +192,9 @@ const CouponManagement = () => {
               <th className="px-6 py-4 text-left">Max Use Limit</th>
               <th className="px-6 py-4 text-left">Start Date</th>
               <th className="px-6 py-4 text-left">End Date</th>
-              <th className="px-6 py-4 text-left">Discount Amount (on ₹{subtotal})</th>
+              <th className="px-6 py-4 text-left">
+                Discount Amount (on ₹{subtotal})
+              </th>
               <th className="px-6 py-4 text-left">Actions</th>
             </tr>
           </thead>
@@ -208,7 +213,10 @@ const CouponManagement = () => {
               </tr>
             ) : (
               coupons.map((coupon) => (
-                <tr key={coupon._id} className="hover:bg-gray-50 transition border-b">
+                <tr
+                  key={coupon._id}
+                  className="hover:bg-gray-50 transition border-b"
+                >
                   <td className="px-6 py-4">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
@@ -345,7 +353,9 @@ const CouponManagement = () => {
                   placeholder="Enter max use limit"
                 />
                 {errors.maxUseLimit && (
-                  <p className="text-red-500 text-xs mt-1">{errors.maxUseLimit}</p>
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.maxUseLimit}
+                  </p>
                 )}
               </div>
 
@@ -362,7 +372,9 @@ const CouponManagement = () => {
                   className="w-full border rounded-md px-3 py-2"
                 />
                 {errors.startDate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.startDate}
+                  </p>
                 )}
               </div>
 
@@ -388,7 +400,9 @@ const CouponManagement = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Coupon Code
                   </label>
-                  <p className="text-gray-600 font-mono">{editingCoupon.code}</p>
+                  <p className="text-gray-600 font-mono">
+                    {editingCoupon.code}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Coupon code is auto-generated and cannot be changed.
                   </p>
