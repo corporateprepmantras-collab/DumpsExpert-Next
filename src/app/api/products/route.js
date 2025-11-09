@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Product from "@/models/productListSchema";
-import { uploadImageToCloudinary, uploadPdfToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
+import {
+  uploadImageToCloudinary,
+  uploadPdfToCloudinary,
+  deleteFromCloudinary,
+} from "@/lib/cloudinary";
 import Order from "@/models/orderSchema";
 import { sendOrderUpdateEmail } from "@/lib/email/orderEmails";
 import mongoose from "mongoose";
+import { serializeMongoArray, serializeMongoDoc } from "@/lib/mongoHelpers";
 
 // Define authUsers model
 const authUserModel =
@@ -31,7 +36,9 @@ async function parseFormData(req) {
     if (value instanceof File) {
       if (value.size > 0) {
         data[key] = value;
-        console.log(`✅ File added: ${key}, Size: ${value.size}, Name: ${value.name}`);
+        console.log(
+          `✅ File added: ${key}, Size: ${value.size}, Name: ${value.name}`
+        );
       } else {
         console.log(`⚠️ File skipped (empty): ${key}`);
       }
@@ -54,21 +61,21 @@ async function parseFormData(req) {
 // Handle file uploads
 async function handleFileUploads(data, existingProduct = null) {
   const uploads = {};
-  
+
   // image → uploadImageToCloudinary
   // samplePdf, mainPdf → uploadPdfToCloudinary
   const fileConfig = {
-    image: { handler: uploadImageToCloudinary, type: 'image' },
-    samplePdf: { handler: uploadPdfToCloudinary, type: 'pdf' },
-    mainPdf: { handler: uploadPdfToCloudinary, type: 'pdf' },
+    image: { handler: uploadImageToCloudinary, type: "image" },
+    samplePdf: { handler: uploadPdfToCloudinary, type: "pdf" },
+    mainPdf: { handler: uploadPdfToCloudinary, type: "pdf" },
   };
 
   for (const [field, config] of Object.entries(fileConfig)) {
     console.log(`\n🔍 Checking ${field}...`);
-    
+
     if (data[field] && data[field].size > 0) {
       console.log(`📤 Uploading ${field} as ${config.type}...`);
-      
+
       try {
         // Delete old file if exists
         if (existingProduct && existingProduct[`${field}Url`]) {
@@ -85,7 +92,7 @@ async function handleFileUploads(data, existingProduct = null) {
         // Upload using appropriate handler
         const result = await config.handler(buffer);
         uploads[`${field}Url`] = result.secure_url;
-        
+
         console.log(`✅ ${field} uploaded successfully!`);
         console.log(`🔗 URL: ${result.secure_url}`);
       } catch (error) {
@@ -95,7 +102,7 @@ async function handleFileUploads(data, existingProduct = null) {
     } else {
       console.log(`⏭️ Skipping ${field} - no file provided`);
     }
-    
+
     // Remove file from data after processing
     delete data[field];
   }
@@ -104,6 +111,8 @@ async function handleFileUploads(data, existingProduct = null) {
 }
 
 // GET /api/products
+
+// Update the GET method:
 export async function GET(req) {
   try {
     await connectMongoDB();
@@ -112,8 +121,8 @@ export async function GET(req) {
     const searchQuery = searchParams.get("q");
 
     if (id) {
-      const product = await Product.findById(id);
-      return NextResponse.json({ data: product });
+      const product = await Product.findById(id).lean();
+      return NextResponse.json({ data: serializeMongoDoc(product) });
     }
 
     if (searchQuery) {
@@ -127,38 +136,37 @@ export async function GET(req) {
       }).lean();
 
       return NextResponse.json({
-        data: products,
+        data: serializeMongoArray(products),
         total: products.length,
       });
     }
 
     const products = await Product.find().lean();
     return NextResponse.json({
-      data: products,
+      data: serializeMongoArray(products),
       total: products.length,
     });
   } catch (error) {
-    console.error("GET Error:", error);
+    console.error("❌ /api/products GET error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
       { status: 500 }
     );
   }
 }
-
 // POST /api/products - Create new product
 export async function POST(req) {
   try {
     console.log("\n🚀 POST /api/products - Creating new product");
     await connectMongoDB();
-    
+
     const data = await parseFormData(req);
 
     // Handle file uploads
     const uploads = await handleFileUploads(data);
 
     const productData = { ...data, ...uploads, faqs: data.faqs || [] };
-    
+
     console.log("\n📝 Creating product with data...");
     const newProduct = new Product(productData);
     await newProduct.save();
@@ -184,10 +192,10 @@ export async function PUT(req) {
   try {
     console.log("\n🚀 PUT /api/products - Updating product");
     await connectMongoDB();
-    
+
     const data = await parseFormData(req);
     const id = data._id;
-    
+
     if (!id) {
       return NextResponse.json(
         { message: "Product ID is required" },
@@ -223,9 +231,15 @@ export async function PUT(req) {
     console.log("🔍 Checking PDF changes...");
     console.log("Old mainPdfUrl:", existingProduct.mainPdfUrl);
     console.log("New mainPdfUrl:", updatedProduct.mainPdfUrl);
-    console.log("Changed?:", existingProduct.mainPdfUrl !== updatedProduct.mainPdfUrl);
-    
-    if (existingProduct.mainPdfUrl !== updatedProduct.mainPdfUrl && updatedProduct.mainPdfUrl) {
+    console.log(
+      "Changed?:",
+      existingProduct.mainPdfUrl !== updatedProduct.mainPdfUrl
+    );
+
+    if (
+      existingProduct.mainPdfUrl !== updatedProduct.mainPdfUrl &&
+      updatedProduct.mainPdfUrl
+    ) {
       console.log("\n🔄 PDF URL changed! Finding affected orders...");
 
       try {
@@ -233,21 +247,25 @@ export async function PUT(req) {
           "courseDetails.productId": id,
         });
 
-        console.log(`📦 Found ${affectedOrders.length} orders with this product`);
+        console.log(
+          `📦 Found ${affectedOrders.length} orders with this product`
+        );
 
         // Send email to each user
         for (const order of affectedOrders) {
           try {
             const authUser = await authUserModel.findById(order.user);
-            
+
             if (authUser) {
               console.log("📧 Sending update email to:", authUser.email);
-              
-              const pdfChanges = [{
-                courseName: updatedProduct.title || updatedProduct.name,
-                oldUrl: existingProduct.mainPdfUrl,
-                newUrl: updatedProduct.mainPdfUrl,
-              }];
+
+              const pdfChanges = [
+                {
+                  courseName: updatedProduct.title || updatedProduct.name,
+                  oldUrl: existingProduct.mainPdfUrl,
+                  newUrl: updatedProduct.mainPdfUrl,
+                },
+              ];
 
               await sendOrderUpdateEmail({
                 userEmail: authUser.email,
@@ -282,7 +300,10 @@ export async function PUT(req) {
           console.log(`✅ Updated PDF URL in ${affectedOrders.length} orders`);
         }
       } catch (notificationError) {
-        console.error("❌ Error sending notifications:", notificationError.message);
+        console.error(
+          "❌ Error sending notifications:",
+          notificationError.message
+        );
       }
     }
 
@@ -306,10 +327,10 @@ export async function DELETE(req) {
   try {
     console.log("\n🚀 DELETE /api/products");
     await connectMongoDB();
-    
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    
+
     if (!id) {
       return NextResponse.json(
         { message: "Product ID is required" },
@@ -337,7 +358,7 @@ export async function DELETE(req) {
 
     await Product.findByIdAndDelete(id);
     console.log("✅ Product deleted successfully!");
-    
+
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("DELETE Error:", error);

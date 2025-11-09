@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import Trending from "@/models/trendingSchema";
+import { serializeMongoArray, serializeMongoDoc } from "@/lib/mongoHelpers";
 
 // ✅ GET → Fetch all trending certifications
 export async function GET() {
   try {
     await connectMongoDB();
-    const items = await Trending.find().sort({ createdAt: -1 });
-    return NextResponse.json(items);
+    const items = await Trending.find().sort({ createdAt: -1 }).lean();
+
+    return NextResponse.json(serializeMongoArray(items));
   } catch (error) {
+    console.error("❌ /api/trending error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -24,11 +27,14 @@ export async function POST(request) {
     }
 
     const newItem = await Trending.create({ title });
+    const serialized = serializeMongoDoc(newItem.toObject());
+
     return NextResponse.json(
-      { message: "Certification added successfully", data: newItem },
+      { message: "Certification added successfully", data: serialized },
       { status: 201 }
     );
   } catch (error) {
+    console.error("❌ /api/trending POST error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -47,12 +53,16 @@ export async function DELETE(request) {
 
     const item = await Trending.findById(id);
     if (!item) {
-      return NextResponse.json({ error: "Certification not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Certification not found" },
+        { status: 404 }
+      );
     }
 
     await Trending.findByIdAndDelete(id);
     return NextResponse.json({ message: "Certification deleted successfully" });
   } catch (error) {
+    console.error("❌ /api/trending DELETE error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

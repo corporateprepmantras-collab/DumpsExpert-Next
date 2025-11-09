@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
 import BlogCategory from "@/models/blogCategorySchema";
 import { uploadToCloudinaryBlog } from "@/lib/cloudinary";
+import { serializeMongoArray, serializeMongoDoc } from "@/lib/mongoHelpers";
 
 export async function GET(request) {
   try {
@@ -19,9 +20,13 @@ export async function GET(request) {
       ];
     }
 
-    const categories = await BlogCategory.find(query).sort({ createdAt: -1 });
-    return NextResponse.json({ data: categories });
+    const categories = await BlogCategory.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json({ data: serializeMongoArray(categories) });
   } catch (error) {
+    console.error("❌ /api/blogs/blog-categories error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -72,8 +77,12 @@ export async function POST(request) {
     const category = new BlogCategory(categoryData);
     await category.save();
 
-    return NextResponse.json({ data: category }, { status: 201 });
+    return NextResponse.json(
+      { data: serializeMongoDoc(category.toObject()) },
+      { status: 201 }
+    );
   } catch (error) {
+    console.error("❌ /api/blogs/blog-categories POST error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

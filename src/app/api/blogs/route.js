@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { connectMongoDB } from "@/lib/mongo";
-import { Blog, BlogCategory } from "@/models";
+import { Blog } from "@/models";
 import { uploadToCloudinaryBlog } from "@/lib/cloudinary";
+import { serializeMongoArray, serializeMongoDoc } from "@/lib/mongoHelpers";
 
 export async function GET(request) {
   try {
@@ -29,21 +30,23 @@ export async function GET(request) {
     }
 
     const blogs = await Blog.find(query)
-      .populate("category", "sectionName category") // yahan populate laga rahe hain
+      .populate("category", "sectionName category")
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const total = await Blog.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
-      data: blogs,
+      data: serializeMongoArray(blogs),
       totalPages,
       currentPage: page,
       total,
     });
   } catch (error) {
+    console.error("❌ /api/blogs error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -92,8 +95,12 @@ export async function POST(request) {
     const blog = new Blog(blogData);
     await blog.save();
 
-    return NextResponse.json({ data: blog }, { status: 201 });
+    return NextResponse.json(
+      { data: serializeMongoDoc(blog.toObject()) },
+      { status: 201 }
+    );
   } catch (error) {
+    console.error("❌ /api/blogs POST error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
