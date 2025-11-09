@@ -2,17 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, X, Wifi, WifiOff, AlertCircle } from "lucide-react";
+import { Check, X, WifiOff, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import banner from "@/assets/landingassets/banner.webp";
 
-// ✅ Lazy load components ONLY after data loads
+// ✅ Lazy load components
 const BlogSection = dynamic(() => import("@/landingpage/BlogSection"), {
   loading: () => <div className="h-64 bg-gray-50 animate-pulse rounded-lg" />,
   ssr: false,
 });
-//update homepage check
 
 const ExamDumpsSlider = dynamic(() => import("@/landingpage/ExamDumpsSlider"), {
   loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded-lg" />,
@@ -60,71 +59,9 @@ export default function HomePage({
   products = [],
   announcement = null,
 }) {
-  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const [dataSource, setDataSource] = useState(null);
   const [showDebug, setShowDebug] = useState(false);
-
-  // ✅ Check if all data is loaded
-  useEffect(() => {
-    // Wait for all critical data
-    const hasAllData =
-      Object.keys(seo).length > 0 &&
-      dumps.length > 0 &&
-      categories.length > 0 &&
-      blogs.length > 0 &&
-      faqs.length > 0;
-
-    if (hasAllData) {
-      console.log("✅ ALL DATA LOADED - Showing page");
-      setIsLoading(false);
-    } else {
-      console.log("⏳ Waiting for data...", {
-        seo: Object.keys(seo).length,
-        dumps: dumps.length,
-        categories: categories.length,
-        blogs: blogs.length,
-        faqs: faqs.length,
-      });
-      // Don't set loading to true if already showing something
-      if (isLoading) {
-        setIsLoading(true);
-      }
-    }
-  }, [seo, dumps, categories, blogs, faqs, isLoading]);
-
-  // ✅ Detect data source
-  useEffect(() => {
-    const checkDataSource = () => {
-      const hasCachedSEO = localStorage.getItem("pm_seo");
-      const hasCachedDumps = localStorage.getItem("pm_dumps");
-
-      if (hasCachedSEO || hasCachedDumps) {
-        try {
-          const seoCache = JSON.parse(localStorage.getItem("pm_seo") || "{}");
-          const now = Date.now();
-          const cacheAge = now - (seoCache.timestamp || 0);
-
-          if (cacheAge < 5 * 60 * 1000) {
-            setDataSource("cache");
-            console.log("📦 Data from CACHE");
-          } else {
-            setDataSource("api");
-            console.log("🌐 Data from API (cache expired)");
-          }
-        } catch {
-          setDataSource("api");
-          console.log("🌐 Data from API (cache error)");
-        }
-      } else {
-        setDataSource("api");
-        console.log("🌐 Data from API (no cache)");
-      }
-    };
-
-    checkDataSource();
-  }, []);
 
   // ✅ Online/Offline detection
   useEffect(() => {
@@ -169,6 +106,7 @@ export default function HomePage({
       localStorage.removeItem("pm_content2");
       localStorage.removeItem("pm_products");
       localStorage.removeItem("pm_announcement");
+      localStorage.removeItem("announcementShownAt");
       console.log("🧹 Cache cleared!");
       window.location.reload();
     }
@@ -190,39 +128,19 @@ export default function HomePage({
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showDebug]);
 
-  // ✅ SHOW LOADING SCREEN UNTIL ALL DATA LOADS
-  if (isLoading) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="mb-6 flex justify-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600"></div>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading...</h2>
-          <p className="text-gray-600 mb-4">
-            Preparing your certification prep materials
-          </p>
-
-          {/* Show what's loading */}
-          <div className="text-sm text-gray-500 max-w-md mx-auto">
-            <div className="mb-2">
-              {Object.keys(seo).length > 0 ? "✓" : "⏳"} SEO Data
-            </div>
-            <div className="mb-2">
-              {dumps.length > 0 ? "✓" : "⏳"} Certification Dumps
-            </div>
-            <div className="mb-2">
-              {categories.length > 0 ? "✓" : "⏳"} Blog Categories
-            </div>
-            <div className="mb-2">
-              {blogs.length > 0 ? "✓" : "⏳"} Blog Posts
-            </div>
-            <div className="mb-2">{faqs.length > 0 ? "✓" : "⏳"} FAQs</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ✅ Log what data we received (only in development)
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("📊 HomePage received data:", {
+        seo: Object.keys(seo).length,
+        dumps: dumps.length,
+        categories: categories.length,
+        blogs: blogs.length,
+        faqs: faqs.length,
+        products: products.length,
+      });
+    }
+  }, []);
 
   return (
     <>
@@ -311,35 +229,11 @@ export default function HomePage({
                   : "✗ Empty"}
               </span>
             </div>
-
-            <div className="pt-2 border-t border-gray-700">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Cache Status:</span>
-                <span className="text-blue-400">{dataSource || "Unknown"}</span>
-              </div>
-            </div>
           </div>
 
           <div className="mt-3 pt-3 border-t border-gray-700 text-gray-400 text-[10px]">
             Press Ctrl+Shift+B to close
           </div>
-        </div>
-      )}
-
-      {/* ---------- Data Source Indicator ---------- */}
-      {dataSource && (
-        <div className="fixed top-4 left-4 z-40 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 text-xs">
-          {dataSource === "cache" ? (
-            <>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-gray-600">Cached</span>
-            </>
-          ) : (
-            <>
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-600">Fresh</span>
-            </>
-          )}
         </div>
       )}
 

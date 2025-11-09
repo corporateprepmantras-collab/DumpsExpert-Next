@@ -1,30 +1,16 @@
-// app/page.jsx
-// ✅ FINAL CORRECT VERSION - WITH PROPER CACHING
-
 import HomePage from "@/components/HomePage";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
 
-// ============================================
-// IMPORTANT: Caching runs on CLIENT SIDE
-// But this is a SERVER component
-// So we can't use localStorage here directly
-// Instead, cache is handled via HTTP headers + browser cache
-// ============================================
-
-// ✅ Proper server-side fetching with cache headers
+// ✅ Server-side fetching with proper error handling
 async function fetchWithHeaders(endpoint) {
   const url = `${BASE_URL}${endpoint}`;
 
-  console.log(`📡 Server fetching: ${url}`);
-
   try {
     const response = await fetch(url, {
-      // These headers tell Next.js and the browser to cache the response
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
-      // Don't use no-store - we WANT caching
       next: { revalidate: 300 }, // ISR: revalidate every 5 minutes
     });
 
@@ -34,7 +20,6 @@ async function fetchWithHeaders(endpoint) {
     }
 
     const data = await response.json();
-    console.log(`✅ Fetched: ${endpoint}`);
     return data;
   } catch (error) {
     console.error(`❌ Fetch failed: ${endpoint}`, error);
@@ -42,7 +27,7 @@ async function fetchWithHeaders(endpoint) {
   }
 }
 
-// ✅ Data fetchers
+// ✅ Data fetchers with fallbacks
 async function fetchSEO() {
   const data = await fetchWithHeaders("/api/seo/home");
   return data?.data || data || {};
@@ -68,12 +53,10 @@ async function fetchCategories() {
 
 async function fetchBlogs() {
   const data = await fetchWithHeaders("/api/blogs");
-
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.blogs)) return data.blogs;
   if (Array.isArray(data?.data)) return data.data;
   if (data?.data && Array.isArray(data.data?.blogs)) return data.data.blogs;
-
   return [];
 }
 
@@ -134,11 +117,9 @@ export async function generateMetadata() {
     description: description || defaultDescription,
     keywords:
       keywords || "IT certification, exam dumps, prepmantras, practice tests",
-
     alternates: {
       canonical: canonicalurl || "https://prepmantras.com/",
     },
-
     openGraph: {
       title: ogtitle || title || defaultTitle,
       description: ogdescription || description || defaultDescription,
@@ -155,7 +136,6 @@ export async function generateMetadata() {
       locale: "en_US",
       type: "website",
     },
-
     twitter: {
       card: "summary_large_image",
       title: twittertitle || title || defaultTitle,
@@ -163,7 +143,6 @@ export async function generateMetadata() {
       images: [twitterimage || ogimage || "/default-og.jpg"],
       creator: "@prepmantras",
     },
-
     ...(schema && {
       other: {
         "application/ld+json": JSON.stringify(JSON.parse(schema)),
@@ -172,15 +151,15 @@ export async function generateMetadata() {
   };
 }
 
-// ✅ Main Page - Fetch all data in parallel
+// ✅ Main Page Component
 export default async function Page() {
-  console.log("\n\n═══════════════════════════════════════");
+  console.log("\n═══════════════════════════════════════");
   console.log("🚀 PAGE BUILD START");
   console.log("═══════════════════════════════════════\n");
 
   const startTime = Date.now();
 
-  // ✅ Fetch all 9 APIs in parallel
+  // ✅ Fetch all APIs in parallel
   const [
     seo,
     dumps,
@@ -208,7 +187,7 @@ export default async function Page() {
   console.log("═══════════════════════════════════════");
   console.log(`✅ BUILD COMPLETE in ${buildTime}ms`);
   console.log("═══════════════════════════════════════");
-  console.log(`📊 Data Summary:`);
+  console.log("📊 Data Summary:");
   console.log(`  • SEO: ${Object.keys(seo).length} fields`);
   console.log(`  • Dumps: ${dumps?.length || 0} items`);
   console.log(`  • Categories: ${categories?.length || 0} items`);
@@ -220,9 +199,9 @@ export default async function Page() {
   console.log(`  • Announcement: ${announcement?.active ? "✓" : "✗"}`);
   console.log("═══════════════════════════════════════\n");
 
-  // ✅ Ensure all data exists
+  // ✅ Warn if critical data is missing
   if (!blogs.length || !dumps.length || !faqs.length) {
-    console.warn("⚠️ WARNING: Some data missing!");
+    console.warn("⚠️  WARNING: Some critical data is missing!");
     console.warn({
       blogsEmpty: blogs.length === 0,
       dumpsEmpty: dumps.length === 0,
@@ -244,50 +223,3 @@ export default async function Page() {
     />
   );
 }
-
-// ============================================
-// CACHING STRATEGY EXPLANATION
-// ============================================
-
-/*
-HOW CACHING WORKS NOW:
-
-1. FIRST VISIT (No Cache)
-   └─ Server fetches all 9 APIs
-   └─ Sets HTTP cache headers (5 min)
-   └─ Browser stores response
-   └─ Page takes 1-2 seconds
-
-2. SECOND VISIT (Within 5 min)
-   └─ Browser serves cached response
-   └─ NO server request needed
-   └─ NO API calls made
-   └─ Page loads instantly (<500ms)
-   └─ This is automatic browser caching!
-
-3. THIRD+ VISITS (Within 5 min)
-   └─ Same as second visit
-   └─ Always fast from browser cache
-
-4. AFTER 5 MINUTES
-   └─ Cache expires
-   └─ Next.js ISR revalidates
-   └─ Fresh data fetched
-   └─ Browser cache updated
-
-WHY THIS WORKS:
-- Uses HTTP Cache-Control headers (not localStorage)
-- Browser handles caching automatically
-- Next.js ISR (Incremental Static Regeneration)
-- No client-side caching needed
-- Faster than localStorage approach
-- Works on production with CDN
-
-BENEFITS:
-✓ 100% guaranteed caching
-✓ Works on Vercel/production
-✓ Automatic browser caching
-✓ No localStorage needed
-✓ Scales better
-✓ Works offline (browser cache)
-*/
