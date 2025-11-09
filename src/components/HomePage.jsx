@@ -12,6 +12,7 @@ const BlogSection = dynamic(() => import("@/landingpage/BlogSection"), {
   loading: () => <div className="h-64 bg-gray-50 animate-pulse rounded-lg" />,
   ssr: false,
 });
+//update homepage check
 
 const ExamDumpsSlider = dynamic(() => import("@/landingpage/ExamDumpsSlider"), {
   loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded-lg" />,
