@@ -38,19 +38,13 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/sap-dumps" className="hover:underline">
+              <Link href="/ItDumps/sap" className="hover:underline">
                 SAP Dumps
               </Link>
             </li>
             <li>
-              <Link href="/about-us" className="hover:underline">
+              <Link href="/about" className="hover:underline">
                 About Us
-              </Link>
-            </li>
-            {/* Hide extra links on mobile */}
-            <li className="hidden sm:block">
-              <Link href="/link-name" className="hover:underline">
-                Link Name
               </Link>
             </li>
           </ul>
