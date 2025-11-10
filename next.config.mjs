@@ -14,7 +14,12 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    domains: ["prepmantras.com", "via.placeholder.com", "res.cloudinary.com"],
+    domains: [
+      "prepmantras.com",
+      "https://dumps-expert-next.vercel.app/",
+      "via.placeholder.com",
+      "res.cloudinary.com",
+    ],
   },
 
   experimental: {

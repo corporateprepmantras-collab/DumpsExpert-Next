@@ -184,11 +184,10 @@ export default function RootLayout({ children }) {
           media="(prefers-color-scheme: dark)"
         />
 
-        {/* ✅ Security headers */}
-        <meta
-          httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://www.paypal.com https://*.paypal.com https://www.sandbox.paypal.com; style-src 'self' 'unsafe-inline' https://checkout.razorpay.com; img-src 'self' data: https:; connect-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://lumberjack.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://www.sandbox.paypal.com; frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://www.sandbox.paypal.com; frame-ancestors 'self';"
-        />
+        {/* ✅ FIXED: Removed CSP meta tag - now in next.config.mjs headers */}
+        {/* CSP via meta tags ignores frame-ancestors and causes console errors */}
+        {/* All security policies are now properly configured in next.config.mjs */}
+
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
         {/* ✅ Open Graph Image (for social sharing) */}
