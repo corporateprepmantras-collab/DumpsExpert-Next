@@ -1,13 +1,27 @@
 // ============================================
-// FILE 1: app/page.jsx (Server Component)
+// FILE: app/page.jsx (FIXED VERSION)
 // ============================================
 
 import HomePage from "@/components/HomePage";
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+// ✅ SOLUTION: Use localhost for server-side fetches, relative paths for client
+const getAPIUrl = () => {
+  // Server-side: Use localhost or deployment URL
+  if (typeof window === "undefined") {
+    // In production, use the deployment URL
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    // In development or other platforms
+    return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  }
+  // Client-side: Use relative paths
+  return "";
+};
 
 // ✅ Server-side fetching with proper error handling
 async function fetchWithHeaders(endpoint) {
+  const BASE_URL = getAPIUrl();
   const url = `${BASE_URL}${endpoint}`;
 
   try {
@@ -35,7 +49,6 @@ async function fetchWithHeaders(endpoint) {
 async function fetchSEO() {
   const data = await fetchWithHeaders("/api/seo/home");
   const seoData = data?.data || data || {};
-  // Ensure it's serializable
   return JSON.parse(JSON.stringify(seoData));
 }
 
@@ -46,7 +59,6 @@ async function fetchDumps() {
     : Array.isArray(data?.data)
     ? data.data
     : [];
-  // Ensure it's serializable - convert Mongoose docs to plain objects
   return JSON.parse(JSON.stringify(dumps));
 }
 
@@ -168,6 +180,7 @@ export async function generateMetadata() {
 export default async function Page() {
   console.log("\n═══════════════════════════════════════");
   console.log("🚀 PAGE BUILD START");
+  console.log(`📍 API URL: ${getAPIUrl()}`);
   console.log("═══════════════════════════════════════\n");
 
   const startTime = Date.now();
@@ -244,6 +257,12 @@ export default async function Page() {
 }
 
 // ============================================
-// FILE 2: components/HomePage.jsx (Client Component)
-// ALREADY PROVIDED IN PREVIOUS ARTIFACT
+// VERCEL DEPLOYMENT FIX
 // ============================================
+// If deploying to Vercel, add these environment variables:
+//
+// VERCEL_URL - automatically set by Vercel
+// NEXT_PUBLIC_BASE_URL=https://prepmantras.com
+//
+// For other platforms, set:
+// NEXT_PUBLIC_BASE_URL=https://your-domain.com
