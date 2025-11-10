@@ -132,7 +132,7 @@ const nextConfig = {
         ],
       },
 
-      // ✅ FIXED: Global CSP for all pages
+      // ✅ Global CSP for all pages
       {
         source: "/:path*",
         headers: [
@@ -162,7 +162,7 @@ const nextConfig = {
         ],
       },
 
-      // ✅ Cart page specific CSP (more permissive for payment gateways)
+      // ✅ Cart page specific CSP
       {
         source: "/cart",
         headers: [
@@ -188,72 +188,8 @@ const nextConfig = {
   },
 
   webpack: (config, { dev, isServer }) => {
-    // 🔥 FIX: Only apply optimization for client-side production builds
-    if (!dev && !isServer) {
-      // Preserve existing optimization but fix CSS handling
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: "deterministic",
-        runtimeChunk: "single",
-        splitChunks: {
-          chunks: "all",
-          cacheGroups: {
-            default: false,
-            vendors: false,
-
-            // 🔥 CRITICAL FIX: Add styles cache group to prevent CSS breaking
-            styles: {
-              name: "styles",
-              type: "css/mini-extract",
-              chunks: "all",
-              enforce: true,
-            },
-
-            vendor: {
-              name: "vendor",
-              chunks: "all",
-              test: /node_modules/,
-              priority: 20,
-              maxSize: 244000,
-            },
-            common: {
-              name: "common",
-              minChunks: 2,
-              chunks: "all",
-              priority: 10,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-            ui: {
-              name: "ui",
-              test: /[\\/]components[\\/]ui[\\/]/,
-              chunks: "all",
-              priority: 30,
-            },
-            landing: {
-              name: "landing",
-              test: /[\\/]landingpage[\\/]/,
-              chunks: "all",
-              priority: 25,
-            },
-            icons: {
-              name: "icons",
-              test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
-              chunks: "all",
-              priority: 35,
-            },
-            react: {
-              name: "react",
-              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-              chunks: "all",
-              priority: 40,
-            },
-          },
-        },
-      };
-
-      config.performance = { hints: false };
-    }
+    // 🔥 REMOVED: Problematic custom optimization that breaks CSS
+    // Let Next.js handle optimization by default
 
     return config;
   },
