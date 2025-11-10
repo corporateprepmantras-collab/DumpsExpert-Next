@@ -14,7 +14,6 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    // ✅ Add Cloudinary here
     domains: ["prepmantras.com", "via.placeholder.com", "res.cloudinary.com"],
   },
 
@@ -33,6 +32,7 @@ const nextConfig = {
 
   async headers() {
     return [
+      // ✅ Static assets caching
       {
         source: "/:all*(svg|jpg|png|webp|avif|woff|woff2|ttf|otf|eot)",
         locale: false,
@@ -52,6 +52,8 @@ const nextConfig = {
           },
         ],
       },
+
+      // ✅ API route caching
       {
         source: "/api/trending",
         headers: [
@@ -124,6 +126,8 @@ const nextConfig = {
           },
         ],
       },
+
+      // ✅ FIXED: Global CSP for all pages
       {
         source: "/:path*",
         headers: [
@@ -135,14 +139,43 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "origin-when-cross-origin" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com",
+              "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com",
+              "worker-src 'self' blob:",
+              "base-uri 'self'",
+              "form-action 'self' https://checkout.razorpay.com https://www.paypal.com",
+            ].join("; "),
+          },
         ],
       },
+
+      // ✅ Cart page specific CSP (more permissive for payment gateways)
       {
         source: "/cart",
         headers: [
-          { 
+          {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com; frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com;"
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://*.paypal.com https://vercel.live",
+              "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com",
+              "frame-ancestors 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com",
+              "worker-src 'self' blob:",
+              "base-uri 'self'",
+              "form-action 'self' https://checkout.razorpay.com https://www.paypal.com",
+            ].join("; "),
           },
         ],
       },
@@ -220,5 +253,4 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
 };
 
-// ✅ Correct export for .mjs file
 export default nextConfig;
