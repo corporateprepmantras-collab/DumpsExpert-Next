@@ -132,7 +132,7 @@ const nextConfig = {
         ],
       },
 
-      // ✅ FIXED: Global CSP for all pages
+      // ✅ FIXED: Global CSP for all pages - ALLOW NEXT.JS STATIC ASSETS
       {
         source: "/:path*",
         headers: [
@@ -148,11 +148,12 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com",
-              "style-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com https://*.vercel-scripts.com",
+              // 🔥 FIXED: Allow Next.js CSS and inline styles
+              "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com",
+              "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com https://*.vercel-insights.com",
               "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com",
               "worker-src 'self' blob:",
               "base-uri 'self'",
@@ -170,11 +171,12 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app",
-              "style-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://*.vercel-scripts.com",
+              // 🔥 FIXED: Allow Next.js CSS on cart page too
+              "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://*.paypal.com https://vercel.live",
+              "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel-insights.com",
               "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com",
               "frame-ancestors 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com",
               "worker-src 'self' blob:",
