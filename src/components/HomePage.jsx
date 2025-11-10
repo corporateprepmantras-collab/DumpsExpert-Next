@@ -63,6 +63,13 @@ export default function HomePage({
   const [isOnline, setIsOnline] = useState(true);
   const [showDebug, setShowDebug] = useState(false);
 
+  // 🔥 NEW: Add mount state to track client-side rendering
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // ✅ Online/Offline detection
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -128,25 +135,40 @@ export default function HomePage({
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showDebug]);
 
-  // ✅ Log what data we received (only in development)
+  // 🔥 ENHANCED: Better logging with data inspection
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("📊 HomePage received data:", {
-        seo: Object.keys(seo).length,
-        dumps: dumps.length,
-        categories: categories.length,
-        blogs: blogs.length,
-        faqs: faqs.length,
-        products: products.length,
-      });
+    console.group("🔍 HomePage Client Data Inspection");
+    console.log("Mounted:", isMounted);
+    console.log("SEO keys:", Object.keys(seo).length);
+    console.log("Dumps received:", dumps);
+    console.log("Dumps length:", dumps?.length);
+    console.log("Dumps is array?", Array.isArray(dumps));
+    console.log("Categories:", categories?.length);
+    console.log("Blogs:", blogs?.length);
+    console.log("FAQs:", faqs?.length);
+    console.log("Products:", products?.length);
+
+    // 🔥 Detailed dump inspection
+    if (dumps && dumps.length > 0) {
+      console.log("First dump item:", dumps[0]);
+      console.log("Dump has _id?", !!dumps[0]._id);
+      console.log("Dump has title?", !!dumps[0].title);
+    } else {
+      console.warn("❌ Dumps array is empty or undefined!");
     }
-  }, []);
+    console.groupEnd();
+  }, [dumps, categories, blogs, faqs, products, isMounted]);
+
+  // 🔥 NEW: Normalize dumps data to handle different structures
+  const normalizedDumps = Array.isArray(dumps)
+    ? dumps.filter((d) => d && (d.title || d.name || d.label))
+    : [];
 
   return (
     <>
       {/* ---------- Debug Panel (Ctrl+Shift+B) ---------- */}
       {showDebug && (
-        <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono">
+        <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono max-h-[80vh] overflow-auto">
           <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
             <h3 className="font-bold text-sm">Debug Info</h3>
             <button
@@ -158,6 +180,13 @@ export default function HomePage({
           </div>
 
           <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Client Mounted:</span>
+              <span className={isMounted ? "text-green-400" : "text-red-400"}>
+                {isMounted ? "✓ Yes" : "✗ No"}
+              </span>
+            </div>
+
             <div className="flex justify-between">
               <span className="text-gray-400">SEO Data:</span>
               <span
@@ -174,13 +203,26 @@ export default function HomePage({
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-400">Dumps:</span>
+              <span className="text-gray-400">Dumps (raw):</span>
               <span
                 className={
                   dumps?.length > 0 ? "text-green-400" : "text-red-400"
                 }
               >
                 {dumps?.length > 0 ? `✓ ${dumps.length} items` : "✗ Empty"}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-400">Dumps (normalized):</span>
+              <span
+                className={
+                  normalizedDumps.length > 0 ? "text-green-400" : "text-red-400"
+                }
+              >
+                {normalizedDumps.length > 0
+                  ? `✓ ${normalizedDumps.length} items`
+                  : "✗ Empty"}
               </span>
             </div>
 
@@ -229,6 +271,16 @@ export default function HomePage({
                   : "✗ Empty"}
               </span>
             </div>
+
+            {/* 🔥 NEW: Show actual dump data */}
+            {normalizedDumps.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-700">
+                <div className="text-gray-400 mb-2">First Dump Sample:</div>
+                <pre className="text-[10px] bg-gray-800 p-2 rounded overflow-auto max-h-40">
+                  {JSON.stringify(normalizedDumps[0], null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
 
           <div className="mt-3 pt-3 border-t border-gray-700 text-gray-400 text-[10px]">
@@ -238,27 +290,28 @@ export default function HomePage({
       )}
 
       {/* ---------- Developer Controls ---------- */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
-            title="Show debug info (Ctrl+Shift+B)"
-          >
-            <AlertCircle size={16} />
-            Debug
-          </button>
+      {typeof window !== "undefined" &&
+        process.env.NODE_ENV === "development" && (
+          <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
+              title="Show debug info (Ctrl+Shift+B)"
+            >
+              <AlertCircle size={16} />
+              Debug
+            </button>
 
-          <button
-            onClick={clearAllCache}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
-            title="Clear cache (Ctrl+Shift+D)"
-          >
-            <X size={16} />
-            Clear Cache
-          </button>
-        </div>
-      )}
+            <button
+              onClick={clearAllCache}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
+              title="Clear cache (Ctrl+Shift+D)"
+            >
+              <X size={16} />
+              Clear Cache
+            </button>
+          </div>
+        )}
 
       {/* ---------- Offline Indicator ---------- */}
       {!isOnline && (
@@ -347,19 +400,34 @@ export default function HomePage({
             Top Trending Certification Dumps
           </h2>
 
+          {/* 🔥 ENHANCED: Better error handling and debugging */}
           <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {dumps && dumps.length > 0 ? (
-              dumps.map((dump) => (
-                <Button
-                  key={dump._id}
-                  variant="secondary"
-                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2 transition-colors"
-                >
-                  {dump.title}
-                </Button>
-              ))
+            {!isMounted ? (
+              <p className="text-gray-400 text-sm">Loading...</p>
+            ) : normalizedDumps.length > 0 ? (
+              normalizedDumps.map((dump, index) => {
+                // 🔥 Handle different possible property names
+                const displayText =
+                  dump.title || dump.name || dump.label || "Unnamed Dump";
+                const uniqueKey = dump._id || dump.id || `dump-${index}`;
+
+                return (
+                  <Button
+                    key={uniqueKey}
+                    variant="secondary"
+                    className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2 transition-colors"
+                  >
+                    {displayText}
+                  </Button>
+                );
+              })
             ) : (
-              <p className="text-gray-500 text-sm">No dumps available</p>
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-sm mb-2">No dumps available</p>
+                <p className="text-xs text-gray-400">
+                  Press Ctrl+Shift+B for debug info
+                </p>
+              </div>
             )}
           </div>
         </section>
@@ -378,3 +446,4 @@ export default function HomePage({
     </>
   );
 }
+  
