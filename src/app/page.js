@@ -257,6 +257,43 @@ export default async function Page() {
 }
 
 // ============================================
+// CHECK YOUR CLIENT COMPONENTS
+// ============================================
+// Search for these patterns in your codebase:
+
+// In: components/ExamDumpsSlider.jsx
+// In: landingpage/ExamDumpsSlider.jsx
+// In: any other client components
+
+// ❌ BAD - Will fail on live:
+// fetch('https://prepmantras.com/api/products')
+
+// ✅ GOOD - Works everywhere:
+// fetch('/api/products')
+
+// ============================================
+// EXAMPLE FIX FOR CLIENT COMPONENT
+// ============================================
+
+// If ExamDumpsSlider.jsx has something like:
+/*
+useEffect(() => {
+  fetch('https://prepmantras.com/api/products')
+    .then(res => res.json())
+    .then(data => setProducts(data));
+}, []);
+*/
+
+// Change it to:
+/*
+useEffect(() => {
+  fetch('/api/products')  // ✅ Relative path
+    .then(res => res.json())
+    .then(data => setProducts(data));
+}, []);
+*/
+
+// ============================================
 // VERCEL DEPLOYMENT FIX
 // ============================================
 // If deploying to Vercel, add these environment variables:
@@ -266,3 +303,28 @@ export default async function Page() {
 //
 // For other platforms, set:
 // NEXT_PUBLIC_BASE_URL=https://your-domain.com
+
+// ============================================
+// DEBUGGING STEPS
+// ============================================
+// 1. Test locally in production mode:
+//    npm run build
+//    npm run start
+//    Visit: http://localhost:3000
+//    Open DevTools Network tab - all /api/* should return 200
+//
+// 2. Check your API routes exist:
+//    app/api/products/route.js
+//    app/api/trending/route.js
+//    app/api/session/route.js
+//    etc.
+//
+// 3. Verify API route exports:
+//    Each should export GET, POST, etc.
+//    Example: export async function GET(request) { ... }
+//
+// 4. Check build output:
+//    npm run build should show:
+//    ○ /api/products
+//    ○ /api/trending
+//    etc.
