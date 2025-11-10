@@ -16,7 +16,7 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     domains: [
       "prepmantras.com",
-      "https://dumps-expert-next.vercel.app/",
+      "dumps-expert-next.vercel.app",
       "via.placeholder.com",
       "res.cloudinary.com",
     ],
@@ -132,7 +132,7 @@ const nextConfig = {
         ],
       },
 
-      // ✅ FIXED: Global CSP for all pages - ALLOW NEXT.JS STATIC ASSETS
+      // ✅ FIXED: Global CSP for all pages
       {
         source: "/:path*",
         headers: [
@@ -149,12 +149,11 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com https://*.vercel-scripts.com",
-              // 🔥 FIXED: Allow Next.js CSS and inline styles
               "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com https://*.vercel-insights.com",
-              "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com",
+              "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://vercel.live",
               "worker-src 'self' blob:",
               "base-uri 'self'",
               "form-action 'self' https://checkout.razorpay.com https://www.paypal.com",
@@ -172,12 +171,11 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://*.vercel-scripts.com",
-              // 🔥 FIXED: Allow Next.js CSS on cart page too
               "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel-insights.com",
-              "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com",
+              "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://vercel.live",
               "frame-ancestors 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com",
               "worker-src 'self' blob:",
               "base-uri 'self'",
@@ -190,7 +188,9 @@ const nextConfig = {
   },
 
   webpack: (config, { dev, isServer }) => {
+    // 🔥 FIX: Only apply optimization for client-side production builds
     if (!dev && !isServer) {
+      // Preserve existing optimization but fix CSS handling
       config.optimization = {
         ...config.optimization,
         moduleIds: "deterministic",
@@ -200,6 +200,15 @@ const nextConfig = {
           cacheGroups: {
             default: false,
             vendors: false,
+
+            // 🔥 CRITICAL FIX: Add styles cache group to prevent CSS breaking
+            styles: {
+              name: "styles",
+              type: "css/mini-extract",
+              chunks: "all",
+              enforce: true,
+            },
+
             vendor: {
               name: "vendor",
               chunks: "all",
