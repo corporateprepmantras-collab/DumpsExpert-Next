@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, X, WifiOff, AlertCircle } from "lucide-react";
+import { Check, X, Wifi, WifiOff, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import banner from "@/assets/landingassets/banner.webp";
 
-// ✅ Lazy load components
+// ✅ Lazy load components ONLY after data loads
 const BlogSection = dynamic(() => import("@/landingpage/BlogSection"), {
   loading: () => <div className="h-64 bg-gray-50 animate-pulse rounded-lg" />,
   ssr: false,
@@ -59,15 +59,70 @@ export default function HomePage({
   products = [],
   announcement = null,
 }) {
+  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [dataSource, setDataSource] = useState(null);
   const [showDebug, setShowDebug] = useState(false);
 
-  // 🔥 NEW: Add mount state to track client-side rendering
-  const [isMounted, setIsMounted] = useState(false);
-
+  // ✅ Check if all data is loaded
   useEffect(() => {
-    setIsMounted(true);
+    // Wait for all critical data
+    const hasAllData =
+      Object.keys(seo).length > 0 &&
+      dumps.length > 0 &&
+      categories.length > 0 &&
+      blogs.length > 0 &&
+      faqs.length > 0;
+
+    if (hasAllData) {
+      console.log("✅ ALL DATA LOADED - Showing page");
+      setIsLoading(false);
+    } else {
+      console.log("⏳ Waiting for data...", {
+        seo: Object.keys(seo).length,
+        dumps: dumps.length,
+        categories: categories.length,
+        blogs: blogs.length,
+        faqs: faqs.length,
+      });
+      // Don't set loading to true if already showing something
+      if (isLoading) {
+        setIsLoading(true);
+      }
+    }
+  }, [seo, dumps, categories, blogs, faqs, isLoading]);
+
+  // ✅ Detect data source
+  useEffect(() => {
+    const checkDataSource = () => {
+      const hasCachedSEO = localStorage.getItem("pm_seo");
+      const hasCachedDumps = localStorage.getItem("pm_dumps");
+
+      if (hasCachedSEO || hasCachedDumps) {
+        try {
+          const seoCache = JSON.parse(localStorage.getItem("pm_seo") || "{}");
+          const now = Date.now();
+          const cacheAge = now - (seoCache.timestamp || 0);
+
+          if (cacheAge < 5 * 60 * 1000) {
+            setDataSource("cache");
+            console.log("📦 Data from CACHE");
+          } else {
+            setDataSource("api");
+            console.log("🌐 Data from API (cache expired)");
+          }
+        } catch {
+          setDataSource("api");
+          console.log("🌐 Data from API (cache error)");
+        }
+      } else {
+        setDataSource("api");
+        console.log("🌐 Data from API (no cache)");
+      }
+    };
+
+    checkDataSource();
   }, []);
 
   // ✅ Online/Offline detection
@@ -113,7 +168,6 @@ export default function HomePage({
       localStorage.removeItem("pm_content2");
       localStorage.removeItem("pm_products");
       localStorage.removeItem("pm_announcement");
-      localStorage.removeItem("announcementShownAt");
       console.log("🧹 Cache cleared!");
       window.location.reload();
     }
@@ -135,40 +189,45 @@ export default function HomePage({
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showDebug]);
 
-  // 🔥 ENHANCED: Better logging with data inspection
-  useEffect(() => {
-    console.group("🔍 HomePage Client Data Inspection");
-    console.log("Mounted:", isMounted);
-    console.log("SEO keys:", Object.keys(seo).length);
-    console.log("Dumps received:", dumps);
-    console.log("Dumps length:", dumps?.length);
-    console.log("Dumps is array?", Array.isArray(dumps));
-    console.log("Categories:", categories?.length);
-    console.log("Blogs:", blogs?.length);
-    console.log("FAQs:", faqs?.length);
-    console.log("Products:", products?.length);
+  // ✅ SHOW LOADING SCREEN UNTIL ALL DATA LOADS
+  if (isLoading) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600"></div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading...</h2>
+          <p className="text-gray-600 mb-4">
+            Preparing your certification prep materials
+          </p>
 
-    // 🔥 Detailed dump inspection
-    if (dumps && dumps.length > 0) {
-      console.log("First dump item:", dumps[0]);
-      console.log("Dump has _id?", !!dumps[0]._id);
-      console.log("Dump has title?", !!dumps[0].title);
-    } else {
-      console.warn("❌ Dumps array is empty or undefined!");
-    }
-    console.groupEnd();
-  }, [dumps, categories, blogs, faqs, products, isMounted]);
-
-  // 🔥 NEW: Normalize dumps data to handle different structures
-  const normalizedDumps = Array.isArray(dumps)
-    ? dumps.filter((d) => d && (d.title || d.name || d.label))
-    : [];
+          {/* Show what's loading */}
+          <div className="text-sm text-gray-500 max-w-md mx-auto">
+            <div className="mb-2">
+              {Object.keys(seo).length > 0 ? "✓" : "⏳"} SEO Data
+            </div>
+            <div className="mb-2">
+              {dumps.length > 0 ? "✓" : "⏳"} Certification Dumps
+            </div>
+            <div className="mb-2">
+              {categories.length > 0 ? "✓" : "⏳"} Blog Categories
+            </div>
+            <div className="mb-2">
+              {blogs.length > 0 ? "✓" : "⏳"} Blog Posts
+            </div>
+            <div className="mb-2">{faqs.length > 0 ? "✓" : "⏳"} FAQs</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       {/* ---------- Debug Panel (Ctrl+Shift+B) ---------- */}
       {showDebug && (
-        <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono max-h-[80vh] overflow-auto">
+        <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono">
           <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
             <h3 className="font-bold text-sm">Debug Info</h3>
             <button
@@ -180,13 +239,6 @@ export default function HomePage({
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Client Mounted:</span>
-              <span className={isMounted ? "text-green-400" : "text-red-400"}>
-                {isMounted ? "✓ Yes" : "✗ No"}
-              </span>
-            </div>
-
             <div className="flex justify-between">
               <span className="text-gray-400">SEO Data:</span>
               <span
@@ -203,26 +255,13 @@ export default function HomePage({
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-400">Dumps (raw):</span>
+              <span className="text-gray-400">Dumps:</span>
               <span
                 className={
                   dumps?.length > 0 ? "text-green-400" : "text-red-400"
                 }
               >
                 {dumps?.length > 0 ? `✓ ${dumps.length} items` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Dumps (normalized):</span>
-              <span
-                className={
-                  normalizedDumps.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {normalizedDumps.length > 0
-                  ? `✓ ${normalizedDumps.length} items`
-                  : "✗ Empty"}
               </span>
             </div>
 
@@ -272,15 +311,12 @@ export default function HomePage({
               </span>
             </div>
 
-            {/* 🔥 NEW: Show actual dump data */}
-            {normalizedDumps.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-700">
-                <div className="text-gray-400 mb-2">First Dump Sample:</div>
-                <pre className="text-[10px] bg-gray-800 p-2 rounded overflow-auto max-h-40">
-                  {JSON.stringify(normalizedDumps[0], null, 2)}
-                </pre>
+            <div className="pt-2 border-t border-gray-700">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Cache Status:</span>
+                <span className="text-blue-400">{dataSource || "Unknown"}</span>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="mt-3 pt-3 border-t border-gray-700 text-gray-400 text-[10px]">
@@ -289,29 +325,45 @@ export default function HomePage({
         </div>
       )}
 
-      {/* ---------- Developer Controls ---------- */}
-      {typeof window !== "undefined" &&
-        process.env.NODE_ENV === "development" && (
-          <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
-              title="Show debug info (Ctrl+Shift+B)"
-            >
-              <AlertCircle size={16} />
-              Debug
-            </button>
+      {/* ---------- Data Source Indicator ---------- */}
+      {dataSource && (
+        <div className="fixed top-4 left-4 z-40 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 text-xs">
+          {dataSource === "cache" ? (
+            <>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-gray-600">Cached</span>
+            </>
+          ) : (
+            <>
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-600">Fresh</span>
+            </>
+          )}
+        </div>
+      )}
 
-            <button
-              onClick={clearAllCache}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
-              title="Clear cache (Ctrl+Shift+D)"
-            >
-              <X size={16} />
-              Clear Cache
-            </button>
-          </div>
-        )}
+      {/* ---------- Developer Controls ---------- */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
+            title="Show debug info (Ctrl+Shift+B)"
+          >
+            <AlertCircle size={16} />
+            Debug
+          </button>
+
+          <button
+            onClick={clearAllCache}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
+            title="Clear cache (Ctrl+Shift+D)"
+          >
+            <X size={16} />
+            Clear Cache
+          </button>
+        </div>
+      )}
 
       {/* ---------- Offline Indicator ---------- */}
       {!isOnline && (
@@ -395,39 +447,24 @@ export default function HomePage({
         </section>
 
         {/* ---------- Trending Dumps ---------- */}
-        <section className="py-14 px-4 md:px-12 bg-white">
-          <h2 className="text-3xl pb-4 font-bold text-center mb-10 text-gray-900">
+        <section className="py-16 px-4 md:px-12 bg-white">
+          <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
             Top Trending Certification Dumps
           </h2>
 
-          {/* 🔥 ENHANCED: Better error handling and debugging */}
           <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {!isMounted ? (
-              <p className="text-gray-400 text-sm">Loading...</p>
-            ) : normalizedDumps.length > 0 ? (
-              normalizedDumps.map((dump, index) => {
-                // 🔥 Handle different possible property names
-                const displayText =
-                  dump.title || dump.name || dump.label || "Unnamed Dump";
-                const uniqueKey = dump._id || dump.id || `dump-${index}`;
-
-                return (
-                  <Button
-                    key={uniqueKey}
-                    variant="secondary"
-                    className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2 transition-colors"
-                  >
-                    {displayText}
-                  </Button>
-                );
-              })
+            {dumps && dumps.length > 0 ? (
+              dumps.map((dump) => (
+                <Button
+                  key={dump._id}
+                  variant="secondary"
+                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2 transition-colors"
+                >
+                  {dump.title}
+                </Button>
+              ))
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 text-sm mb-2">No dumps available</p>
-                <p className="text-xs text-gray-400">
-                  Press Ctrl+Shift+B for debug info
-                </p>
-              </div>
+              <p className="text-gray-500 text-sm">No dumps available</p>
             )}
           </div>
         </section>
@@ -446,4 +483,3 @@ export default function HomePage({
     </>
   );
 }
-  
