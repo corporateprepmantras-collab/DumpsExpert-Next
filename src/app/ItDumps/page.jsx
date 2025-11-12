@@ -7,25 +7,59 @@ import guarantee from "../../assets/userAssets/guaranteed.png";
 export const dynamic = "force-dynamic";
 
 /* ===========================
+   ✅ Get correct base URL for server-side fetches
+   =========================== */
+function getBaseURL() {
+  // Server-side only
+  if (typeof window === "undefined") {
+    // Vercel production
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    // Explicit production URL
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      return process.env.NEXT_PUBLIC_SITE_URL;
+    }
+    // Hardcoded fallback for production
+    if (process.env.NODE_ENV === "production") {
+      return "https://dumps-expert-next.vercel.app"; // ⚠️ CHANGE THIS TO YOUR DOMAIN
+    }
+    // Local development
+    return "http://localhost:3000";
+  }
+  // Client-side: use relative paths
+  return "";
+}
+
+/* ===========================
    ✅ Fetch SEO data (Server-side)
    =========================== */
 async function fetchSEO() {
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+    const baseUrl = getBaseURL();
+    const url = `${baseUrl}/api/seo/sap`;
 
-    const res = await fetch(`${baseUrl}/api/seo/sap`, {
-      cache: "no-store", // 🚀 Always fetch fresh data
+    console.log(`🔍 Fetching SEO from: ${url}`);
+
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
-    if (!res.ok) throw new Error("Failed to fetch SEO data");
+    if (!res.ok) {
+      console.error(`❌ SEO fetch failed: ${res.status} ${res.statusText}`);
+      return {};
+    }
 
     const json = await res.json();
+    console.log("✅ SEO data fetched successfully");
 
     // Handle both formats: {data: {...}} or {...directly}
     return json.data || json;
   } catch (error) {
-    console.error("❌ SEO fetch failed:", error);
+    console.error("❌ SEO fetch error:", error.message);
     return {};
   }
 }
@@ -35,20 +69,43 @@ async function fetchSEO() {
    =========================== */
 async function getDumpsData() {
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+    const baseUrl = getBaseURL();
+    const url = `${baseUrl}/api/product-categories`;
 
-    const res = await fetch(`${baseUrl}/api/product-categories`, {
+    console.log(`🔍 Fetching categories from: ${url}`);
+
+    const res = await fetch(url, {
       next: { revalidate: 60 },
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
-    if (!res.ok)
-      throw new Error(`Failed to fetch categories: ${res.statusText}`);
+    if (!res.ok) {
+      console.error(
+        `❌ Categories fetch failed: ${res.status} ${res.statusText}`
+      );
+      return [];
+    }
 
     const json = await res.json();
-    return Array.isArray(json.data) ? json.data : json;
+    console.log(
+      `✅ Categories fetched: ${
+        Array.isArray(json.data)
+          ? json.data.length
+          : Array.isArray(json)
+          ? json.length
+          : 0
+      } items`
+    );
+
+    return Array.isArray(json.data)
+      ? json.data
+      : Array.isArray(json)
+      ? json
+      : [];
   } catch (error) {
-    console.error("❌ Error fetching dumps data:", error);
+    console.error("❌ Categories fetch error:", error.message);
     return [];
   }
 }
