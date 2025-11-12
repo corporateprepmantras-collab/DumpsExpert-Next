@@ -1,62 +1,46 @@
 // ============================================
-// FILE: app/page.jsx (RELATIVE PATHS VERSION)
+// FILE: app/page.jsx (FIXED VERSION)
 // ============================================
 
 import HomePage from "@/components/HomePage";
 
-// ✅ Get the correct base URL for server-side fetches
-function getBaseURL() {
-  // Browser (client-side): use relative paths
-  if (typeof window !== "undefined") {
-    return "";
+// ✅ SOLUTION: Use localhost for server-side fetches, relative paths for client
+const getAPIUrl = () => {
+  // Server-side: Use localhost or deployment URL
+  if (typeof window === "undefined") {
+    // In production, use the deployment URL
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    // In development or other platforms
+    return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   }
+  // Client-side: Use relative paths
+  return "";
+};
 
-  // Vercel production or preview
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  // Explicitly set production URL (RECOMMENDED)
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
-  }
-
-  // HARDCODED FALLBACK - Replace with your actual domain
-  if (process.env.NODE_ENV === "production") {
-    return "https://dumps-expert-next.vercel.app"; // ⚠️ CHANGE THIS!
-  }
-
-  // Local development
-  return "http://localhost:3000";
-}
-
-// ✅ Fetch with proper URL handling
+// ✅ Server-side fetching with proper error handling
 async function fetchWithHeaders(endpoint) {
-  const baseURL = getBaseURL();
-  const url = `${baseURL}${endpoint}`;
+  const BASE_URL = getAPIUrl();
+  const url = `${BASE_URL}${endpoint}`;
 
   try {
-    console.log(`🔄 Fetching: ${url}`);
-
     const response = await fetch(url, {
       headers: {
-        "Cache-Control": "no-cache",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
-      cache: "no-store", // Disable caching during development
+      next: { revalidate: 300 }, // ISR: revalidate every 5 minutes
     });
 
-    console.log(`✅ Response: ${endpoint} - ${response.status}`);
-
     if (!response.ok) {
-      console.error(`❌ API Error: ${endpoint} - ${response.status}`);
+      console.error(`❌ API Error: ${url} - ${response.status}`);
       return null;
     }
 
     const data = await response.json();
-    console.log(`📦 Data received from ${endpoint}:`, data ? "OK" : "NULL");
     return data;
   } catch (error) {
-    console.error(`❌ Fetch failed: ${endpoint}`, error.message);
+    console.error(`❌ Fetch failed: ${endpoint}`, error);
     return null;
   }
 }
@@ -70,35 +54,12 @@ async function fetchSEO() {
 
 async function fetchDumps() {
   const data = await fetchWithHeaders("/api/trending");
-  console.log("📦 Raw dumps data:", JSON.stringify(data).substring(0, 200));
-
-  let dumps = [];
-
-  // Try multiple possible data structures
-  if (Array.isArray(data)) {
-    dumps = data;
-  } else if (Array.isArray(data?.data)) {
-    dumps = data.data;
-  } else if (Array.isArray(data?.dumps)) {
-    dumps = data.dumps;
-  } else if (Array.isArray(data?.products)) {
-    dumps = data.products;
-  } else if (data?.data?.data && Array.isArray(data.data.data)) {
-    dumps = data.data.data;
-  }
-
-  // 🔥 Ensure proper serialization and filter invalid items
-  const serialized = dumps
-    .filter((d) => d && (d._id || d.id) && (d.title || d.name))
-    .map((dump) => ({
-      _id: dump._id?.toString() || dump.id?.toString(),
-      title: dump.title || dump.name || "",
-      createdAt: dump.createdAt,
-      updatedAt: dump.updatedAt,
-    }));
-
-  console.log(`✅ Extracted ${serialized.length} dumps`);
-  return serialized;
+  const dumps = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+    ? data.data
+    : [];
+  return JSON.parse(JSON.stringify(dumps));
 }
 
 async function fetchCategories() {
@@ -219,6 +180,7 @@ export async function generateMetadata() {
 export default async function Page() {
   console.log("\n═══════════════════════════════════════");
   console.log("🚀 PAGE BUILD START");
+  console.log(`📍 API URL: ${getAPIUrl()}`);
   console.log("═══════════════════════════════════════\n");
 
   const startTime = Date.now();
@@ -262,18 +224,11 @@ export default async function Page() {
   console.log(`  • Products: ${products?.length || 0} items`);
   console.log(`  • Announcement: ${announcement?.active ? "✓" : "✗"}`);
 
-  // 🔍 DEBUG: Log the ACTUAL data structure
-  console.log("\n🔍 DEBUGGING DATA STRUCTURES:");
-  console.log("─────────────────────────────────────");
-  console.log("Dumps array:", dumps);
-  console.log("Dumps length:", dumps?.length);
+  // 🔍 DEBUG: Log actual data structure
   if (dumps?.length > 0) {
-    console.log("First dump:", JSON.stringify(dumps[0], null, 2));
-    console.log("Dump keys:", Object.keys(dumps[0]));
+    console.log("\n🔍 First Dump Item:", JSON.stringify(dumps[0], null, 2));
   }
-  console.log("\nCategories:", categories?.slice(0, 2));
-  console.log("Blogs:", blogs?.slice(0, 2));
-  console.log("Products:", products?.slice(0, 2));
+
   console.log("═══════════════════════════════════════\n");
 
   // ✅ Warn if critical data is missing
@@ -285,16 +240,6 @@ export default async function Page() {
       faqsEmpty: faqs.length === 0,
     });
   }
-
-  // 🔍 Log what we're passing to HomePage
-  console.log("📤 PASSING TO HOMEPAGE:");
-  console.log({
-    dumps: dumps?.length || 0,
-    categories: categories?.length || 0,
-    blogs: blogs?.length || 0,
-    faqs: faqs?.length || 0,
-    products: products?.length || 0,
-  });
 
   return (
     <HomePage
@@ -312,18 +257,74 @@ export default async function Page() {
 }
 
 // ============================================
-// KEY CHANGES:
+// CHECK YOUR CLIENT COMPONENTS
 // ============================================
-// ✅ Removed getAPIUrl() function
-// ✅ All fetches use relative paths: /api/...
-// ✅ Works on any domain automatically
-// ✅ No environment variables needed
-//
-// This will work on:
-// - localhost:3000
-// - prepmantras.com
-// - any-other-domain.com
-//
-// Make sure your client components also use
-// relative paths like fetch('/api/products')
+// Search for these patterns in your codebase:
+
+// In: components/ExamDumpsSlider.jsx
+// In: landingpage/ExamDumpsSlider.jsx
+// In: any other client components
+
+// ❌ BAD - Will fail on live:
+// fetch('https://prepmantras.com/api/products')
+
+// ✅ GOOD - Works everywhere:
+// fetch('/api/products')
+
 // ============================================
+// EXAMPLE FIX FOR CLIENT COMPONENT
+// ============================================
+
+// If ExamDumpsSlider.jsx has something like:
+/*
+useEffect(() => {
+  fetch('https://prepmantras.com/api/products')
+    .then(res => res.json())
+    .then(data => setProducts(data));
+}, []);
+*/
+
+// Change it to:
+/*
+useEffect(() => {
+  fetch('/api/products')  // ✅ Relative path
+    .then(res => res.json())
+    .then(data => setProducts(data));
+}, []);
+*/
+
+// ============================================
+// VERCEL DEPLOYMENT FIX
+// ============================================
+// If deploying to Vercel, add these environment variables:
+//
+// VERCEL_URL - automatically set by Vercel
+// NEXT_PUBLIC_BASE_URL=https://prepmantras.com
+//
+// For other platforms, set:
+// NEXT_PUBLIC_BASE_URL=https://your-domain.com
+
+// ============================================
+// DEBUGGING STEPS
+// ============================================
+// 1. Test locally in production mode:
+//    npm run build
+//    npm run start
+//    Visit: http://localhost:3000
+//    Open DevTools Network tab - all /api/* should return 200
+//
+// 2. Check your API routes exist:
+//    app/api/products/route.js
+//    app/api/trending/route.js
+//    app/api/session/route.js
+//    etc.
+//
+// 3. Verify API route exports:
+//    Each should export GET, POST, etc.
+//    Example: export async function GET(request) { ... }
+//
+// 4. Check build output:
+//    npm run build should show:
+//    ○ /api/products
+//    ○ /api/trending
+//    etc.
