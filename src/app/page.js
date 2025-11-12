@@ -1,161 +1,185 @@
 // ============================================
-// FILE: app/page.jsx (PRODUCTION FIX)
+// FILE: app/page.jsx (SIMPLIFIED)
 // ============================================
 
 import HomePage from "@/components/HomePage";
 
-// ✅ FIXED: Proper URL resolution for Vercel
-const getAPIUrl = () => {
-  // Server-side: Use absolute URLs
-  if (typeof window === "undefined") {
-    // 1️⃣ Production: Use VERCEL_URL (automatically set by Vercel)
-    if (process.env.VERCEL_URL) {
-      return `https://${process.env.VERCEL_URL}`;
-    }
-
-    // 2️⃣ Production fallback: Use your custom domain
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      return process.env.NEXT_PUBLIC_SITE_URL;
-    }
-
-    // 3️⃣ Development: Use localhost
-    return "http://localhost:3000";
-  }
-
-  // Client-side: Use relative paths
-  return "";
-};
-
-// ✅ Enhanced fetch with better error handling
-async function fetchWithHeaders(endpoint) {
-  const BASE_URL = getAPIUrl();
-  const url = `${BASE_URL}${endpoint}`;
-
+// ✅ Data fetchers with direct API calls
+async function fetchSEO() {
   try {
-    console.log(`📡 Fetching: ${url}`);
-
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-      },
-      next: {
-        revalidate: 300, // ISR: revalidate every 5 minutes
-        tags: [endpoint.split("/").pop()], // Cache tags for on-demand revalidation
-      },
+    const response = await fetch("/api/seo/home", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
     });
 
-    if (!response.ok) {
-      console.error(
-        `❌ API Error: ${url} - ${response.status} ${response.statusText}`
-      );
-
-      // Log response body for debugging
-      const text = await response.text();
-      console.error(`Response body: ${text.substring(0, 200)}`);
-
-      return null;
-    }
+    if (!response.ok) return {};
 
     const data = await response.json();
-    console.log(
-      `✅ Success: ${endpoint} - ${JSON.stringify(data).length} bytes`
-    );
-    return data;
+    const seoData = data?.data || data || {};
+    return JSON.parse(JSON.stringify(seoData));
   } catch (error) {
-    console.error(`❌ Fetch failed: ${endpoint}`, {
-      message: error.message,
-      stack: error.stack,
-      url,
-    });
-    return null;
+    console.error("❌ fetchSEO failed:", error);
+    return {};
   }
-}
-
-// ✅ Data fetchers with proper serialization
-async function fetchSEO() {
-  const data = await fetchWithHeaders("/api/seo/home");
-  if (!data) return {};
-
-  const seoData = data?.data || data || {};
-  return JSON.parse(JSON.stringify(seoData));
 }
 
 async function fetchDumps() {
-  const data = await fetchWithHeaders("/api/trending");
-  if (!data) {
-    console.warn("⚠️ fetchDumps returned null");
+  try {
+    const response = await fetch("/api/trending", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    let dumps = [];
+    if (Array.isArray(data)) dumps = data;
+    else if (Array.isArray(data?.data)) dumps = data.data;
+    else if (Array.isArray(data?.dumps)) dumps = data.dumps;
+
+    return JSON.parse(JSON.stringify(dumps));
+  } catch (error) {
+    console.error("❌ fetchDumps failed:", error);
     return [];
   }
-
-  let dumps = [];
-  if (Array.isArray(data)) dumps = data;
-  else if (Array.isArray(data?.data)) dumps = data.data;
-  else if (Array.isArray(data?.dumps)) dumps = data.dumps;
-
-  console.log(`📊 Dumps parsed: ${dumps.length} items`);
-  return JSON.parse(JSON.stringify(dumps));
 }
 
 async function fetchCategories() {
-  const data = await fetchWithHeaders("/api/blogs/blog-categories");
-  if (!data) return [];
+  try {
+    const response = await fetch("/api/blogs/blog-categories", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
 
-  const categories = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.data)
-    ? data.data
-    : [];
-  return JSON.parse(JSON.stringify(categories));
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const categories = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+      ? data.data
+      : [];
+    return JSON.parse(JSON.stringify(categories));
+  } catch (error) {
+    console.error("❌ fetchCategories failed:", error);
+    return [];
+  }
 }
 
 async function fetchBlogs() {
-  const data = await fetchWithHeaders("/api/blogs");
-  if (!data) return [];
+  try {
+    const response = await fetch("/api/blogs", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
 
-  let blogs = [];
-  if (Array.isArray(data)) blogs = data;
-  else if (Array.isArray(data?.blogs)) blogs = data.blogs;
-  else if (Array.isArray(data?.data)) blogs = data.data;
-  else if (data?.data && Array.isArray(data.data?.blogs))
-    blogs = data.data.blogs;
+    if (!response.ok) return [];
 
-  return JSON.parse(JSON.stringify(blogs));
+    const data = await response.json();
+    let blogs = [];
+    if (Array.isArray(data)) blogs = data;
+    else if (Array.isArray(data?.blogs)) blogs = data.blogs;
+    else if (Array.isArray(data?.data)) blogs = data.data;
+    else if (data?.data && Array.isArray(data.data?.blogs))
+      blogs = data.data.blogs;
+
+    return JSON.parse(JSON.stringify(blogs));
+  } catch (error) {
+    console.error("❌ fetchBlogs failed:", error);
+    return [];
+  }
 }
 
 async function fetchFAQs() {
-  const data = await fetchWithHeaders("/api/general-faqs");
-  if (!data) return [];
+  try {
+    const response = await fetch("/api/general-faqs", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
 
-  const faqs = Array.isArray(data) ? [...data].reverse() : [];
-  return JSON.parse(JSON.stringify(faqs));
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const faqs = Array.isArray(data) ? [...data].reverse() : [];
+    return JSON.parse(JSON.stringify(faqs));
+  } catch (error) {
+    console.error("❌ fetchFAQs failed:", error);
+    return [];
+  }
 }
 
 async function fetchContent1() {
-  const data = await fetchWithHeaders("/api/content1");
-  return typeof data?.html === "string" ? data.html : "";
+  try {
+    const response = await fetch("/api/content1", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) return "";
+
+    const data = await response.json();
+    return typeof data?.html === "string" ? data.html : "";
+  } catch (error) {
+    console.error("❌ fetchContent1 failed:", error);
+    return "";
+  }
 }
 
 async function fetchContent2() {
-  const data = await fetchWithHeaders("/api/content2");
-  return typeof data?.html === "string" ? data.html : "";
+  try {
+    const response = await fetch("/api/content2", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) return "";
+
+    const data = await response.json();
+    return typeof data?.html === "string" ? data.html : "";
+  } catch (error) {
+    console.error("❌ fetchContent2 failed:", error);
+    return "";
+  }
 }
 
 async function fetchProducts() {
-  const data = await fetchWithHeaders("/api/products");
-  if (!data) return [];
+  try {
+    const response = await fetch("/api/products", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
 
-  const products = Array.isArray(data?.data)
-    ? data.data
-    : Array.isArray(data)
-    ? data
-    : [];
-  return JSON.parse(JSON.stringify(products));
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const products = Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data)
+      ? data
+      : [];
+    return JSON.parse(JSON.stringify(products));
+  } catch (error) {
+    console.error("❌ fetchProducts failed:", error);
+    return [];
+  }
 }
 
 async function fetchAnnouncement() {
-  const data = await fetchWithHeaders("/api/announcement");
-  return data ? JSON.parse(JSON.stringify(data)) : null;
+  try {
+    const response = await fetch("/api/announcement", {
+      headers: { "Content-Type": "application/json" },
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data ? JSON.parse(JSON.stringify(data)) : null;
+  } catch (error) {
+    console.error("❌ fetchAnnouncement failed:", error);
+    return null;
+  }
 }
 
 // ✅ Metadata generation
@@ -222,19 +246,6 @@ export async function generateMetadata() {
 
 // ✅ Main Page Component
 export default async function Page() {
-  const buildEnv = process.env.VERCEL_ENV || process.env.NODE_ENV || "unknown";
-  const apiUrl = getAPIUrl();
-
-  console.log("\n═══════════════════════════════════════");
-  console.log("🚀 PAGE BUILD START");
-  console.log(`📍 Environment: ${buildEnv}`);
-  console.log(`📍 API URL: ${apiUrl}`);
-  console.log(`📍 VERCEL_URL: ${process.env.VERCEL_URL || "not set"}`);
-  console.log(
-    `📍 NEXT_PUBLIC_SITE_URL: ${process.env.NEXT_PUBLIC_SITE_URL || "not set"}`
-  );
-  console.log("═══════════════════════════════════════\n");
-
   const startTime = Date.now();
 
   // ✅ Fetch all APIs in parallel
@@ -262,38 +273,12 @@ export default async function Page() {
 
   const buildTime = Date.now() - startTime;
 
-  console.log("═══════════════════════════════════════");
-  console.log(`✅ BUILD COMPLETE in ${buildTime}ms`);
-  console.log("═══════════════════════════════════════");
-  console.log("📊 Data Summary:");
-  console.log(`  • SEO: ${Object.keys(seo).length} fields`);
-  console.log(`  • Dumps: ${dumps?.length || 0} items`);
-  console.log(`  • Categories: ${categories?.length || 0} items`);
-  console.log(`  • Blogs: ${blogs?.length || 0} items`);
-  console.log(`  • FAQs: ${faqs?.length || 0} items`);
-  console.log(`  • Content1: ${content1?.length || 0} chars`);
-  console.log(`  • Content2: ${content2?.length || 0} chars`);
-  console.log(`  • Products: ${products?.length || 0} items`);
-  console.log(`  • Announcement: ${announcement?.active ? "✓" : "✗"}`);
-
-  // 🔍 DEBUG: Log actual data
-  if (dumps?.length > 0) {
-    console.log("\n🔍 First Dump Item:", JSON.stringify(dumps[0], null, 2));
-  } else {
-    console.error("\n❌ CRITICAL: Dumps array is empty!");
-  }
-
-  console.log("═══════════════════════════════════════\n");
-
-  // ✅ Warn if critical data is missing
-  if (!blogs.length || !dumps.length || !faqs.length) {
-    console.error("❌ CRITICAL: Missing data detected!");
-    console.error({
-      blogsEmpty: blogs.length === 0,
-      dumpsEmpty: dumps.length === 0,
-      faqsEmpty: faqs.length === 0,
-    });
-  }
+  console.log(`✅ Page loaded in ${buildTime}ms`);
+  console.log(
+    `📊 Dumps: ${dumps?.length || 0}, Blogs: ${blogs?.length || 0}, FAQs: ${
+      faqs?.length || 0
+    }`
+  );
 
   return (
     <HomePage
@@ -309,25 +294,3 @@ export default async function Page() {
     />
   );
 }
-
-// ============================================
-// VERCEL ENVIRONMENT VARIABLES REQUIRED
-// ============================================
-// Add these in Vercel Dashboard → Settings → Environment Variables:
-//
-// 1. NEXT_PUBLIC_SITE_URL=https://prepmantras.com
-//    (or your actual domain)
-//
-// 2. VERCEL_URL is automatically set by Vercel
-//    (no need to add manually)
-//
-// ============================================
-// DEBUGGING ON VERCEL
-// ============================================
-// 1. Check build logs in Vercel Dashboard
-// 2. Look for "📡 Fetching:" logs
-// 3. Check for "❌ API Error:" messages
-// 4. Verify API routes are deployed:
-//    - https://your-domain.com/api/trending
-//    - https://your-domain.com/api/blogs
-//    - etc.
