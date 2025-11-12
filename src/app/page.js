@@ -1,5 +1,5 @@
 // ============================================
-// FILE: app/page.jsx (FIXED VERSION)
+// FILE: app/page.jsx (FIXED - HANDLES API DATA CORRECTLY)
 // ============================================
 
 import HomePage from "@/components/HomePage";
@@ -30,6 +30,7 @@ async function fetchWithHeaders(endpoint) {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
       },
       next: { revalidate: 300 }, // ISR: revalidate every 5 minutes
+      cache: "no-store", // ✅ CRITICAL: Force fresh data in production
     });
 
     if (!response.ok) {
@@ -38,55 +39,96 @@ async function fetchWithHeaders(endpoint) {
     }
 
     const data = await response.json();
+
+    // ✅ Log what we actually received
+    console.log(
+      `✅ ${endpoint} returned:`,
+      Array.isArray(data) ? `${data.length} items` : typeof data
+    );
+
     return data;
   } catch (error) {
-    console.error(`❌ Fetch failed: ${endpoint}`, error);
+    console.error(`❌ Fetch failed: ${endpoint}`, error.message);
     return null;
   }
 }
 
-// ✅ Data fetchers with fallbacks and serialization
-async function fetchSEO() {
-  const data = await fetchWithHeaders("/api/seo/home");
-  const seoData = data?.data || data || {};
-  return JSON.parse(JSON.stringify(seoData));
-}
-
+// ✅ CRITICAL FIX: Handle the actual data structure from your API
 async function fetchDumps() {
   const data = await fetchWithHeaders("/api/trending");
-  const dumps = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.data)
-    ? data.data
-    : [];
-  return JSON.parse(JSON.stringify(dumps));
+
+  // Your API returns an array directly
+  if (!data) {
+    console.warn("⚠️ /api/trending returned null");
+    return [];
+  }
+
+  if (!Array.isArray(data)) {
+    console.warn("⚠️ /api/trending didn't return an array:", typeof data);
+    return [];
+  }
+
+  console.log(`✅ Fetched ${data.length} dumps from /api/trending`);
+
+  // ✅ Transform data to match your component expectations
+  const transformed = data.map((dump) => ({
+    _id: dump._id || dump.id,
+    title: dump.title || "Untitled",
+    // Add any other fields your components need
+  }));
+
+  return JSON.parse(JSON.stringify(transformed));
 }
 
 async function fetchCategories() {
   const data = await fetchWithHeaders("/api/blogs/blog-categories");
+
+  if (!data) return [];
+
   const categories = Array.isArray(data)
     ? data
     : Array.isArray(data?.data)
     ? data.data
     : [];
+
+  console.log(`✅ Fetched ${categories.length} categories`);
   return JSON.parse(JSON.stringify(categories));
 }
 
 async function fetchBlogs() {
   const data = await fetchWithHeaders("/api/blogs");
+
+  if (!data) return [];
+
   let blogs = [];
   if (Array.isArray(data)) blogs = data;
   else if (Array.isArray(data?.blogs)) blogs = data.blogs;
   else if (Array.isArray(data?.data)) blogs = data.data;
   else if (data?.data && Array.isArray(data.data?.blogs))
     blogs = data.data.blogs;
+
+  console.log(`✅ Fetched ${blogs.length} blogs`);
   return JSON.parse(JSON.stringify(blogs));
 }
 
 async function fetchFAQs() {
   const data = await fetchWithHeaders("/api/general-faqs");
+
+  if (!data) return [];
+
   const faqs = Array.isArray(data) ? [...data].reverse() : [];
+  console.log(`✅ Fetched ${faqs.length} FAQs`);
   return JSON.parse(JSON.stringify(faqs));
+}
+
+async function fetchSEO() {
+  const data = await fetchWithHeaders("/api/seo/home");
+
+  if (!data) return {};
+
+  const seoData = data?.data || data || {};
+  console.log(`✅ Fetched SEO with ${Object.keys(seoData).length} fields`);
+  return JSON.parse(JSON.stringify(seoData));
 }
 
 async function fetchContent1() {
@@ -101,11 +143,16 @@ async function fetchContent2() {
 
 async function fetchProducts() {
   const data = await fetchWithHeaders("/api/products");
+
+  if (!data) return [];
+
   const products = Array.isArray(data?.data)
     ? data.data
     : Array.isArray(data)
     ? data
     : [];
+
+  console.log(`✅ Fetched ${products.length} products`);
   return JSON.parse(JSON.stringify(products));
 }
 
@@ -178,30 +225,32 @@ export async function generateMetadata() {
 
 // ✅ Main Page Component
 export default async function Page() {
-  console.log("\n═══════════════════════════════════════");
+  console.log("\n════════════════════════════════════════════════");
   console.log("🚀 PAGE BUILD START");
+  console.log(`📍 Environment: ${process.env.NODE_ENV}`);
   console.log(`📍 API URL: ${getAPIUrl()}`);
-  console.log("═══════════════════════════════════════\n");
+  console.log(`📍 Vercel URL: ${process.env.VERCEL_URL || "not set"}`);
+  console.log("════════════════════════════════════════════════\n");
 
   const startTime = Date.now();
 
   // ✅ Fetch all APIs in parallel
   const [
-    seo,
     dumps,
     categories,
     blogs,
     faqs,
+    seo,
     content1,
     content2,
     products,
     announcement,
-  ] = await Promise.all([
-    fetchSEO(),
+  ] = await Promise.allSettled([
     fetchDumps(),
     fetchCategories(),
     fetchBlogs(),
     fetchFAQs(),
+    fetchSEO(),
     fetchContent1(),
     fetchContent2(),
     fetchProducts(),
@@ -210,121 +259,63 @@ export default async function Page() {
 
   const buildTime = Date.now() - startTime;
 
-  console.log("═══════════════════════════════════════");
-  console.log(`✅ BUILD COMPLETE in ${buildTime}ms`);
-  console.log("═══════════════════════════════════════");
-  console.log("📊 Data Summary:");
-  console.log(`  • SEO: ${Object.keys(seo).length} fields`);
-  console.log(`  • Dumps: ${dumps?.length || 0} items`);
-  console.log(`  • Categories: ${categories?.length || 0} items`);
-  console.log(`  • Blogs: ${blogs?.length || 0} items`);
-  console.log(`  • FAQs: ${faqs?.length || 0} items`);
-  console.log(`  • Content1: ${content1?.length || 0} chars`);
-  console.log(`  • Content2: ${content2?.length || 0} chars`);
-  console.log(`  • Products: ${products?.length || 0} items`);
-  console.log(`  • Announcement: ${announcement?.active ? "✓" : "✗"}`);
+  // ✅ Extract values from Promise results
+  const dumpsData = dumps.status === "fulfilled" ? dumps.value : [];
+  const categoriesData =
+    categories.status === "fulfilled" ? categories.value : [];
+  const blogsData = blogs.status === "fulfilled" ? blogs.value : [];
+  const faqsData = faqs.status === "fulfilled" ? faqs.value : [];
+  const seoData = seo.status === "fulfilled" ? seo.value : {};
+  const content1Data = content1.status === "fulfilled" ? content1.value : "";
+  const content2Data = content2.status === "fulfilled" ? content2.value : "";
+  const productsData = products.status === "fulfilled" ? products.value : [];
+  const announcementData =
+    announcement.status === "fulfilled" ? announcement.value : null;
 
-  // 🔍 DEBUG: Log actual data structure
-  if (dumps?.length > 0) {
-    console.log("\n🔍 First Dump Item:", JSON.stringify(dumps[0], null, 2));
+  console.log("════════════════════════════════════════════════");
+  console.log(`✅ BUILD COMPLETE in ${buildTime}ms`);
+  console.log("════════════════════════════════════════════════");
+  console.log("📊 Data Summary:");
+  console.log(`  • SEO: ${Object.keys(seoData).length} fields`);
+  console.log(`  • Dumps: ${dumpsData?.length || 0} items`);
+  console.log(`  • Categories: ${categoriesData?.length || 0} items`);
+  console.log(`  • Blogs: ${blogsData?.length || 0} items`);
+  console.log(`  • FAQs: ${faqsData?.length || 0} items`);
+  console.log(`  • Content1: ${content1Data?.length || 0} chars`);
+  console.log(`  • Content2: ${content2Data?.length || 0} chars`);
+  console.log(`  • Products: ${productsData?.length || 0} items`);
+  console.log(`  • Announcement: ${announcementData?.active ? "✓" : "✗"}`);
+
+  // 🔍 DEBUG: Log first dump item to verify structure
+  if (dumpsData?.length > 0) {
+    console.log("\n🔍 First Dump Item:", JSON.stringify(dumpsData[0], null, 2));
+  } else {
+    console.log("\n⚠️  WARNING: No dumps data received!");
   }
 
-  console.log("═══════════════════════════════════════\n");
+  console.log("════════════════════════════════════════════════\n");
 
   // ✅ Warn if critical data is missing
-  if (!blogs.length || !dumps.length || !faqs.length) {
+  if (!blogsData.length || !dumpsData.length || !faqsData.length) {
     console.warn("⚠️  WARNING: Some critical data is missing!");
     console.warn({
-      blogsEmpty: blogs.length === 0,
-      dumpsEmpty: dumps.length === 0,
-      faqsEmpty: faqs.length === 0,
+      blogsEmpty: blogsData.length === 0,
+      dumpsEmpty: dumpsData.length === 0,
+      faqsEmpty: faqsData.length === 0,
     });
   }
 
   return (
     <HomePage
-      seo={seo}
-      dumps={dumps}
-      categories={categories}
-      blogs={blogs}
-      faqs={faqs}
-      content1={content1}
-      content2={content2}
-      products={products}
-      announcement={announcement}
+      seo={seoData}
+      dumps={dumpsData}
+      categories={categoriesData}
+      blogs={blogsData}
+      faqs={faqsData}
+      content1={content1Data}
+      content2={content2Data}
+      products={productsData}
+      announcement={announcementData}
     />
   );
 }
-
-// ============================================
-// CHECK YOUR CLIENT COMPONENTS
-// ============================================
-// Search for these patterns in your codebase:
-
-// In: components/ExamDumpsSlider.jsx
-// In: landingpage/ExamDumpsSlider.jsx
-// In: any other client components
-
-// ❌ BAD - Will fail on live:
-// fetch('https://prepmantras.com/api/products')
-
-// ✅ GOOD - Works everywhere:
-// fetch('/api/products')
-
-// ============================================
-// EXAMPLE FIX FOR CLIENT COMPONENT
-// ============================================
-
-// If ExamDumpsSlider.jsx has something like:
-/*
-useEffect(() => {
-  fetch('https://prepmantras.com/api/products')
-    .then(res => res.json())
-    .then(data => setProducts(data));
-}, []);
-*/
-
-// Change it to:
-/*
-useEffect(() => {
-  fetch('/api/products')  // ✅ Relative path
-    .then(res => res.json())
-    .then(data => setProducts(data));
-}, []);
-*/
-
-// ============================================
-// VERCEL DEPLOYMENT FIX
-// ============================================
-// If deploying to Vercel, add these environment variables:
-//
-// VERCEL_URL - automatically set by Vercel
-// NEXT_PUBLIC_BASE_URL=https://prepmantras.com
-//
-// For other platforms, set:
-// NEXT_PUBLIC_BASE_URL=https://your-domain.com
-
-// ============================================
-// DEBUGGING STEPS
-// ============================================
-// 1. Test locally in production mode:
-//    npm run build
-//    npm run start
-//    Visit: http://localhost:3000
-//    Open DevTools Network tab - all /api/* should return 200
-//
-// 2. Check your API routes exist:
-//    app/api/products/route.js
-//    app/api/trending/route.js
-//    app/api/session/route.js
-//    etc.
-//
-// 3. Verify API route exports:
-//    Each should export GET, POST, etc.
-//    Example: export async function GET(request) { ... }
-//
-// 4. Check build output:
-//    npm run build should show:
-//    ○ /api/products
-//    ○ /api/trending
-//    etc.
