@@ -61,13 +61,28 @@ export default function HomePage({
 }) {
   const [showModal, setShowModal] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const [showDebug, setShowDebug] = useState(false);
 
-  // 🔥 NEW: Add mount state to track client-side rendering
-  const [isMounted, setIsMounted] = useState(false);
+  // 🔥 FIX: Normalize data immediately, not in useEffect
+  // This ensures consistent rendering on server and client
+  const normalizedDumps = Array.isArray(dumps)
+    ? dumps.filter((d) => d && (d._id || d.id) && (d.title || d.name))
+    : [];
 
+  const normalizedBlogs = Array.isArray(blogs) ? blogs : [];
+  const normalizedProducts = Array.isArray(products) ? products : [];
+  const normalizedFaqs = Array.isArray(faqs) ? faqs : [];
+  const normalizedCategories = Array.isArray(categories) ? categories : [];
+
+  // ✅ Debug logging (only in browser)
   useEffect(() => {
-    setIsMounted(true);
+    console.group("🏠 HomePage Data Check");
+    console.log("Dumps received:", dumps);
+    console.log("Dumps normalized:", normalizedDumps);
+    console.log("Normalized length:", normalizedDumps.length);
+    if (normalizedDumps.length > 0) {
+      console.log("First dump:", normalizedDumps[0]);
+    }
+    console.groupEnd();
   }, []);
 
   // ✅ Online/Offline detection
@@ -102,217 +117,8 @@ export default function HomePage({
 
   const closeModal = () => setShowModal(false);
 
-  const clearAllCache = () => {
-    if (confirm("Clear cache and reload?")) {
-      localStorage.removeItem("pm_seo");
-      localStorage.removeItem("pm_dumps");
-      localStorage.removeItem("pm_categories");
-      localStorage.removeItem("pm_blogs");
-      localStorage.removeItem("pm_faqs");
-      localStorage.removeItem("pm_content1");
-      localStorage.removeItem("pm_content2");
-      localStorage.removeItem("pm_products");
-      localStorage.removeItem("pm_announcement");
-      localStorage.removeItem("announcementShownAt");
-      console.log("🧹 Cache cleared!");
-      window.location.reload();
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") {
-        e.preventDefault();
-        clearAllCache();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "B") {
-        e.preventDefault();
-        setShowDebug(!showDebug);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [showDebug]);
-
-  // 🔥 ENHANCED: Better logging with data inspection
-  useEffect(() => {
-    console.group("🔍 HomePage Client Data Inspection");
-    console.log("Mounted:", isMounted);
-    console.log("SEO keys:", Object.keys(seo).length);
-    console.log("Dumps received:", dumps);
-    console.log("Dumps length:", dumps?.length);
-    console.log("Dumps is array?", Array.isArray(dumps));
-    console.log("Categories:", categories?.length);
-    console.log("Blogs:", blogs?.length);
-    console.log("FAQs:", faqs?.length);
-    console.log("Products:", products?.length);
-
-    // 🔥 Detailed dump inspection
-    if (dumps && dumps.length > 0) {
-      console.log("First dump item:", dumps[0]);
-      console.log("Dump has _id?", !!dumps[0]._id);
-      console.log("Dump has title?", !!dumps[0].title);
-    } else {
-      console.warn("❌ Dumps array is empty or undefined!");
-    }
-    console.groupEnd();
-  }, [dumps, categories, blogs, faqs, products, isMounted]);
-
-  // 🔥 NEW: Normalize dumps data to handle different structures
-  const normalizedDumps = Array.isArray(dumps)
-    ? dumps.filter((d) => d && (d.title || d.name || d.label))
-    : [];
-
   return (
     <>
-      {/* ---------- Debug Panel (Ctrl+Shift+B) ---------- */}
-      {showDebug && (
-        <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono max-h-[80vh] overflow-auto">
-          <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
-            <h3 className="font-bold text-sm">Debug Info</h3>
-            <button
-              onClick={() => setShowDebug(false)}
-              className="text-gray-400 hover:text-white"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-400">Client Mounted:</span>
-              <span className={isMounted ? "text-green-400" : "text-red-400"}>
-                {isMounted ? "✓ Yes" : "✗ No"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">SEO Data:</span>
-              <span
-                className={
-                  seo && Object.keys(seo).length > 0
-                    ? "text-green-400"
-                    : "text-red-400"
-                }
-              >
-                {seo && Object.keys(seo).length > 0
-                  ? `✓ ${Object.keys(seo).length} keys`
-                  : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Dumps (raw):</span>
-              <span
-                className={
-                  dumps?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {dumps?.length > 0 ? `✓ ${dumps.length} items` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Dumps (normalized):</span>
-              <span
-                className={
-                  normalizedDumps.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {normalizedDumps.length > 0
-                  ? `✓ ${normalizedDumps.length} items`
-                  : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Categories:</span>
-              <span
-                className={
-                  categories?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {categories?.length > 0
-                  ? `✓ ${categories.length} items`
-                  : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Blogs:</span>
-              <span
-                className={
-                  blogs?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {blogs?.length > 0 ? `✓ ${blogs.length} items` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">FAQs:</span>
-              <span
-                className={faqs?.length > 0 ? "text-green-400" : "text-red-400"}
-              >
-                {faqs?.length > 0 ? `✓ ${faqs.length} items` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-400">Products:</span>
-              <span
-                className={
-                  products?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {products?.length > 0
-                  ? `✓ ${products.length} items`
-                  : "✗ Empty"}
-              </span>
-            </div>
-
-            {/* 🔥 NEW: Show actual dump data */}
-            {normalizedDumps.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-700">
-                <div className="text-gray-400 mb-2">First Dump Sample:</div>
-                <pre className="text-[10px] bg-gray-800 p-2 rounded overflow-auto max-h-40">
-                  {JSON.stringify(normalizedDumps[0], null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-gray-700 text-gray-400 text-[10px]">
-            Press Ctrl+Shift+B to close
-          </div>
-        </div>
-      )}
-
-      {/* ---------- Developer Controls ---------- */}
-      {typeof window !== "undefined" &&
-        process.env.NODE_ENV === "development" && (
-          <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
-              title="Show debug info (Ctrl+Shift+B)"
-            >
-              <AlertCircle size={16} />
-              Debug
-            </button>
-
-            <button
-              onClick={clearAllCache}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors flex items-center gap-2"
-              title="Clear cache (Ctrl+Shift+D)"
-            >
-              <X size={16} />
-              Clear Cache
-            </button>
-          </div>
-        )}
-
       {/* ---------- Offline Indicator ---------- */}
       {!isOnline && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
@@ -400,15 +206,11 @@ export default function HomePage({
             Top Trending Certification Dumps
           </h2>
 
-          {/* 🔥 ENHANCED: Better error handling and debugging */}
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {!isMounted ? (
-              <p className="text-gray-400 text-sm">Loading...</p>
-            ) : normalizedDumps.length > 0 ? (
+          {/* 🔥 FIXED: Consistent rendering without conditional mounting */}
+          <div className="flex flex-wrap justify-center gap-3 mb-10 min-h-[100px]">
+            {normalizedDumps.length > 0 ? (
               normalizedDumps.map((dump, index) => {
-                // 🔥 Handle different possible property names
-                const displayText =
-                  dump.title || dump.name || dump.label || "Unnamed Dump";
+                const displayText = dump.title || dump.name || "Unnamed Dump";
                 const uniqueKey = dump._id || dump.id || `dump-${index}`;
 
                 return (
@@ -422,10 +224,10 @@ export default function HomePage({
                 );
               })
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 text-sm mb-2">No dumps available</p>
-                <p className="text-xs text-gray-400">
-                  Press Ctrl+Shift+B for debug info
+              <div className="text-center py-8 w-full">
+                <p className="text-gray-500">No dumps available</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Dumps data: {JSON.stringify(dumps)}
                 </p>
               </div>
             )}
@@ -433,17 +235,21 @@ export default function HomePage({
         </section>
 
         {/* ---------- Lazy Loaded Sections ---------- */}
-        {blogs.length > 0 && (
-          <BlogSection blogs={blogs} categories={categories} />
+        {normalizedBlogs.length > 0 && (
+          <BlogSection
+            blogs={normalizedBlogs}
+            categories={normalizedCategories}
+          />
         )}
-        {products.length > 0 && <ExamDumpsSlider products={products} />}
+        {normalizedProducts.length > 0 && (
+          <ExamDumpsSlider products={normalizedProducts} />
+        )}
         {content1 && <ContentDumpsFirst content={content1} />}
         <UnlockGoals />
         {content2 && <ContentDumpsSecond content={content2} />}
         <Testimonial />
-        {faqs.length > 0 && <GeneralFAQs faqs={faqs} />}
+        {normalizedFaqs.length > 0 && <GeneralFAQs faqs={normalizedFaqs} />}
       </div>
     </>
   );
 }
-  

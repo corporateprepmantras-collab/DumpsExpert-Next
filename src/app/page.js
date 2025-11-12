@@ -70,7 +70,7 @@ async function fetchSEO() {
 
 async function fetchDumps() {
   const data = await fetchWithHeaders("/api/trending");
-  console.log("📦 Raw dumps data:", data);
+  console.log("📦 Raw dumps data:", JSON.stringify(data).substring(0, 200));
 
   let dumps = [];
 
@@ -87,8 +87,18 @@ async function fetchDumps() {
     dumps = data.data.data;
   }
 
-  console.log(`✅ Extracted ${dumps.length} dumps`);
-  return JSON.parse(JSON.stringify(dumps));
+  // 🔥 Ensure proper serialization and filter invalid items
+  const serialized = dumps
+    .filter((d) => d && (d._id || d.id) && (d.title || d.name))
+    .map((dump) => ({
+      _id: dump._id?.toString() || dump.id?.toString(),
+      title: dump.title || dump.name || "",
+      createdAt: dump.createdAt,
+      updatedAt: dump.updatedAt,
+    }));
+
+  console.log(`✅ Extracted ${serialized.length} dumps`);
+  return serialized;
 }
 
 async function fetchCategories() {
@@ -275,6 +285,16 @@ export default async function Page() {
       faqsEmpty: faqs.length === 0,
     });
   }
+
+  // 🔍 Log what we're passing to HomePage
+  console.log("📤 PASSING TO HOMEPAGE:");
+  console.log({
+    dumps: dumps?.length || 0,
+    categories: categories?.length || 0,
+    blogs: blogs?.length || 0,
+    faqs: faqs?.length || 0,
+    products: products?.length || 0,
+  });
 
   return (
     <HomePage
