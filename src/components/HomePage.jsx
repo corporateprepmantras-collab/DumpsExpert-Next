@@ -64,37 +64,48 @@ export default function HomePage({
   const [isOnline, setIsOnline] = useState(true);
   const [dataSource, setDataSource] = useState(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [loadTimeout, setLoadTimeout] = useState(false);
 
-  // ✅ Check if all data is loaded
+  // ✅ CRITICAL FIX: Set a timeout to prevent infinite loading
   useEffect(() => {
-    // Wait for all critical data
-    const hasAllData =
-      Object.keys(seo).length > 0 &&
-      dumps.length > 0 &&
-      categories.length > 0 &&
-      blogs.length > 0 &&
-      faqs.length > 0;
-
-    if (hasAllData) {
-      console.log("✅ ALL DATA LOADED - Showing page");
+    // After 5 seconds, show content even if some data is missing
+    const timer = setTimeout(() => {
+      console.log("⏰ Loading timeout reached - forcing display");
+      setLoadTimeout(true);
       setIsLoading(false);
-    } else {
-      console.log("⏳ Waiting for data...", {
-        seo: Object.keys(seo).length,
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ✅ IMPROVED: Check if we have RECEIVED data (even if empty)
+  useEffect(() => {
+    // Check if props have been received (not undefined)
+    const propsReceived =
+      seo !== undefined &&
+      dumps !== undefined &&
+      categories !== undefined &&
+      blogs !== undefined &&
+      faqs !== undefined;
+
+    if (propsReceived) {
+      console.log("✅ Props received from server - showing page", {
+        seoKeys: Object.keys(seo).length,
         dumps: dumps.length,
         categories: categories.length,
         blogs: blogs.length,
         faqs: faqs.length,
       });
-      // Don't set loading to true if already showing something
-      if (isLoading) {
-        setIsLoading(true);
-      }
+      setIsLoading(false);
+    } else {
+      console.log("⏳ Still waiting for props from server...");
     }
-  }, [seo, dumps, categories, blogs, faqs, isLoading]);
+  }, [seo, dumps, categories, blogs, faqs]);
 
   // ✅ Detect data source
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const checkDataSource = () => {
       const hasCachedSEO = localStorage.getItem("pm_seo");
       const hasCachedDumps = localStorage.getItem("pm_dumps");
@@ -127,6 +138,8 @@ export default function HomePage({
 
   // ✅ Online/Offline detection
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
@@ -141,6 +154,8 @@ export default function HomePage({
 
   // ✅ Show announcement on mount
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     if (announcement?.active) {
       const lastShown = localStorage.getItem("announcementShownAt");
       const now = Date.now();
@@ -174,6 +189,8 @@ export default function HomePage({
   };
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const handleKeyPress = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") {
         e.preventDefault();
@@ -189,8 +206,8 @@ export default function HomePage({
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showDebug]);
 
-  // ✅ SHOW LOADING SCREEN UNTIL ALL DATA LOADS
-  if (isLoading) {
+  // ✅ SHOW LOADING SCREEN UNTIL DATA LOADS OR TIMEOUT
+  if (isLoading && !loadTimeout) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
@@ -218,13 +235,32 @@ export default function HomePage({
             </div>
             <div className="mb-2">{faqs.length > 0 ? "✓" : "⏳"} FAQs</div>
           </div>
+
+          {/* Timeout warning */}
+          <div className="mt-4 text-xs text-gray-400">
+            If loading takes too long, page will display automatically...
+          </div>
         </div>
       </div>
     );
   }
 
+  // ✅ Show warning if data is missing after timeout
+  const hasDataIssues =
+    dumps.length === 0 || blogs.length === 0 || faqs.length === 0;
+
   return (
     <>
+      {/* ---------- Data Issues Warning ---------- */}
+      {hasDataIssues && loadTimeout && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <AlertCircle size={16} />
+          <span className="text-sm font-medium">
+            Some content may be incomplete
+          </span>
+        </div>
+      )}
+
       {/* ---------- Debug Panel (Ctrl+Shift+B) ---------- */}
       {showDebug && (
         <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-md text-xs font-mono">
@@ -309,6 +345,17 @@ export default function HomePage({
                   ? `✓ ${products.length} items`
                   : "✗ Empty"}
               </span>
+            </div>
+
+            <div className="pt-2 border-t border-gray-700">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Timeout Hit:</span>
+                <span
+                  className={loadTimeout ? "text-yellow-400" : "text-green-400"}
+                >
+                  {loadTimeout ? "Yes" : "No"}
+                </span>
+              </div>
             </div>
 
             <div className="pt-2 border-t border-gray-700">
@@ -464,7 +511,9 @@ export default function HomePage({
                 </Button>
               ))
             ) : (
-              <p className="text-gray-500 text-sm">No dumps available</p>
+              <p className="text-gray-500 text-sm">
+                Loading certification dumps...
+              </p>
             )}
           </div>
         </section>
