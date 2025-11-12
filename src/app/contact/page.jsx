@@ -1,58 +1,21 @@
-import Contact from "@/components/Contact";
+// ============================================
+// FILE: app/contact/page.jsx (FIXED)
+// ============================================
 
-// ✅ Fetch SEO dynamically from your API
-export async function generateMetadata() {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/seo/contact`,
-      {
-        next: { revalidate: 60 }, // revalidate every 60 seconds
-      }
-    );
+import Contact from "@/components/Contact"; // Adjust path as needed
 
-    if (!res.ok) throw new Error("Failed to fetch SEO data");
+// ✅ Static metadata - no fetching
+export const metadata = {
+  title: "Contact Us - Prepmantras | 24/7 IT Certification Support",
+  description: "Get in touch with Prepmantras for IT certification exam preparation support. Email, phone, and live chat available 24/7.",
+  keywords: "contact prepmantras, IT certification support, exam dumps support",
+};
 
-    const data = await res.json();
+// ✅ Force dynamic rendering - don't generate at build time
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-    return {
-      title: data.title || "Contact Us - DumpsXpert",
-      description:
-        data.description ||
-        "Get in touch with DumpsXpert for queries or support.",
-      keywords: data.keywords || "contact, dumpsxpert, support, help",
-      alternates: {
-        canonical: data.canonicalurl || "https://dumpsxpert.com/contact",
-      },
-
-      openGraph: {
-        title: data.ogtitle || data.title,
-        description: data.ogdescription || data.description,
-        url: data.ogurl || "https://dumpsxpert.com/contact",
-        images: [{ url: data.ogimage || "/default-og.png" }],
-      },
-
-      twitter: {
-        card: data.twittercard || "summary_large_image",
-        title: data.twittertitle || data.title,
-        description: data.twitterdescription || data.description,
-        images: [data.twitterimage || "/default-og.png"],
-      },
-
-      other: {
-        "application/ld+json": data.schema,
-      },
-    };
-  } catch (error) {
-    console.error("SEO fetch failed:", error);
-    return {
-      title: "Contact Us - DumpsXpert",
-      description:
-        "Reach out to DumpsXpert for queries, support, or partnerships.",
-    };
-  }
-}
-
-// ✅ Page Component
+// ✅ Simple wrapper - no data fetching
 export default function ContactPage() {
   return <Contact />;
 }

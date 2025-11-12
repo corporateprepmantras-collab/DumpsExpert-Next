@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   FaFacebook,
   FaInstagram,
@@ -9,8 +10,23 @@ import {
   FaYoutube,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
-import ContactDataFirst from "./../app/contact/ContactDataFirst.jsx";
-import ContactDataSecond from "./../app/contact/ContactDataSecond.jsx";
+
+// ✅ Lazy load these components to avoid build-time issues
+const ContactDataFirst = dynamic(
+  () => import("@/app/contact/ContactDataFirst"),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded" />,
+  }
+);
+
+const ContactDataSecond = dynamic(
+  () => import("@/app/contact/ContactDataSecond"),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded" />,
+  }
+);
 
 const Contact = () => {
   const [form, setForm] = useState({
@@ -61,7 +77,9 @@ const Contact = () => {
       <div className="flex flex-col md:flex-row w-full max-w-5xl gap-10">
         {/* Left Content */}
         <div className="flex flex-col flex-1 justify-center">
-          <h3 className="text-2xl font-semibold mb-4">24x7 Support Available</h3>
+          <h3 className="text-2xl font-semibold mb-4">
+            24x7 Support Available
+          </h3>
           <p className="text-[#555] text-base leading-relaxed mb-4">
             We'd love to hear from you! Whether you have a question about our
             services, need assistance, or just want to give feedback, feel free
@@ -163,6 +181,8 @@ const Contact = () => {
           )}
         </div>
       </div>
+
+      {/* ✅ Lazy loaded components */}
       <ContactDataFirst />
       <ContactDataSecond />
     </div>
