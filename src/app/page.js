@@ -4,9 +4,36 @@
 
 import HomePage from "@/components/HomePage";
 
-// ✅ Simple fetch with relative paths only
+// ✅ Get the correct base URL for server-side fetches
+function getBaseURL() {
+  // Browser (client-side): use relative paths
+  if (typeof window !== "undefined") {
+    return "";
+  }
+
+  // Vercel production or preview
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // Explicitly set production URL (RECOMMENDED)
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+
+  // HARDCODED FALLBACK - Replace with your actual domain
+  if (process.env.NODE_ENV === "production") {
+    return "https://dumps-expert-next.vercel.app"; // ⚠️ CHANGE THIS!
+  }
+
+  // Local development
+  return "http://localhost:3000";
+}
+
+// ✅ Fetch with proper URL handling
 async function fetchWithHeaders(endpoint) {
-  const url = `http://localhost:3000${endpoint}`; // Temporary fix for server-side
+  const baseURL = getBaseURL();
+  const url = `${baseURL}${endpoint}`;
 
   try {
     console.log(`🔄 Fetching: ${url}`);
@@ -43,11 +70,24 @@ async function fetchSEO() {
 
 async function fetchDumps() {
   const data = await fetchWithHeaders("/api/trending");
-  const dumps = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.data)
-    ? data.data
-    : [];
+  console.log("📦 Raw dumps data:", data);
+
+  let dumps = [];
+
+  // Try multiple possible data structures
+  if (Array.isArray(data)) {
+    dumps = data;
+  } else if (Array.isArray(data?.data)) {
+    dumps = data.data;
+  } else if (Array.isArray(data?.dumps)) {
+    dumps = data.dumps;
+  } else if (Array.isArray(data?.products)) {
+    dumps = data.products;
+  } else if (data?.data?.data && Array.isArray(data.data.data)) {
+    dumps = data.data.data;
+  }
+
+  console.log(`✅ Extracted ${dumps.length} dumps`);
   return JSON.parse(JSON.stringify(dumps));
 }
 
@@ -212,10 +252,18 @@ export default async function Page() {
   console.log(`  • Products: ${products?.length || 0} items`);
   console.log(`  • Announcement: ${announcement?.active ? "✓" : "✗"}`);
 
+  // 🔍 DEBUG: Log the ACTUAL data structure
+  console.log("\n🔍 DEBUGGING DATA STRUCTURES:");
+  console.log("─────────────────────────────────────");
+  console.log("Dumps array:", dumps);
+  console.log("Dumps length:", dumps?.length);
   if (dumps?.length > 0) {
-    console.log("\n🔍 First Dump Item:", JSON.stringify(dumps[0], null, 2));
+    console.log("First dump:", JSON.stringify(dumps[0], null, 2));
+    console.log("Dump keys:", Object.keys(dumps[0]));
   }
-
+  console.log("\nCategories:", categories?.slice(0, 2));
+  console.log("Blogs:", blogs?.slice(0, 2));
+  console.log("Products:", products?.slice(0, 2));
   console.log("═══════════════════════════════════════\n");
 
   // ✅ Warn if critical data is missing
