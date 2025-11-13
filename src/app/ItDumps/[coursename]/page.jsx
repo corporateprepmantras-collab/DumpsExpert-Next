@@ -3,23 +3,86 @@ import Image from "next/image";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
 
 /* ===========================
-   ✅ Fetch category + products
+   ✅ Fetch category + products with graceful fallback
    =========================== */
 async function fetchCategoryData(coursename) {
   try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+    console.log("🔍 Fetching from:", `${baseUrl}/api/products`);
 
     const [prodRes, catRes] = await Promise.all([
-      fetch(`${baseUrl}/api/products`, { next: { revalidate: 60 } }),
-      fetch(`${baseUrl}/api/product-categories`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/api/products`, {
+        next: { revalidate: 60 },
+        cache: "no-store",
+      }).catch((err) => {
+        console.error("❌ Products fetch failed:", err.message);
+        return null;
+      }),
+      fetch(`${baseUrl}/api/product-categories`, {
+        next: { revalidate: 60 },
+        cache: "no-store",
+      }).catch((err) => {
+        console.error("❌ Categories fetch failed:", err.message);
+        return null;
+      }),
     ]);
 
-    const prodData = await prodRes.json();
-    const catData = await catRes.json();
+    let products = [];
+    let categories = [];
 
-    const products = Array.isArray(prodData.data) ? prodData.data : prodData;
-    const categories = Array.isArray(catData.data) ? catData.data : catData;
+    // Handle products response
+    if (prodRes && prodRes.ok) {
+      const contentType = prodRes.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        try {
+          const prodData = await prodRes.json();
+          products = Array.isArray(prodData.data)
+            ? prodData.data
+            : Array.isArray(prodData)
+            ? prodData
+            : [];
+          console.log("✅ Products loaded:", products.length);
+        } catch (parseError) {
+          console.error("❌ Products JSON parse error:", parseError.message);
+        }
+      } else {
+        const text = await prodRes.text();
+        console.error("❌ Products returned non-JSON:", text.substring(0, 200));
+      }
+    } else if (prodRes) {
+      const errorText = await prodRes.text();
+      console.error("❌ Products API failed - Status:", prodRes.status);
+      console.error("❌ Response:", errorText.substring(0, 500));
+    }
+
+    // Handle categories response
+    if (catRes && catRes.ok) {
+      const contentType = catRes.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        try {
+          const catData = await catRes.json();
+          categories = Array.isArray(catData.data)
+            ? catData.data
+            : Array.isArray(catData)
+            ? catData
+            : [];
+          console.log("✅ Categories loaded:", categories.length);
+        } catch (parseError) {
+          console.error("❌ Categories JSON parse error:", parseError.message);
+        }
+      } else {
+        const text = await catRes.text();
+        console.error(
+          "❌ Categories returned non-JSON:",
+          text.substring(0, 200)
+        );
+      }
+    } else if (catRes) {
+      const errorText = await catRes.text();
+      console.error("❌ Categories API failed - Status:", catRes.status);
+      console.error("❌ Response:", errorText.substring(0, 500));
+    }
 
     const matchedCategory = categories.find(
       (c) =>
@@ -31,12 +94,16 @@ async function fetchCategoryData(coursename) {
       (p) => p.category?.toLowerCase() === coursename.toLowerCase()
     );
 
+    console.log("✅ Matched category:", matchedCategory?.name);
+    console.log("✅ Filtered products:", categoryProducts.length);
+
     return {
       category: matchedCategory || null,
       products: categoryProducts || [],
     };
   } catch (err) {
-    console.error("❌ Fetch error:", err);
+    console.error("❌ Fatal fetch error:", err.message);
+    console.error("❌ Stack:", err.stack);
     return { category: null, products: [] };
   }
 }
@@ -120,21 +187,37 @@ export default async function CategoryPage({ params, searchParams }) {
           </div>
         )}
 
+        {/* ✅ No category fallback */}
+        {!category && (
+          <div className="mb-8 shadow rounded-lg border p-6 bg-white">
+            <h1 className="text-3xl sm:text-4xl font-semibold text-gray-800 mb-4">
+              {coursename.toUpperCase()} Exam Dumps [2025]
+            </h1>
+            <p className="text-gray-700">
+              Explore verified {coursename.toUpperCase()} exam dumps and
+              practice tests.
+            </p>
+          </div>
+        )}
+
         {/* ✅ Search + Results */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <p className="text-sm text-gray-600">
             Showing {filteredProducts.length} results
           </p>
 
-          <form className="flex items-center border rounded-md shadow-sm w-full sm:w-[400px]">
+          <form className="flex items-center border rounded-md shadow-sm w-full sm:w-[400px] bg-white">
             <input
               type="text"
               name="q"
               defaultValue={searchTerm}
               placeholder="Search Exam Code or Name"
-              className="w-full px-4 py-2 text-sm focus:outline-none"
+              className="w-full px-4 py-2 text-sm focus:outline-none rounded-l-md"
             />
-            <button type="submit" className="px-4 text-gray-500">
+            <button
+              type="submit"
+              className="px-4 py-2 text-gray-500 hover:text-gray-700"
+            >
               🔍
             </button>
           </form>
@@ -179,7 +262,7 @@ export default async function CategoryPage({ params, searchParams }) {
                       <td className="px-4 py-3">
                         <Link
                           href={`/ItDumps/${coursename}/by-slug/${product.slug}`}
-                          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md shadow-sm"
+                          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md shadow-sm transition"
                         >
                           See Details
                         </Link>
@@ -220,7 +303,7 @@ export default async function CategoryPage({ params, searchParams }) {
                   <div className="absolute bottom-4 left-4 right-4">
                     <Link
                       href={`/ItDumps/${coursename}/by-slug/${product.slug}`}
-                      className="block bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow"
+                      className="block bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow transition"
                     >
                       See Details
                     </Link>
@@ -231,7 +314,7 @@ export default async function CategoryPage({ params, searchParams }) {
             </div>
 
             {/* ✅ Bottom Category Description */}
-            {category && (
+            {category && category.descriptionBelow && (
               <div className="mb-8 shadow rounded-lg border border-gray-200 p-6 mt-10 bg-white">
                 {category.image && (
                   <img
@@ -240,21 +323,24 @@ export default async function CategoryPage({ params, searchParams }) {
                     className="max-h-64 mb-4 rounded-lg shadow"
                   />
                 )}
-                {category.descriptionBelow && (
-                  <div
-                    className="prose max-w-none text-gray-700"
-                    dangerouslySetInnerHTML={{
-                      __html: category.descriptionBelow,
-                    }}
-                  />
-                )}
+                <div
+                  className="prose max-w-none text-gray-700"
+                  dangerouslySetInnerHTML={{
+                    __html: category.descriptionBelow,
+                  }}
+                />
               </div>
             )}
           </>
         ) : (
-          <p className="text-center text-gray-500 mt-10">
-            No products available for this category.
-          </p>
+          <div className="text-center py-16 bg-white rounded-lg shadow border">
+            <p className="text-gray-500 text-lg mb-2">
+              No products available for this category.
+            </p>
+            <p className="text-gray-400 text-sm">
+              Please check back later or try a different category.
+            </p>
+          </div>
         )}
       </div>
     </div>
