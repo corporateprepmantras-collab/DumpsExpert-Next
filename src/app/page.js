@@ -1,360 +1,295 @@
-"use client";
+// ============================================
+// FILE: app/page.jsx (IMPROVED ERROR HANDLING)
+// ============================================
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Check, X, AlertCircle } from "lucide-react";
-import Image from "next/image";
-import dynamic from "next/dynamic";
-import banner from "@/assets/landingassets/banner.webp";
+import HomePage from "@/components/HomePage";
 
-// ✅ Lazy load heavy components
-const BlogSection = dynamic(() => import("@/landingpage/BlogSection"), {
-  ssr: false,
-});
-const ExamDumpsSlider = dynamic(() => import("@/landingpage/ExamDumpsSlider"), {
-  ssr: false,
-});
-const UnlockGoals = dynamic(() => import("@/landingpage/UnlockGoals"), {
-  ssr: false,
-});
-const GeneralFAQs = dynamic(() => import("@/landingpage/GeneralFAQs"), {
-  ssr: false,
-});
-const ContentDumpsFirst = dynamic(
-  () => import("@/landingpage/ContentBoxFirst"),
-  { ssr: false }
-);
-const ContentDumpsSecond = dynamic(
-  () => import("@/landingpage/ContentBoxSecond"),
-  { ssr: false }
-);
-const Testimonial = dynamic(() => import("@/landingpage/Testimonial"), {
-  ssr: false,
-});
-
-const BENEFITS = [
-  "100% Verified & Up-to-Date Prepmantras",
-  "100% Money Back Guarantee",
-  "24/7 Expert Support",
-  "Free Updates for 3 Months",
-  "Realistic Practice Test Interface",
-];
-
-export default function HomePage({
-  seo = {},
-  dumps = [],
-  categories = [],
-  blogs = [],
-  faqs = [],
-  content1 = "",
-  content2 = "",
-  products = [],
-  announcement = null,
-}) {
-  const [showModal, setShowModal] = useState(false);
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
-
-  // ✅ Show announcement modal on mount
-  useEffect(() => {
-    if (typeof window === "undefined" || !announcement?.active) return;
-
-    const lastShown = localStorage.getItem("announcementShownAt");
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-
-    if (!lastShown || now - parseInt(lastShown, 10) > oneHour) {
-      const delay = parseFloat(announcement.delay || "1.00") * 1000;
-      const timer = setTimeout(() => {
-        setShowModal(true);
-        localStorage.setItem("announcementShownAt", now.toString());
-      }, delay);
-
-      return () => clearTimeout(timer);
+const getAPIUrl = () => {
+  if (typeof window === "undefined") {
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
     }
-  }, [announcement]);
+    return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  }
+  return "";
+};
 
-  // ✅ Keyboard shortcuts
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+// ✅ IMPROVED: Silent error logging with structured data
+async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
+  const BASE_URL = getAPIUrl();
+  const url = `${BASE_URL}${endpoint}`;
 
-    const handleKeyPress = (e) => {
-      // Ctrl+Shift+B - Toggle debug
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "B") {
-        e.preventDefault();
-        setShowDebugInfo((prev) => !prev);
-      }
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      // Ctrl+Shift+D - Clear cache
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") {
-        e.preventDefault();
-        if (confirm("Clear all cached data and reload?")) {
-          localStorage.clear();
-          sessionStorage.clear();
-          window.location.reload();
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+        next: { revalidate: 300 },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        if (attempt < retries) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (attempt + 1))
+          );
+          continue;
         }
+        // Return structured error instead of null
+        return { error: true, status: response.status, endpoint };
       }
-    };
 
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
+      const data = await response.json();
+      return { error: false, data };
+    } catch (error) {
+      clearTimeout(timeoutId);
 
-  const closeModal = () => setShowModal(false);
+      // Last attempt - return structured error
+      if (attempt === retries) {
+        return {
+          error: true,
+          message: error.name === "AbortError" ? "timeout" : error.message,
+          endpoint,
+        };
+      }
 
-  // ✅ Check for data issues
-  const hasDataIssues =
-    dumps.length === 0 || blogs.length === 0 || faqs.length === 0;
+      // Wait before retry
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+  }
+
+  return { error: true, message: "max_retries", endpoint };
+}
+
+// ✅ IMPROVED: Fetch functions with silent fallbacks
+async function fetchDumps() {
+  const result = await fetchWithTimeout("/api/trending", 8000);
+
+  if (result.error) {
+    // Silent fallback - no console.error
+    return [];
+  }
+
+  const data = result.data;
+  if (!Array.isArray(data)) return [];
+
+  return data
+    .map((dump) => ({
+      _id: dump._id || dump.id || String(Math.random()),
+      title: dump.title || "Untitled Certification",
+    }))
+    .slice(0, 20);
+}
+
+async function fetchCategories() {
+  const result = await fetchWithTimeout("/api/blogs/blog-categories", 8000);
+  if (result.error) return [];
+
+  const categories = Array.isArray(result.data)
+    ? result.data
+    : Array.isArray(result.data?.data)
+    ? result.data.data
+    : [];
+
+  return categories;
+}
+
+async function fetchBlogs() {
+  const result = await fetchWithTimeout("/api/blogs", 8000);
+  if (result.error) return [];
+
+  const data = result.data;
+  let blogs = [];
+  if (Array.isArray(data)) blogs = data;
+  else if (Array.isArray(data?.blogs)) blogs = data.blogs;
+  else if (Array.isArray(data?.data)) blogs = data.data;
+
+  return blogs.slice(0, 50);
+}
+
+async function fetchFAQs() {
+  const result = await fetchWithTimeout("/api/general-faqs", 8000);
+  if (result.error) return [];
+
+  const faqs = Array.isArray(result.data) ? [...result.data].reverse() : [];
+  return faqs;
+}
+
+async function fetchSEO() {
+  const result = await fetchWithTimeout("/api/seo/home", 8000);
+  if (result.error) return {};
+
+  return result.data?.data || result.data || {};
+}
+
+async function fetchContent1() {
+  const result = await fetchWithTimeout("/api/content1", 5000);
+  if (result.error) return "";
+
+  return result.data?.html || "";
+}
+
+async function fetchContent2() {
+  const result = await fetchWithTimeout("/api/content2", 5000);
+  if (result.error) return "";
+
+  return result.data?.html || "";
+}
+
+async function fetchProducts() {
+  const result = await fetchWithTimeout("/api/products", 8000);
+  if (result.error) return [];
+
+  const data = result.data;
+  const products = Array.isArray(data?.data)
+    ? data.data
+    : Array.isArray(data)
+    ? data
+    : [];
+
+  return products;
+}
+
+async function fetchAnnouncement() {
+  const result = await fetchWithTimeout("/api/announcement", 5000);
+  if (result.error) return null;
+
+  return result.data || null;
+}
+
+// ✅ METADATA GENERATION
+export async function generateMetadata() {
+  const seo = await fetchSEO();
+
+  const defaultTitle = "Prepmantras – #1 IT Exam Prep Provider";
+  const defaultDescription =
+    "Pass your IT certifications in first attempt with trusted exam Prep, practice tests & PDF guides by Prepmantras.";
+
+  return {
+    title: seo.title || defaultTitle,
+    description: seo.description || defaultDescription,
+    keywords:
+      seo.keywords ||
+      "IT certification, exam dumps, practice tests, certification prep",
+    alternates: {
+      canonical: seo.canonicalurl || "https://prepmantras.com/",
+    },
+    openGraph: {
+      title: seo.ogtitle || seo.title || defaultTitle,
+      description: seo.ogdescription || seo.description || defaultDescription,
+      url: seo.ogurl || seo.canonicalurl || "https://prepmantras.com/",
+      images: [
+        {
+          url: seo.ogimage || "/default-og.jpg",
+          width: 1200,
+          height: 630,
+        },
+      ],
+      siteName: "Prepmantras",
+      locale: "en_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.twittertitle || seo.title || defaultTitle,
+      description:
+        seo.twitterdescription || seo.description || defaultDescription,
+      images: [seo.twitterimage || seo.ogimage || "/default-og.jpg"],
+    },
+  };
+}
+
+// ✅ MAIN PAGE COMPONENT
+export default async function Page() {
+  const buildStartTime = Date.now();
+
+  // Collect all errors for optional logging
+  const errors = [];
+
+  // ✅ Fetch all data with individual error handling
+  const [
+    dumps,
+    categories,
+    blogs,
+    faqs,
+    seo,
+    content1,
+    content2,
+    products,
+    announcement,
+  ] = await Promise.all([
+    fetchDumps().catch((e) => {
+      errors.push({ api: "dumps", error: e.message });
+      return [];
+    }),
+    fetchCategories().catch((e) => {
+      errors.push({ api: "categories", error: e.message });
+      return [];
+    }),
+    fetchBlogs().catch((e) => {
+      errors.push({ api: "blogs", error: e.message });
+      return [];
+    }),
+    fetchFAQs().catch((e) => {
+      errors.push({ api: "faqs", error: e.message });
+      return [];
+    }),
+    fetchSEO().catch((e) => {
+      errors.push({ api: "seo", error: e.message });
+      return {};
+    }),
+    fetchContent1().catch((e) => {
+      errors.push({ api: "content1", error: e.message });
+      return "";
+    }),
+    fetchContent2().catch((e) => {
+      errors.push({ api: "content2", error: e.message });
+      return "";
+    }),
+    fetchProducts().catch((e) => {
+      errors.push({ api: "products", error: e.message });
+      return [];
+    }),
+    fetchAnnouncement().catch((e) => {
+      errors.push({ api: "announcement", error: e.message });
+      return null;
+    }),
+  ]);
+
+  const buildTime = Date.now() - buildStartTime;
+
+  // ✅ Optional: Log summary only in development
+  if (process.env.NODE_ENV === "development") {
+    console.log(`\n✅ Page built in ${buildTime}ms`);
+    console.log(
+      `📊 Data: ${dumps.length} dumps, ${blogs.length} blogs, ${faqs.length} FAQs`
+    );
+    if (errors.length > 0) {
+      console.log(`⚠️  ${errors.length} API errors (gracefully handled)`);
+    }
+  }
 
   return (
-    <>
-      {/* ========== Warning Banner ========== */}
-      {hasDataIssues && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
-          <AlertCircle size={16} />
-          <span className="text-sm font-medium">
-            Some content may be incomplete
-          </span>
-        </div>
-      )}
-
-      {/* ========== Debug Info Panel ========== */}
-      {showDebugInfo && (
-        <div className="fixed top-20 right-4 z-50 bg-gray-900 text-white p-4 rounded-lg shadow-2xl max-w-sm text-xs font-mono">
-          <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700">
-            <h3 className="font-bold text-sm">Debug Info</h3>
-            <button
-              onClick={() => setShowDebugInfo(false)}
-              className="text-gray-400 hover:text-white transition-colors"
-              aria-label="Close debug panel"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">SEO Data:</span>
-              <span
-                className={
-                  Object.keys(seo).length > 0
-                    ? "text-green-400"
-                    : "text-red-400"
-                }
-              >
-                {Object.keys(seo).length > 0
-                  ? `✓ ${Object.keys(seo).length} keys`
-                  : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">Dumps:</span>
-              <span
-                className={
-                  dumps?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {dumps?.length > 0 ? `✓ ${dumps.length}` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">Blogs:</span>
-              <span
-                className={
-                  blogs?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {blogs?.length > 0 ? `✓ ${blogs.length}` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">FAQs:</span>
-              <span
-                className={faqs?.length > 0 ? "text-green-400" : "text-red-400"}
-              >
-                {faqs?.length > 0 ? `✓ ${faqs.length}` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">Products:</span>
-              <span
-                className={
-                  products?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {products?.length > 0 ? `✓ ${products.length}` : "✗ Empty"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">Categories:</span>
-              <span
-                className={
-                  categories?.length > 0 ? "text-green-400" : "text-red-400"
-                }
-              >
-                {categories?.length > 0 ? `✓ ${categories.length}` : "✗ Empty"}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-gray-700 text-gray-400 text-[10px]">
-            <div>Press Ctrl+Shift+B to close</div>
-            <div>Press Ctrl+Shift+D to clear cache</div>
-          </div>
-        </div>
-      )}
-
-      {/* ========== Floating Action Buttons (Dev Only) ========== */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-          <button
-            onClick={() => setShowDebugInfo(!showDebugInfo)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-all flex items-center gap-2"
-            title="Toggle Debug Info (Ctrl+Shift+B)"
-          >
-            <AlertCircle size={16} />
-            Debug
-          </button>
-
-          <button
-            onClick={() => {
-              if (confirm("Clear all cache and reload?")) {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.reload();
-              }
-            }}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-all flex items-center gap-2"
-            title="Clear Cache (Ctrl+Shift+D)"
-          >
-            <X size={16} />
-            Clear Cache
-          </button>
-        </div>
-      )}
-
-      {/* ========== Announcement Modal ========== */}
-      {showModal && announcement?.active && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={closeModal}
-        >
-          <div
-            className="relative bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeModal}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-900 transition-colors"
-              aria-label="Close announcement"
-            >
-              <X size={24} />
-            </button>
-
-            {announcement?.imageUrl && (
-              <img
-                src={announcement.imageUrl}
-                alt="Announcement"
-                className="w-full h-auto rounded-lg mb-4"
-                loading="lazy"
-              />
-            )}
-
-            {announcement?.message && (
-              <p className="text-gray-700 text-center text-lg">
-                {announcement.message}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="p-2">
-        {/* ========== Hero Section ========== */}
-        <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
-          <div className="w-full lg:w-1/2 mt-10 lg:mt-0">
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4">
-              Pass Your IT Certification Exam{" "}
-              <span className="text-[#13677c]">On the First Try</span>
-            </h1>
-
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6">
-              Prepmantras offers industry-validated study materials, real exam
-              Prep, and browser-based practice tests to help you get certified
-              faster — and smarter.
-            </p>
-
-            <ul className="space-y-3 text-gray-700 mb-6 text-sm sm:text-base">
-              {BENEFITS.map((item, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <div className="bg-[#7aa93c] rounded-full p-1.5 flex items-center justify-center w-7 h-7 flex-shrink-0">
-                    <Check className="text-white w-4 h-4" />
-                  </div>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="w-full lg:w-1/2 flex justify-center items-center">
-            <Image
-              src={banner}
-              alt="Professional IT certification preparation"
-              className="w-full max-w-[600px] h-auto object-contain"
-              placeholder="blur"
-              priority
-              quality={85}
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
-            />
-          </div>
-        </section>
-
-        {/* ========== Trending Certification Dumps ========== */}
-        <section className="py-16 px-4 md:px-12 bg-white">
-          <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
-            Top Trending Certification Dumps
-          </h2>
-
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {dumps && dumps.length > 0 ? (
-              dumps.map((dump) => (
-                <Button
-                  key={dump._id}
-                  variant="secondary"
-                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2 transition-colors"
-                >
-                  {dump.title}
-                </Button>
-              ))
-            ) : (
-              <p className="text-gray-500 text-sm">
-                No certification dumps available
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* ========== Lazy Loaded Sections ========== */}
-        {blogs.length > 0 && (
-          <BlogSection blogs={blogs} categories={categories} />
-        )}
-
-        {products.length > 0 && <ExamDumpsSlider products={products} />}
-
-        {content1 && <ContentDumpsFirst content={content1} />}
-
-        <UnlockGoals />
-
-        {content2 && <ContentDumpsSecond content={content2} />}
-
-        <Testimonial />
-
-        {faqs.length > 0 && <GeneralFAQs faqs={faqs} />}
-      </div>
-    </>
+    <HomePage
+      seo={seo}
+      dumps={dumps}
+      categories={categories}
+      blogs={blogs}
+      faqs={faqs}
+      content1={content1}
+      content2={content2}
+      products={products}
+      announcement={announcement}
+    />
   );
 }
+
+// ✅ ISR with 5-minute revalidation
+export const revalidate = 300;
