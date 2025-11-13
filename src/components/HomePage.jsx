@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, X, AlertCircle } from "lucide-react";
 import Image from "next/image";
@@ -40,6 +40,40 @@ const BENEFITS = [
   "Realistic Practice Test Interface",
 ];
 
+// ✅ Safe storage wrapper with fallback
+const safeStorage = {
+  get: (key) => {
+    try {
+      if (typeof window === "undefined") return null;
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn("localStorage.getItem failed:", e);
+      return null;
+    }
+  },
+  set: (key, value) => {
+    try {
+      if (typeof window === "undefined") return false;
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.warn("localStorage.setItem failed:", e);
+      return false;
+    }
+  },
+  clear: () => {
+    try {
+      if (typeof window === "undefined") return false;
+      localStorage.clear();
+      sessionStorage.clear();
+      return true;
+    } catch (e) {
+      console.warn("Storage clear failed:", e);
+      return false;
+    }
+  },
+};
+
 export default function HomePage({
   seo = {},
   dumps = [],
@@ -53,29 +87,38 @@ export default function HomePage({
 }) {
   const [showModal, setShowModal] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // ✅ Show announcement modal on mount
+  // ✅ Ensure client-side only rendering
   useEffect(() => {
-    if (typeof window === "undefined" || !announcement?.active) return;
+    setMounted(true);
+  }, []);
 
-    const lastShown = localStorage.getItem("announcementShownAt");
+  // ✅ Show announcement modal with safe storage
+  useEffect(() => {
+    if (!mounted || !announcement?.active) return;
+
+    const lastShown = safeStorage.get("announcementShownAt");
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
 
-    if (!lastShown || now - parseInt(lastShown, 10) > oneHour) {
+    // Only show if not shown in the last hour
+    const shouldShow = !lastShown || now - parseInt(lastShown, 10) > oneHour;
+
+    if (shouldShow) {
       const delay = parseFloat(announcement.delay || "1.00") * 1000;
       const timer = setTimeout(() => {
         setShowModal(true);
-        localStorage.setItem("announcementShownAt", now.toString());
+        safeStorage.set("announcementShownAt", now.toString());
       }, delay);
 
       return () => clearTimeout(timer);
     }
-  }, [announcement]);
+  }, [announcement, mounted]);
 
-  // ✅ Keyboard shortcuts
+  // ✅ Keyboard shortcuts with safe handlers
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!mounted) return;
 
     const handleKeyPress = (e) => {
       // Ctrl+Shift+B - Toggle debug
@@ -88,22 +131,45 @@ export default function HomePage({
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") {
         e.preventDefault();
         if (confirm("Clear all cached data and reload?")) {
-          localStorage.clear();
-          sessionStorage.clear();
-          window.location.reload();
+          const cleared = safeStorage.clear();
+          if (cleared) {
+            window.location.reload();
+          } else {
+            alert(
+              "Failed to clear cache. Please clear manually via browser settings."
+            );
+          }
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, []);
+  }, [mounted]);
 
-  const closeModal = () => setShowModal(false);
+  const closeModal = useCallback(() => setShowModal(false), []);
+
+  const handleClearCache = useCallback(() => {
+    if (confirm("Clear all cache and reload?")) {
+      const cleared = safeStorage.clear();
+      if (cleared) {
+        window.location.reload();
+      } else {
+        alert(
+          "Failed to clear cache. Please clear manually via browser settings."
+        );
+      }
+    }
+  }, []);
 
   // ✅ Check for data issues
   const hasDataIssues =
     dumps.length === 0 || blogs.length === 0 || faqs.length === 0;
+
+  // Don't render until mounted (prevents hydration issues)
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <>
@@ -199,6 +265,11 @@ export default function HomePage({
                 {categories?.length > 0 ? `✓ ${categories.length}` : "✗ Empty"}
               </span>
             </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400">Mounted:</span>
+              <span className="text-green-400">✓ Yes</span>
+            </div>
           </div>
 
           <div className="mt-3 pt-3 border-t border-gray-700 text-gray-400 text-[10px]">
@@ -221,13 +292,7 @@ export default function HomePage({
           </button>
 
           <button
-            onClick={() => {
-              if (confirm("Clear all cache and reload?")) {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.reload();
-              }
-            }}
+            onClick={handleClearCache}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-all flex items-center gap-2"
             title="Clear Cache (Ctrl+Shift+D)"
           >
