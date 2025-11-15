@@ -12,21 +12,25 @@ export const dynamic = "force-dynamic";
 function getBaseURL() {
   // Server-side only
   if (typeof window === "undefined") {
-    // Vercel production
+    // 1. Use explicit production URL from env
+    if (process.env.NEXT_PUBLIC_BASE_URL) {
+      return process.env.NEXT_PUBLIC_BASE_URL;
+    }
+
+    // 2. Vercel auto-detection
     if (process.env.VERCEL_URL) {
       return `https://${process.env.VERCEL_URL}`;
     }
-    // Explicit production URL
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      return process.env.NEXT_PUBLIC_SITE_URL;
-    }
-    // Hardcoded fallback for production
+
+    // 3. Production fallback
     if (process.env.NODE_ENV === "production") {
-      return "https://dumps-expert-next.vercel.app"; // ⚠️ CHANGE THIS TO YOUR DOMAIN
+      return "https://dumps-expert-next.vercel.app";
     }
-    // Local development
+
+    // 4. Local development
     return "http://localhost:3000";
   }
+
   // Client-side: use relative paths
   return "";
 }
@@ -37,77 +41,103 @@ function getBaseURL() {
 async function fetchSEO() {
   try {
     const baseUrl = getBaseURL();
-    const url = `/api/seo/sap`;
+    const url = `${baseUrl}/api/seo/sap`;
 
-    console.log(`🔍 Fetching SEO from: ${url}`);
+    console.log(`🔍 [SEO] Fetching from: ${url}`);
 
     const res = await fetch(url, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
       },
+      next: { revalidate: 0 },
     });
 
     if (!res.ok) {
-      console.error(`❌ SEO fetch failed: ${res.status} ${res.statusText}`);
+      console.error(`❌ [SEO] Fetch failed: ${res.status} ${res.statusText}`);
       return {};
     }
 
     const json = await res.json();
-    console.log("✅ SEO data fetched successfully");
+    console.log("✅ [SEO] Data fetched successfully");
 
     // Handle both formats: {data: {...}} or {...directly}
     return json.data || json;
   } catch (error) {
-    console.error("❌ SEO fetch error:", error.message);
+    console.error("❌ [SEO] Fetch error:", error.message);
     return {};
   }
 }
 
 /* ===========================
-   ✅ Fetch Product Categories
+   ✅ Fetch Product Categories with Retry
    =========================== */
 async function getDumpsData() {
-  try {
-    const baseUrl = getBaseURL();
-    const url = `/api/product-categories`;
+  const maxRetries = 3;
+  let lastError = null;
 
-    console.log(`🔍 Fetching categories from: ${url}`);
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const baseUrl = getBaseURL();
+      const url = `${baseUrl}/api/product-categories`;
 
-    const res = await fetch(url, {
-      next: { revalidate: 60 },
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+      console.log(`🔍 [Categories] Attempt ${attempt}/${maxRetries}: ${url}`);
 
-    if (!res.ok) {
-      console.error(
-        `❌ Categories fetch failed: ${res.status} ${res.statusText}`
-      );
-      return [];
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const res = await fetch(url, {
+        next: { revalidate: 60 },
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        console.error(
+          `❌ [Categories] Fetch failed: ${res.status} ${res.statusText}`
+        );
+
+        // Retry on server errors (500+)
+        if (res.status >= 500 && attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+
+        return [];
+      }
+
+      const json = await res.json();
+
+      // Extract array from different response formats
+      let categories = [];
+      if (Array.isArray(json.data)) {
+        categories = json.data;
+      } else if (Array.isArray(json)) {
+        categories = json;
+      } else if (json.categories && Array.isArray(json.categories)) {
+        categories = json.categories;
+      }
+
+      console.log(`✅ [Categories] Fetched ${categories.length} items`);
+      return categories;
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ [Categories] Attempt ${attempt} error:`, error.message);
+
+      // Wait before retry (exponential backoff)
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
     }
-
-    const json = await res.json();
-    console.log(
-      `✅ Categories fetched: ${
-        Array.isArray(json.data)
-          ? json.data.length
-          : Array.isArray(json)
-          ? json.length
-          : 0
-      } items`
-    );
-
-    return Array.isArray(json.data)
-      ? json.data
-      : Array.isArray(json)
-      ? json
-      : [];
-  } catch (error) {
-    console.error("❌ Categories fetch error:", error.message);
-    return [];
   }
+
+  console.error("❌ [Categories] All retries failed:", lastError?.message);
+  return [];
 }
 
 /* ===========================
@@ -116,28 +146,38 @@ async function getDumpsData() {
 export async function generateMetadata() {
   const seo = await fetchSEO();
 
+  const defaultTitle = "SAP Dumps – Prepmantras";
+  const defaultDescription =
+    "Get the latest SAP certification dumps and verified exam prep materials at Prepmantras.";
+
   return {
-    title: seo.title || "SAP Dumps – Prepmantras",
-    description:
-      seo.description ||
-      "Get the latest SAP certification dumps and verified exam prep materials at Prepmantras.",
+    title: seo.title || defaultTitle,
+    description: seo.description || defaultDescription,
     keywords: seo.keywords || "SAP dumps, SAP certification, prepmantras",
+    alternates: {
+      canonical:
+        seo.canonicalurl || "https://dumps-expert-next.vercel.app/ItDumps",
+    },
     openGraph: {
-      title: seo.ogtitle || seo.title || "Prepmantras SAP Dumps",
-      description:
-        seo.ogdescription ||
-        seo.description ||
-        "Verified SAP dumps for guaranteed success.",
-      images: [seo.ogimage || "/default-og.jpg"],
-      url: seo.ogurl || "https://prepmantras.com/ItDumps",
+      title: seo.ogtitle || seo.title || defaultTitle,
+      description: seo.ogdescription || seo.description || defaultDescription,
+      images: [
+        {
+          url: seo.ogimage || "/default-og.jpg",
+          width: 1200,
+          height: 630,
+        },
+      ],
+      url: seo.ogurl || "https://dumps-expert-next.vercel.app/ItDumps",
+      siteName: "Prepmantras",
+      locale: "en_US",
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: seo.twittertitle || seo.title || "Prepmantras SAP Dumps",
+      title: seo.twittertitle || seo.title || defaultTitle,
       description:
-        seo.twitterdescription ||
-        seo.description ||
-        "Trusted SAP dumps and exam prep materials.",
+        seo.twitterdescription || seo.description || defaultDescription,
       images: [seo.twitterimage || seo.ogimage || "/default-og.jpg"],
     },
   };
@@ -147,18 +187,29 @@ export async function generateMetadata() {
    ✅ Utility – Create SEO-Friendly Slug
    =========================== */
 function createSlug(name) {
+  if (!name) return "";
+
   return name
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-");
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-"); // Remove duplicate hyphens
 }
 
 /* ===========================
    ✅ Page Component
    =========================== */
 export default async function ITDumpsPage() {
+  const startTime = Date.now();
+  console.log("\n🚀 [ITDumps Page] Starting render...");
+
   const dumpsData = await getDumpsData();
+
+  const renderTime = Date.now() - startTime;
+  console.log(
+    `✅ [ITDumps Page] Rendered in ${renderTime}ms with ${dumpsData.length} categories\n`
+  );
 
   return (
     <div
@@ -171,13 +222,16 @@ export default async function ITDumpsPage() {
         backgroundAttachment: "fixed",
       }}
     >
+      {/* Backdrop overlay */}
       <div className="absolute inset-0 bg-white/70 backdrop-blur-md z-0" />
 
       <div className="relative z-10 w-full max-w-7xl mx-auto">
+        {/* Header */}
         <h1 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-10">
           Unlock Your Potential with SAP Certification Dumps
         </h1>
 
+        {/* Features Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-center max-w-2xl mx-auto mb-12 text-gray-900 text-sm sm:text-base font-medium">
           <div className="space-y-3">
             {[
@@ -186,8 +240,8 @@ export default async function ITDumpsPage() {
               "100% Money Back Guarantee",
             ].map((text, i) => (
               <div key={i} className="flex items-center gap-2">
-                <FaCheckCircle className="text-blue-600 text-lg" />
-                {text}
+                <FaCheckCircle className="text-blue-600 text-lg flex-shrink-0" />
+                <span>{text}</span>
               </div>
             ))}
           </div>
@@ -196,41 +250,58 @@ export default async function ITDumpsPage() {
             {["90 Days Free Updates", "24/7 Customer Support"].map(
               (text, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <FaCheckCircle className="text-blue-600 text-lg" />
-                  {text}
+                  <FaCheckCircle className="text-blue-600 text-lg flex-shrink-0" />
+                  <span>{text}</span>
                 </div>
               )
             )}
           </div>
         </div>
 
+        {/* Categories Grid */}
         <div className="flex flex-wrap justify-center gap-6">
           {dumpsData.length > 0 ? (
-            dumpsData.map((item) => (
-              <Link
-                key={item._id}
-                href={`/ItDumps/${createSlug(item.name)}`}
-                className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px]"
-              >
-                <div className="h-28 md:h-32 w-full relative">
-                  <Image
-                    src={item.image || "https://via.placeholder.com/150"}
-                    alt={item.name}
-                    fill
-                    className="object-contain p-3"
-                  />
-                </div>
-                <div className="px-3 pb-4">
-                  <h3 className="text-sm sm:text-base font-medium capitalize text-gray-800 truncate">
-                    {item.name}
-                  </h3>
-                </div>
-              </Link>
-            ))
+            dumpsData.map((item) => {
+              const slug = createSlug(item.name);
+
+              if (!slug) {
+                console.warn(`⚠️ Invalid slug for category: ${item.name}`);
+                return null;
+              }
+
+              return (
+                <Link
+                  key={item._id || item.id}
+                  href={`/ItDumps/${slug}`}
+                  className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px]"
+                >
+                  <div className="h-28 md:h-32 w-full relative bg-gray-50">
+                    <Image
+                      src={item.image || "https://via.placeholder.com/150"}
+                      alt={item.name || "Category"}
+                      fill
+                      className="object-contain p-3"
+                      sizes="200px"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="px-3 pb-4 w-full">
+                    <h3 className="text-sm sm:text-base font-medium capitalize text-gray-800 truncate">
+                      {item.name || "Unnamed Category"}
+                    </h3>
+                  </div>
+                </Link>
+              );
+            })
           ) : (
-            <p className="text-gray-600 text-center">
-              No categories available.
-            </p>
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg mb-2">
+                No categories available at the moment.
+              </p>
+              <p className="text-gray-500 text-sm">
+                Please check back later or contact support.
+              </p>
+            </div>
           )}
         </div>
       </div>
