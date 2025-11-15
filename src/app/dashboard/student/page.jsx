@@ -66,7 +66,8 @@ async function getDashboardData(session) {
       user: userData || {
         name: "Student User",
         email: session?.user?.email || "student@example.com",
-        profileImage: "https://via.placeholder.com/60",
+        profileImage:
+          session?.user?.profileImage || "https://via.placeholder.com/60",
       },
       stats: statsData,
       exams: examsData,

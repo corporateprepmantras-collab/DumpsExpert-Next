@@ -25,7 +25,6 @@ ChartJS.register(
 export default function Page() {
   const router = useRouter();
 
-  // Dummy analytics data
   const barData = {
     labels: ["Attempt 1", "Attempt 2", "Attempt 3"],
     datasets: [
@@ -49,58 +48,77 @@ export default function Page() {
     ],
   };
 
+  const chartOptions = {
+    maintainAspectRatio: false,
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12,
+          },
+        },
+      },
+    },
+  };
+
   return (
-    <div className="p-6 min-h-screen bg-gray-50 text-gray-900 font-sans">
-      <h1 className="text-3xl font-extrabold mb-6 flex items-center gap-3">
-        <span className="text-indigo-600 text-4xl">📊</span> Dashboard
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+        <span className="text-indigo-600 text-3xl sm:text-4xl">📊</span>
+        <span>Dashboard</span>
       </h1>
 
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
+      {/* Top Section - Charts & Profile */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Result Chart */}
-        <div className="bg-white h-100 p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+        <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-indigo-700">
             Result Analytics
           </h2>
-          <Bar
-            data={barData}
-            height={10}
-            options={{ maintainAspectRatio: false }}
-          />
+          <div className="h-48 sm:h-56">
+            <Bar data={barData} options={chartOptions} />
+          </div>
         </div>
 
         {/* Course Completion */}
-        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center">
-          <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+        <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-indigo-700">
             Course Completion
           </h2>
-          <Doughnut data={doughnutData} options={{ cutout: "70%" }} />
+          <div className="w-full max-w-[200px] sm:max-w-[240px]">
+            <Doughnut data={doughnutData} options={{ cutout: "70%" }} />
+          </div>
         </div>
 
         {/* Profile */}
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
           <img
             src="https://via.placeholder.com/60"
             alt="profile"
-            className="w-32 h-32 rounded-full border-4 border-indigo-500 mb-4"
+            className="w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full border-4 border-indigo-500 mb-3 sm:mb-4"
           />
-          <h3 className="font-bold text-xl mb-1">lorem epsum</h3>
-          <p className="text-gray-500 mb-4">google</p>
-          <div className="flex gap-4 flex-wrap justify-center">
+          <h3 className="font-bold text-lg sm:text-xl mb-1">lorem epsum</h3>
+          <p className="text-gray-500 mb-3 sm:mb-4 text-sm sm:text-base">
+            google
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={() => router.push("/student/edit-profile")}
-              className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+              className="px-3 sm:px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm sm:text-base font-medium hover:bg-indigo-700 transition whitespace-nowrap"
             >
               Edit Profile
             </button>
             <button
               onClick={() => router.push("/student/change-password")}
-              className="px-4 py-2 rounded-lg bg-yellow-400 text-gray-900 font-medium hover:bg-yellow-500 transition"
+              className="px-3 sm:px-4 py-2 rounded-lg bg-yellow-400 text-gray-900 text-sm sm:text-base font-medium hover:bg-yellow-500 transition whitespace-nowrap"
             >
               Change Password
             </button>
             <button
               onClick={() => router.push("/student/logout")}
-              className="px-4 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition"
+              className="px-3 sm:px-4 py-2 rounded-lg bg-red-500 text-white text-sm sm:text-base font-medium hover:bg-red-600 transition"
             >
               Logout
             </button>
@@ -109,44 +127,53 @@ export default function Page() {
       </div>
 
       {/* Quick Access Cards */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Exams */}
-        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <span className="text-indigo-600 text-2xl">📅</span> Exams
+        <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-xl sm:text-2xl">📅</span>
+            <span>Exams</span>
           </h2>
-          <p className="text-gray-500 mb-4 text-sm">2 upcoming exams</p>
+          <p className="text-gray-500 mb-3 sm:mb-4 text-xs sm:text-sm">
+            2 upcoming exams
+          </p>
           <button
             onClick={() => router.push("/student/courses-exam")}
-            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+            className="w-full py-2 sm:py-3 bg-indigo-600 text-white rounded-lg text-sm sm:text-base font-semibold hover:bg-indigo-700 transition"
           >
             View All Exams
           </button>
         </div>
 
         {/* My Courses */}
-        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <span className="text-indigo-600 text-2xl">📚</span> Courses
+        <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-xl sm:text-2xl">📚</span>
+            <span>Courses</span>
           </h2>
-          <p className="text-gray-500 mb-4 text-sm">4 active courses</p>
+          <p className="text-gray-500 mb-3 sm:mb-4 text-xs sm:text-sm">
+            4 active courses
+          </p>
           <button
             onClick={() => router.push("/student/courses-pdf")}
-            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+            className="w-full py-2 sm:py-3 bg-indigo-600 text-white rounded-lg text-sm sm:text-base font-semibold hover:bg-indigo-700 transition"
           >
             View All Courses
           </button>
         </div>
 
         {/* Result History */}
-        <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <span className="text-indigo-600 text-2xl">📈</span> Results
+        <div className="bg-white p-4 sm:p-5 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2">
+            <span className="text-indigo-600 text-xl sm:text-2xl">📈</span>
+            <span>Results</span>
           </h2>
-          <p className="text-gray-500 mb-4 text-sm">3 attempts recorded</p>
+          <p className="text-gray-500 mb-3 sm:mb-4 text-xs sm:text-sm">
+            3 attempts recorded
+          </p>
           <button
             onClick={() => router.push("/student/results")}
-            className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+            className="w-full py-2 sm:py-3 bg-indigo-600 text-white rounded-lg text-sm sm:text-base font-semibold hover:bg-indigo-700 transition"
           >
             View All Results
           </button>
