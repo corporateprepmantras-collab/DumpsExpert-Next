@@ -37,7 +37,7 @@ function getBaseURL() {
 async function fetchSEO() {
   try {
     const baseUrl = getBaseURL();
-    const url = `${baseUrl}/api/seo/sap`;
+    const url = `/api/seo/sap`;
 
     console.log(`🔍 Fetching SEO from: ${url}`);
 
@@ -70,7 +70,7 @@ async function fetchSEO() {
 async function getDumpsData() {
   try {
     const baseUrl = getBaseURL();
-    const url = `${baseUrl}/api/product-categories`;
+    const url = `/api/product-categories`;
 
     console.log(`🔍 Fetching categories from: ${url}`);
 
