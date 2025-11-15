@@ -372,7 +372,7 @@ export default function ProductDetailsPage() {
   const hasOnlineExam = examPrices.priceInr > 0 || examPrices.priceUsd > 0;
 
   return (
-    <div className="min-h-screen bg-white text-gray-800">
+    <div className="min-h-screen pt-20 bg-white text-gray-800">
       <div className="container mx-auto px-4 pt-2 pb-3">
         <Breadcrumbs />
       </div>

@@ -70,7 +70,7 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen pt-20 flex flex-col items-center justify-center px-4 py-10">
       {/* Page Heading */}
       <h2 className="text-4xl font-bold mb-10 text-center">Contact Us</h2>
 
