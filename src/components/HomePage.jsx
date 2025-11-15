@@ -135,7 +135,9 @@ export default function HomePage({
           if (cleared) {
             window.location.reload();
           } else {
-            alert("Failed to clear cache. Please clear manually via browser settings.");
+            alert(
+              "Failed to clear cache. Please clear manually via browser settings."
+            );
           }
         }
       }
@@ -153,7 +155,9 @@ export default function HomePage({
       if (cleared) {
         window.location.reload();
       } else {
-        alert("Failed to clear cache. Please clear manually via browser settings.");
+        alert(
+          "Failed to clear cache. Please clear manually via browser settings."
+        );
       }
     }
   }, []);

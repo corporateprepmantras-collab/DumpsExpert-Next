@@ -62,8 +62,6 @@ async function parseFormData(req) {
 async function handleFileUploads(data, existingProduct = null) {
   const uploads = {};
 
-  // image → uploadImageToCloudinary
-  // samplePdf, mainPdf → uploadPdfToCloudinary
   const fileConfig = {
     image: { handler: uploadImageToCloudinary, type: "image" },
     samplePdf: { handler: uploadPdfToCloudinary, type: "pdf" },
@@ -103,28 +101,30 @@ async function handleFileUploads(data, existingProduct = null) {
       console.log(`⏭️ Skipping ${field} - no file provided`);
     }
 
-    // Remove file from data after processing
     delete data[field];
   }
 
   return uploads;
 }
 
-// GET /api/products
-
-// Update the GET method:
+// ==================== OPTIMIZED GET METHOD ====================
 export async function GET(req) {
   try {
     await connectMongoDB();
     const { searchParams } = new URL(req.url);
+
     const id = searchParams.get("id");
     const searchQuery = searchParams.get("q");
+    const limit = parseInt(searchParams.get("limit")) || 0;
+    const sort = searchParams.get("sort");
 
+    // GET SINGLE PRODUCT BY ID
     if (id) {
       const product = await Product.findById(id).lean();
       return NextResponse.json({ data: serializeMongoDoc(product) });
     }
 
+    // SEARCH QUERY
     if (searchQuery) {
       const searchRegex = new RegExp(searchQuery, "i");
       const products = await Product.find({
@@ -141,6 +141,51 @@ export async function GET(req) {
       });
     }
 
+    // ✅ POPULAR PRODUCTS WITH LIMIT & OPTIMIZED FIELDS
+    if (limit > 0) {
+      let sortObj = {};
+
+      if (sort === "popular") {
+        // Sort by newest/featured first (you can customize this logic)
+        sortObj = { createdAt: -1 };
+      } else {
+        sortObj = { createdAt: -1 };
+      }
+
+      const products = await Product.find()
+        .sort(sortObj)
+        .limit(limit)
+        .select({
+          _id: 1,
+          title: 1,
+          slug: 1,
+          sapExamCode: 1,
+          imageUrl: 1,
+          Description: 1,
+          dumpsPriceInr: 1,
+          dumpsPriceUsd: 1,
+          dumpsMrpInr: 1,
+          dumpsMrpUsd: 1,
+        })
+        .lean();
+
+      console.log(`✅ Fetched ${products.length} products with limit ${limit}`);
+
+      return NextResponse.json(
+        {
+          data: serializeMongoArray(products),
+          total: products.length,
+        },
+        {
+          headers: {
+            "Cache-Control":
+              "public, s-maxage=3600, stale-while-revalidate=7200",
+          },
+        }
+      );
+    }
+
+    // DEFAULT: GET ALL PRODUCTS
     const products = await Product.find().lean();
     return NextResponse.json({
       data: serializeMongoArray(products),
@@ -154,6 +199,7 @@ export async function GET(req) {
     );
   }
 }
+
 // POST /api/products - Create new product
 export async function POST(req) {
   try {
