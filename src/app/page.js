@@ -1,23 +1,37 @@
 // ============================================
-// FILE: app/page.jsx (IMPROVED ERROR HANDLING)
+// FILE: app/page.jsx (VERCEL COMPATIBLE)
 // ============================================
 
 import HomePage from "@/components/HomePage";
 
+// ✅ FIXED: Proper URL resolution for Vercel
 const getAPIUrl = () => {
+  // Server-side
   if (typeof window === "undefined") {
+    // 1. Production: Use environment variable
+    if (process.env.NEXT_PUBLIC_BASE_URL) {
+      return process.env.NEXT_PUBLIC_BASE_URL;
+    }
+
+    // 2. Vercel: Auto-detect from VERCEL_URL
     if (process.env.VERCEL_URL) {
       return `https://${process.env.VERCEL_URL}`;
     }
-    return process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+    // 3. Fallback to localhost for local development
+    return "http://localhost:3000";
   }
+
+  // Client-side: Use current origin
   return "";
 };
 
-// ✅ IMPROVED: Silent error logging with structured data
+// ✅ IMPROVED: Fetch with better error handling
 async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
   const BASE_URL = getAPIUrl();
   const url = `${BASE_URL}${endpoint}`;
+
+  console.log(`[Fetch] ${endpoint} from ${BASE_URL}`); // Debug log
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
@@ -36,13 +50,15 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        console.error(`[Fetch Error] ${endpoint}: ${response.status}`);
+
         if (attempt < retries) {
           await new Promise((resolve) =>
             setTimeout(resolve, 1000 * (attempt + 1))
           );
           continue;
         }
-        // Return structured error instead of null
+
         return { error: true, status: response.status, endpoint };
       }
 
@@ -50,8 +66,8 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
       return { error: false, data };
     } catch (error) {
       clearTimeout(timeoutId);
+      console.error(`[Fetch Error] ${endpoint}: ${error.message}`);
 
-      // Last attempt - return structured error
       if (attempt === retries) {
         return {
           error: true,
@@ -60,7 +76,6 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
         };
       }
 
-      // Wait before retry
       await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
     }
   }
@@ -68,14 +83,10 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
   return { error: true, message: "max_retries", endpoint };
 }
 
-// ✅ IMPROVED: Fetch functions with silent fallbacks
+// ✅ Fetch functions with fallbacks
 async function fetchDumps() {
   const result = await fetchWithTimeout("/api/trending", 8000);
-
-  if (result.error) {
-    // Silent fallback - no console.error
-    return [];
-  }
+  if (result.error) return [];
 
   const data = result.data;
   if (!Array.isArray(data)) return [];
@@ -209,11 +220,13 @@ export async function generateMetadata() {
 // ✅ MAIN PAGE COMPONENT
 export default async function Page() {
   const buildStartTime = Date.now();
-
-  // Collect all errors for optional logging
   const errors = [];
 
-  // ✅ Fetch all data with individual error handling
+  console.log(
+    `[Build] Starting page generation at ${new Date().toISOString()}`
+  );
+  console.log(`[Build] API URL: ${getAPIUrl()}`);
+
   const [
     dumps,
     categories,
@@ -265,15 +278,13 @@ export default async function Page() {
 
   const buildTime = Date.now() - buildStartTime;
 
-  // ✅ Optional: Log summary only in development
-  if (process.env.NODE_ENV === "development") {
-    console.log(`\n✅ Page built in ${buildTime}ms`);
-    console.log(
-      `📊 Data: ${dumps.length} dumps, ${blogs.length} blogs, ${faqs.length} FAQs`
-    );
-    if (errors.length > 0) {
-      console.log(`⚠️  ${errors.length} API errors (gracefully handled)`);
-    }
+  console.log(`\n✅ Page built in ${buildTime}ms`);
+  console.log(
+    `📊 Data: ${dumps.length} dumps, ${blogs.length} blogs, ${faqs.length} FAQs`
+  );
+
+  if (errors.length > 0) {
+    console.error(`⚠️  ${errors.length} API errors:`, errors);
   }
 
   return (

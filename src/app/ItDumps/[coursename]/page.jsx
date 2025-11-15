@@ -91,9 +91,10 @@ async function fetchCategoryData(coursename) {
     );
 
     const categoryProducts = products.filter(
-      (p) => p.category?.toLowerCase() === coursename.toLowerCase()
+      (p) =>
+        p.category?.toLowerCase().replace(/\s+/g, "-") ===
+        coursename.toLowerCase()
     );
-
     console.log("✅ Matched category:", matchedCategory?.name);
     console.log("✅ Filtered products:", categoryProducts.length);
 

@@ -1,12 +1,10 @@
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import dynamic from "next/dynamic";
-import "react-quill-new/dist/quill.snow.css"; // ✅ Quill CSS
+import "react-quill-new/dist/quill.snow.css";
 
-// ✅ Quill Editor
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 const COLORS = [
@@ -22,32 +20,6 @@ const COLORS = [
   "#008080",
 ];
 
-const modules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ["bold", "italic", "underline", "strike"],
-    [{ color: COLORS }, { background: COLORS }],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["link", "blockquote", "code-block"],
-    ["clean"],
-  ],
-};
-
-const formats = [
-  "header",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "list",
-  "bullet",
-  "link",
-  "blockquote",
-  "code-block",
-  "color",
-  "background",
-];
-
 export default function ProductCategories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +27,6 @@ export default function ProductCategories() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ Form state
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -72,7 +43,36 @@ export default function ProductCategories() {
   const [previewImage, setPreviewImage] = useState("");
   const [editingCategory, setEditingCategory] = useState(null);
 
-  // ✅ Fetch categories
+  // ✅ Memoize modules to prevent recreation
+  const quillModules = useMemo(
+    () => ({
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ["bold", "italic", "underline", "strike"],
+        [{ color: COLORS }, { background: COLORS }],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link", "blockquote", "code-block"],
+        ["clean"],
+      ],
+    }),
+    []
+  );
+
+  const quillFormats = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "list",
+    "bullet",
+    "link",
+    "blockquote",
+    "code-block",
+    "color",
+    "background",
+  ];
+
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -91,7 +91,6 @@ export default function ProductCategories() {
     }
   };
 
-  // ✅ Handle input change
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "image" && files && files[0]) {
@@ -103,7 +102,6 @@ export default function ProductCategories() {
     }
   };
 
-  // ✅ FAQ Handlers
   const handleFaqChange = (index, field, value) => {
     const updatedFaqs = [...formData.faqs];
     updatedFaqs[index][field] = value;
@@ -122,7 +120,6 @@ export default function ProductCategories() {
     setFormData((prev) => ({ ...prev, faqs: updatedFaqs }));
   };
 
-  // ✅ Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -131,10 +128,9 @@ export default function ProductCategories() {
     try {
       const data = new FormData();
 
-      // ✅ Append all normal fields
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "faqs") {
-          data.append("faqs", JSON.stringify(value)); // store FAQs as JSON
+          data.append("faqs", JSON.stringify(value));
         } else if (value instanceof File) {
           data.append(key, value);
         } else {
@@ -142,7 +138,6 @@ export default function ProductCategories() {
         }
       });
 
-      // ✅ Append Quill values explicitly
       data.set("description", formData.description || "");
       data.set("descriptionBelow", formData.descriptionBelow || "");
 
@@ -171,7 +166,6 @@ export default function ProductCategories() {
     }
   };
 
-  // ✅ Reset form
   const resetForm = () => {
     setFormData({
       name: "",
@@ -190,7 +184,6 @@ export default function ProductCategories() {
     setEditingCategory(null);
   };
 
-  // ✅ Edit category
   const handleEdit = (category) => {
     setEditingCategory(category);
     setFormData({
@@ -210,7 +203,6 @@ export default function ProductCategories() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ Delete category
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this category?")) return;
     try {
@@ -222,7 +214,6 @@ export default function ProductCategories() {
     }
   };
 
-  // ✅ Filter categories
   const filteredCategories = categories.filter((cat) =>
     cat.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -231,7 +222,6 @@ export default function ProductCategories() {
     <div className="p-6 pt-20 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6">Manage Product Categories</h1>
 
-      {/* ✅ Form */}
       <form
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-lg shadow-md space-y-4 mb-8"
@@ -240,7 +230,6 @@ export default function ProductCategories() {
           <div className="p-3 bg-red-100 text-red-700 rounded">{error}</div>
         )}
 
-        {/* Name */}
         <input
           type="text"
           name="name"
@@ -251,7 +240,6 @@ export default function ProductCategories() {
           className="w-full border px-3 py-2 rounded"
         />
 
-        {/* Slug */}
         <input
           type="text"
           name="slug"
@@ -261,31 +249,36 @@ export default function ProductCategories() {
           className="w-full border px-3 py-2 rounded"
         />
 
-        {/* Description */}
-        <ReactQuill
-          theme="snow"
-          value={formData.description}
-          onChange={(value) =>
-            setFormData((prev) => ({ ...prev, description: value }))
-          }
-          modules={modules}
-          formats={formats}
-          placeholder="Write description..."
-        />
+        <div>
+          <label className="block text-sm font-medium mb-1">Description</label>
+          <ReactQuill
+            theme="snow"
+            value={formData.description}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, description: value }))
+            }
+            modules={quillModules}
+            formats={quillFormats}
+            placeholder="Write description..."
+          />
+        </div>
 
-        {/* Description Below */}
-        <ReactQuill
-          theme="snow"
-          value={formData.descriptionBelow}
-          onChange={(value) =>
-            setFormData((prev) => ({ ...prev, descriptionBelow: value }))
-          }
-          modules={modules}
-          formats={formats}
-          placeholder="Write description below..."
-        />
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Description Below
+          </label>
+          <ReactQuill
+            theme="snow"
+            value={formData.descriptionBelow}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, descriptionBelow: value }))
+            }
+            modules={quillModules}
+            formats={quillFormats}
+            placeholder="Write description below..."
+          />
+        </div>
 
-        {/* FAQs */}
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">FAQs</h2>
           {formData.faqs.map((faq, index) => (
@@ -328,7 +321,6 @@ export default function ProductCategories() {
           </button>
         </div>
 
-        {/* Image */}
         <div>
           {previewImage && (
             <img
@@ -345,7 +337,6 @@ export default function ProductCategories() {
           />
         </div>
 
-        {/* Meta */}
         <input
           type="text"
           name="metaTitle"
@@ -371,7 +362,6 @@ export default function ProductCategories() {
           className="w-full border px-3 py-2 rounded"
         />
 
-        {/* Remarks */}
         <textarea
           name="remarks"
           placeholder="Remarks..."
@@ -381,7 +371,6 @@ export default function ProductCategories() {
           className="w-full border px-3 py-2 rounded"
         />
 
-        {/* Status */}
         <select
           name="status"
           value={formData.status}
@@ -392,7 +381,6 @@ export default function ProductCategories() {
           <option value="Publish">Publish</option>
         </select>
 
-        {/* Buttons */}
         <div className="flex justify-end space-x-3">
           <button
             type="button"
@@ -415,7 +403,6 @@ export default function ProductCategories() {
         </div>
       </form>
 
-      {/* ✅ Search */}
       <input
         type="text"
         placeholder="Search categories..."
@@ -424,7 +411,6 @@ export default function ProductCategories() {
         className="border p-2 w-full mb-4 rounded"
       />
 
-      {/* ✅ Categories list */}
       {loading ? (
         <p>Loading...</p>
       ) : filteredCategories.length === 0 ? (
