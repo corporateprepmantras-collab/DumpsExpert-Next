@@ -160,11 +160,19 @@ export default async function CategoryPage({ params, searchParams }) {
   const { category, products } = await fetchCategoryData(coursename);
   const searchTerm = searchParams?.q?.toLowerCase() || "";
 
+  // ✅ Filter products based on search term
   const filteredProducts = products.filter(
     (p) =>
       p.title?.toLowerCase().includes(searchTerm) ||
       p.sapExamCode?.toLowerCase().includes(searchTerm)
   );
+
+  // ✅ Sort products alphabetically by exam code
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    const codeA = (a.sapExamCode || "").toLowerCase();
+    const codeB = (b.sapExamCode || "").toLowerCase();
+    return codeA.localeCompare(codeB);
+  });
 
   return (
     <div className="min-h-screen pt-28 pb-12 px-4 md:px-10 bg-gray-100">
@@ -204,10 +212,14 @@ export default async function CategoryPage({ params, searchParams }) {
         {/* ✅ Search + Results */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <p className="text-sm text-gray-600">
-            Showing {filteredProducts.length} results
+            Showing {sortedProducts.length} results
+            {searchTerm && ` for "${searchTerm}"`}
           </p>
 
-          <form className="flex items-center border rounded-md shadow-sm w-full sm:w-[400px] bg-white">
+          <form
+            method="get"
+            className="flex items-center border rounded-md shadow-sm w-full sm:w-[400px] bg-white"
+          >
             <input
               type="text"
               name="q"
@@ -225,7 +237,7 @@ export default async function CategoryPage({ params, searchParams }) {
         </div>
 
         {/* ✅ Desktop Table */}
-        {filteredProducts.length > 0 ? (
+        {sortedProducts.length > 0 ? (
           <>
             <div className="hidden md:block overflow-x-auto shadow rounded-lg border bg-white">
               <table className="min-w-full text-left text-gray-800">
@@ -238,7 +250,7 @@ export default async function CategoryPage({ params, searchParams }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((product) => (
+                  {sortedProducts.map((product) => (
                     <tr
                       key={product._id}
                       className="border-t hover:bg-gray-50 transition"
@@ -276,7 +288,7 @@ export default async function CategoryPage({ params, searchParams }) {
 
             {/* ✅ Mobile Cards */}
             <div className="md:hidden flex flex-col items-center gap-6 mt-6">
-              {filteredProducts.map((product) => (
+              {sortedProducts.map((product) => (
                 <div
                   key={product._id}
                   className="relative w-full max-w-sm rounded-xl shadow border border-gray-200 p-5 bg-white"
@@ -336,10 +348,14 @@ export default async function CategoryPage({ params, searchParams }) {
         ) : (
           <div className="text-center py-16 bg-white rounded-lg shadow border">
             <p className="text-gray-500 text-lg mb-2">
-              No products available for this category.
+              {searchTerm
+                ? `No products found for "${searchTerm}"`
+                : "No products available for this category."}
             </p>
             <p className="text-gray-400 text-sm">
-              Please check back later or try a different category.
+              {searchTerm
+                ? "Try a different search term"
+                : "Please check back later or try a different category."}
             </p>
           </div>
         )}
