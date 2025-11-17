@@ -691,7 +691,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen pt-20 bg-gray-50">
       <Toaster position="top-right" richColors />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-center mb-8">Shopping Cart</h1>
@@ -971,7 +971,7 @@ const Cart = () => {
 
         {/* Payment Modal */}
         {showPaymentModal && (
-          <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 backdrop-blur-sm bg-transparent bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
               <h3 className="text-xl font-semibold text-center mb-4">
                 Select Payment Method

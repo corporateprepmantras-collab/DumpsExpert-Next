@@ -16,6 +16,7 @@ const OrdersAll = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [expandedCourses, setExpandedCourses] = useState({});
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const OrdersAll = () => {
       setLoading(false);
     }
   };
+
   const handleSelectAll = () => {
     if (selectedOrders.length === paginatedOrders.length) {
       setSelectedOrders([]);
@@ -77,14 +79,12 @@ const OrdersAll = () => {
       });
 
       if (response.data.success) {
-        // Remove deleted orders from state
         setOrders((prevOrders) =>
           prevOrders.filter((order) => !selectedOrders.includes(order._id))
         );
         setSelectedOrders([]);
         setShowDeleteConfirm(false);
 
-        // Show success message
         alert(`${response.data.deletedCount} order(s) deleted successfully`);
       }
     } catch (error) {
@@ -105,11 +105,17 @@ const OrdersAll = () => {
     });
   };
 
+  const toggleCoursesExpansion = (orderId) => {
+    setExpandedCourses((prev) => ({
+      ...prev,
+      [orderId]: !prev[orderId],
+    }));
+  };
+
   const handleExportOrders = async () => {
     try {
       setIsExporting(true);
 
-      // Get orders to export (selected orders or all filtered orders if none selected)
       const ordersToExport =
         selectedOrders.length > 0
           ? orders.filter((order) => selectedOrders.includes(order._id))
@@ -120,7 +126,6 @@ const OrdersAll = () => {
         return;
       }
 
-      // Prepare data for Excel
       const excelData = ordersToExport.map((order, index) => ({
         "S.No": index + 1,
         "Order Number": order.orderNumber || "N/A",
@@ -150,11 +155,9 @@ const OrdersAll = () => {
         SKUs: order.courseDetails?.map((c) => c.sku || "N/A").join(", "),
       }));
 
-      // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
 
-      // Auto-size columns
       const colWidths = [];
       const headers = Object.keys(excelData[0] || {});
 
@@ -168,20 +171,16 @@ const OrdersAll = () => {
 
       ws["!cols"] = colWidths;
 
-      // Add worksheet to workbook
       XLSX.utils.book_append_sheet(wb, ws, "Orders");
 
-      // Generate filename with current date
       const currentDate = new Date().toISOString().split("T")[0];
       const filename =
         selectedOrders.length > 0
           ? `selected_orders_${currentDate}.xlsx`
           : `all_orders_${currentDate}.xlsx`;
 
-      // Save file
       XLSX.writeFile(wb, filename);
 
-      // Show success message
       const exportedCount = ordersToExport.length;
       alert(`Successfully exported ${exportedCount} order(s) to ${filename}`);
     } catch (error) {
@@ -192,7 +191,6 @@ const OrdersAll = () => {
     }
   };
 
-  // Filter orders based on search query + date range
   const filteredOrders = orders.filter((order) => {
     if (!order) return false;
 
@@ -201,7 +199,6 @@ const OrdersAll = () => {
     const customerName = order.user?.name?.toLowerCase() || "";
     const customerEmail = order.user?.email?.toLowerCase() || "";
 
-    // Date filtering
     const orderDate = new Date(order.purchaseDate || order.createdAt);
     let isWithinDate = true;
 
@@ -220,7 +217,6 @@ const OrdersAll = () => {
     );
   });
 
-  // Paginate orders
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
@@ -230,7 +226,7 @@ const OrdersAll = () => {
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      setSelectedOrders([]); // Clear selection when changing pages
+      setSelectedOrders([]);
     }
   };
 
@@ -240,7 +236,6 @@ const OrdersAll = () => {
         <h2 className="text-2xl font-semibold">All Orders</h2>
 
         <div className="flex flex-wrap gap-2">
-          {/* Date Range Selectors */}
           <input
             type="date"
             className="px-3 py-2 border rounded-md"
@@ -261,7 +256,6 @@ const OrdersAll = () => {
             }}
           />
 
-          {/* Search Input */}
           <input
             type="text"
             placeholder="Search orders..."
@@ -283,7 +277,6 @@ const OrdersAll = () => {
         </div>
       </div>
 
-      {/* Action Buttons */}
       {(selectedOrders.length > 0 || filteredOrders.length > 0) && (
         <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
           <div className="flex flex-wrap gap-3 items-center justify-between">
@@ -369,57 +362,80 @@ const OrdersAll = () => {
               </thead>
               <tbody>
                 {paginatedOrders.length > 0 ? (
-                  paginatedOrders.map((order) => (
-                    <tr key={order._id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 border">
-                        <input
-                          type="checkbox"
-                          checked={selectedOrders.includes(order._id)}
-                          onChange={() => handleSelectOrder(order._id)}
-                          className="w-4 h-4"
-                        />
-                      </td>
-                      <td className="px-4 py-2 border">
-                        {order.orderNumber || "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border">
-                        {order.user?.name || "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border">
-                        {order.user?.email || "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border">
-                        {order.courseDetails?.map((c, idx) => (
-                          <div key={idx} className="mb-1 text-sm">
-                            {c.name} - ₹{c.price?.toFixed(2)}
+                  paginatedOrders.map((order) => {
+                    const isExpanded = expandedCourses[order._id];
+                    const coursesText = order.courseDetails
+                      ?.map((c) => `${c.name} - ₹${c.price?.toFixed(2)}`)
+                      .join(", ") || "";
+                    const shouldTruncate = coursesText.length > 100;
+                    const displayText = shouldTruncate && !isExpanded
+                      ? coursesText.substring(0, 100) + "..."
+                      : coursesText;
+
+                    return (
+                      <tr key={order._id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 border">
+                          <input
+                            type="checkbox"
+                            checked={selectedOrders.includes(order._id)}
+                            onChange={() => handleSelectOrder(order._id)}
+                            className="w-4 h-4"
+                          />
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {order.orderNumber || "N/A"}
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {order.user?.name || "N/A"}
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {order.user?.email || "N/A"}
+                        </td>
+                        <td className="px-4 py-2 border">
+                          <div className="max-w-md">
+                            {order.courseDetails && order.courseDetails.length > 0 ? (
+                              <div>
+                                <p className="text-sm">{displayText}</p>
+                                {shouldTruncate && (
+                                  <button
+                                    onClick={() => toggleCoursesExpansion(order._id)}
+                                    className="text-blue-600 hover:text-blue-800 text-xs font-medium mt-1"
+                                  >
+                                    {isExpanded ? "Show Less" : "Show More"}
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">No courses</span>
+                            )}
                           </div>
-                        ))}
-                      </td>
-                      <td className="px-4 py-2 border">
-                        {new Date(
-                          order.purchaseDate || order.createdAt
-                        ).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-2 border">
-                        <span
-                          className={`px-2 py-1 rounded text-white text-xs ${
-                            order.status === "completed"
-                              ? "bg-green-500"
-                              : order.status === "pending"
-                              ? "bg-yellow-500"
-                              : order.status === "rejected"
-                              ? "bg-red-500"
-                              : "bg-gray-500"
-                          }`}
-                        >
-                          {order.status || "N/A"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 border">
-                        ₹{order.totalAmount?.toFixed(2) || "0.00"}
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {new Date(
+                            order.purchaseDate || order.createdAt
+                          ).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-2 border">
+                          <span
+                            className={`px-2 py-1 rounded text-white text-xs ${
+                              order.status === "completed"
+                                ? "bg-green-500"
+                                : order.status === "pending"
+                                ? "bg-yellow-500"
+                                : order.status === "rejected"
+                                ? "bg-red-500"
+                                : "bg-gray-500"
+                            }`}
+                          >
+                            {order.status || "N/A"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 border">
+                          ₹{order.totalAmount?.toFixed(2) || "0.00"}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan="8" className="text-center py-4 text-gray-500">
@@ -431,7 +447,6 @@ const OrdersAll = () => {
             </table>
           </div>
 
-          {/* Pagination */}
           {filteredOrders.length > 0 && (
             <div className="mt-6 flex justify-between items-center">
               <div>
@@ -486,7 +501,6 @@ const OrdersAll = () => {
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">

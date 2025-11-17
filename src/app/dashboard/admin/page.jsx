@@ -188,7 +188,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState({
-    products: 0,
+  products: 0,
     exams: 0,
     totalCustomers: 0,
     students: 0,

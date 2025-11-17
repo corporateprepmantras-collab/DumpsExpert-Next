@@ -261,10 +261,7 @@ const sidebarItems = [
             label: "Basic Information",
             to: "/dashboard/admin/adminPages/BasicInformation",
           },
-          {
-            label: "Menu Builder",
-            to: "/dashboard/admin/adminPages/MenuBuilder",
-          },
+
           { label: "SEO Meta Info", to: "/dashboard/admin/adminPages/SEOMeta" },
           {
             label: "SEO Site Map",

@@ -1,5 +1,7 @@
 import ProductDetail from "./ProductDetail";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import ProductPageLoading from "./loading";
 
 // Helper to get the correct base URL
 function getBaseUrl() {
@@ -225,7 +227,7 @@ export async function generateStaticParams() {
   }
 }
 
-// Page Component
+// Page Component with Suspense
 export default async function ProductPage({ params }) {
   const { slug } = await params;
 
@@ -236,7 +238,11 @@ export default async function ProductPage({ params }) {
     notFound();
   }
 
-  return <ProductDetail slug={slug} />;
+  return (
+    <Suspense fallback={<ProductPageLoading />}>
+      <ProductDetail slug={slug} />
+    </Suspense>
+  );
 }
 
 // Optional: Configure page behavior
