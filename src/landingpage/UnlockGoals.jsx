@@ -216,7 +216,7 @@ const WhyChooseSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.6, delay: index * 0.05 }}
-              className="min-h-[80vh] flex flex-col items-center justify-center px-8 py-16 text-center border-b border-gray-100 last:border-b-0"
+              className="h-screen flex flex-col items-center justify-center px-8 text-center border-b border-gray-100 last:border-b-0"
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}

@@ -176,7 +176,7 @@ export default function ProductDetailsPage() {
     let item = {
       _id: product._id,
       productId: product._id,
-      courseId: product._id, // Add for order lookup
+      courseId: product._id,
       type: type,
       title: product.title,
       name: product.title,
@@ -376,29 +376,30 @@ export default function ProductDetailsPage() {
       <div className="container mx-auto px-4 pt-2 pb-3">
         <Breadcrumbs />
       </div>
-
       <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10">
-        {/* Left Column */}
+        {/* Left Column - Sticky */}
         <div className="md:w-[40%]">
-          <img
-            src={product.imageUrl}
-            alt={product.title}
-            className="w-full rounded-xl object-contain shadow-md max-h-[400px]"
-          />
+          <div className="md:sticky md:top-24">
+            <img
+              src={product.imageUrl}
+              alt={product.title}
+              className="w-full rounded-xl object-contain shadow-md max-h-[400px]"
+            />
 
-          <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
-            {[
-              "Instant Download After Purchase",
-              "100% Real & Updated Dumps",
-              "100% Money Back Guarantee",
-              "90 Days Free Updates",
-              "24/7 Customer Support",
-            ].map((f, i) => (
-              <div key={i} className="flex items-center gap-2 min-w-[200px]">
-                <FaCheckCircle className="text-blue-600 text-xl" />
-                <span>{f}</span>
-              </div>
-            ))}
+            <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
+              {[
+                "Instant Download After Purchase",
+                "100% Real & Updated Dumps",
+                "100% Money Back Guarantee",
+                "90 Days Free Updates",
+                "24/7 Customer Support",
+              ].map((f, i) => (
+                <div key={i} className="flex items-center gap-2 min-w-[200px]">
+                  <FaCheckCircle className="text-blue-600 text-xl" />
+                  <span>{f}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -606,7 +607,7 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </div>
-
+      {/* Full Width Sections Below - Normal Scroll */}
       <div className="container mx-auto px-4 my-10">
         <h2 className="text-lg font-semibold mb-2">Detailed Overview:</h2>
         <div
@@ -676,7 +677,7 @@ function ReviewsSection({
   handleAddReview,
 }) {
   return (
-    <div className="mt-10 grid md:grid-cols-2 gap-10">
+    <div className="grid md:grid-cols-2 gap-10">
       <div>
         <h3 className="text-lg font-semibold mb-4">User Reviews</h3>
         <div className="max-h-72 overflow-y-auto p-2">
@@ -755,7 +756,7 @@ function ReviewsSection({
 
 function FAQSection({ faqs, activeIndex, toggleAccordion }) {
   return (
-    <div className="mt-12">
+    <div>
       <h2 className="text-2xl font-bold mb-6 text-center flex items-center justify-center gap-2">
         <FaUser className="text-blue-600" /> Frequently Asked Questions (FAQs)
       </h2>
