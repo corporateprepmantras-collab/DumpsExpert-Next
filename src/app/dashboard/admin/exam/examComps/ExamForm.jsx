@@ -3,10 +3,116 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
+// Searchable Select Component
+const SearchableSelect = ({
+  options,
+  value,
+  onChange,
+  placeholder = "Select...",
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const wrapperRef = useRef(null);
+
+  // Filter options based on search
+  const filteredOptions = options.filter((option) =>
+    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Get selected option label
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || "";
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setSearchTerm("");
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      {/* Display Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full border rounded-lg px-4 py-2 text-sm shadow-sm text-left bg-white flex justify-between items-center"
+      >
+        <span className={value ? "text-gray-900" : "text-gray-400"}>
+          {selectedLabel || placeholder}
+        </span>
+        <svg
+          className={`w-4 h-4 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-80 overflow-hidden">
+          {/* Search Box */}
+          <div className="p-2 border-b sticky top-0 bg-white">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
+          </div>
+
+          {/* Options List */}
+          <div className="overflow-y-auto max-h-64">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 ${
+                    value === option.value ? "bg-blue-100 font-medium" : ""
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                No products found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ExamForm({ exam }) {
   const router = useRouter();
   const isEditing = Boolean(exam);
-  console.log(isEditing, exam);
 
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
@@ -38,7 +144,6 @@ export default function ExamForm({ exam }) {
         const res = await fetch("/api/products/get");
         const data = await res.json();
         setProducts(data.data);
-        console.log(data);
       } catch (err) {
         console.error("Failed to fetch products:", err);
       }
@@ -68,10 +173,9 @@ export default function ExamForm({ exam }) {
         productId: exam.productId || "",
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exam]);
 
-  if (!mounted) return null; // prevent SSR errors
+  if (!mounted) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -98,7 +202,6 @@ export default function ExamForm({ exam }) {
       sampleDuration: Number(formData.sampleDuration),
       sampleInstructions: formData.sampleInstructions.trim(),
       status: formData.status || "unpublished",
-     
     };
 
     try {
@@ -108,20 +211,24 @@ export default function ExamForm({ exam }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-             router.push("/dashboard/admin/exam");
+        router.push("/dashboard/admin/exam");
       } else {
         await fetch("/api/exams", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-             router.push("/dashboard/admin/exam");
+        router.push("/dashboard/admin/exam");
       }
- 
     } catch (err) {
       console.error("Error saving exam:", err);
     }
   };
+
+  // Convert products to options format
+  const productOptions = Array.isArray(products)
+    ? products.map((p) => ({ value: p._id, label: p.title }))
+    : [];
 
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 space-y-8">
@@ -196,26 +303,19 @@ export default function ExamForm({ exam }) {
             </select>
           </div>
 
-          {/* Product Dropdown */}
+          {/* Searchable Product Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Exam For Product
             </label>
-            <select
-              name="productId"
+            <SearchableSelect
+              options={productOptions}
               value={formData.productId}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 text-sm shadow-sm"
-              required
-            >
-              <option value="">Select a product</option>
-              {Array.isArray(products) &&
-                products.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.title}
-                  </option>
-                ))}
-            </select>
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, productId: value }))
+              }
+              placeholder="Select a product"
+            />
           </div>
         </div>
 
@@ -271,21 +371,24 @@ const RichTextEditor = ({
   const [linkUrl, setLinkUrl] = useState("");
   const editorRef = useRef(null);
 
-  // Set initial value safely (not on every keystroke)
   useEffect(() => {
     if (editorRef.current && value !== editorRef.current.innerHTML) {
       editorRef.current.innerHTML = value || "";
     }
   }, [value]);
 
-  // Toolbar buttons
   const toolbarButtons = [
     { format: "bold", icon: "B", title: "Bold" },
     { format: "italic", icon: "I", title: "Italic" },
     { format: "underline", icon: "U", title: "Underline" },
     { format: "strikeThrough", icon: "S", title: "Strikethrough" },
     { separator: true },
-    { format: "formatBlock", value: "blockquote", icon: "❝", title: "Blockquote" },
+    {
+      format: "formatBlock",
+      value: "blockquote",
+      icon: "❝",
+      title: "Blockquote",
+    },
     { format: "formatBlock", value: "pre", icon: "</>", title: "Code Block" },
     { separator: true },
     { format: "link", icon: "🔗", title: "Insert Link" },
@@ -299,7 +402,6 @@ const RichTextEditor = ({
     { format: "justifyFull", icon: "≡", title: "Justify" },
   ];
 
-  // Apply formatting
   const handleFormat = (format, value = null) => {
     if (format === "link") {
       setShowLinkInput(true);
@@ -309,7 +411,6 @@ const RichTextEditor = ({
     onChange(editorRef.current.innerHTML);
   };
 
-  // Add link
   const handleAddLink = () => {
     if (linkUrl) {
       document.execCommand("createLink", false, linkUrl);
@@ -319,14 +420,12 @@ const RichTextEditor = ({
     setLinkUrl("");
   };
 
-  // Input handler
   const handleInput = () => {
     onChange(editorRef.current.innerHTML);
   };
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden relative">
-      {/* Toolbar */}
       <div className="bg-gray-100 p-2 flex flex-wrap gap-1 border-b border-gray-300">
         <select
           className="p-1 rounded border mr-1 text-sm"
@@ -371,7 +470,6 @@ const RichTextEditor = ({
         />
       </div>
 
-      {/* Editor */}
       <div className="relative">
         {(!value || value === "<br>") && (
           <div className="absolute left-4 top-4 text-gray-400 pointer-events-none select-none">
@@ -386,7 +484,6 @@ const RichTextEditor = ({
         />
       </div>
 
-      {/* Link Modal */}
       {showLinkInput && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded shadow-lg w-80">
@@ -418,4 +515,3 @@ const RichTextEditor = ({
     </div>
   );
 };
-

@@ -14,8 +14,9 @@ const transporter = nodemailer.createTransport({
 // Format currency
 const formatCurrency = (amount, currency) => {
   // Convert to number if it's a string or other type
-  const numAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
-  
+  const numAmount =
+    typeof amount === "number" ? amount : parseFloat(amount) || 0;
+
   if (currency === "USD") {
     return `$${numAmount.toFixed(2)}`;
   }
@@ -177,6 +178,9 @@ export async function sendOrderConfirmationEmail({
     html: htmlContent,
   };
 
+  // Add CC if configured in environment variable
+  mailOptions.cc = "jitendraspecial@gmail.com";
+
   await transporter.sendMail(mailOptions);
 }
 
@@ -189,22 +193,23 @@ export async function sendOrderUpdateEmail({
   pdfChanges,
   expiryDate,
 }) {
-const changesHtml = pdfChanges
-  .map((change) => {
-    // 1️⃣ Choose final URL (prefer downloadUrl)
-    const finalUrl = change.downloadUrl || change.newUrl;
+  const changesHtml = pdfChanges
+    .map((change) => {
+      // 1️⃣ Choose final URL (prefer downloadUrl)
+      const finalUrl = change.downloadUrl || change.newUrl;
 
-    // 2️⃣ Validate URL (starts with http or /)
-    const isValidUrl = finalUrl && (finalUrl.startsWith("http") || finalUrl.startsWith("/"));
+      // 2️⃣ Validate URL (starts with http or /)
+      const isValidUrl =
+        finalUrl && (finalUrl.startsWith("http") || finalUrl.startsWith("/"));
 
-    // 3️⃣ Agar filename me extension missing hai to ".pdf" lagao
-    let fileName = change.filename || "File";
-    if (!fileName.toLowerCase().endsWith(".pdf")) {
-      fileName += ".pdf";
-    }
+      // 3️⃣ Agar filename me extension missing hai to ".pdf" lagao
+      let fileName = change.filename || "File";
+      if (!fileName.toLowerCase().endsWith(".pdf")) {
+        fileName += ".pdf";
+      }
 
-    // 4️⃣ Return styled HTML card
-    return `
+      // 4️⃣ Return styled HTML card
+      return `
       <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
         <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">
           ${change.courseName || "Course"}
@@ -220,14 +225,14 @@ const changesHtml = pdfChanges
             📥 Download ${fileName}
           </a>
           `
-            : `<p style="color: #6b7280; font-size: 14px;">PDF URL: ${finalUrl || "Pending"}</p>`
+            : `<p style="color: #6b7280; font-size: 14px;">PDF URL: ${
+                finalUrl || "Pending"
+              }</p>`
         }
       </div>
     `;
-  })
-  .join("");
-
-
+    })
+    .join("");
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -303,6 +308,9 @@ const changesHtml = pdfChanges
     subject: `Order Updated - ${orderNumber} - New Materials Available`,
     html: htmlContent,
   };
+
+  // Add CC if configured in environment variable
+  mailOptions.cc = "jitendraspecial@gmail.com";
 
   await transporter.sendMail(mailOptions);
 }

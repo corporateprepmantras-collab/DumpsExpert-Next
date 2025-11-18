@@ -533,7 +533,7 @@ const Cart = () => {
             setShowPaymentModal(false);
 
             setTimeout(() => {
-              router.push("/dashboard");
+              router.push("/dashboard/student");
             }, 1000);
           } catch (error) {
             console.error("Order creation failed:", error);
@@ -678,7 +678,7 @@ const Cart = () => {
       toast.dismiss();
       toast.success("Payment successful! Order created.");
       setShowPaymentModal(false);
-      router.push("/dashboard");
+      router.push("/dashboard/student");
     } catch (error) {
       console.error("PayPal payment verification failed:", error);
       toast.dismiss();
