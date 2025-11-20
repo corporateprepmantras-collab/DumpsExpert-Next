@@ -203,6 +203,9 @@ const useCartStore = create(
     })
   )
 );
+//rate limiter
+// frontend filds check 
+// amount varifaction .. and stuff from backend . also  and quantity
 
 // ✅ OPTIMIZED: Selectors for better performance (only re-render what changed)
 export const useCartItems = () => useCartStore((state) => state.cartItems);
