@@ -1,5 +1,5 @@
 // ============================================
-// FILE: /middleware.js (SECURE VERSION)
+// FILE: /middleware.js (FIXED VERSION FOR OAUTH)
 // ============================================
 
 import { getToken } from "next-auth/jwt";
@@ -16,6 +16,7 @@ export async function middleware(request) {
     path: pathname,
     ip: clientIP,
     method: request.method,
+    host: request.headers.get("host"),
   });
 
   // ========================================
@@ -65,7 +66,7 @@ export async function middleware(request) {
     "/",
     "/maintenance",
     "/unauthorized",
-    "/api/auth", // NextAuth routes
+    "/api/auth", // NextAuth routes - IMPORTANT for OAuth
     "/api/seo",
     "/api/products",
     "/api/blogs",
@@ -106,16 +107,13 @@ export async function middleware(request) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  console.log(
-    "[MIDDLEWARE] 🔐 Token:",
-    token
-      ? {
-          email: token.email,
-          role: token.role,
-          subscription: token.subscription,
-        }
-      : "Missing"
-  );
+  console.log("[MIDDLEWARE] 🔐 Token Debug:", {
+    hasToken: !!token,
+    email: token?.email || "N/A",
+    role: token?.role || "N/A",
+    subscription: token?.subscription || "N/A",
+    name: token?.name || "N/A",
+  });
 
   // ========================================
   // 4. PROTECTED DASHBOARD ROUTES
@@ -128,11 +126,15 @@ export async function middleware(request) {
       return NextResponse.redirect(url);
     }
 
-    // Extract role and subscription
+    // Extract role and subscription with fallback defaults
     const role = token.role || "guest";
     const subscription = token.subscription || "no";
 
-    console.log("[MIDDLEWARE] 👤 User info:", { role, subscription });
+    console.log("[MIDDLEWARE] 👤 User info:", { 
+      role, 
+      subscription,
+      email: token.email 
+    });
 
     // Determine target dashboard based on role
     let targetDashboard = "/dashboard/guest";
@@ -142,9 +144,11 @@ export async function middleware(request) {
       targetDashboard = "/dashboard/student";
     }
 
+    console.log("[MIDDLEWARE] 🎯 Target dashboard:", targetDashboard);
+
     // Redirect generic /dashboard to specific dashboard
     if (pathname === "/dashboard" || pathname === "/dashboard/") {
-      console.log("[MIDDLEWARE] 🔄 Redirecting to:", targetDashboard);
+      console.log("[MIDDLEWARE] 🔄 Redirecting /dashboard to:", targetDashboard);
       return NextResponse.redirect(new URL(targetDashboard, request.url));
     }
 
@@ -186,7 +190,8 @@ export async function middleware(request) {
       // Prevent admin/students from accessing guest dashboard
       if (role === "admin" || (role === "student" && subscription === "yes")) {
         console.log(
-          "[MIDDLEWARE] 🔄 Redirecting privileged user to their dashboard"
+          "[MIDDLEWARE] 🔄 Redirecting privileged user from guest to:",
+          targetDashboard
         );
         return NextResponse.redirect(new URL(targetDashboard, request.url));
       }
