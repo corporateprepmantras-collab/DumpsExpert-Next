@@ -1,5 +1,5 @@
 // ============================================
-// FILE: /middleware.js (COMBINED & FIXED)
+// FILE: /middleware.js (SECURE VERSION)
 // ============================================
 
 import { getToken } from "next-auth/jwt";
@@ -7,13 +7,28 @@ import { NextResponse } from "next/server";
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const clientIP =
+    request.headers.get("x-forwarded-for")?.split(",")[0] ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
 
-  console.log("[MIDDLEWARE] Processing:", pathname);
+  console.log("[MIDDLEWARE] 🛡️ Processing:", {
+    path: pathname,
+    ip: clientIP,
+    method: request.method,
+  });
 
   // ========================================
   // 1. MAINTENANCE MODE CHECK (First Priority)
   // ========================================
-  const maintenanceExcluded = ["/admin", "/dashboard", "/api", "/maintenance"];
+  const maintenanceExcluded = [
+    "/admin",
+    "/dashboard/admin",
+    "/api",
+    "/maintenance",
+    "/_next",
+  ];
+
   const isMaintenanceExcluded = maintenanceExcluded.some((p) =>
     pathname.startsWith(p)
   );
@@ -28,12 +43,12 @@ export async function middleware(request) {
       if (maintenanceRes.ok) {
         const data = await maintenanceRes.json();
         if (data?.maintenanceMode) {
-          console.log("[MIDDLEWARE] Maintenance mode active, redirecting");
+          console.log("[MIDDLEWARE] 🚧 Maintenance mode active, redirecting");
           return NextResponse.rewrite(new URL("/maintenance", request.url));
         }
       }
     } catch (err) {
-      console.error("[MIDDLEWARE] Maintenance check error:", err);
+      console.error("[MIDDLEWARE] ❌ Maintenance check error:", err);
       // Continue if maintenance check fails
     }
   }
@@ -42,10 +57,15 @@ export async function middleware(request) {
   // 2. PUBLIC ROUTES (No Auth Required)
   // ========================================
   const publicRoutes = [
-    "/auth",
+    "/auth/signin",
+    "/auth/signup",
+    "/auth/verify-email",
+    "/auth/forgot-password",
+    "/auth/reset-password",
     "/",
     "/maintenance",
     "/unauthorized",
+    "/api/auth", // NextAuth routes
     "/api/seo",
     "/api/products",
     "/api/blogs",
@@ -58,8 +78,15 @@ export async function middleware(request) {
     "/api/categories",
     "/api/faqs",
     "/api/maintenance-page",
+    "/api/coupons/validate",
+    "/api/payments/razorpay/create-order",
+    "/api/payments/razorpay/verify",
+    "/api/payments/paypal/create-order",
+    "/api/payments/paypal/verify",
     "/_next",
     "/favicon.ico",
+    "/images",
+    "/fonts",
   ];
 
   const isPublicRoute = publicRoutes.some((route) =>
@@ -79,9 +106,20 @@ export async function middleware(request) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  console.log("[MIDDLEWARE] Token:", token ? "Present" : "Missing");
+  console.log(
+    "[MIDDLEWARE] 🔐 Token:",
+    token
+      ? {
+          email: token.email,
+          role: token.role,
+          subscription: token.subscription,
+        }
+      : "Missing"
+  );
 
-  // Protected routes require authentication
+  // ========================================
+  // 4. PROTECTED DASHBOARD ROUTES
+  // ========================================
   if (pathname.startsWith("/dashboard")) {
     if (!token) {
       console.log("[MIDDLEWARE] ❌ No token, redirecting to signin");
@@ -90,13 +128,13 @@ export async function middleware(request) {
       return NextResponse.redirect(url);
     }
 
-    // Role-based access control
+    // Extract role and subscription
     const role = token.role || "guest";
     const subscription = token.subscription || "no";
 
-    console.log("[MIDDLEWARE] Role:", role, "Subscription:", subscription);
+    console.log("[MIDDLEWARE] 👤 User info:", { role, subscription });
 
-    // Determine target dashboard
+    // Determine target dashboard based on role
     let targetDashboard = "/dashboard/guest";
     if (role === "admin") {
       targetDashboard = "/dashboard/admin";
@@ -105,36 +143,151 @@ export async function middleware(request) {
     }
 
     // Redirect generic /dashboard to specific dashboard
-    if (pathname === "/dashboard") {
-      console.log("[MIDDLEWARE] Redirecting to:", targetDashboard);
+    if (pathname === "/dashboard" || pathname === "/dashboard/") {
+      console.log("[MIDDLEWARE] 🔄 Redirecting to:", targetDashboard);
       return NextResponse.redirect(new URL(targetDashboard, request.url));
     }
 
-    // Restrict access based on role
-    if (pathname.startsWith("/dashboard/admin") && role !== "admin") {
-      console.log("[MIDDLEWARE] ❌ Admin access denied");
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    // ========================================
+    // 5. ROLE-BASED ACCESS CONTROL (CRITICAL)
+    // ========================================
+
+    // ADMIN DASHBOARD - Only admins allowed
+    if (pathname.startsWith("/dashboard/admin")) {
+      if (role !== "admin") {
+        console.warn("[MIDDLEWARE] ⚠️ UNAUTHORIZED ADMIN ACCESS ATTEMPT:", {
+          path: pathname,
+          email: token.email,
+          role: role,
+          ip: clientIP,
+        });
+        return NextResponse.redirect(new URL("/unauthorized", request.url));
+      }
+      console.log("[MIDDLEWARE] ✅ Admin access granted");
     }
 
-    if (
-      pathname.startsWith("/dashboard/student") &&
-      (role !== "student" || subscription !== "yes")
-    ) {
-      console.log("[MIDDLEWARE] ❌ Student access denied");
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    // STUDENT DASHBOARD - Only students with subscription
+    if (pathname.startsWith("/dashboard/student")) {
+      if (role !== "student" || subscription !== "yes") {
+        console.warn("[MIDDLEWARE] ⚠️ UNAUTHORIZED STUDENT ACCESS ATTEMPT:", {
+          path: pathname,
+          email: token.email,
+          role: role,
+          subscription: subscription,
+          ip: clientIP,
+        });
+        return NextResponse.redirect(new URL("/unauthorized", request.url));
+      }
+      console.log("[MIDDLEWARE] ✅ Student access granted");
     }
 
-    if (pathname.startsWith("/dashboard/guest") && role !== "guest") {
-      console.log("[MIDDLEWARE] ❌ Guest access denied");
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
+    // GUEST DASHBOARD - Only guests
+    if (pathname.startsWith("/dashboard/guest")) {
+      // Prevent admin/students from accessing guest dashboard
+      if (role === "admin" || (role === "student" && subscription === "yes")) {
+        console.log(
+          "[MIDDLEWARE] 🔄 Redirecting privileged user to their dashboard"
+        );
+        return NextResponse.redirect(new URL(targetDashboard, request.url));
+      }
+      console.log("[MIDDLEWARE] ✅ Guest access granted");
     }
   }
 
-  console.log("[MIDDLEWARE] ✅ Allowing request");
-  return NextResponse.next();
+  // ========================================
+  // 6. PROTECTED API ROUTES
+  // ========================================
+
+  // Admin API endpoints
+  if (pathname.startsWith("/api/admin")) {
+    if (!token || token.role !== "admin") {
+      console.warn("[MIDDLEWARE] ⚠️ UNAUTHORIZED ADMIN API ACCESS:", {
+        path: pathname,
+        email: token?.email,
+        role: token?.role,
+        ip: clientIP,
+      });
+      return NextResponse.json(
+        { error: "Unauthorized: Admin access required" },
+        { status: 403 }
+      );
+    }
+    console.log("[MIDDLEWARE] ✅ Admin API access granted");
+  }
+
+  // Student API endpoints
+  if (pathname.startsWith("/api/student")) {
+    if (!token || token.role !== "student" || token.subscription !== "yes") {
+      console.warn("[MIDDLEWARE] ⚠️ UNAUTHORIZED STUDENT API ACCESS:", {
+        path: pathname,
+        email: token?.email,
+        role: token?.role,
+        subscription: token?.subscription,
+        ip: clientIP,
+      });
+      return NextResponse.json(
+        { error: "Unauthorized: Active subscription required" },
+        { status: 403 }
+      );
+    }
+    console.log("[MIDDLEWARE] ✅ Student API access granted");
+  }
+
+  // User-specific API endpoints (require authentication)
+  if (pathname.startsWith("/api/user") || pathname.startsWith("/api/order")) {
+    if (!token) {
+      console.warn("[MIDDLEWARE] ⚠️ UNAUTHENTICATED API ACCESS:", {
+        path: pathname,
+        ip: clientIP,
+      });
+      return NextResponse.json(
+        { error: "Unauthorized: Please log in" },
+        { status: 401 }
+      );
+    }
+
+    // For /api/order GET (view all orders), require admin
+    if (pathname === "/api/order" && request.method === "GET") {
+      if (token.role !== "admin") {
+        console.warn("[MIDDLEWARE] ⚠️ NON-ADMIN TRYING TO VIEW ALL ORDERS:", {
+          email: token.email,
+          role: token.role,
+          ip: clientIP,
+        });
+        return NextResponse.json(
+          { error: "Forbidden: Admin access required" },
+          { status: 403 }
+        );
+      }
+    }
+
+    console.log("[MIDDLEWARE] ✅ User API access granted");
+  }
+
+  // ========================================
+  // 7. SECURITY HEADERS
+  // ========================================
+  const response = NextResponse.next();
+
+  // Add security headers
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=()"
+  );
+
+  // Log IP for audit (in production, send to logging service)
+  if (token) {
+    response.headers.set("X-User-Role", token.role || "guest");
+  }
+
+  console.log("[MIDDLEWARE] ✅ Request allowed");
+  return response;
 }
 
 export const config = {
   // Match all routes except static files
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|images|fonts).*)"],
 };

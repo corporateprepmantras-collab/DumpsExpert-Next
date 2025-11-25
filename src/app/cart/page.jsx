@@ -333,21 +333,15 @@ const Cart = () => {
   };
 
   // Create order payload helper
+  // Key changes to make in your Cart.jsx component
+  // Add these modifications to your existing Cart component
+
+  // Update the createOrderPayload function:
   const createOrderPayload = (paymentMethod, paymentId) => {
     return {
       userId,
       items: cartItems.map((item) => {
         const actualPrice = getItemPrice(item, selectedCurrency);
-
-        console.log(`📦 Creating order item for ${item.title}:`, {
-          type: item.type,
-          actualPrice,
-          currency: selectedCurrency,
-          examPrices: {
-            inr: item.examPriceInr,
-            usd: item.examPriceUsd,
-          },
-        });
 
         return {
           _id: item._id,
@@ -356,16 +350,10 @@ const Cart = () => {
           name: item.name || item.title || "Unnamed Course",
           title: item.title,
 
+          // Send the price we calculated
           price: actualPrice,
-          priceINR:
-            selectedCurrency === "INR"
-              ? actualPrice
-              : getItemPrice(item, "INR"),
-          priceUSD:
-            selectedCurrency === "USD"
-              ? actualPrice
-              : getItemPrice(item, "USD"),
 
+          // Send ALL pricing data so backend can verify
           dumpsPriceInr: Number(item.dumpsPriceInr) || 0,
           dumpsPriceUsd: Number(item.dumpsPriceUsd) || 0,
           dumpsMrpInr: Number(item.dumpsMrpInr) || 0,
@@ -407,17 +395,22 @@ const Cart = () => {
           quantity: item.quantity || 1,
         };
       }),
+
+      // CRITICAL: Send these for backend verification
       totalAmount: grandTotal,
       subtotal: subtotal,
       discount: discount,
       currency: selectedCurrency,
       couponCode: appliedCoupon?.code || null,
+
+      // Payment details
       paymentMethod: paymentMethod,
       paymentId: paymentId,
       paymentStatus: "completed",
     };
   };
 
+  // Update error handling in handleRazorpayPayment:
   const handleRazorpayPayment = async () => {
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
@@ -470,11 +463,6 @@ const Cart = () => {
         return;
       }
 
-      console.log(
-        "✅ Using Razorpay Key:",
-        razorpayKey.substring(0, 10) + "..."
-      );
-
       const options = {
         key: razorpayKey,
         amount: Math.round(razorpayAmount * 100),
@@ -516,6 +504,13 @@ const Cart = () => {
 
             const orderResponse = await axios.post("/api/order", orderPayload);
 
+            // Check for backend validation errors
+            if (!orderResponse.data.success) {
+              throw new Error(
+                orderResponse.data.error || "Order creation failed"
+              );
+            }
+
             clearCart();
 
             if (paymentVerification.data.user) {
@@ -538,10 +533,25 @@ const Cart = () => {
           } catch (error) {
             console.error("Order creation failed:", error);
             toast.dismiss();
-            toast.error(
+
+            // Show specific error messages from backend
+            const errorMsg =
               error.response?.data?.error ||
-                "Failed to create order. Please contact support."
-            );
+              error.response?.data?.details?.[0] ||
+              error.message ||
+              "Failed to create order. Please contact support.";
+
+            toast.error(errorMsg);
+
+            // If price mismatch, suggest refresh
+            if (
+              errorMsg.includes("verification failed") ||
+              errorMsg.includes("mismatch")
+            ) {
+              setTimeout(() => {
+                toast.info("Please refresh the page and try again");
+              }, 2000);
+            }
           }
         },
         prefill: {
@@ -572,10 +582,90 @@ const Cart = () => {
       setShowPaymentModal(false);
     } catch (error) {
       console.error("Payment initiation failed:", error);
-      toast.error(error.response?.data?.error || "Failed to initiate payment");
+      const errorMsg =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to initiate payment";
+      toast.error(errorMsg);
     }
   };
 
+  // Similar updates for onPayPalApprove:
+  const onPayPalApprove = async (data) => {
+    try {
+      toast.loading("Verifying payment...");
+
+      const paymentVerification = await axios.post(
+        "/api/payments/paypal/verify",
+        {
+          orderId: data.orderID,
+          amount: grandTotal,
+          userId,
+        }
+      );
+
+      if (!paymentVerification.data.success) {
+        throw new Error(
+          paymentVerification.data.error || "Payment verification failed"
+        );
+      }
+
+      toast.dismiss();
+      toast.loading("Creating your order...");
+
+      const orderPayload = createOrderPayload(
+        "paypal",
+        paymentVerification.data.paymentId
+      );
+
+      console.log("📤 Sending order payload:", orderPayload);
+
+      const orderResponse = await axios.post("/api/order", orderPayload);
+
+      // Check for backend validation errors
+      if (!orderResponse.data.success) {
+        throw new Error(orderResponse.data.error || "Order creation failed");
+      }
+
+      clearCart();
+
+      if (paymentVerification.data.user) {
+        await update({
+          user: {
+            ...session.user,
+            role: paymentVerification.data.user.role,
+            subscription: paymentVerification.data.user.subscription,
+          },
+        });
+      }
+
+      toast.dismiss();
+      toast.success("Payment successful! Order created.");
+      setShowPaymentModal(false);
+      router.push("/dashboard/student");
+    } catch (error) {
+      console.error("PayPal payment verification failed:", error);
+      toast.dismiss();
+
+      const errorMsg =
+        error.response?.data?.error ||
+        error.response?.data?.details?.[0] ||
+        error.message ||
+        "Payment verification failed";
+
+      toast.error(errorMsg);
+
+      // If price mismatch, suggest refresh
+      if (
+        errorMsg.includes("verification failed") ||
+        errorMsg.includes("mismatch")
+      ) {
+        setTimeout(() => {
+          toast.info("Please refresh the page and try again");
+        }, 2000);
+      }
+    }
+  };
   const createPayPalOrder = async () => {
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
@@ -629,60 +719,6 @@ const Cart = () => {
 
       toast.error(errorMsg);
       throw error;
-    }
-  };
-
-  const onPayPalApprove = async (data) => {
-    try {
-      toast.loading("Verifying payment...");
-
-      const paymentVerification = await axios.post(
-        "/api/payments/paypal/verify",
-        {
-          orderId: data.orderID,
-          amount: grandTotal,
-          userId,
-        }
-      );
-
-      if (!paymentVerification.data.success) {
-        throw new Error(
-          paymentVerification.data.error || "Payment verification failed"
-        );
-      }
-
-      toast.dismiss();
-      toast.loading("Creating your order...");
-
-      const orderPayload = createOrderPayload(
-        "paypal",
-        paymentVerification.data.paymentId
-      );
-
-      console.log("📤 Sending order payload:", orderPayload);
-
-      await axios.post("/api/order", orderPayload);
-
-      clearCart();
-
-      if (paymentVerification.data.user) {
-        await update({
-          user: {
-            ...session.user,
-            role: paymentVerification.data.user.role,
-            subscription: paymentVerification.data.user.subscription,
-          },
-        });
-      }
-
-      toast.dismiss();
-      toast.success("Payment successful! Order created.");
-      setShowPaymentModal(false);
-      router.push("/dashboard/student");
-    } catch (error) {
-      console.error("PayPal payment verification failed:", error);
-      toast.dismiss();
-      toast.error(error.response?.data?.error || "Payment verification failed");
     }
   };
 
