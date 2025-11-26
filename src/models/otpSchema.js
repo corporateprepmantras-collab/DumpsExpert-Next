@@ -1,16 +1,43 @@
 const mongoose = require("mongoose");
 
 const otpSchema = new mongoose.Schema({
-  email: { type: String, required: true, index: true },
-  otp: { type: String, required: true },
-  otpExpires: { type: Date, required: true, index: { expires: "0s" } },
-  attempts: { type: Number, default: 0 },
-    purpose: {
+  email: {
     type: String,
-    enum: ['signup', 'password-reset'],
-    default: 'signup'
+    required: true,
+    lowercase: true,
+    trim: true,
+    index: true,
   },
-  createdAt: { type: Date, default: Date.now },
+  otp: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  otpExpires: {
+    type: Date,
+    required: true,
+    index: { expires: "0s" },
+  },
+  attempts: {
+    type: Number,
+    default: 0,
+  },
+  purpose: {
+    type: String,
+    enum: ["signup", "password-reset"],
+    default: "signup",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    index: true,
+  },
 });
 
-module.exports = mongoose.models.otps || mongoose.model("otps", otpSchema);
+// Index for faster queries
+otpSchema.index({ email: 1, otp: 1 });
+
+// Make sure the model name matches what you import
+const OTP = mongoose.models.otps || mongoose.model("otps", otpSchema);
+
+module.exports = OTP;

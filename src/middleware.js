@@ -1,5 +1,5 @@
 // ============================================
-// FILE: /middleware.js (FIXED VERSION FOR OAUTH)
+// FILE: /middleware.js (FIXED FOR OAUTH DASHBOARD ROUTING)
 // ============================================
 
 import { getToken } from "next-auth/jwt";
@@ -50,7 +50,6 @@ export async function middleware(request) {
       }
     } catch (err) {
       console.error("[MIDDLEWARE] ❌ Maintenance check error:", err);
-      // Continue if maintenance check fails
     }
   }
 
@@ -63,7 +62,6 @@ export async function middleware(request) {
     "/auth/verify-email",
     "/auth/forgot-password",
     "/auth/reset-password",
-    "/",
     "/maintenance",
     "/unauthorized",
     "/api/auth", // NextAuth routes - IMPORTANT for OAuth
@@ -90,11 +88,15 @@ export async function middleware(request) {
     "/fonts",
   ];
 
+  // Check if it's a public route
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route)
   );
 
-  if (isPublicRoute) {
+  // ⚠️ SPECIAL CASE: Homepage "/" is public, but only if it's EXACTLY "/"
+  const isHomepage = pathname === "/" || pathname === "";
+
+  if (isPublicRoute || isHomepage) {
     console.log("[MIDDLEWARE] ✅ Public route, allowing access");
     return NextResponse.next();
   }
@@ -130,10 +132,10 @@ export async function middleware(request) {
     const role = token.role || "guest";
     const subscription = token.subscription || "no";
 
-    console.log("[MIDDLEWARE] 👤 User info:", { 
-      role, 
+    console.log("[MIDDLEWARE] 👤 User info:", {
+      role,
       subscription,
-      email: token.email 
+      email: token.email,
     });
 
     // Determine target dashboard based on role
@@ -148,7 +150,10 @@ export async function middleware(request) {
 
     // Redirect generic /dashboard to specific dashboard
     if (pathname === "/dashboard" || pathname === "/dashboard/") {
-      console.log("[MIDDLEWARE] 🔄 Redirecting /dashboard to:", targetDashboard);
+      console.log(
+        "[MIDDLEWARE] 🔄 Redirecting /dashboard to:",
+        targetDashboard
+      );
       return NextResponse.redirect(new URL(targetDashboard, request.url));
     }
 
