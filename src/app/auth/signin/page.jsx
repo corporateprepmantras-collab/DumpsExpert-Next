@@ -1,112 +1,70 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [redirectTo, setRedirectTo] = useState("");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
 
-  // ✅ Get callback URL from query params
-  useEffect(() => {
-    if (searchParams.get("callbackUrl")) {
-      // Optional: pre-fill or show info about redirect
-      console.log(
-        "[SignIn] Callback URL detected:",
-        searchParams.get("callbackUrl")
-      );
-    }
-  }, [searchParams]);
+  const { data: session } = useSession(); // ✅ useSession hook
 
-  // ✅ Handle redirect AFTER session updates
+  // ✅ Handle redirect after login using useEffect
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
+    if (session?.user) {
       const { role, subscription } = session.user;
-      const callbackUrl = searchParams.get("callbackUrl");
 
-      // Use callback URL if provided, otherwise determine target
-      let target = callbackUrl || "/dashboard/guest";
+      let target = "/dashboard/guest";
+      if (role === "admin") target = "/dashboard/admin";
+      else if (role === "student" && subscription === "yes")
+        target = "/dashboard/student";
 
-      if (!callbackUrl) {
-        // Determine dashboard based on role/subscription
-        if (role === "admin") {
-          target = "/dashboard/admin";
-        } else if (role === "student" && subscription === "yes") {
-          target = "/dashboard/student";
-        }
-      }
-
-      console.log("[SignIn] Redirecting authenticated user to:", target);
-
-      // Small delay to ensure session is fully established
-      const timer = setTimeout(() => {
-        router.push(target);
-      }, 500);
-
+      const timer = setTimeout(() => router.push(target), 800);
       return () => clearTimeout(timer);
     }
-  }, [status, session, router, searchParams]);
+  }, [session, router]);
 
   const handleEmailSignIn = async (e) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
 
     try {
-      // ✅ Call signIn with redirect: false to handle response manually
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
-      if (!result) {
-        setError("An unexpected error occurred. Please try again.");
-        setIsLoading(false);
-        return;
-      }
-
-      if (result.error) {
+      if (result?.error) {
         setError("Invalid email, password, or unverified account.");
-        setIsLoading(false);
-        console.error("[SignIn] Error:", result.error);
         return;
       }
 
-      if (result.ok) {
-        console.log(
-          "[SignIn] Credentials sign-in successful, waiting for session update..."
-        );
-        // ✅ Session will update automatically, useEffect will handle redirect
-        // Don't manually redirect - let useSession and useEffect handle it
-      }
+      // ✅ Set redirect route and wait for useSession to update
+      const role = result?.user?.role;
+      const subscription = result?.user?.subscription;
+
+      if (role === "admin") setRedirectTo("/dashboard/admin");
+      else if (role === "student" && subscription === "yes")
+        setRedirectTo("/dashboard/student");
+      else setRedirectTo("/dashboard/guest");
     } catch (err) {
       setError("An error occurred during sign-in. Please try again.");
-      setIsLoading(false);
-      console.error("[SignIn] Catch error:", err);
+      console.error("Sign-in error:", err);
     }
   };
 
   const handleOAuthSignIn = async (provider) => {
     setError("");
-    setIsLoading(true);
     try {
-      // ✅ For OAuth, use redirect: true (default) to let NextAuth handle redirect
-      // This allows middleware to properly validate the token
-      await signIn(provider, {
-        redirect: true,
-        callbackUrl: searchParams.get("callbackUrl") || "/dashboard/guest",
-      });
+      await signIn(provider); // redirect true (default), page will reload & session updates
     } catch (err) {
-      setError(`${provider} sign-in failed. Please try again.`);
-      setIsLoading(false);
-      console.error("[SignIn] OAuth error:", err);
+      setError("OAuth sign-in failed");
+      console.error(err);
     }
   };
 
@@ -114,50 +72,30 @@ export default function SignIn() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
-
-        {error && (
-          <p className="text-red-500 mb-4 p-3 bg-red-50 rounded text-sm">
-            {error}
-          </p>
-        )}
-
-        {isLoading && (
-          <p className="text-blue-500 mb-4 p-3 bg-blue-50 rounded text-sm">
-            Processing your sign-in...
-          </p>
-        )}
-
+        {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleEmailSignIn}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Email
-            </label>
+            <label className="block text-gray-700">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              placeholder="you@example.com"
+              className="w-full px-3 py-2 border rounded"
               required
-              disabled={isLoading}
             />
           </div>
-
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Password
-            </label>
+            <label className="block text-gray-700">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              placeholder="Enter your password"
+              className="w-full px-3 py-2 border rounded"
               required
-              disabled={isLoading}
             />
           </div>
 
+          {/* Forgot Password Link */}
           <div className="mb-4 text-right">
             <Link
               href="/auth/forgot-password"
@@ -169,36 +107,28 @@ export default function SignIn() {
 
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            Sign In
           </button>
         </form>
-
-        <div className="mt-6 space-y-2">
+        <div className="mt-4">
           <button
             onClick={() => handleOAuthSignIn("google")}
-            disabled={isLoading}
-            className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 mb-2"
           >
-            {isLoading ? "Processing..." : "Sign In with Google"}
+            Sign In with Google
           </button>
           <button
             onClick={() => handleOAuthSignIn("facebook")}
-            disabled={isLoading}
-            className="w-full bg-blue-800 text-white py-2 rounded hover:bg-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            className="w-full bg-blue-800 text-white py-2 rounded hover:bg-blue-900"
           >
-            {isLoading ? "Processing..." : "Sign In with Facebook"}
+            Sign In with Facebook
           </button>
         </div>
-
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-4 text-center">
           Don't have an account?{" "}
-          <Link
-            href="/auth/signup"
-            className="text-blue-500 hover:underline font-medium"
-          >
+          <Link href="/auth/signup" className="text-blue-500 hover:underline">
             Sign Up
           </Link>
         </p>
