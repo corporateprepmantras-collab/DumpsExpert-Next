@@ -175,7 +175,6 @@ async function fetchAnnouncement() {
   return result.data || null;
 }
 
-// ✅ METADATA GENERATION
 // ✅ MAIN PAGE COMPONENT
 export default async function Page() {
   const buildStartTime = Date.now();
@@ -263,4 +262,4 @@ export default async function Page() {
 
 // ✅ ISR with 10-second revalidation (for quick testing)
 // REMEMBER: Change to 300 (5 minutes) after testing is complete!
-export const revalidate = 10;
+export const revalidate = 1;
