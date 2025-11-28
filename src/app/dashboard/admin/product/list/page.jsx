@@ -14,16 +14,16 @@ const ProductList = () => {
 
   useEffect(() => {
     fetchProducts();
-
+    
     // Listen for custom event when returning from add/edit page
     const handleRefresh = () => {
       fetchProducts();
       setSuccessMessage("Product updated successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     };
-
-    window.addEventListener("refreshProducts", handleRefresh);
-    return () => window.removeEventListener("refreshProducts", handleRefresh);
+    
+    window.addEventListener('refreshProducts', handleRefresh);
+    return () => window.removeEventListener('refreshProducts', handleRefresh);
   }, []);
 
   const fetchProducts = async () => {
@@ -111,8 +111,7 @@ const ProductList = () => {
           <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this product? This action cannot
-              be undone.
+              Are you sure you want to delete this product? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
