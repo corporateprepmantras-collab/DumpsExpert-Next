@@ -303,4 +303,4 @@ export default async function Page() {
 }
 
 // ✅ ISR with 5-minute revalidation
-export const revalidate = 10; // 30 seconds (for testing)
+export const revalidate = 0.1; // 30 seconds (for testing)
