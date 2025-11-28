@@ -19,7 +19,8 @@ const ProductList = () => {
     const handleRefresh = () => {
       fetchProducts();
       setSuccessMessage("Product updated successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      setTimeout(() => setSuccessMessage(""), 3);// update time here 
+      //********************************* */
     };
     
     window.addEventListener('refreshProducts', handleRefresh);
