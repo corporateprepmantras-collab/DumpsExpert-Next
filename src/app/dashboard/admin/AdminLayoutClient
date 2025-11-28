@@ -1,4 +1,4 @@
-// app/dashboard/admin/layout.jsx
+// app/dashboard/admin/AdminLayoutClient.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,7 +6,7 @@ import AdminSidebar from "./adminComps/AdminSidebar";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
 
-export default function AdminLayout({ children }) {
+export default function AdminLayoutClient({ children }) {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { user, loading } = useUser();
