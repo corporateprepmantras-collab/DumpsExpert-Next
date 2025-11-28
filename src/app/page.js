@@ -176,47 +176,6 @@ async function fetchAnnouncement() {
 }
 
 // ✅ METADATA GENERATION
-export async function generateMetadata() {
-  const seo = await fetchSEO();
-
-  const defaultTitle = "Prepmantras – #1 IT Exam Prep Provider";
-  const defaultDescription =
-    "Pass your IT certifications in first attempt with trusted exam Prep, practice tests & PDF guides by Prepmantras.";
-
-  return {
-    title: seo.title || defaultTitle,
-    description: seo.description || defaultDescription,
-    keywords:
-      seo.keywords ||
-      "IT certification, exam dumps, practice tests, certification prep",
-    alternates: {
-      canonical: seo.canonicalurl || "https://prepmantras.com/",
-    },
-    openGraph: {
-      title: seo.ogtitle || seo.title || defaultTitle,
-      description: seo.ogdescription || seo.description || defaultDescription,
-      url: seo.ogurl || seo.canonicalurl || "https://prepmantras.com/",
-      images: [
-        {
-          url: seo.ogimage || "/default-og.jpg",
-          width: 1200,
-          height: 630,
-        },
-      ],
-      siteName: "Prepmantras",
-      locale: "en_US",
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: seo.twittertitle || seo.title || defaultTitle,
-      description:
-        seo.twitterdescription || seo.description || defaultDescription,
-      images: [seo.twitterimage || seo.ogimage || "/default-og.jpg"],
-    },
-  };
-}
-
 // ✅ MAIN PAGE COMPONENT
 export default async function Page() {
   const buildStartTime = Date.now();
@@ -302,5 +261,6 @@ export default async function Page() {
   );
 }
 
-// ✅ ISR with 5-minute revalidation
-export const revalidate = 0.1; // 30 seconds (for testing)
+// ✅ ISR with 10-second revalidation (for quick testing)
+// REMEMBER: Change to 300 (5 minutes) after testing is complete!
+export const revalidate = 10;
