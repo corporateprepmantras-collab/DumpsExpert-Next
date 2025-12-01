@@ -153,6 +153,51 @@ export async function generateMetadata({ params }) {
 }
 
 /* ===========================
+   ✅ FAQ Accordion Component
+   =========================== */
+function FAQSection({ faqs }) {
+  if (!faqs || faqs.length === 0) return null;
+
+  return (
+    <div className="mb-8 shadow rounded-lg border border-gray-200 p-6 bg-white">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Frequently Asked Questions
+      </h2>
+      <div className="space-y-4">
+        {faqs.map((faq, index) => (
+          <details
+            key={faq._id || index}
+            className="group border border-gray-200 rounded-lg overflow-hidden"
+          >
+            <summary className="cursor-pointer p-4 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center">
+              <span className="font-semibold text-gray-800 pr-4">
+                {faq.question}
+              </span>
+              <svg
+                className="w-5 h-5 text-gray-600 transition-transform group-open:rotate-180"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </summary>
+            <div className="p-4 bg-white border-t border-gray-200">
+              <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
+            </div>
+          </details>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===========================
    ✅ Main Page Component
    =========================== */
 export default async function CategoryPage({ params, searchParams }) {
@@ -343,6 +388,11 @@ export default async function CategoryPage({ params, searchParams }) {
                   }}
                 />
               </div>
+            )}
+
+            {/* ✅ FAQ Section */}
+            {category && category.faqs && category.faqs.length > 0 && (
+              <FAQSection faqs={category.faqs} />
             )}
           </>
         ) : (

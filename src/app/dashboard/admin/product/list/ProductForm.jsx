@@ -1,14 +1,14 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import RichTextEditor from "../../../../../components/public/RichTextEditor";
+import RichTextEditor from "@/components/public/RichTextEditor";
+import FileUploader from "@/components/public/FileUploader";
+
 const ProductForm = ({ mode }) => {
-  // Next.js navigation hooks
   const params = useParams();
   const router = useRouter();
   const id = params?.id;
 
-  // Form state management
   const [form, setForm] = useState({
     sapExamCode: "",
     title: "",
@@ -37,19 +37,17 @@ const ProductForm = ({ mode }) => {
     schema: "",
   });
 
-  // Existing file URLs for edit mode
   const [existingFiles, setExistingFiles] = useState({
     imageUrl: "",
     samplePdfUrl: "",
     mainPdfUrl: "",
   });
 
-  // Component state variables
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch categories on component mount
+  // Fetch categories
   useEffect(() => {
     fetch("/api/product-categories")
       .then((res) => res.json())
@@ -57,7 +55,20 @@ const ProductForm = ({ mode }) => {
       .catch(() => setCategories([]));
   }, []);
 
-  // Load product data when in edit mode
+  // File selection handlers
+  const handleImageSelect = (file) => {
+    setForm((prev) => ({ ...prev, image: file }));
+  };
+
+  const handleSamplePdfSelect = (file) => {
+    setForm((prev) => ({ ...prev, samplePdf: file }));
+  };
+
+  const handleMainPdfSelect = (file) => {
+    setForm((prev) => ({ ...prev, mainPdf: file }));
+  };
+
+  // Load product data in edit mode
   useEffect(() => {
     if (mode === "edit" && id) {
       fetch(`/api/products?id=${id}`)
@@ -91,59 +102,50 @@ const ProductForm = ({ mode }) => {
 
   // Handle form input changes
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-
-    // Handle file inputs
-    if (["image", "samplePdf", "mainPdf"].includes(name)) {
-      setForm((prev) => ({ ...prev, [name]: files[0] }));
-    }
-    // Handle regular inputs
-    else {
-      setForm((prev) => ({ ...prev, [name]: value }));
-    }
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Form submission handler
+  // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Validate required fields
     if (!form.title || !form.sapExamCode || !form.slug || !form.category) {
       setError("Please fill in all required fields");
       return;
     }
 
+    // Validate image for new products
+    if (mode === "add" && !form.image) {
+      setError("Product image is required");
+      return;
+    }
+
     setLoading(true);
 
-    // Prepare form data
     const formData = new FormData();
     Object.keys(form).forEach((key) => {
-      // Only append non-null/undefined values
       if (form[key] !== null && form[key] !== undefined) {
         formData.append(key, form[key]);
       }
     });
 
     try {
-      // API endpoint based on mode (add/edit)
-      const url = mode === "add" ? "/api/products" : "/api/products";
+      const url = "/api/products";
       const method = mode === "add" ? "POST" : "PUT";
-      console.log(formData);
-      // Send request to API
+
       const res = await fetch(url, {
         method,
         body: formData,
       });
 
-      // Handle response
       const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || "Operation failed");
       }
 
-      // Redirect on success
       router.push("/dashboard/admin/product/list");
     } catch (err) {
       console.error("Submission error:", err);
@@ -153,29 +155,25 @@ const ProductForm = ({ mode }) => {
     }
   };
 
-  // Delete product handler
+  // Delete product
   const handleDelete = async () => {
     if (!id) return;
 
-    // Confirmation dialog
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
+      "Are you sure you want to delete this product? This action cannot be undone."
     );
     if (!confirmDelete) return;
 
     try {
-      // Send DELETE request
       const res = await fetch(`/api/products?id=${id}`, {
         method: "DELETE",
       });
 
-      // Handle response
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || "Delete operation failed");
       }
 
-      // Redirect after successful deletion
       router.push("/dashboard/admin/product/list");
     } catch (err) {
       console.error("Delete error:", err);
@@ -185,75 +183,81 @@ const ProductForm = ({ mode }) => {
 
   return (
     <div className="max-w-4xl pt-20 mx-auto p-6 bg-white rounded shadow">
-      {/* Form Header */}
-      <h2 className="text-xl font-bold mb-4">
+      {/* Header */}
+      <h2 className="text-2xl font-bold mb-6">
         {mode === "add" ? "Add New Product" : "Edit Product"}
       </h2>
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded border border-red-300">
+          {error}
+        </div>
       )}
 
       {/* Main Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information Section */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Basic Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1 font-medium">SAP Exam Code*</label>
+            <label className="block mb-1 font-medium text-gray-700">
+              SAP Exam Code*
+            </label>
             <input
               type="text"
               name="sapExamCode"
               value={form.sapExamCode}
               onChange={handleChange}
-              // placeholder="C_S4FTR_2021"
-              className="w-full border px-4 py-2 rounded"
+              className="w-full border border-gray-300 px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Title*</label>
+            <label className="block mb-1 font-medium text-gray-700">
+              Title*
+            </label>
             <input
               type="text"
               name="title"
               value={form.title}
               onChange={handleChange}
-              // placeholder="Product Title"
-              className="w-full border px-4 py-2 rounded"
+              className="w-full border border-gray-300 px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Slug*</label>
+            <label className="block mb-1 font-medium text-gray-700">
+              Slug*
+            </label>
             <input
               name="slug"
-              // placeholder="product-slug"
               value={form.slug}
               onChange={handleChange}
               required
-              className="border w-full px-4 py-2 rounded"
+              className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">SKU*</label>
+            <label className="block mb-1 font-medium text-gray-700">SKU*</label>
             <input
               name="sku"
-              // placeholder="SKU-001"
               value={form.sku}
               onChange={handleChange}
               required
-              className="border w-full px-4 py-2 rounded"
+              className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
 
-        {/* Pricing Section */}
+        {/* Dumps Pricing */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold mb-3">Dumps Pricing</h3>
-          <div className="grid grid-cols-2  gap-4">
+          <h3 className="text-lg font-semibold mb-3 text-gray-800">
+            Dumps Pricing
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { name: "dumpsPriceInr", label: "Price (INR)" },
               { name: "dumpsPriceUsd", label: "Price (USD)" },
@@ -261,22 +265,27 @@ const ProductForm = ({ mode }) => {
               { name: "dumpsMrpUsd", label: "MRP (USD)" },
             ].map((field) => (
               <div key={field.name}>
-                <label className="block mb-1">{field.label}</label>
+                <label className="block mb-1 text-gray-700">
+                  {field.label}
+                </label>
                 <input
                   name={field.name}
                   type="number"
+                  step="0.01"
                   value={form[field.name]}
                   onChange={handleChange}
-                  // placeholder={field.label}
-                  className="border w-full px-4 py-2 rounded"
+                  className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             ))}
           </div>
         </div>
 
+        {/* Combo Pricing */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold mb-3">Combo Pricing</h3>
+          <h3 className="text-lg font-semibold mb-3 text-gray-800">
+            Combo Pricing
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               { name: "comboPriceInr", label: "Price (INR)" },
@@ -285,29 +294,33 @@ const ProductForm = ({ mode }) => {
               { name: "comboMrpUsd", label: "MRP (USD)" },
             ].map((field) => (
               <div key={field.name}>
-                <label className="block mb-1">{field.label}</label>
+                <label className="block mb-1 text-gray-700">
+                  {field.label}
+                </label>
                 <input
                   name={field.name}
                   type="number"
+                  step="0.01"
                   value={form[field.name]}
                   onChange={handleChange}
-                  // placeholder={field.label}
-                  className="border w-full px-4 py-2 rounded"
+                  className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Category and Status Section */}
+        {/* Category and Status */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1 font-medium">Category*</label>
+            <label className="block mb-1 font-medium text-gray-700">
+              Category*
+            </label>
             <select
               name="category"
               value={form.category}
               onChange={handleChange}
-              className="w-full border px-4 py-2 rounded"
+              className="w-full border border-gray-300 px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
               <option value="">Select Category</option>
@@ -320,12 +333,14 @@ const ProductForm = ({ mode }) => {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Status*</label>
+            <label className="block mb-1 font-medium text-gray-700">
+              Status*
+            </label>
             <select
               name="status"
               value={form.status}
               onChange={handleChange}
-              className="w-full border px-4 py-2 rounded"
+              className="w-full border border-gray-300 px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
               <option value="">Select Status</option>
@@ -335,12 +350,14 @@ const ProductForm = ({ mode }) => {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Action</label>
+            <label className="block mb-1 font-medium text-gray-700">
+              Action
+            </label>
             <select
               name="action"
               value={form.action}
               onChange={handleChange}
-              className="w-full border px-4 py-2 rounded"
+              className="w-full border border-gray-300 px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select Action</option>
               <option value="edit">Edit</option>
@@ -349,84 +366,60 @@ const ProductForm = ({ mode }) => {
           </div>
         </div>
 
-        {/* File Uploads Section */}
+        {/* File Uploads */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold mb-3">File Uploads</h3>
-          <div className="grid grid-cols-2 gap 4">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            File Uploads
+          </h3>
+          <div className="space-y-6">
             {/* Product Image */}
-            <div className="mb-4">
-              <label className="block mb-2 font-medium">Product Image</label>
-              {mode === "edit" && existingFiles.imageUrl && (
-                <div className="mb-2">
-                  <img
-                    src={existingFiles.imageUrl}
-                    alt="Current product"
-                    className="w-32 h-32 object-contain border rounded"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Current Image</p>
-                </div>
-              )}
-              <input
-                type="file"
-                name="image"
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Product Image*
+              </label>
+              <FileUploader
+                onFileSelect={handleImageSelect}
                 accept="image/*"
-                onChange={handleChange}
-                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-                required={mode === "add"}
+                label="product image"
+                maxSize={5}
+                existingUrl={existingFiles.imageUrl}
+                existingLabel="Current Image"
               />
             </div>
 
             {/* Sample PDF */}
-            <div className="mb-4">
-              <label className="block mb-2 font-medium">Sample PDF</label>
-              {mode === "edit" && existingFiles.samplePdfUrl && (
-                <div className="mb-2">
-                  <a
-                    href={existingFiles.samplePdfUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    View Current Sample PDF
-                  </a>
-                </div>
-              )}
-              <input
-                type="file"
-                name="samplePdf"
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Sample PDF
+              </label>
+              <FileUploader
+                onFileSelect={handleSamplePdfSelect}
                 accept="application/pdf"
-                onChange={handleChange}
-                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                label="sample PDF"
+                maxSize={20}
+                existingUrl={existingFiles.samplePdfUrl}
+                existingLabel="Current Sample PDF"
               />
             </div>
 
             {/* Main PDF */}
-            <div className="mb-4">
-              <label className="block mb-2 font-medium">Main PDF</label>
-              {mode === "edit" && existingFiles.mainPdfUrl && (
-                <div className="mb-2">
-                  <a
-                    href={existingFiles.mainPdfUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    View Current Main PDF
-                  </a>
-                </div>
-              )}
-              <input
-                type="file"
-                name="mainPdf"
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Main PDF
+              </label>
+              <FileUploader
+                onFileSelect={handleMainPdfSelect}
                 accept="application/pdf"
-                onChange={handleChange}
-                className="w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                label="main PDF"
+                maxSize={50}
+                existingUrl={existingFiles.mainPdfUrl}
+                existingLabel="Current Main PDF"
               />
             </div>
           </div>
         </div>
 
-        {/* Custom Rich Text Editors */}
+        {/* Rich Text Editors */}
         <RichTextEditor
           label="Description"
           value={form.Description}
@@ -445,55 +438,60 @@ const ProductForm = ({ mode }) => {
           error={""}
         />
 
-        {/* SEO Section */}
+        {/* SEO Settings */}
         <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold mb-3">SEO Settings</h3>
-
+          <h3 className="text-lg font-semibold mb-3 text-gray-800">
+            SEO Settings
+          </h3>
           <div className="space-y-4">
             <div>
-              <label className="block mb-1 font-medium">Meta Title</label>
+              <label className="block mb-1 font-medium text-gray-700">
+                Meta Title
+              </label>
               <input
                 name="metaTitle"
-                // placeholder="Product Meta Title"
                 value={form.metaTitle}
                 onChange={handleChange}
-                className="border w-full px-4 py-2 rounded"
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block mb-1 font-medium">Meta Keywords</label>
+              <label className="block mb-1 font-medium text-gray-700">
+                Meta Keywords
+              </label>
               <textarea
                 name="metaKeywords"
-                // placeholder="keyword1, keyword2, keyword3"
                 value={form.metaKeywords}
                 onChange={handleChange}
                 rows={2}
-                className="border w-full px-4 py-2 rounded"
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block mb-1 font-medium">Meta Description</label>
+              <label className="block mb-1 font-medium text-gray-700">
+                Meta Description
+              </label>
               <textarea
                 name="metaDescription"
-                // placeholder="Product description for search engines"
                 value={form.metaDescription}
                 onChange={handleChange}
                 rows={3}
-                className="border w-full px-4 py-2 rounded"
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block mb-1 font-medium">Schema Markup</label>
+              <label className="block mb-1 font-medium text-gray-700">
+                Schema Markup
+              </label>
               <textarea
                 name="schema"
-                // placeholder="JSON-LD Schema"
                 value={form.schema}
                 onChange={handleChange}
                 rows={4}
-                className="border w-full px-4 py-2 rounded font-mono text-sm"
+                className="border border-gray-300 w-full px-4 py-2 rounded font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -504,7 +502,7 @@ const ProductForm = ({ mode }) => {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center justify-center bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-blue-400 min-w-[150px]"
+            className="flex items-center justify-center bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed min-w-[150px] transition"
           >
             {loading ? (
               <>
@@ -539,18 +537,23 @@ const ProductForm = ({ mode }) => {
             <button
               type="button"
               onClick={handleDelete}
-              className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 min-w-[100px]"
+              className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 min-w-[100px] transition"
             >
               Delete
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/admin/product/list")}
+            className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 min-w-[100px] transition"
+          >
+            Cancel
+          </button>
         </div>
       </form>
     </div>
   );
 };
-
-// Custom Rich Text Editor Component
-// Custom Rich Text Editor Component
 
 export default ProductForm;

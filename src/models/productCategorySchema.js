@@ -17,8 +17,12 @@ const productCategorySchema = new mongoose.Schema(
     metaKeywords: { type: String },
     metaDescription: { type: String },
     remarks: { type: String },
-    status: { type: String, enum: ["Ready", "Publish"], default: "Ready" },
-    faqs: [faqSchema], // ✅ Added FAQs array
+    status: {
+      type: String,
+      enum: ["Ready", "Publish", "Unpublish"],
+      default: "Unpublish",
+    },
+    faqs: [faqSchema], // ✅ FAQs array
   },
   { timestamps: true }
 );

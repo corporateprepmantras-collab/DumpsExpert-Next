@@ -1,8 +1,15 @@
 "use client";
-
+import payment from "../../assets/landingassets/payment.png";
 import Image from "next/image";
 import Link from "next/link";
-import { FaFacebookF, FaLinkedinIn, FaYoutube } from "react-icons/fa";
+import {
+  FaFacebookF,
+  FaLinkedinIn,
+  FaYoutube,
+  FaTwitter,
+  FaInstagram,
+} from "react-icons/fa";
+import { SiVisa, SiMastercard, SiPaypal } from "react-icons/si";
 import dumpslogo from "../../assets/logo/premantras_logo.png";
 
 export default function Footer() {
@@ -53,17 +60,48 @@ export default function Footer() {
         {/* Follow Us */}
         <div>
           <h3 className="font-semibold mb-2">Follow Us</h3>
-          <ul className="space-y-1">
-            <li className="flex items-center gap-2">
-              <FaFacebookF /> Facebook
-            </li>
-            <li className="flex items-center gap-2">
-              <FaLinkedinIn /> Linkedin
-            </li>
-            <li className="flex items-center gap-2">
-              <FaYoutube /> Youtube
-            </li>
-          </ul>
+          <div className="flex gap-4 text-2xl">
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#3B5998] p-2 rounded-full hover:bg-[#2D4373] transition"
+            >
+              <FaFacebookF />
+            </a>
+            <a
+              href="https://youtube.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#FF0000] p-2 rounded-full hover:bg-[#CC0000] transition"
+            >
+              <FaYoutube />
+            </a>
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#E4405F] p-2 rounded-full hover:bg-[#C13584] transition"
+            >
+              <FaInstagram />
+            </a>
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#0077B5] p-2 rounded-full hover:bg-[#005885] transition"
+            >
+              <FaLinkedinIn />
+            </a>
+            <a
+              href="https://twitter.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#1DA1F2] p-2 rounded-full hover:bg-[#1A8CD8] transition"
+            >
+              <FaTwitter />
+            </a>
+          </div>
         </div>
 
         {/* Newsletter */}
@@ -72,8 +110,13 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* Payment Methods Section */}
+      <div>
+        <img src={payment} alt="" />
+      </div>
+
       {/* Bottom Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-center text-center text-gray-400 text-xs mt-4 border-t border-gray-600 pt-4 gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-center text-center text-gray-400 text-xs mt-4 gap-2">
         <div className="truncate max-w-[250px] sm:max-w-none">
           © 2025 Exam Dump. All Rights Reserved. Designed By Dumpsxpert.Com
         </div>

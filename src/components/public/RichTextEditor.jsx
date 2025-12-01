@@ -3,13 +3,14 @@ import { useEffect, useRef, useState } from "react";
 const RichTextEditor = ({
   value,
   onChange,
-  // placeholder = "Write something...",
   error = "",
   label = "Editor",
 }) => {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [linkText, setLinkText] = useState("");
   const editorRef = useRef(null);
+  const savedSelection = useRef(null);
 
   // Toolbar buttons configuration
   const toolbarButtons = [
@@ -39,10 +40,34 @@ const RichTextEditor = ({
     }
   }, [value]);
 
+  // Save selection for link insertion
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      savedSelection.current = selection.getRangeAt(0);
+    }
+  };
+
+  // Restore selection
+  const restoreSelection = () => {
+    const selection = window.getSelection();
+    if (savedSelection.current) {
+      selection.removeAllRanges();
+      selection.addRange(savedSelection.current);
+    }
+  };
+
   // Handle format changes
   const handleFormat = (format, value = null) => {
     if (format === "link") {
-      setShowLinkInput(true);
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim() !== "") {
+        setLinkText(selection.toString());
+        saveSelection();
+        setShowLinkInput(true);
+      } else {
+        alert("Please select some text to create a hyperlink");
+      }
       return;
     }
 
@@ -56,36 +81,58 @@ const RichTextEditor = ({
     onChange(editorRef.current.innerHTML);
   };
 
-  // Handle link insertion
-// Handle link insertion
-const handleAddLink = () => {
-  if (!linkUrl) return;
+  // Handle link insertion with proper attributes
+  const handleAddLink = () => {
+    if (!linkUrl) {
+      alert("Please enter a URL");
+      return;
+    }
 
-  const selection = window.getSelection();
-  if (!selection || selection.toString().trim() === "") {
-    alert("Please select some text to hyperlink");
-    return;
-  }
+    // Ensure URL has protocol
+    let finalUrl = linkUrl;
+    if (!/^https?:\/\//i.test(linkUrl)) {
+      finalUrl = 'https://' + linkUrl;
+    }
 
-  // Insert link
-  document.execCommand("createLink", false, linkUrl);
+    // Restore the saved selection
+    restoreSelection();
+    editorRef.current.focus();
 
-  // Force links to open in new tab + styling
-  const anchors = editorRef.current.querySelectorAll("a");
-  anchors.forEach((a) => {
-    a.setAttribute("target", "_blank");  // open in new tab
-    a.setAttribute("rel", "noopener noreferrer"); // security best practice
-    a.style.color = "blue";  // hyperlink blue
-    a.style.textDecoration = "underline"; // underline like real links
-  });
+    // Create the link HTML with all necessary attributes
+    const linkHtml = `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">${linkText}</a>`;
+    
+    // Insert the link
+    document.execCommand('insertHTML', false, linkHtml);
 
-  onChange(editorRef.current.innerHTML);
-  setShowLinkInput(false);
-  setLinkUrl("");
-};
+    // Update parent component
+    onChange(editorRef.current.innerHTML);
+
+    // Reset state
+    setShowLinkInput(false);
+    setLinkUrl("");
+    setLinkText("");
+    savedSelection.current = null;
+  };
 
   // Handle editor content changes
   const handleInput = () => {
+    // Ensure all links have proper attributes
+    const anchors = editorRef.current.querySelectorAll("a");
+    anchors.forEach((a) => {
+      if (!a.getAttribute("target")) {
+        a.setAttribute("target", "_blank");
+      }
+      if (!a.getAttribute("rel")) {
+        a.setAttribute("rel", "noopener noreferrer");
+      }
+      if (!a.style.color) {
+        a.style.color = "#2563eb";
+      }
+      if (!a.style.textDecoration) {
+        a.style.textDecoration = "underline";
+      }
+    });
+
     onChange(editorRef.current.innerHTML);
   };
 
@@ -142,45 +189,65 @@ const handleAddLink = () => {
       </div>
 
       {/* Editor content */}
-<div
-  ref={editorRef}
-  className="rich-editor border border-gray-300 border-t-0 rounded-b-lg p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500 relative 
-             [&_a]:text-blue-600 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-800 [&_a:visited]:text-purple-600"
-  contentEditable
-  onInput={handleInput}
-/>
-
-      {/* Placeholder overlay */}
-      {/* {(!value || value === "<br>") && (
-        <div className="absolute left-4 top-[6rem] text-gray-400 pointer-events-none select-none">
-          {placeholder}
-        </div>
-      )} */}
+      <div
+        ref={editorRef}
+        className="rich-editor border border-gray-300 border-t-0 rounded-b-lg p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500 relative 
+                   [&_a]:text-blue-600 [&_a]:underline [&_a]:cursor-pointer [&_a:hover]:text-blue-800"
+        contentEditable
+        onInput={handleInput}
+      />
 
       {/* Link input dialog */}
       {showLinkInput && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded shadow-lg w-96">
-            <h3 className="font-medium mb-2">Insert Link</h3>
-            <input
-              type="url"
-              className="border p-2 w-full mb-2"
-              placeholder="https://example.com"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-            />
+          <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+            <h3 className="font-medium mb-4 text-lg">Insert Link</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Link Text</label>
+              <input
+                type="text"
+                className="border border-gray-300 p-2 w-full rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+                placeholder="Link text"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">URL</label>
+              <input
+                type="url"
+                className="border border-gray-300 p-2 w-full rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://example.com"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddLink();
+                  }
+                }}
+              />
+            </div>
+
             <div className="flex justify-end gap-2">
               <button
-                className="px-3 py-1 bg-gray-200 rounded"
-                onClick={() => setShowLinkInput(false)}
+                type="button"
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
+                onClick={() => {
+                  setShowLinkInput(false);
+                  setLinkUrl("");
+                  setLinkText("");
+                }}
               >
                 Cancel
               </button>
               <button
-                className="px-3 py-1 bg-blue-500 text-white rounded"
+                type="button"
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                 onClick={handleAddLink}
               >
-                Insert
+                Insert Link
               </button>
             </div>
           </div>

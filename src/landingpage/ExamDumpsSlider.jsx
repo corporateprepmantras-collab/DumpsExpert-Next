@@ -6,14 +6,17 @@ import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
 export default function ExamDumpsSlider({ products = [] }) {
   const [startIndex, setStartIndex] = useState(0);
-  const [visibleCards, setVisibleCards] = useState(3);
+  const [visibleCards, setVisibleCards] = useState(4);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(0);
+  const [dragDelta, setDragDelta] = useState(0);
 
-  // ✅ Responsive visible cards
+  // ✅ Responsive visible cards - 4 on desktop, 2 on tablet, 1 on mobile
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) setVisibleCards(1);
       else if (window.innerWidth < 1024) setVisibleCards(2);
-      else setVisibleCards(3);
+      else setVisibleCards(4);
     };
 
     handleResize();
@@ -49,6 +52,51 @@ export default function ExamDumpsSlider({ products = [] }) {
     );
   }, [products.length, visibleCards]);
 
+  // ✅ Drag handlers
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart(e.clientX);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setDragDelta(e.clientX - dragStart);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    if (Math.abs(dragDelta) > 50) {
+      if (dragDelta > 0) {
+        prevSlide();
+      } else {
+        nextSlide();
+      }
+    }
+    setDragDelta(0);
+  };
+
+  const handleTouchStart = (e) => {
+    setIsDragging(true);
+    setDragStart(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    setDragDelta(e.touches[0].clientX - dragStart);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (Math.abs(dragDelta) > 50) {
+      if (dragDelta > 0) {
+        prevSlide();
+      } else {
+        nextSlide();
+      }
+    }
+    setDragDelta(0);
+  };
+
   // ✅ Memoize visible products
   const visibleProducts = useMemo(() => {
     return products.slice(startIndex, startIndex + visibleCards);
@@ -73,7 +121,7 @@ export default function ExamDumpsSlider({ products = [] }) {
 
   return (
     <div className="w-full py-16 px-4 bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <motion.h2
@@ -114,16 +162,28 @@ export default function ExamDumpsSlider({ products = [] }) {
           </motion.button>
         </div>
 
-        {/* Product Cards */}
-        <div className="relative overflow-hidden">
+        {/* Product Cards - Draggable Slider */}
+        <div
+          className="relative overflow-hidden cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={startIndex}
               initial={{ x: 100, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
+              animate={{ x: dragDelta, opacity: 1 }}
               exit={{ x: -100, opacity: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              transition={{ 
+                duration: isDragging ? 0 : 0.5, 
+                ease: "easeOut" 
+              }}
+              className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
             >
               {visibleProducts.map((product, index) => {
                 const slug = encodeURIComponent(product.slug || product.title);
@@ -134,17 +194,18 @@ export default function ExamDumpsSlider({ products = [] }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     whileHover={{ y: -8 }}
-                    className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100"
+                    className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 flex flex-col h-full"
                   >
-                    <a href={`/ItDumps/sap/by-slug/${slug}`} className="block">
-                      <div className="relative h-64 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden">
+                    <a href={`/ItDumps/sap/by-slug/${slug}`} className="block flex flex-col h-full">
+                      {/* Image Container - Fixed Height & Width */}
+                      <div className="relative w-full h-56 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden flex-shrink-0">
                         <img
                           src={product.imageUrl || "/placeholder.png"}
                           alt={product.title}
-                          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+                          className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110 pointer-events-none"
                           loading="lazy"
                           decoding="async"
-                          style={{ objectFit: "cover" }}
+                          draggable="false"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
@@ -152,67 +213,71 @@ export default function ExamDumpsSlider({ products = [] }) {
                         </div>
                       </div>
 
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors duration-300 line-clamp-1">
+                      {/* Content - Flexible Height */}
+                      <div className="p-5 flex flex-col flex-grow pointer-events-none">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors duration-300 line-clamp-2">
                           {product.sapExamCode || product.title}
                         </h3>
 
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[40px]">
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[40px] flex-grow">
                           {product.Description?.replace(/<[^>]+>/g, "") ||
                             "Comprehensive exam preparation material with real practice questions."}
                         </p>
 
-                        <div className="flex items-center gap-1 mb-4">
+                        <div className="flex items-center gap-1 mb-3">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className="w-4 h-4 fill-orange-400 text-orange-400"
+                              className="w-3.5 h-3.5 fill-orange-400 text-orange-400"
                             />
                           ))}
-                          <span className="text-sm text-gray-600 ml-1">
+                          <span className="text-xs text-gray-600 ml-1">
                             (4.8)
                           </span>
                         </div>
 
-                        <div className="border-t border-gray-100 pt-4 mb-4"></div>
+                        <div className="border-t border-gray-100 pt-3 mb-3"></div>
 
-                        <div className="flex items-baseline gap-3 mb-5">
-                          <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-2xl font-bold text-orange-500">
-                                ₹{product.dumpsPriceInr?.trim() || "N/A"}
+                        {/* Pricing */}
+                        <div className="mb-4">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="text-xl font-bold text-orange-500">
+                              ₹{product.dumpsPriceInr?.trim() || "N/A"}
+                            </span>
+                            <span className="text-base font-semibold text-orange-500">
+                              ${product.dumpsPriceUsd?.trim() || "N/A"}
+                            </span>
+                          </div>
+                          {product.dumpsMrpInr && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="line-through text-xs text-gray-400">
+                                ₹{product.dumpsMrpInr}
                               </span>
-                              <span className="text-lg font-semibold text-orange-500">
-                                ${product.dumpsPriceUsd?.trim() || "N/A"}
+                              <span className="line-through text-xs text-gray-400">
+                                ${product.dumpsMrpUsd}
+                              </span>
+                              <span className="text-xs font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                                Save{" "}
+                                {Math.round(
+                                  ((product.dumpsMrpInr -
+                                    product.dumpsPriceInr) /
+                                    product.dumpsMrpInr) *
+                                    100
+                                )}
+                                %
                               </span>
                             </div>
-                            {product.dumpsMrpInr && (
-                              <div className="flex items-center gap-2">
-                                <span className="line-through text-sm text-gray-400">
-                                  ₹{product.dumpsMrpInr}
-                                </span>
-                                <span className="line-through text-sm text-gray-400">
-                                  ${product.dumpsMrpUsd}
-                                </span>
-                                <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">
-                                  Save{" "}
-                                  {Math.round(
-                                    ((product.dumpsMrpInr -
-                                      product.dumpsPriceInr) /
-                                      product.dumpsMrpInr) *
-                                      100
-                                  )}
-                                  %
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </div>
 
+                        {/* Button - Stays at Bottom */}
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm mt-auto pointer-events-auto"
+                          onClick={(e) => {
+                            e.preventDefault();
+                          }}
                         >
                           View Details →
                         </motion.button>

@@ -316,7 +316,13 @@ const sidebarItems = [
       {
         label: "Blog",
         to: "#",
-        children: [{ label: "Category", to: "/dashboard/admin/blog/category" }],
+        children: [
+          { label: "Category", to: "/dashboard/admin/blog/category" },
+          {
+            label: "Posts",
+            to: "/dashboard/admin/blog",
+          },
+        ],
       },
       {
         label: "Landing Content",
@@ -365,6 +371,16 @@ const sidebarItems = [
           {
             label: "Contact content 2",
             to: "/dashboard/admin/contact/ContactDataSecond",
+          },
+        ],
+      },
+      {
+        label: "Redirects URL",
+        to: "#",
+        children: [
+          {
+            label: "Redirect ",
+            to: "/dashboard/admin/redirects",
           },
         ],
       },

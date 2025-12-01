@@ -6,7 +6,6 @@ import { FaCheckCircle, FaChevronRight, FaStar, FaUser } from "react-icons/fa";
 import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
-
 // Helper function to safely convert to number
 const toNum = (val) => {
   if (val === null || val === undefined || val === "") return 0;
@@ -123,6 +122,37 @@ async function fetchAllProducts() {
   } catch (error) {
     console.error("Error fetching products:", error);
     return [];
+  }
+}
+// Add this after fetchAllProducts function
+async function fetchReviews(productId) {
+  try {
+    const response = await fetch(`/api/reviews?productId=${productId}`);
+    const data = await response.json();
+    const all = data.data || [];
+    // Client-side: only show published reviews on product page
+    return all.filter((r) => r.status === "Publish");
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    return [];
+  }
+}
+
+// Update submitReview function
+async function submitReview(reviewData) {
+  try {
+    const response = await fetch("/api/reviews", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reviewData),
+    });
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error submitting review:", error);
+    return { success: false, error: "Failed to submit review" };
   }
 }
 
@@ -295,38 +325,18 @@ export default function ProductDetailsPage() {
 
         setIsLoadingExams(false);
 
-        setReviews(productData?.reviews || []);
+        // Load reviews from backend for this product (no mocks)
+        const fetchedReviews = productData?._id
+          ? await fetchReviews(productData._id)
+          : [];
 
-        if (productData?.reviews?.length) {
-          const total = productData.reviews.reduce(
-            (sum, r) => sum + r.rating,
-            0
-          );
-          setAvgRating((total / productData.reviews.length).toFixed(1));
+        setReviews(fetchedReviews || []);
+
+        if (fetchedReviews && fetchedReviews.length > 0) {
+          const total = fetchedReviews.reduce((sum, r) => sum + r.rating, 0);
+          setAvgRating((total / fetchedReviews.length).toFixed(1));
         } else {
-          const mockReviews = [
-            {
-              name: "Amit",
-              comment: "Very helpful dumps! Cleared my exam in one go.",
-              rating: 5,
-              createdAt: new Date().toISOString(),
-            },
-            {
-              name: "Priya",
-              comment: "Good content but could be more detailed.",
-              rating: 4,
-              createdAt: new Date().toISOString(),
-            },
-            {
-              name: "John",
-              comment: "Excellent support and real questions.",
-              rating: 5,
-              createdAt: new Date().toISOString(),
-            },
-          ];
-          setReviews(mockReviews);
-          const total = mockReviews.reduce((sum, r) => sum + r.rating, 0);
-          setAvgRating((total / mockReviews.length).toFixed(1));
+          setAvgRating(null);
         }
 
         const allProducts = await fetchAllProducts();
@@ -359,8 +369,39 @@ export default function ProductDetailsPage() {
 
   const handleAddReview = async (e) => {
     e.preventDefault();
-    toast.success("Review submitted successfully 🎉");
-    setReviewForm({ name: "", comment: "", rating: 0 });
+
+    // Validation
+    if (!reviewForm.name || !reviewForm.comment || !reviewForm.rating) {
+      toast.error("Please fill all fields and provide a rating");
+      return;
+    }
+
+    // Submit review
+    const reviewData = {
+      productId: product._id,
+      name: reviewForm.name,
+      comment: reviewForm.comment,
+      rating: reviewForm.rating,
+    };
+
+    const result = await submitReview(reviewData);
+
+    if (result.success) {
+      toast.success("Review submitted successfully 🎉");
+      setReviewForm({ name: "", comment: "", rating: 0 });
+
+      // Refresh reviews
+      const updatedReviews = await fetchReviews(product._id);
+      setReviews(updatedReviews);
+
+      // Recalculate average rating
+      if (updatedReviews.length > 0) {
+        const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
+        setAvgRating((total / updatedReviews.length).toFixed(1));
+      }
+    } else {
+      toast.error(result.error || "Failed to submit review");
+    }
   };
 
   const toggleAccordion = (index) => {
@@ -422,14 +463,18 @@ export default function ProductDetailsPage() {
               </p>
               <div className="text-xs md:text-sm">
                 <p>
-                  <strong>Name:</strong> {exams[0].name || "Online Exam"}
+                  <strong> Exam Name:</strong> {exams[0].name || "Online Exam"}
                 </p>
                 <p>
-                  <strong>Duration:</strong> {exams[0].duration || 0} mins
+                  <strong> Total No. of Questions:</strong>{" "}
+                  {exams[0].numberOfQuestions || "Online Exam"}
                 </p>
                 <p>
                   <strong>Passing Score:</strong>{" "}
                   {exams[0].passingScore || "N/A"}
+                </p>
+                <p>
+                  <strong>Duration:</strong> {exams[0].duration || 0} mins
                 </p>
               </div>
             </div>
@@ -624,6 +669,7 @@ export default function ProductDetailsPage() {
           reviewForm={reviewForm}
           setReviewForm={setReviewForm}
           handleAddReview={handleAddReview}
+          // isLoading={isLoadingReviews}
         />
       </div>
 
@@ -671,84 +717,166 @@ export default function ProductDetailsPage() {
 
 /* Subcomponents */
 function ReviewsSection({
-  reviews,
+  reviews = [],
   reviewForm,
   setReviewForm,
   handleAddReview,
+  isLoading = false,
 }) {
+  // Filter only published reviews for display
+  const publishedReviews = reviews.filter((r) => r.status === "Publish");
+
   return (
     <div className="grid md:grid-cols-2 gap-10">
       <div>
         <h3 className="text-lg font-semibold mb-4">User Reviews</h3>
         <div className="max-h-72 overflow-y-auto p-2">
-          {reviews.length === 0 ? (
-            <p className="text-gray-600 text-sm">No reviews yet.</p>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              <p className="text-gray-600 text-sm ml-3">Loading reviews...</p>
+            </div>
+          ) : publishedReviews.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <p className="text-gray-600 text-sm">
+                No reviews yet. Be the first to review!
+              </p>
+            </div>
           ) : (
-            reviews.map((r, i) => (
-              <div key={i} className="border rounded p-4 shadow-sm mb-3">
-                <div className="flex items-center gap-2 mb-1">
-                  {[...Array(5)].map((_, idx) => (
-                    <FaStar
-                      key={idx}
-                      className={`text-sm ${
-                        idx < r.rating ? "text-yellow-400" : "text-gray-300"
-                      }`}
-                    />
-                  ))}
+            <div className="space-y-3">
+              {publishedReviews.map((r, i) => (
+                <div
+                  key={r._id || i}
+                  className="border rounded-lg p-4 shadow-sm bg-white hover:shadow-md transition-shadow"
+                >
+                  {/* Star Rating */}
+                  <div className="flex items-center gap-1 mb-2">
+                    {[...Array(5)].map((_, idx) => (
+                      <FaStar
+                        key={idx}
+                        className={`text-sm ${
+                          idx < r.rating ? "text-yellow-400" : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                    <span className="text-sm text-gray-600 ml-2">
+                      ({r.rating}/5)
+                    </span>
+                  </div>
+
+                  {/* Customer Name */}
+                  <p className="font-semibold text-gray-800 mb-1">
+                    {r.customer || r.name || "Anonymous"}
+                  </p>
+
+                  {/* Comment */}
+                  <p className="text-gray-700 text-sm leading-relaxed mb-2">
+                    {r.comment}
+                  </p>
+
+                  {/* Date */}
+                  <p className="text-xs text-gray-400">
+                    {new Date(r.createdAt || r.date).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </p>
                 </div>
-                <p className="font-medium">{r.name}</p>
-                <p className="text-gray-600 text-sm">{r.comment}</p>
-                <p className="text-xs text-gray-400">
-                  {new Date(r.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
+
+        {/* Show total count */}
+        {!isLoading && publishedReviews.length > 0 && (
+          <p className="text-sm text-gray-500 mt-3 text-center">
+            Showing {publishedReviews.length} review
+            {publishedReviews.length !== 1 ? "s" : ""}
+          </p>
+        )}
       </div>
+
+      {/* Review Form */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Write a Review</h2>
-        <form className="grid gap-3" onSubmit={handleAddReview}>
-          <input
-            value={reviewForm.name}
-            onChange={(e) =>
-              setReviewForm({ ...reviewForm, name: e.target.value })
-            }
-            placeholder="Your name"
-            className="border p-3 rounded w-full"
-          />
-          <textarea
-            value={reviewForm.comment}
-            onChange={(e) =>
-              setReviewForm({ ...reviewForm, comment: e.target.value })
-            }
-            placeholder="Your comment"
-            rows="4"
-            className="border p-3 rounded w-full"
-          />
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4, 5].map((value) => (
-              <FaStar
-                key={value}
-                onClick={() => setReviewForm({ ...reviewForm, rating: value })}
-                className={`cursor-pointer text-2xl ${
-                  value <= reviewForm.rating
-                    ? "text-yellow-400"
-                    : "text-gray-300"
-                }`}
-              />
-            ))}
-            <span className="text-sm text-gray-600">
-              {reviewForm.rating ? `${reviewForm.rating} Star(s)` : "Rate us"}
-            </span>
+        <div className="grid gap-4">
+          {/* Name Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Your Name *
+            </label>
+            <input
+              value={reviewForm.name}
+              onChange={(e) =>
+                setReviewForm({ ...reviewForm, name: e.target.value })
+              }
+              placeholder="Enter your name"
+              className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              required
+            />
           </div>
+
+          {/* Rating */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rating *
+            </label>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <FaStar
+                  key={value}
+                  onClick={() =>
+                    setReviewForm({ ...reviewForm, rating: value })
+                  }
+                  className={`cursor-pointer text-2xl transition-colors ${
+                    value <= reviewForm.rating
+                      ? "text-yellow-400"
+                      : "text-gray-300 hover:text-yellow-200"
+                  }`}
+                />
+              ))}
+              <span className="text-sm text-gray-600 ml-2">
+                {reviewForm.rating
+                  ? `${reviewForm.rating} Star(s)`
+                  : "Click to rate"}
+              </span>
+            </div>
+          </div>
+
+          {/* Comment Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Your Review *
+            </label>
+            <textarea
+              value={reviewForm.comment}
+              onChange={(e) =>
+                setReviewForm({ ...reviewForm, comment: e.target.value })
+              }
+              placeholder="Share your experience with this product..."
+              rows="5"
+              className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              required
+            />
+          </div>
+
+          {/* Submit Button */}
           <button
-            type="submit"
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+            onClick={handleAddReview}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
           >
             Submit Review
           </button>
-        </form>
+
+          {/* Info Message */}
+          <p className="text-xs text-gray-500 text-center">
+            Your review will be published after admin approval
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -70,7 +70,7 @@ async function fetchSEO() {
 }
 
 /* ===========================
-   ✅ Fetch Product Categories with Retry
+   ✅ Fetch Product Categories with Retry (Only Published)
    =========================== */
 async function getDumpsData() {
   const maxRetries = 3;
@@ -123,8 +123,15 @@ async function getDumpsData() {
         categories = json.categories;
       }
 
-      console.log(`✅ [Categories] Fetched ${categories.length} items`);
-      return categories;
+      // ✅ Filter only published categories
+      const publishedCategories = categories.filter(
+        (cat) => cat.status === "Publish"
+      );
+
+      console.log(
+        `✅ [Categories] Fetched ${categories.length} total, ${publishedCategories.length} published`
+      );
+      return publishedCategories;
     } catch (error) {
       lastError = error;
       console.error(`❌ [Categories] Attempt ${attempt} error:`, error.message);
@@ -208,7 +215,7 @@ export default async function ITDumpsPage() {
 
   const renderTime = Date.now() - startTime;
   console.log(
-    `✅ [ITDumps Page] Rendered in ${renderTime}ms with ${dumpsData.length} categories\n`
+    `✅ [ITDumps Page] Rendered in ${renderTime}ms with ${dumpsData.length} published categories\n`
   );
 
   return (
@@ -296,7 +303,7 @@ export default async function ITDumpsPage() {
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-600 text-lg mb-2">
-                No categories available at the moment.
+                No published categories available at the moment.
               </p>
               <p className="text-gray-500 text-sm">
                 Please check back later or contact support.

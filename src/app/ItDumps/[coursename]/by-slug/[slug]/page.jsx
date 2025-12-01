@@ -109,6 +109,35 @@ export async function generateMetadata({ params }) {
       };
     }
 
+    // ADD THIS: Fetch reviews for aggregate rating
+    let aggregateRating = null;
+    try {
+      const reviewsRes = await fetch(
+        `${getBaseUrl()}/api/reviews?productId=${product._id}`,
+        {
+          cache: "no-store",
+        }
+      );
+      if (reviewsRes.ok) {
+        const reviewsData = await reviewsRes.json();
+        const reviews = reviewsData.data || [];
+
+        if (reviews.length > 0) {
+          const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+          const avgRating = (totalRating / reviews.length).toFixed(1);
+
+          aggregateRating = {
+            ratingValue: avgRating,
+            reviewCount: reviews.length,
+            bestRating: "5",
+            worstRating: "1",
+          };
+        }
+      }
+    } catch (reviewError) {
+      console.error("❌ Error fetching reviews for metadata:", reviewError);
+    }
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const url = `${siteUrl}/ItDumps/sap/by-slug/${slug}`;
     const imageUrl = product.imageUrl || `${siteUrl}/default-product.webp`;
@@ -120,6 +149,42 @@ export async function generateMetadata({ params }) {
       (cleanDescription
         ? cleanDescription.slice(0, 160)
         : "Explore SAP certification details and dumps.");
+
+    // UPDATE THIS: Add structured data with reviews
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.title,
+      description: metaDescription,
+      image: imageUrl,
+      sku: product.sku || product.sapExamCode,
+      brand: {
+        "@type": "Brand",
+        name: "IT Dumps",
+      },
+      offers: {
+        "@type": "Offer",
+        url: url,
+        priceCurrency: "INR",
+        price: product.dumpsPriceInr || "0",
+        availability: "https://schema.org/InStock",
+        seller: {
+          "@type": "Organization",
+          name: "IT Dumps",
+        },
+      },
+    };
+
+    // Add aggregate rating if reviews exist
+    if (aggregateRating) {
+      structuredData.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: aggregateRating.ratingValue,
+        reviewCount: aggregateRating.reviewCount,
+        bestRating: aggregateRating.bestRating,
+        worstRating: aggregateRating.worstRating,
+      };
+    }
 
     return {
       title: product.metaTitle || `${product.title} - SAP Certification Dumps`,
@@ -172,7 +237,7 @@ export async function generateMetadata({ params }) {
         },
       },
 
-      // Additional metadata for better SEO
+      // ADD THIS: Include structured data script
       other: {
         "price:amount": product.dumpsPriceInr || "0",
         "price:currency": "INR",
@@ -180,6 +245,14 @@ export async function generateMetadata({ params }) {
         "product:category": product.category || "SAP Certification",
         "product:condition": "new",
       },
+
+      // ADD THIS: Inject structured data
+      script: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(structuredData),
+        },
+      ],
     };
   } catch (error) {
     console.error("❌ Error generating metadata:", error.message);

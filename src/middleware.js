@@ -1,5 +1,5 @@
 // ============================================
-// FILE: /middleware.js (COMBINED & FIXED)
+// FILE: /middleware.js (COMBINED WITH REDIRECTS)
 // ============================================
 
 import { getToken } from "next-auth/jwt";
@@ -58,6 +58,7 @@ export async function middleware(request) {
     "/api/categories",
     "/api/faqs",
     "/api/maintenance-page",
+    "/api/redirects", // Add redirect API to public routes
     "/_next",
     "/favicon.ico",
   ];
@@ -72,7 +73,49 @@ export async function middleware(request) {
   }
 
   // ========================================
-  // 3. AUTH CHECK FOR PROTECTED ROUTES
+  // 3. URL REDIRECT CHECK (Before Auth Check)
+  // ========================================
+  // Skip redirect check for admin and dashboard routes
+  const skipRedirectCheck = ["/admin", "/dashboard", "/api"];
+  const shouldCheckRedirect = !skipRedirectCheck.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (shouldCheckRedirect) {
+    try {
+      console.log("[REDIRECT CHECK] Checking path:", pathname);
+
+      const redirectCheckUrl = new URL("/api/redirects/check", request.url);
+      redirectCheckUrl.searchParams.set("path", pathname);
+
+      const redirectRes = await fetch(redirectCheckUrl, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (redirectRes.ok) {
+        const redirectData = await redirectRes.json();
+
+        if (redirectData.success && redirectData.redirect) {
+          const toUrl = redirectData.redirect.toUrl;
+          console.log("[REDIRECT] ✅ Redirecting:", pathname, "→", toUrl);
+
+          // Handle external vs internal redirects
+          if (toUrl.startsWith("http://") || toUrl.startsWith("https://")) {
+            return NextResponse.redirect(toUrl);
+          } else {
+            return NextResponse.redirect(new URL(toUrl, request.url));
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[REDIRECT CHECK] Error:", err);
+      // Continue if redirect check fails
+    }
+  }
+
+  // ========================================
+  // 4. AUTH CHECK FOR PROTECTED ROUTES
   // ========================================
   const token = await getToken({
     req: request,

@@ -37,7 +37,7 @@ export default function ProductCategories() {
     metaKeywords: "",
     metaDescription: "",
     remarks: "",
-    status: "Ready",
+    status: "Unpublish",
     faqs: [{ question: "", answer: "" }],
   });
   const [previewImage, setPreviewImage] = useState("");
@@ -177,7 +177,7 @@ export default function ProductCategories() {
       metaKeywords: "",
       metaDescription: "",
       remarks: "",
-      status: "Ready",
+      status: "Unpublish",
       faqs: [{ question: "", answer: "" }],
     });
     setPreviewImage("");
@@ -196,7 +196,7 @@ export default function ProductCategories() {
       metaKeywords: category.metaKeywords || "",
       metaDescription: category.metaDescription || "",
       remarks: category.remarks || "",
-      status: category.status || "Ready",
+      status: category.status || "Unpublish",
       faqs: category.faqs || [{ question: "", answer: "" }],
     });
     setPreviewImage(category.image);
@@ -377,8 +377,8 @@ export default function ProductCategories() {
           onChange={handleChange}
           className="w-full border px-3 py-2 rounded"
         >
-          <option value="Ready">Ready</option>
           <option value="Publish">Publish</option>
+          <option value="Unpublish">Unpublish</option>
         </select>
 
         <div className="flex justify-end space-x-3">
@@ -443,7 +443,17 @@ export default function ProductCategories() {
                   </td>
                   <td className="p-3 border">{category.name}</td>
                   <td className="p-3 border">{category.slug}</td>
-                  <td className="p-3 border">{category.status}</td>
+                  <td className="p-3 border">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                        category.status === "Publish"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {category.status}
+                    </span>
+                  </td>
                   <td className="p-3 border space-x-3">
                     <button
                       onClick={() => handleEdit(category)}
