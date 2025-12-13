@@ -438,7 +438,11 @@ export default function ProductCategories() {
       />
 
       {loading ? (
-        <p>Loading...</p>
+        <p>
+          <div className="flex items-center justify-center h-screen">
+            <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+          </div>
+        </p>
       ) : filteredCategories.length === 0 ? (
         <p>No categories found.</p>
       ) : (

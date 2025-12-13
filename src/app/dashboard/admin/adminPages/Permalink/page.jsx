@@ -72,7 +72,11 @@ const Permalink = () => {
 
         {/* Loading State */}
         {loading ? (
-          <div className="text-center text-gray-500 py-10">Loading...</div>
+          <div className="text-center text-gray-500 py-10">
+            <div className="flex items-center justify-center h-screen">
+              <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {pages.map((page, index) => (

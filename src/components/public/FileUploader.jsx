@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 
 const FileUploader = ({
   onFileSelect,
+  onRemoveExisting, // callback to clear existing file
   accept = "*/*",
   label = "file",
   maxSize = 10,
@@ -70,13 +71,18 @@ const FileUploader = ({
     return () => window.removeEventListener("paste", handlePaste);
   }, [accept]);
 
-  // ❌ Remove file
+  // ❌ Remove newly selected file
   const handleRemove = () => {
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview(null);
     onFileSelect?.(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // ❌ Clear existing file (just sets to empty string)
+  const handleClearExisting = () => {
+    onRemoveExisting?.();
   };
 
   // Cleanup preview URL on unmount
@@ -88,16 +94,41 @@ const FileUploader = ({
 
   const isImage = file?.type.startsWith("image/");
   const isPdf = file?.type === "application/pdf";
+  const isExistingImage = existingUrl && accept.includes("image");
 
   return (
     <div className="w-full">
       {/* Show existing file if in edit mode and no new file selected */}
       {!file && existingUrl && (
-        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-700 font-medium mb-2">
-            {existingLabel || "Current File"}:
-          </p>
-          {accept.includes("image") ? (
+        <div className="mb-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start justify-between mb-2">
+            <p className="text-sm text-blue-700 font-medium">
+              {existingLabel || "Current File"}:
+            </p>
+            <button
+              type="button"
+              onClick={handleClearExisting}
+              className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1 transition"
+              title="Remove this file"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Remove
+            </button>
+          </div>
+
+          {isExistingImage ? (
             <img
               src={existingUrl}
               alt="Current file"

@@ -117,7 +117,13 @@ export default function NavbarSearch({ hideOnLarge = false }) {
             </p>
           )}
 
-          {loading && <p className="text-gray-500 text-center">Loading...</p>}
+          {loading && (
+            <p className="text-gray-500 text-center">
+              <div className="flex items-center justify-center h-screen">
+                <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+              </div>
+            </p>
+          )}
 
           {!loading && searched && products.length > 0 && (
             <div className="grid grid-cols-1 gap-4">
@@ -185,7 +191,11 @@ export default function NavbarSearch({ hideOnLarge = false }) {
         )}
 
         {loading && (
-          <p className="mt-6 text-gray-500 text-center">Loading...</p>
+          <p className="mt-6 text-gray-500 text-center">
+            <div className="flex items-center justify-center h-screen">
+              <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+            </div>
+          </p>
         )}
 
         {!loading && searched && products.length > 0 && (

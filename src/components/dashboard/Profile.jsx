@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { useUser } from '@/hooks/useUser';
-import { uploadToCloudinary } from '@/lib/cloudinary';
-import { Toaster, toast } from '@/components/ui/sonner';
+import { useState } from "react";
+import Image from "next/image";
+import { useUser } from "@/hooks/useUser";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import { Toaster, toast } from "@/components/ui/sonner";
 
 export default function Profile() {
   const { user, loading, error, updateUser } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    address: '',
+    name: "",
+    phone: "",
+    address: "",
     profileImage: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
@@ -25,7 +25,7 @@ export default function Profile() {
         const imageUrl = await uploadToCloudinary(file);
         setFormData({ ...formData, profileImage: imageUrl });
       } catch (error) {
-        toast.error('Failed to upload image');
+        toast.error("Failed to upload image");
       }
     }
   };
@@ -35,13 +35,20 @@ export default function Profile() {
     try {
       await updateUser(formData);
       setIsEditing(false);
-      toast.success('Profile updated successfully');
+      toast.success("Profile updated successfully");
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading)
+    return (
+      <div>
+        <div className="flex items-center justify-center h-screen">
+          <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -53,7 +60,7 @@ export default function Profile() {
           onClick={() => setIsEditing(!isEditing)}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          {isEditing ? 'Cancel' : 'Edit Profile'}
+          {isEditing ? "Cancel" : "Edit Profile"}
         </button>
       </div>
 
@@ -62,7 +69,7 @@ export default function Profile() {
           <div className="flex items-center space-x-4">
             <div className="relative w-24 h-24">
               <Image
-                src={imagePreview || user.profileImage || '/default-avatar.png'}
+                src={imagePreview || user.profileImage || "/default-avatar.png"}
                 alt="Profile"
                 fill
                 className="rounded-full object-cover"
@@ -81,7 +88,9 @@ export default function Profile() {
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               className="w-full p-2 border rounded"
             />
           </div>
@@ -91,7 +100,9 @@ export default function Profile() {
             <input
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               className="w-full p-2 border rounded"
             />
           </div>
@@ -100,7 +111,9 @@ export default function Profile() {
             <label className="block text-sm font-medium">Address</label>
             <textarea
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
               className="w-full p-2 border rounded"
               rows="3"
             />
@@ -118,14 +131,16 @@ export default function Profile() {
           <div className="flex items-center space-x-4">
             <div className="relative w-24 h-24">
               <Image
-                src={user.profileImage || '/default-avatar.png'}
+                src={user.profileImage || "/default-avatar.png"}
                 alt="Profile"
                 fill
                 className="rounded-full object-cover"
               />
             </div>
             <div>
-              <h3 className="text-xl font-semibold">{user.name || 'No name set'}</h3>
+              <h3 className="text-xl font-semibold">
+                {user.name || "No name set"}
+              </h3>
               <p className="text-gray-600">{user.email}</p>
             </div>
           </div>
@@ -137,12 +152,12 @@ export default function Profile() {
 
           <div className="space-y-2">
             <p className="text-sm font-medium">Phone</p>
-            <p>{user.phone || 'No phone number set'}</p>
+            <p>{user.phone || "No phone number set"}</p>
           </div>
 
           <div className="space-y-2">
             <p className="text-sm font-medium">Address</p>
-            <p>{user.address || 'No address set'}</p>
+            <p>{user.address || "No address set"}</p>
           </div>
         </div>
       )}

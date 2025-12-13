@@ -55,19 +55,6 @@ const ProductForm = ({ mode }) => {
       .catch(() => setCategories([]));
   }, []);
 
-  // File selection handlers
-  const handleImageSelect = (file) => {
-    setForm((prev) => ({ ...prev, image: file }));
-  };
-
-  const handleSamplePdfSelect = (file) => {
-    setForm((prev) => ({ ...prev, samplePdf: file }));
-  };
-
-  const handleMainPdfSelect = (file) => {
-    setForm((prev) => ({ ...prev, mainPdf: file }));
-  };
-
   // Load product data in edit mode
   useEffect(() => {
     if (mode === "edit" && id) {
@@ -106,6 +93,22 @@ const ProductForm = ({ mode }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handler to remove an existing file
+  const handleRemoveExistingFile = (field) => {
+    // Clear the existing file URL in local state
+    setExistingFiles((prev) => ({ ...prev, [field]: "" }));
+
+    // Also update the form to indicate this field should be cleared
+    // Map the field names from existingFiles to form field names
+    const fieldMap = {
+      imageUrl: "imageUrl",
+      samplePdfUrl: "samplePdfUrl",
+      mainPdfUrl: "mainPdfUrl",
+    };
+
+    setForm((prev) => ({ ...prev, [fieldMap[field]]: "" }));
+  };
+
   // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +120,7 @@ const ProductForm = ({ mode }) => {
     }
 
     // Validate image for new products
-    if (mode === "add" && !form.image) {
+    if (mode === "add" && !form.image && !existingFiles.imageUrl) {
       setError("Product image is required");
       return;
     }
@@ -125,11 +128,18 @@ const ProductForm = ({ mode }) => {
     setLoading(true);
 
     const formData = new FormData();
+
+    // Append all form fields
     Object.keys(form).forEach((key) => {
       if (form[key] !== null && form[key] !== undefined) {
         formData.append(key, form[key]);
       }
     });
+
+    // Add existing file URLs if they haven't been removed
+    formData.append("imageUrl", existingFiles.imageUrl || "");
+    formData.append("samplePdfUrl", existingFiles.samplePdfUrl || "");
+    formData.append("mainPdfUrl", existingFiles.mainPdfUrl || "");
 
     try {
       const url = "/api/products";
@@ -378,12 +388,12 @@ const ProductForm = ({ mode }) => {
                 Product Image*
               </label>
               <FileUploader
-                onFileSelect={handleImageSelect}
+                onFileSelect={(f) => setForm((p) => ({ ...p, image: f }))}
+                onRemoveExisting={() => handleRemoveExistingFile("imageUrl")}
+                existingUrl={existingFiles.imageUrl}
+                existingLabel="Current Product Image"
                 accept="image/*"
                 label="product image"
-                maxSize={5}
-                existingUrl={existingFiles.imageUrl}
-                existingLabel="Current Image"
               />
             </div>
 
@@ -393,12 +403,14 @@ const ProductForm = ({ mode }) => {
                 Sample PDF
               </label>
               <FileUploader
-                onFileSelect={handleSamplePdfSelect}
-                accept="application/pdf"
-                label="sample PDF"
-                maxSize={20}
+                onFileSelect={(f) => setForm((p) => ({ ...p, samplePdf: f }))}
+                onRemoveExisting={() =>
+                  handleRemoveExistingFile("samplePdfUrl")
+                }
                 existingUrl={existingFiles.samplePdfUrl}
                 existingLabel="Current Sample PDF"
+                accept="application/pdf"
+                label="sample PDF"
               />
             </div>
 
@@ -408,12 +420,12 @@ const ProductForm = ({ mode }) => {
                 Main PDF
               </label>
               <FileUploader
-                onFileSelect={handleMainPdfSelect}
-                accept="application/pdf"
-                label="main PDF"
-                maxSize={50}
+                onFileSelect={(f) => setForm((p) => ({ ...p, mainPdf: f }))}
+                onRemoveExisting={() => handleRemoveExistingFile("mainPdfUrl")}
                 existingUrl={existingFiles.mainPdfUrl}
                 existingLabel="Current Main PDF"
+                accept="application/pdf"
+                label="main PDF"
               />
             </div>
           </div>

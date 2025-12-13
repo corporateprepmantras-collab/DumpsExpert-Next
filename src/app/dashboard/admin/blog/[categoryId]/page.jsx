@@ -196,7 +196,14 @@ const BlogPage = () => {
     setShowModal(true);
   };
 
-  if (loading) return <p className="p-6 pt-20">Loading...</p>;
+  if (loading)
+    return (
+      <p className="p-6 pt-20">
+        <div className="flex items-center justify-center h-screen">
+          <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+        </div>
+      </p>
+    );
 
   return (
     <div className="p-6 pt-20 space-y-6">

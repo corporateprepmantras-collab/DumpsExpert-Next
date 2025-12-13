@@ -40,7 +40,10 @@ export default function GuestDashboard() {
     );
   }
 
-  if (!userData) return <div className="p-6">Loading...</div>;
+  if (!userData) return <div className="p-6"><div className="flex items-center justify-center h-screen">
+  <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+</div>
+</div>;
 
   const profileImage =
     session?.user?.image || userData.profileImage || "https://via.placeholder.com/60";

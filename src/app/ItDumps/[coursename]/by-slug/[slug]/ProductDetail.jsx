@@ -2,15 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FaCheckCircle, FaChevronRight, FaStar, FaUser } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaChevronRight,
+  FaStar,
+  FaUser,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
+
 // Helper function to safely convert to number
 const toNum = (val) => {
   if (val === null || val === undefined || val === "") return 0;
   const num = Number(val);
   return isNaN(num) ? 0 : num;
+};
+
+// Helper function to check if product is available
+const isProductAvailable = (product) => {
+  return product?.mainPdfUrl && product.mainPdfUrl.trim() !== "";
 };
 
 // Helper function to extract exam prices
@@ -124,7 +136,7 @@ async function fetchAllProducts() {
     return [];
   }
 }
-// Add this after fetchAllProducts function
+
 async function fetchReviews(productId) {
   try {
     const response = await fetch(`/api/reviews?productId=${productId}`);
@@ -138,7 +150,6 @@ async function fetchReviews(productId) {
   }
 }
 
-// Update submitReview function
 async function submitReview(reviewData) {
   try {
     const response = await fetch("/api/reviews", {
@@ -178,8 +189,26 @@ export default function ProductDetailsPage() {
   const [activeIndex, setActiveIndex] = useState(null);
   const [isLoadingExams, setIsLoadingExams] = useState(true);
 
+  // Check if product is available
+  const productAvailable = isProductAvailable(product);
+  useEffect(() => {
+    if (product) {
+      console.log("=== PRODUCT AVAILABILITY CHECK ===");
+      console.log("Product Title:", product.title);
+      console.log("mainPdfUrl value:", product.mainPdfUrl);
+      console.log("mainPdfUrl type:", typeof product.mainPdfUrl);
+      console.log("Is Available:", productAvailable);
+      console.log("================================");
+    }
+  }, [product]);
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
+
+    // Check if mainPdfUrl exists for PDF and Combo types
+    if ((type === "regular" || type === "combo") && !productAvailable) {
+      toast.error("⚠️ This product is currently unavailable (PDF not found)");
+      return;
+    }
 
     // Validate pricing
     if (
@@ -408,7 +437,14 @@ export default function ProductDetailsPage() {
     setActiveIndex(index === activeIndex ? null : index);
   };
 
-  if (!product) return <div className="text-center py-20">Loading...</div>;
+  if (!product)
+    return (
+      <div className="text-center py-20">
+        <div className="flex items-center justify-center h-screen">
+          <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
 
   const hasOnlineExam = examPrices.priceInr > 0 || examPrices.priceUsd > 0;
 
@@ -417,6 +453,27 @@ export default function ProductDetailsPage() {
       <div className="container mx-auto px-4 pt-2 pb-3">
         <Breadcrumbs />
       </div>
+
+      {/* Product Unavailability Alert */}
+      {!productAvailable && product && (
+        <div className="container mx-auto px-4 mb-4">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+            <div className="flex items-center gap-3">
+              <FaExclamationTriangle className="text-red-500 text-xl flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-red-800 text-base">
+                  Product Currently Unavailable
+                </h3>
+                <p className="text-red-700 text-sm mt-1">
+                  The PDF file for this product is not available at the moment.
+                  Please contact support or check back later.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10">
         {/* Left Column - Sticky */}
         <div className="md:w-[40%]">
@@ -502,10 +559,19 @@ export default function ProductDetailsPage() {
           <div className="mt-4 space-y-6">
             {/* PDF Download */}
             {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
-              <div className="flex flex-col md:flex-row md:justify-between gap-4 p-3 border rounded-lg bg-white shadow-sm">
+              <div
+                className={`flex flex-col md:flex-row md:justify-between gap-4 p-3 border rounded-lg shadow-sm ${
+                  !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
+                }`}
+              >
                 <div className="w-full">
                   <p className="font-semibold text-base md:text-lg">
                     📄 Downloadable PDF File
+                    {!productAvailable && (
+                      <span className="ml-2 text-xs text-red-600 font-normal">
+                        (Currently Unavailable)
+                      </span>
+                    )}
                   </p>
                   <p className="text-blue-600 font-bold text-sm md:text-base">
                     ₹{product.dumpsPriceInr ?? "N/A"}
@@ -539,9 +605,19 @@ export default function ProductDetailsPage() {
                   )}
                   <button
                     onClick={() => handleAddToCart("regular")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm hover:shadow-lg"
+                    disabled={!productAvailable}
+                    className={`font-semibold px-4 py-2 rounded text-sm transition-all ${
+                      productAvailable
+                        ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                    title={
+                      !productAvailable
+                        ? "Product unavailable - PDF not found"
+                        : "Add to cart"
+                    }
                   >
-                    🛒 Add to Cart
+                    {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
                   </button>
                 </div>
               </div>
@@ -606,10 +682,19 @@ export default function ProductDetailsPage() {
             {/* Combo */}
             {hasOnlineExam &&
               (product.comboPriceInr || product.comboPriceUsd) && (
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4">
+                <div
+                  className={`flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg shadow-sm gap-4 ${
+                    !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
+                  }`}
+                >
                   <div className="w-full">
                     <p className="font-semibold text-sm md:text-base">
                       🎁 Get Combo (PDF + Online Exam)
+                      {!productAvailable && (
+                        <span className="ml-2 text-xs text-red-600 font-normal">
+                          (Currently Unavailable)
+                        </span>
+                      )}
                     </p>
                     <p className="text-blue-600 font-bold text-sm md:text-base">
                       ₹{product.comboPriceInr ?? "N/A"}
@@ -630,21 +715,48 @@ export default function ProductDetailsPage() {
                   <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
                     <button
                       onClick={() => handleAddToCart("combo")}
-                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm hover:shadow-lg"
+                      disabled={!productAvailable}
+                      className={`font-semibold px-4 py-2 rounded text-sm transition-all ${
+                        productAvailable
+                          ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                      title={
+                        !productAvailable
+                          ? "Product unavailable - PDF not found"
+                          : "Add to cart"
+                      }
                     >
-                      🛒 Add to Cart
+                      {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
                     </button>
                   </div>
                 </div>
               )}
           </div>
 
-          <div className="mt-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-2">
+          <div className="mt-6 overflow-x-hidden">
+            <h2 className="text-lg md:text-xl font-semibold mb-2 text-gray-900">
               Description:
             </h2>
+
             <div
-              className="prose max-w-none text-xs md:text-sm"
+              className="
+      prose prose-sm max-w-full
+      prose-p:text-gray-800
+      prose-li:text-gray-800
+      prose-strong:text-gray-900
+      prose-a:text-blue-600
+      prose-a:break-all
+      break-words
+      overflow-x-hidden
+      [&_*]:max-w-full
+      [&_img]:max-w-full
+      [&_img]:h-auto
+      [&_table]:block
+      [&_table]:max-w-full
+      [&_table]:overflow-x-auto
+      [&_pre]:overflow-x-auto
+    "
               dangerouslySetInnerHTML={{
                 __html: product.Description || "No description available",
               }}
@@ -652,6 +764,7 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </div>
+
       {/* Full Width Sections Below - Normal Scroll */}
       <div className="container mx-auto px-4 my-10">
         <h2 className="text-lg font-semibold mb-2">Detailed Overview:</h2>
@@ -669,7 +782,6 @@ export default function ProductDetailsPage() {
           reviewForm={reviewForm}
           setReviewForm={setReviewForm}
           handleAddReview={handleAddReview}
-          // isLoading={isLoadingReviews}
         />
       </div>
 

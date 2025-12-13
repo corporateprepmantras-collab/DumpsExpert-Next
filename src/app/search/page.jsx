@@ -14,9 +14,7 @@ export default function SearchPage() {
     setLoading(true);
 
     // if no query → get all products
-    const url = query.length > 0
-      ? `/api/products?q=${query}`
-      : `/api/products`;
+    const url = query.length > 0 ? `/api/products?q=${query}` : `/api/products`;
 
     fetch(url)
       .then((res) => res.json())
@@ -94,7 +92,11 @@ export default function SearchPage() {
 
       {/* Messages & Results */}
       {loading && (
-        <p className="text-gray-500 text-center">Loading...</p>
+        <p className="text-gray-500 text-center">
+          <div className="flex items-center justify-center h-screen">
+            <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+          </div>
+        </p>
       )}
 
       {!loading && searched && products.length > 0 && (
@@ -106,9 +108,7 @@ export default function SearchPage() {
       )}
 
       {!loading && searched && products.length === 0 && (
-        <p className="text-red-500 text-lg text-center">
-          No products found.
-        </p>
+        <p className="text-red-500 text-lg text-center">No products found.</p>
       )}
     </div>
   );

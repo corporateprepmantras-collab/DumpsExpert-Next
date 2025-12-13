@@ -150,7 +150,11 @@ export default function SocialLinks() {
       <Card>
         <CardContent>
           {loading ? (
-            <Typography>Loading...</Typography>
+            <Typography>
+              <div className="flex items-center justify-center h-screen">
+                <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+              </div>
+            </Typography>
           ) : socialLinks.length === 0 ? (
             <Typography>No links added.</Typography>
           ) : (
