@@ -317,7 +317,10 @@ const sidebarItems = [
         label: "Blog",
         to: "#",
         children: [
-          { label: "Category", to: "/dashboard/admin/blog/category" },
+          {
+            label: "All Categories",
+            to: "/dashboard/admin/blog/allCategories",
+          },
           {
             label: "Posts",
             to: "/dashboard/admin/blog",

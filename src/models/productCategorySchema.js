@@ -11,6 +11,7 @@ const productCategorySchema = new mongoose.Schema(
     slug: { type: String, trim: true },
     description: { type: String },
     descriptionBelow: { type: String },
+    schemaHere: { type: String }, // ✅ New field for schema markup
     image: { type: String },
     public_id: { type: String },
     metaTitle: { type: String },
@@ -19,10 +20,10 @@ const productCategorySchema = new mongoose.Schema(
     remarks: { type: String },
     status: {
       type: String,
-      enum: ["Ready", "Publish", "Unpublish"],
+      enum: ["Publish", "Unpublish"], // ✅ Fixed to only Publish/Unpublish
       default: "Unpublish",
     },
-    faqs: [faqSchema], // ✅ FAQs array
+    faqs: [faqSchema],
   },
   { timestamps: true }
 );

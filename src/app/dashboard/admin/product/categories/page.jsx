@@ -37,6 +37,7 @@ export default function ProductCategories() {
     metaKeywords: "",
     metaDescription: "",
     remarks: "",
+    schemaHere: "", // ✅ New field added
     status: "Unpublish",
     faqs: [{ question: "", answer: "" }],
   });
@@ -140,6 +141,7 @@ export default function ProductCategories() {
 
       data.set("description", formData.description || "");
       data.set("descriptionBelow", formData.descriptionBelow || "");
+      data.set("schemaHere", formData.schemaHere || ""); // ✅ Include schemaHere
 
       let res;
       if (editingCategory) {
@@ -177,6 +179,7 @@ export default function ProductCategories() {
       metaKeywords: "",
       metaDescription: "",
       remarks: "",
+      schemaHere: "", // ✅ Reset schemaHere
       status: "Unpublish",
       faqs: [{ question: "", answer: "" }],
     });
@@ -196,6 +199,7 @@ export default function ProductCategories() {
       metaKeywords: category.metaKeywords || "",
       metaDescription: category.metaDescription || "",
       remarks: category.remarks || "",
+      schemaHere: category.schemaHere || "", // ✅ Include schemaHere
       status: category.status || "Unpublish",
       faqs: category.faqs || [{ question: "", answer: "" }],
     });
@@ -277,6 +281,24 @@ export default function ProductCategories() {
             formats={quillFormats}
             placeholder="Write description below..."
           />
+        </div>
+
+        {/* ✅ New Schema Here Field */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Schema Here (JSON-LD)
+          </label>
+          <textarea
+            name="schemaHere"
+            placeholder='Enter schema markup (e.g., {"@context": "https://schema.org", ...})'
+            rows={4}
+            value={formData.schemaHere}
+            onChange={handleChange}
+            className="w-full border px-3 py-2 rounded font-mono text-sm"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Enter structured data markup for SEO (optional)
+          </p>
         </div>
 
         <div className="space-y-3">
@@ -371,15 +393,19 @@ export default function ProductCategories() {
           className="w-full border px-3 py-2 rounded"
         />
 
-        <select
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          className="w-full border px-3 py-2 rounded"
-        >
-          <option value="Publish">Publish</option>
-          <option value="Unpublish">Unpublish</option>
-        </select>
+        {/* ✅ Fixed Status Dropdown - Only Publish/Unpublish */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Status</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="Publish">Publish</option>
+            <option value="Unpublish">Unpublish</option>
+          </select>
+        </div>
 
         <div className="flex justify-end space-x-3">
           <button

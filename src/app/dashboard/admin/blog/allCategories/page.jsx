@@ -42,8 +42,9 @@ const CategoryPage = () => {
     setLoading(true);
     try {
       const res = await axios.get("/api/blog-categories");
-      setCategories(res.data.data);
+      setCategories(res.data.data || []);
     } catch (error) {
+      console.error(error);
       toast.error("Failed to fetch categories");
     } finally {
       setLoading(false);
@@ -55,8 +56,10 @@ const CategoryPage = () => {
     try {
       await axios.delete(`/api/blog-categories/${id}`);
       toast.success("Category deleted");
-      setCategories(categories.filter((c) => c._id !== id));
-    } catch {
+      setCategories((prev) => prev.filter((c) => c._id !== id));
+      setSelectedCategories((prev) => prev.filter((cid) => cid !== id));
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to delete category");
     }
   };
@@ -79,14 +82,20 @@ const CategoryPage = () => {
       toast.success(
         `${selectedCategories.length} categories deleted successfully!`
       );
-      setCategories(
-        categories.filter((c) => !selectedCategories.includes(c._id))
+      setCategories((prev) =>
+        prev.filter((c) => !selectedCategories.includes(c._id))
       );
       setSelectedCategories([]);
     } catch (error) {
+      console.error(error);
       toast.error("Error deleting categories");
     }
   };
+
+  // Filtered (derived)
+  const filtered = categories.filter((p) =>
+    (p.category || "").toLowerCase().includes(search.toLowerCase())
+  );
 
   // Toggle Selection
   const toggleSelection = (id) => {
@@ -105,16 +114,17 @@ const CategoryPage = () => {
   };
 
   const handleEdit = (category) => {
+    if (!category) return;
     setIsAdd(false);
     setSelectedCategory(category);
     setFormData({
-      sectionName: category.sectionName,
-      slug: category.slug,
-      language: category.language,
-      category: category.category,
-      metaTitle: category.metaTitle,
-      metaKeywords: category.metaKeywords,
-      metaDescription: category.metaDescription,
+      sectionName: category.sectionName || "",
+      slug: category.slug || "",
+      language: category.language || "",
+      category: category.category || "",
+      metaTitle: category.metaTitle || "",
+      metaKeywords: category.metaKeywords || "",
+      metaDescription: category.metaDescription || "",
       schema: category.schema || "",
       openGraphTitle: category.openGraphTitle || "",
       openGraphDescription: category.openGraphDescription || "",
@@ -123,7 +133,7 @@ const CategoryPage = () => {
       twitterDescription: category.twitterDescription || "",
       twitterImage: category.twitterImage || "",
     });
-    setPreview(category.imageUrl);
+    setPreview(category.imageUrl || null);
     setImageFile(null);
     setOpenModal(true);
   };
@@ -156,7 +166,7 @@ const CategoryPage = () => {
     try {
       const data = new FormData();
       Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key]);
+        data.append(key, formData[key] ?? "");
       });
       if (imageFile) data.append("image", imageFile);
 
@@ -165,29 +175,32 @@ const CategoryPage = () => {
         res = await axios.post("/api/blog-categories", data, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        setCategories([...categories, res.data.data]);
+        setCategories((prev) => [...prev, res.data.data]);
         toast.success("Category added");
       } else {
+        if (!selectedCategory?._id) {
+          toast.error("No category selected");
+          return;
+        }
         res = await axios.put(
           `/api/blog-categories/${selectedCategory._id}`,
           data,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-        setCategories(
-          categories.map((c) =>
-            c._id === selectedCategory._id ? res.data.data : c
-          )
+        setCategories((prev) =>
+          prev.map((c) => (c._id === selectedCategory._id ? res.data.data : c))
         );
         toast.success("Category updated");
       }
       setOpenModal(false);
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to save category");
     }
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
       const reader = new FileReader();
@@ -197,10 +210,6 @@ const CategoryPage = () => {
       reader.readAsDataURL(file);
     }
   };
-
-  const filtered = categories.filter((p) =>
-    p.category.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <div className="container pt-20 mx-auto p-6 bg-white min-h-screen">
@@ -296,6 +305,7 @@ const CategoryPage = () => {
                     }
                     onChange={toggleSelectAll}
                     className="cursor-pointer w-4 h-4"
+                    aria-label="select all categories"
                   />
                 </th>
                 <th className="p-3 border text-left">#</th>
@@ -324,29 +334,36 @@ const CategoryPage = () => {
                         checked={selectedCategories.includes(category._id)}
                         onChange={() => toggleSelection(category._id)}
                         className="cursor-pointer w-4 h-4"
+                        aria-label={`select category ${category.category}`}
                       />
                     </td>
                     <td className="p-3 border">{i + 1}</td>
                     <td className="p-3 border">
-                      <img
-                        src={category.imageUrl}
-                        className="h-14 w-14 object-cover rounded-lg shadow-sm"
-                        alt={category.category}
-                      />
+                      {category.imageUrl ? (
+                        <img
+                          src={category.imageUrl}
+                          className="h-14 w-14 object-cover rounded-lg shadow-sm"
+                          alt={category.category || "category image"}
+                        />
+                      ) : (
+                        <div className="h-14 w-14 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">
+                          No image
+                        </div>
+                      )}
                     </td>
                     <td className="p-3 border font-medium text-gray-700">
-                      {category.sectionName}
+                      {category.sectionName || "-"}
                     </td>
                     <td className="p-3 border font-semibold text-gray-800">
-                      {category.category}
+                      {category.category || "-"}
                     </td>
                     <td className="p-3 border">
                       <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        {category.language.toUpperCase()}
+                        {(category.language || "").toUpperCase()}
                       </span>
                     </td>
                     <td className="p-3 border text-sm text-gray-600">
-                      {category.metaTitle}
+                      {category.metaTitle || "-"}
                     </td>
                     <td className="p-3 border">
                       <div className="flex justify-center gap-2">
@@ -363,10 +380,10 @@ const CategoryPage = () => {
                           Delete
                         </button>
                         <button
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded text-sm transition-colors"
-                          onClick={router.push(
-                            `/dashboard/admin/blog/${category._id}`
-                          )}
+                          className="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded text-sm transition-colors"
+                          onClick={() =>
+                            router.push(`/dashboard/admin/blog/${category._id}`)
+                          }
                         >
                           Manage blog
                         </button>
@@ -408,7 +425,10 @@ const CategoryPage = () => {
                   placeholder="e.g., IT Certification"
                   value={formData.sectionName}
                   onChange={(e) =>
-                    setFormData({ ...formData, sectionName: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      sectionName: e.target.value,
+                    }))
                   }
                   className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
@@ -424,7 +444,10 @@ const CategoryPage = () => {
                   placeholder="e.g., AWS Certification"
                   value={formData.category}
                   onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      category: e.target.value,
+                    }))
                   }
                   className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
@@ -440,7 +463,7 @@ const CategoryPage = () => {
                   placeholder="e.g., aws-certification"
                   value={formData.slug}
                   onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
+                    setFormData((prev) => ({ ...prev, slug: e.target.value }))
                   }
                   className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
@@ -454,7 +477,10 @@ const CategoryPage = () => {
                 <select
                   value={formData.language}
                   onChange={(e) =>
-                    setFormData({ ...formData, language: e.target.value })
+                    setFormData((prev) => ({
+                      ...prev,
+                      language: e.target.value,
+                    }))
                   }
                   className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
@@ -498,7 +524,10 @@ const CategoryPage = () => {
                     placeholder="Meta Title"
                     value={formData.metaTitle}
                     onChange={(e) =>
-                      setFormData({ ...formData, metaTitle: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        metaTitle: e.target.value,
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full"
                   />
@@ -507,10 +536,10 @@ const CategoryPage = () => {
                     placeholder="Meta Keywords"
                     value={formData.metaKeywords}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         metaKeywords: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full"
                   />
@@ -518,10 +547,10 @@ const CategoryPage = () => {
                     placeholder="Meta Description"
                     value={formData.metaDescription}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         metaDescription: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full h-20"
                   />
@@ -529,7 +558,10 @@ const CategoryPage = () => {
                     placeholder="JSON Schema"
                     value={formData.schema}
                     onChange={(e) =>
-                      setFormData({ ...formData, schema: e.target.value })
+                      setFormData((prev) => ({
+                        ...prev,
+                        schema: e.target.value,
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full h-20"
                   />
@@ -547,10 +579,10 @@ const CategoryPage = () => {
                     placeholder="OG Title"
                     value={formData.openGraphTitle}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         openGraphTitle: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full"
                   />
@@ -558,10 +590,10 @@ const CategoryPage = () => {
                     placeholder="OG Description"
                     value={formData.openGraphDescription}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         openGraphDescription: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full h-16"
                   />
@@ -570,10 +602,10 @@ const CategoryPage = () => {
                     placeholder="OG Image URL"
                     value={formData.openGraphImage}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         openGraphImage: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full"
                   />
@@ -591,10 +623,10 @@ const CategoryPage = () => {
                     placeholder="Twitter Title"
                     value={formData.twitterTitle}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         twitterTitle: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full"
                   />
@@ -602,10 +634,10 @@ const CategoryPage = () => {
                     placeholder="Twitter Description"
                     value={formData.twitterDescription}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         twitterDescription: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full h-16"
                   />
@@ -614,10 +646,10 @@ const CategoryPage = () => {
                     placeholder="Twitter Image URL"
                     value={formData.twitterImage}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
+                      setFormData((prev) => ({
+                        ...prev,
                         twitterImage: e.target.value,
-                      })
+                      }))
                     }
                     className="border border-gray-300 p-3 rounded-lg w-full"
                   />

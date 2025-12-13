@@ -35,11 +35,12 @@ export async function POST(req) {
     const slug = formData.get("slug")?.toString().trim() || "";
     const description = formData.get("description")?.toString() || "";
     const descriptionBelow = formData.get("descriptionBelow")?.toString() || "";
+    const schemaHere = formData.get("schemaHere")?.toString() || ""; // ✅ New field
     const metaTitle = formData.get("metaTitle")?.toString() || "";
     const metaKeywords = formData.get("metaKeywords")?.toString() || "";
     const metaDescription = formData.get("metaDescription")?.toString() || "";
     const remarks = formData.get("remarks")?.toString() || "";
-    const status = formData.get("status")?.toString().trim() || "Ready";
+    const status = formData.get("status")?.toString().trim() || "Unpublish";
     const file = formData.get("image");
 
     // ✅ Parse FAQs from JSON string
@@ -66,7 +67,7 @@ export async function POST(req) {
         { status: 400 }
       );
     }
-    if (!["Ready", "Publish", "Unpublish"].includes(status)) {
+    if (!["Publish", "Unpublish"].includes(status)) {
       return NextResponse.json({ message: "Invalid status" }, { status: 400 });
     }
 
@@ -88,6 +89,7 @@ export async function POST(req) {
       slug,
       description,
       descriptionBelow,
+      schemaHere, // ✅ Include schemaHere
       metaTitle,
       metaKeywords,
       metaDescription,
@@ -95,7 +97,7 @@ export async function POST(req) {
       status,
       image: imageUrl,
       public_id: publicId,
-      faqs, // ✅ Include FAQs
+      faqs,
     });
 
     const savedCategory = await newCategory.save();
@@ -138,11 +140,12 @@ export async function PUT(req) {
     const slug = formData.get("slug")?.toString().trim() || "";
     const description = formData.get("description")?.toString() || "";
     const descriptionBelow = formData.get("descriptionBelow")?.toString() || "";
+    const schemaHere = formData.get("schemaHere")?.toString() || ""; // ✅ New field
     const metaTitle = formData.get("metaTitle")?.toString() || "";
     const metaKeywords = formData.get("metaKeywords")?.toString() || "";
     const metaDescription = formData.get("metaDescription")?.toString() || "";
     const remarks = formData.get("remarks")?.toString() || "";
-    const status = formData.get("status")?.toString().trim() || "Ready";
+    const status = formData.get("status")?.toString().trim() || "Unpublish";
     const file = formData.get("image");
 
     // ✅ Parse FAQs from JSON string
@@ -169,7 +172,7 @@ export async function PUT(req) {
         { status: 400 }
       );
     }
-    if (!["Ready", "Publish", "Unpublish"].includes(status)) {
+    if (!["Publish", "Unpublish"].includes(status)) {
       return NextResponse.json({ message: "Invalid status" }, { status: 400 });
     }
 
@@ -204,6 +207,7 @@ export async function PUT(req) {
         slug,
         description,
         descriptionBelow,
+        schemaHere, // ✅ Include schemaHere
         metaTitle,
         metaKeywords,
         metaDescription,
@@ -211,7 +215,7 @@ export async function PUT(req) {
         status,
         image: imageUrl,
         public_id: publicId,
-        faqs, // ✅ Include FAQs
+        faqs,
       },
       { new: true, runValidators: true }
     );

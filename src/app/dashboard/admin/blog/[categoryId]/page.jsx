@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import RichTextEditor from "@/components/public/RichTextEditor";
 
-
 const BlogPage = () => {
   const { categoryId } = useParams();
+  const router = useRouter();
 
   const [blogs, setBlogs] = useState([]);
+  const [categories, setCategories] = useState([]); // ✅ For category dropdown
+  const [categoryName, setCategoryName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -18,7 +20,7 @@ const BlogPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null); // preview ke liye
+  const [previewImage, setPreviewImage] = useState(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -26,41 +28,76 @@ const BlogPage = () => {
     slug: "",
     imageFile: null,
     status: "unpublish",
+    category: categoryId || "", // ✅ Category field
+    schema: "", // ✅ Schema field
     metaTitle: "",
     metaKeywords: "",
     metaDescription: "",
   });
 
+  // ✅ Fetch all categories for dropdown
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get("/api/blog-categories");
+      setCategories(res.data?.data || []);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+      toast.error("Failed to load categories");
+    }
+  };
+
   // fetch blogs
   const fetchBlogs = async () => {
+    if (!categoryId) {
+      setBlogs([]);
+      setCategoryName("");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await axios.get(`/api/blogs?category=${categoryId}`);
-      console.log(res.data.data)
-      setBlogs(res.data.data || []);
+      const data = res.data?.data || [];
+      setBlogs(data);
+      // If backend returns category object with every blog item, grab name from first item
+      const nameFromFirst = data?.[0]?.category?.category;
+      setCategoryName(nameFromFirst || "");
     } catch (error) {
-      toast.error("Failed to fetch blogs");
       console.error(error);
+      toast.error("Failed to fetch blogs");
+      setBlogs([]);
+      setCategoryName("");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    fetchCategories(); // ✅ Load categories on mount
     fetchBlogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId]);
 
+  // ✅ Update form category when categoryId changes
+  useEffect(() => {
+    if (categoryId && !editMode) {
+      setForm((prev) => ({ ...prev, category: categoryId }));
+    }
+  }, [categoryId, editMode]);
+
   const filtered = blogs.filter((b) =>
-    b.title.toLowerCase().includes(search.toLowerCase())
+    (b.title || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setForm({ ...form, imageFile: file });
+    const file = e.target.files?.[0] ?? null;
+    setForm((prev) => ({ ...prev, imageFile: file }));
     if (file) {
       setPreviewImage(URL.createObjectURL(file));
     }
@@ -73,6 +110,8 @@ const BlogPage = () => {
       slug: "",
       imageFile: null,
       status: "unpublish",
+      category: categoryId || "",
+      schema: "",
       metaTitle: "",
       metaKeywords: "",
       metaDescription: "",
@@ -92,10 +131,9 @@ const BlogPage = () => {
         if (key === "imageFile" && value) {
           formData.append("image", value);
         } else {
-          formData.append(key, value);
+          formData.append(key, value ?? "");
         }
       });
-      formData.append("category", categoryId);
 
       if (editMode && editingId) {
         await axios.put(`/api/blogs/${editingId}`, formData, {
@@ -111,10 +149,16 @@ const BlogPage = () => {
 
       resetForm();
       setShowModal(false);
-      fetchBlogs();
+
+      // ✅ If category changed, navigate to new category page
+      if (form.category !== categoryId) {
+        router.push(`/admin/blogs/${form.category}`);
+      } else {
+        fetchBlogs();
+      }
     } catch (error) {
-      toast.error(error.response?.data?.error || "Something went wrong");
-      console.error(error.response?.data?.error);
+      console.error(error);
+      toast.error(error?.response?.data?.error || "Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -127,21 +171,24 @@ const BlogPage = () => {
       fetchBlogs();
       toast.success("Blog deleted successfully 🗑️");
     } catch (error) {
-      toast.error("Failed to delete blog");
       console.error(error);
+      toast.error("Failed to delete blog");
     }
   };
 
   const handleEdit = (blog) => {
+    if (!blog) return;
     setForm({
-      title: blog.title,
-      content: blog.content,
-      slug: blog.slug,
+      title: blog.title || "",
+      content: blog.content || " ",
+      slug: blog.slug || "",
       imageFile: null,
-      status: blog.status,
-      metaTitle: blog.metaTitle,
-      metaKeywords: blog.metaKeywords,
-      metaDescription: blog.metaDescription,
+      status: blog.status || "unpublish",
+      category: blog.category?._id || categoryId || "",
+      schema: blog.schema || "",
+      metaTitle: blog.metaTitle || "",
+      metaKeywords: blog.metaKeywords || "",
+      metaDescription: blog.metaDescription || "",
     });
     setPreviewImage(blog.imageUrl || null);
     setEditMode(true);
@@ -149,12 +196,14 @@ const BlogPage = () => {
     setShowModal(true);
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p className="p-6 pt-20">Loading...</p>;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 pt-20 space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
-      <h1 className="text-2xl font-bold">Blogs for Category {blogs[0]?.category?.category}</h1>
+      <h1 className="text-2xl font-bold">
+        Blogs for Category {categoryName || "—"}
+      </h1>
 
       {/* Search */}
       <input
@@ -177,11 +226,9 @@ const BlogPage = () => {
       </button>
 
       {/* Modal */}
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative my-10">
-            {/* Close Button */}
             <button
               onClick={() => {
                 setShowModal(false);
@@ -200,7 +247,27 @@ const BlogPage = () => {
               onSubmit={handleSubmit}
               className="space-y-3 max-h-[75vh] overflow-y-auto pr-2"
             >
-              {/* Title */}
+              {/* ✅ Category Dropdown */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  classNadme="border p-2 rounded w-full"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Title</label>
                 <input
@@ -214,18 +281,18 @@ const BlogPage = () => {
                 />
               </div>
 
-              {/* Content */}
               <div className="max-h-96 overflow-y-scroll">
-        <RichTextEditor
-          label="Content"
-          name="content"
-          value={form.content}
-          onChange={(value) => setForm(prev => ({ ...prev, content: value }))}
-          error={""}
-        />
+                <RichTextEditor
+                  label="Content"
+                  name="content"
+                  value={form.content}
+                  onChange={(value) =>
+                    setForm((prev) => ({ ...prev, content: value }))
+                  }
+                  error={""}
+                />
               </div>
 
-              {/* Slug */}
               <div>
                 <label className="block text-sm font-medium mb-1">Slug</label>
                 <input
@@ -239,7 +306,6 @@ const BlogPage = () => {
                 />
               </div>
 
-              {/* Image */}
               <div>
                 <label className="block text-sm font-medium mb-1">Image</label>
                 <input
@@ -255,6 +321,7 @@ const BlogPage = () => {
                   />
                 )}
               </div>
+
               {previewImage && (
                 <div className="mt-2">
                   <img
@@ -265,7 +332,6 @@ const BlogPage = () => {
                 </div>
               )}
 
-              {/* Status */}
               <div>
                 <label className="block text-sm font-medium mb-1">Status</label>
                 <select
@@ -279,7 +345,24 @@ const BlogPage = () => {
                 </select>
               </div>
 
-              {/* Meta Title */}
+              {/* ✅ Schema Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Schema (JSON-LD)
+                </label>
+                <textarea
+                  name="schema"
+                  placeholder='{"@context": "https://schema.org", "@type": "BlogPosting", ...}'
+                  value={form.schema}
+                  onChange={handleChange}
+                  className="border p-2 rounded w-full font-mono text-sm"
+                  rows={4}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter structured data markup for SEO (optional)
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Meta Title
@@ -294,7 +377,6 @@ const BlogPage = () => {
                 />
               </div>
 
-              {/* Meta Keywords */}
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Meta Keywords
@@ -309,7 +391,6 @@ const BlogPage = () => {
                 />
               </div>
 
-              {/* Meta Description */}
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Meta Description
@@ -324,7 +405,6 @@ const BlogPage = () => {
                 />
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={saving}
@@ -353,6 +433,7 @@ const BlogPage = () => {
             <th className="border px-3 py-2">Image</th>
             <th className="border px-3 py-2">Title</th>
             <th className="border px-3 py-2">Slug</th>
+            <th className="border px-3 py-2">Category</th>
             <th className="border px-3 py-2">Status</th>
             <th className="border px-3 py-2">Action</th>
           </tr>
@@ -374,7 +455,20 @@ const BlogPage = () => {
               </td>
               <td className="border px-3 py-2">{blog.title}</td>
               <td className="border px-3 py-2">{blog.slug}</td>
-              <td className="border px-3 py-2">{blog.status}</td>
+              <td className="border px-3 py-2">
+                {blog.category?.category || "N/A"}
+              </td>
+              <td className="border px-3 py-2">
+                <span
+                  className={`px-2 py-1 rounded text-xs font-semibold ${
+                    blog.status === "publish"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {blog.status}
+                </span>
+              </td>
               <td className="border px-3 py-2 space-x-2">
                 <button
                   className="bg-green-600 text-white px-2 py-1 rounded"
@@ -393,7 +487,7 @@ const BlogPage = () => {
           ))}
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={6} className="text-center p-4">
+              <td colSpan={7} className="text-center p-4">
                 No blogs found
               </td>
             </tr>

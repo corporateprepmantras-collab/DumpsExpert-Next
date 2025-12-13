@@ -7,14 +7,16 @@ import { NextResponse } from "next/server";
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
-  
+
   console.log("[MIDDLEWARE] Processing:", pathname);
 
   // ========================================
   // 1. MAINTENANCE MODE CHECK (First Priority)
   // ========================================
   const maintenanceExcluded = ["/admin", "/dashboard", "/api", "/maintenance"];
-  const isMaintenanceExcluded = maintenanceExcluded.some(p => pathname.startsWith(p));
+  const isMaintenanceExcluded = maintenanceExcluded.some((p) =>
+    pathname.startsWith(p)
+  );
 
   if (!isMaintenanceExcluded) {
     try {
@@ -60,7 +62,9 @@ export async function middleware(request) {
     "/favicon.ico",
   ];
 
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
 
   if (isPublicRoute) {
     console.log("[MIDDLEWARE] ✅ Public route, allowing access");
@@ -70,9 +74,9 @@ export async function middleware(request) {
   // ========================================
   // 3. AUTH CHECK FOR PROTECTED ROUTES
   // ========================================
-  const token = await getToken({ 
-    req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
   });
 
   console.log("[MIDDLEWARE] Token:", token ? "Present" : "Missing");
@@ -132,7 +136,5 @@ export async function middleware(request) {
 
 export const config = {
   // Match all routes except static files
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

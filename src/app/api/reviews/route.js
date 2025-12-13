@@ -4,38 +4,57 @@ import Review from "../../../models/Review";
 
 // GET all reviews OR reviews by productId
 export async function GET(req) {
-  await connectMongoDB();
-  const { searchParams } = new URL(req.url);
-  const productId = searchParams.get("productId");
+  try {
+    await connectMongoDB();
 
-  let reviews;
-  if (productId) {
-    // Get reviews of a specific product (do not filter here so admin can access all)
-    reviews = await Review.find({ productId }).sort({ createdAt: -1 });
-  } else {
-    // Get all reviews
-    reviews = await Review.find().sort({ createdAt: -1 });
+    const { searchParams } = new URL(req.url);
+    const productId = searchParams.get("productId");
+
+    let reviews;
+
+    if (productId) {
+      // Reviews for specific product
+      reviews = await Review.find({ productId })
+        .populate("productId", "title sapExamCode sku")
+        .sort({ createdAt: -1 });
+    } else {
+      // All reviews
+      reviews = await Review.find()
+        .populate("productId", "title sapExamCode sku")
+        .sort({ createdAt: -1 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: reviews,
+    });
+  } catch (error) {
+    console.error("GET reviews error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch reviews",
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ success: true, data: reviews });
 }
 
 // POST create review
 export async function POST(req) {
-  await connectMongoDB();
   try {
+    await connectMongoDB();
     const body = await req.json();
 
-    // Normalize incoming payload: frontend sends `name`, model expects `customer`
     const payload = {
       productId: body.productId || body.product_id || body.product,
       customer: body.customer || body.name || body.fullName || "",
       rating: body.rating,
       comment: body.comment || body.message || "",
-      status: body.status, // optional
+      status: body.status,
     };
 
-    // Basic validation
+    // Validation
     if (!payload.productId) {
       return NextResponse.json(
         { success: false, error: "productId is required" },
@@ -45,12 +64,12 @@ export async function POST(req) {
 
     if (!payload.customer) {
       return NextResponse.json(
-        { success: false, error: "customer/name is required" },
+        { success: false, error: "customer is required" },
         { status: 400 }
       );
     }
 
-    if (!payload.rating && payload.rating !== 0) {
+    if (payload.rating == null) {
       return NextResponse.json(
         { success: false, error: "rating is required" },
         { status: 400 }
@@ -58,12 +77,18 @@ export async function POST(req) {
     }
 
     const review = await Review.create(payload);
-    return NextResponse.json({ success: true, data: review });
+
+    return NextResponse.json({
+      success: true,
+      data: review,
+    });
   } catch (err) {
     console.error("Error creating review:", err);
-    const message = err?.message || "Internal server error";
     return NextResponse.json(
-      { success: false, error: message },
+      {
+        success: false,
+        error: err.message || "Internal server error",
+      },
       { status: 500 }
     );
   }

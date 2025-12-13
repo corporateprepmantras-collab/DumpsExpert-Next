@@ -9,33 +9,93 @@ const AllReviews = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedReviews, setSelectedReviews] = useState([]);
+  const [productsCache, setProductsCache] = useState({}); // Cache for product details
+
+  // Date filter states
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     fetchAllReviews();
   }, []);
 
   useEffect(() => {
-    // Filter reviews based on selected status
-    if (filterStatus === "all") {
-      setFilteredReviews(reviews);
-    } else {
-      setFilteredReviews(reviews.filter((r) => r.status === filterStatus));
-    }
-    // Clear selection when filter changes
+    applyFilters();
     setSelectedReviews([]);
-  }, [filterStatus, reviews]);
+  }, [filterStatus, startDate, endDate, reviews]);
+
+  const applyFilters = () => {
+    let filtered = [...reviews];
+
+    // Filter by status
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((r) => r.status === filterStatus);
+    }
+
+    // Filter by date range
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((r) => {
+        const reviewDate = new Date(r.createdAt || r.date);
+        return reviewDate >= start;
+      });
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((r) => {
+        const reviewDate = new Date(r.createdAt || r.date);
+        return reviewDate <= end;
+      });
+    }
+
+    setFilteredReviews(filtered);
+  };
 
   const fetchAllReviews = async () => {
     try {
       const res = await axios.get("/api/reviews");
-      setReviews(res.data.data || []);
-      setFilteredReviews(res.data.data || []);
+      const reviewsData = res.data.data || [];
+      setReviews(reviewsData);
+      setFilteredReviews(reviewsData);
+
+      // Fetch product details for all reviews
+      await fetchProductDetails(reviewsData);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load reviews");
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchProductDetails = async (reviewsData) => {
+    const productIds = [
+      ...new Set(
+        reviewsData.map((r) => r.productId || r.product).filter(Boolean)
+      ),
+    ];
+
+    const newProductsCache = { ...productsCache };
+
+    for (const productId of productIds) {
+      // Skip if already cached
+      if (newProductsCache[productId]) continue;
+
+      try {
+        const res = await axios.get(`/api/products?id=${productId}`);
+        if (res.data.data) {
+          newProductsCache[productId] = res.data.data;
+        }
+      } catch (err) {
+        console.error(`Failed to fetch product ${productId}:`, err);
+        newProductsCache[productId] = null;
+      }
+    }
+
+    setProductsCache(newProductsCache);
   };
 
   const handleStatusChange = async (reviewId, newStatus) => {
@@ -62,7 +122,6 @@ const AllReviews = () => {
     }
   };
 
-  // Bulk Delete
   const handleBulkDelete = async () => {
     if (selectedReviews.length === 0) {
       toast.error("Please select reviews to delete");
@@ -86,7 +145,6 @@ const AllReviews = () => {
     }
   };
 
-  // Bulk Publish
   const handleBulkPublish = async () => {
     if (selectedReviews.length === 0) {
       toast.error("Please select reviews to publish");
@@ -110,7 +168,6 @@ const AllReviews = () => {
     }
   };
 
-  // Bulk Unpublish
   const handleBulkUnpublish = async () => {
     if (selectedReviews.length === 0) {
       toast.error("Please select reviews to unpublish");
@@ -134,14 +191,12 @@ const AllReviews = () => {
     }
   };
 
-  // Toggle individual review selection
   const toggleReviewSelection = (id) => {
     setSelectedReviews((prev) =>
       prev.includes(id) ? prev.filter((rid) => rid !== id) : [...prev, id]
     );
   };
 
-  // Toggle select all
   const toggleSelectAll = () => {
     if (selectedReviews.length === filteredReviews.length) {
       setSelectedReviews([]);
@@ -150,24 +205,135 @@ const AllReviews = () => {
     }
   };
 
+  const clearDateFilters = () => {
+    setStartDate("");
+    setEndDate("");
+  };
+
+  // Get exam code from product
+  const getExamCode = (review) => {
+    const productId = review.productId || review.product;
+
+    // First check if productId is populated object (from API response)
+    if (review.productId?.sapExamCode) {
+      return review.productId.sapExamCode;
+    }
+    if (review.productId?.examCode) {
+      return review.productId.examCode;
+    }
+    if (review.productId?.code) {
+      return review.productId.code;
+    }
+
+    // Then check products cache (fetched from API)
+    if (productId && productsCache[productId]) {
+      const product = productsCache[productId];
+      return product.sapExamCode || product.examCode || product.code || "N/A";
+    }
+
+    return "Nothing";
+  };
+
+  // Get product name
+  const getProductName = (review) => {
+    const productId = review.productId || review.product;
+
+    // First check if productId is populated object
+    if (review.productId?.title) {
+      return review.productId.title;
+    }
+    if (review.productId?.name) {
+      return review.productId.name;
+    }
+
+    // Then check products cache
+    if (productId && productsCache[productId]) {
+      const product = productsCache[productId];
+      return product.title || product.name || "Product Deleted";
+    }
+
+    return "Product Deleted";
+  };
+
   return (
     <div className="p-6 bg-white min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold">All Reviews</h2>
+      </div>
 
-        {/* Filter Dropdown */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium">Filter by Status:</label>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm"
-          >
-            <option value="all">All Reviews</option>
-            <option value="Publish">Published Only</option>
-            <option value="Pending">Pending Only</option>
-          </select>
+      {/* Filter Section */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Filter by Status
+            </label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Reviews</option>
+              <option value="Publish">Published Only</option>
+              <option value="Pending">Pending Only</option>
+            </select>
+          </div>
+
+          {/* Start Date Filter */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* End Date Filter */}
+          <div>
+            <label className="block text-sm font-medium mb-2">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Clear Filters Button */}
+          <div className="flex items-end">
+            <button
+              onClick={clearDateFilters}
+              className="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm transition-colors"
+            >
+              Clear Date Filters
+            </button>
+          </div>
         </div>
+
+        {/* Active Filters Display */}
+        {(startDate || endDate || filterStatus !== "all") && (
+          <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+            <span className="font-medium">Active Filters:</span>
+            {filterStatus !== "all" && (
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                Status: {filterStatus}
+              </span>
+            )}
+            {startDate && (
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                From: {new Date(startDate).toLocaleDateString()}
+              </span>
+            )}
+            {endDate && (
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                To: {new Date(endDate).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats Summary */}
@@ -188,6 +354,15 @@ const AllReviews = () => {
             {reviews.filter((r) => r.status === "Pending").length}
           </p>
         </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-600">
+          Showing{" "}
+          <span className="font-semibold">{filteredReviews.length}</span> of{" "}
+          <span className="font-semibold">{reviews.length}</span> reviews
+        </p>
       </div>
 
       {/* Bulk Actions Bar */}
@@ -276,13 +451,15 @@ const AllReviews = () => {
                     <td className="p-3 border">{i + 1}</td>
                     <td className="p-3 border">
                       <span className="font-semibold text-blue-600">
-                        {r.productId?.examCode || "N/A"}
+                        {getExamCode(r)}
                       </span>
                     </td>
                     <td className="p-3 border font-medium">
-                      {r.productId?.name || "Product Deleted"}
+                      {getProductName(r)}
                     </td>
-                    <td className="p-3 border font-medium">{r.customer}</td>
+                    <td className="p-3 border font-medium">
+                      {r.customer || r.name || "Anonymous"}
+                    </td>
                     <td className="p-3 border text-center">
                       <span className="inline-flex items-center gap-1">
                         <span className="text-yellow-500">★</span>
@@ -293,7 +470,14 @@ const AllReviews = () => {
                       {r.comment}
                     </td>
                     <td className="p-3 border text-center text-gray-600">
-                      {new Date(r.createdAt).toLocaleDateString()}
+                      {new Date(r.createdAt || r.date).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        }
+                      )}
                     </td>
                     <td className="p-3 border text-center">
                       <span
@@ -339,9 +523,9 @@ const AllReviews = () => {
                     colSpan="10"
                     className="text-center py-8 text-gray-500 border"
                   >
-                    {filterStatus === "all"
+                    {filterStatus === "all" && !startDate && !endDate
                       ? "No reviews found."
-                      : `No ${filterStatus.toLowerCase()} reviews found.`}
+                      : "No reviews match the selected filters."}
                   </td>
                 </tr>
               )}
