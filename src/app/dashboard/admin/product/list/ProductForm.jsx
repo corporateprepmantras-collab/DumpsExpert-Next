@@ -43,6 +43,13 @@ const ProductForm = ({ mode }) => {
     mainPdfUrl: "",
   });
 
+  // Track which files have been explicitly removed
+  const [removedFiles, setRemovedFiles] = useState({
+    imageUrl: false,
+    samplePdfUrl: false,
+    mainPdfUrl: false,
+  });
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -78,6 +85,12 @@ const ProductForm = ({ mode }) => {
               samplePdfUrl: p.samplePdfUrl || "",
               mainPdfUrl: p.mainPdfUrl || "",
             });
+            // Reset removed files tracker
+            setRemovedFiles({
+              imageUrl: false,
+              samplePdfUrl: false,
+              mainPdfUrl: false,
+            });
           }
         })
         .catch((err) => {
@@ -98,15 +111,8 @@ const ProductForm = ({ mode }) => {
     // Clear the existing file URL in local state
     setExistingFiles((prev) => ({ ...prev, [field]: "" }));
 
-    // Also update the form to indicate this field should be cleared
-    // Map the field names from existingFiles to form field names
-    const fieldMap = {
-      imageUrl: "imageUrl",
-      samplePdfUrl: "samplePdfUrl",
-      mainPdfUrl: "mainPdfUrl",
-    };
-
-    setForm((prev) => ({ ...prev, [fieldMap[field]]: "" }));
+    // Mark this file as removed
+    setRemovedFiles((prev) => ({ ...prev, [field]: true }));
   };
 
   // Form submission
@@ -120,7 +126,13 @@ const ProductForm = ({ mode }) => {
     }
 
     // Validate image for new products
-    if (mode === "add" && !form.image && !existingFiles.imageUrl) {
+    if (mode === "add" && !form.image) {
+      setError("Product image is required");
+      return;
+    }
+
+    // For edit mode, check if image exists (either existing or new)
+    if (mode === "edit" && !form.image && !existingFiles.imageUrl) {
       setError("Product image is required");
       return;
     }
@@ -129,20 +141,50 @@ const ProductForm = ({ mode }) => {
 
     const formData = new FormData();
 
-    // Append all form fields
+    // Append all form fields (except file fields)
     Object.keys(form).forEach((key) => {
-      if (form[key] !== null && form[key] !== undefined) {
-        formData.append(key, form[key]);
+      if (key !== "image" && key !== "samplePdf" && key !== "mainPdf") {
+        if (form[key] !== null && form[key] !== undefined) {
+          formData.append(key, form[key]);
+        }
       }
     });
 
-    // Add existing file URLs if they haven't been removed
-    formData.append("imageUrl", existingFiles.imageUrl || "");
-    formData.append("samplePdfUrl", existingFiles.samplePdfUrl || "");
-    formData.append("mainPdfUrl", existingFiles.mainPdfUrl || "");
+    // Handle image file
+    if (form.image) {
+      // New image uploaded
+      formData.append("image", form.image);
+    } else if (removedFiles.imageUrl) {
+      // Explicitly removed - send empty string
+      formData.append("imageUrl", "");
+      formData.append("removeImage", "true");
+    } else if (existingFiles.imageUrl) {
+      // Keep existing
+      formData.append("imageUrl", existingFiles.imageUrl);
+    }
+
+    // Handle sample PDF
+    if (form.samplePdf) {
+      formData.append("samplePdf", form.samplePdf);
+    } else if (removedFiles.samplePdfUrl) {
+      formData.append("samplePdfUrl", "");
+      formData.append("removeSamplePdf", "true");
+    } else if (existingFiles.samplePdfUrl) {
+      formData.append("samplePdfUrl", existingFiles.samplePdfUrl);
+    }
+
+    // Handle main PDF
+    if (form.mainPdf) {
+      formData.append("mainPdf", form.mainPdf);
+    } else if (removedFiles.mainPdfUrl) {
+      formData.append("mainPdfUrl", "");
+      formData.append("removeMainPdf", "true");
+    } else if (existingFiles.mainPdfUrl) {
+      formData.append("mainPdfUrl", existingFiles.mainPdfUrl);
+    }
 
     try {
-      const url = "/api/products";
+      const url = mode === "add" ? "/api/products" : `/api/products?id=${id}`;
       const method = mode === "add" ? "POST" : "PUT";
 
       const res = await fetch(url, {
@@ -569,3 +611,4 @@ const ProductForm = ({ mode }) => {
 };
 
 export default ProductForm;
+  

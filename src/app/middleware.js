@@ -1,5 +1,5 @@
 // ============================================
-// FILE: /middleware.js (COMBINED & FIXED)
+// FILE: /middleware.js (WITH REDIRECT INTEGRATION)
 // ============================================
 
 import { getToken } from "next-auth/jwt";
@@ -11,7 +11,73 @@ export async function middleware(request) {
   console.log("[MIDDLEWARE] Processing:", pathname);
 
   // ========================================
-  // 1. MAINTENANCE MODE CHECK (First Priority)
+  // 1. SKIP STATIC FILES & API ROUTES
+  // ========================================
+  const skipRedirectPaths = [
+    "/api/",
+    "/_next/",
+    "/static/",
+    "/favicon.ico",
+    "/admin",
+    "/dashboard",
+    "/auth",
+    "/maintenance",
+    "/unauthorized",
+  ];
+
+  const shouldSkipRedirect = skipRedirectPaths.some((path) =>
+    pathname.startsWith(path)
+  );
+
+  // ========================================
+  // 2. URL REDIRECT CHECK (Before Auth)
+  // ========================================
+  if (!shouldSkipRedirect) {
+    try {
+      const baseUrl = request.nextUrl.origin;
+      const redirectCheckUrl = `${baseUrl}/api/redirects/check?path=${encodeURIComponent(
+        pathname
+      )}`;
+
+      const redirectRes = await fetch(redirectCheckUrl, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+
+      if (redirectRes.ok) {
+        const redirectData = await redirectRes.json();
+
+        if (redirectData.redirect && redirectData.toUrl) {
+          console.log(
+            `[MIDDLEWARE] 🔀 Redirecting: ${pathname} → ${redirectData.toUrl}`
+          );
+
+          // Determine if it's an external or internal URL
+          const isExternal =
+            redirectData.toUrl.startsWith("http://") ||
+            redirectData.toUrl.startsWith("https://");
+
+          if (isExternal) {
+            // External redirect
+            return NextResponse.redirect(redirectData.toUrl, 301);
+          } else {
+            // Internal redirect
+            return NextResponse.redirect(
+              new URL(redirectData.toUrl, request.url),
+              301
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[MIDDLEWARE] Redirect check error:", err);
+      // Continue with normal flow if redirect check fails
+    }
+  }
+
+  // ========================================
+  // 3. MAINTENANCE MODE CHECK
   // ========================================
   const maintenanceExcluded = ["/admin", "/dashboard", "/api", "/maintenance"];
   const isMaintenanceExcluded = maintenanceExcluded.some((p) =>
@@ -39,7 +105,7 @@ export async function middleware(request) {
   }
 
   // ========================================
-  // 2. PUBLIC ROUTES (No Auth Required)
+  // 4. PUBLIC ROUTES (No Auth Required)
   // ========================================
   const publicRoutes = [
     "/auth",
@@ -58,6 +124,7 @@ export async function middleware(request) {
     "/api/categories",
     "/api/faqs",
     "/api/maintenance-page",
+    "/api/redirects",
     "/_next",
     "/favicon.ico",
   ];
@@ -72,7 +139,7 @@ export async function middleware(request) {
   }
 
   // ========================================
-  // 3. AUTH CHECK FOR PROTECTED ROUTES
+  // 5. AUTH CHECK FOR PROTECTED ROUTES
   // ========================================
   const token = await getToken({
     req: request,

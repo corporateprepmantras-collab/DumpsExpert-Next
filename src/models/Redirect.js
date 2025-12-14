@@ -1,37 +1,45 @@
 // models/Redirect.js
 import mongoose from "mongoose";
 
-const redirectSchema = new mongoose.Schema(
+const RedirectSchema = new mongoose.Schema(
   {
     fromUrl: {
       type: String,
-      required: true,
+      required: [true, "From URL is required"],
       unique: true,
       trim: true,
+      validate: {
+        validator: function(v) {
+          return v.startsWith('/');
+        },
+        message: 'From URL must start with /'
+      }
     },
     toUrl: {
       type: String,
-      required: true,
+      required: [true, "To URL is required"],
       trim: true,
     },
-    clicks: {
+    hits: {
       type: Number,
       default: 0,
     },
-    isActive: {
+    active: {
       type: Boolean,
       default: true,
     },
+    description: {
+      type: String,
+      default: "",
+    },
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true,
   }
 );
 
-// Add index for faster lookups
-redirectSchema.index({ fromUrl: 1 });
-redirectSchema.index({ isActive: 1 });
+// Indexes for faster lookups
+RedirectSchema.index({ fromUrl: 1, active: 1 });
+RedirectSchema.index({ active: 1 });
 
-const Redirect = mongoose.models.Redirect || mongoose.model("Redirect", redirectSchema);
-
-export default Redirect;
+export default mongoose.models.Redirect || mongoose.model("Redirect", RedirectSchema);

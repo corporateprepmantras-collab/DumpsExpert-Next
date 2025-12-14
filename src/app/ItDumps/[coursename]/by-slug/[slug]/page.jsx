@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import ProductPageLoading from "./loading";
 
-// Helper to get the correct base URL
+// Helper to get the correct base URLd
 function getBaseUrl() {
   // For server-side rendering
   if (typeof window === "undefined") {

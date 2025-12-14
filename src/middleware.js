@@ -1,5 +1,5 @@
 // ============================================
-// FILE: /middleware.js (COMBINED WITH REDIRECTS)
+// FILE: /middleware.js (COMBINED WITH REDIRECTS - FIXED)
 // ============================================
 
 import { getToken } from "next-auth/jwt";
@@ -11,7 +11,77 @@ export async function middleware(request) {
   console.log("[MIDDLEWARE] Processing:", pathname);
 
   // ========================================
-  // 1. MAINTENANCE MODE CHECK (First Priority)
+  // 1. SKIP STATIC FILES & SPECIAL PATHS FIRST
+  // ========================================
+  const alwaysSkip = [
+    "/_next/",
+    "/static/",
+    "/favicon.ico",
+    "/api/redirects", // Skip redirect API itself
+  ];
+
+  const shouldSkip = alwaysSkip.some((path) => pathname.startsWith(path));
+  if (shouldSkip) {
+    return NextResponse.next();
+  }
+
+  // ========================================
+  // 2. URL REDIRECT CHECK (EARLY - Before Everything)
+  // ========================================
+  // Only skip redirect check for admin/dashboard/auth routes
+  const skipRedirectRoutes = [
+    "/admin",
+    "/dashboard",
+    "/auth",
+    "/api/",
+    "/maintenance",
+    "/unauthorized",
+  ];
+  const shouldCheckRedirect = !skipRedirectRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (shouldCheckRedirect) {
+    try {
+      console.log("[REDIRECT] Checking path:", pathname);
+
+      const baseUrl = request.nextUrl.origin;
+      const redirectCheckUrl = `${baseUrl}/api/redirects/check?path=${encodeURIComponent(
+        pathname
+      )}`;
+
+      const redirectRes = await fetch(redirectCheckUrl, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+
+      if (redirectRes.ok) {
+        const redirectData = await redirectRes.json();
+
+        // Check if redirect exists
+        if (redirectData.redirect && redirectData.toUrl) {
+          const toUrl = redirectData.toUrl;
+          console.log("[REDIRECT] ✅ Redirecting:", pathname, "→", toUrl);
+
+          // Handle external vs internal redirects
+          if (toUrl.startsWith("http://") || toUrl.startsWith("https://")) {
+            // External redirect
+            return NextResponse.redirect(toUrl, 301);
+          } else {
+            // Internal redirect
+            return NextResponse.redirect(new URL(toUrl, request.url), 301);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[REDIRECT] Check error:", err);
+      // Continue if redirect check fails - don't block the request
+    }
+  }
+
+  // ========================================
+  // 3. MAINTENANCE MODE CHECK
   // ========================================
   const maintenanceExcluded = ["/admin", "/dashboard", "/api", "/maintenance"];
   const isMaintenanceExcluded = maintenanceExcluded.some((p) =>
@@ -39,7 +109,7 @@ export async function middleware(request) {
   }
 
   // ========================================
-  // 2. PUBLIC ROUTES (No Auth Required)
+  // 4. PUBLIC ROUTES (No Auth Required)
   // ========================================
   const publicRoutes = [
     "/auth",
@@ -58,7 +128,7 @@ export async function middleware(request) {
     "/api/categories",
     "/api/faqs",
     "/api/maintenance-page",
-    "/api/redirects", // Add redirect API to public routes
+    "/api/redirects",
     "/_next",
     "/favicon.ico",
   ];
@@ -73,49 +143,7 @@ export async function middleware(request) {
   }
 
   // ========================================
-  // 3. URL REDIRECT CHECK (Before Auth Check)
-  // ========================================
-  // Skip redirect check for admin and dashboard routes
-  const skipRedirectCheck = ["/admin", "/dashboard", "/api"];
-  const shouldCheckRedirect = !skipRedirectCheck.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (shouldCheckRedirect) {
-    try {
-      console.log("[REDIRECT CHECK] Checking path:", pathname);
-
-      const redirectCheckUrl = new URL("/api/redirects/check", request.url);
-      redirectCheckUrl.searchParams.set("path", pathname);
-
-      const redirectRes = await fetch(redirectCheckUrl, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (redirectRes.ok) {
-        const redirectData = await redirectRes.json();
-
-        if (redirectData.success && redirectData.redirect) {
-          const toUrl = redirectData.redirect.toUrl;
-          console.log("[REDIRECT] ✅ Redirecting:", pathname, "→", toUrl);
-
-          // Handle external vs internal redirects
-          if (toUrl.startsWith("http://") || toUrl.startsWith("https://")) {
-            return NextResponse.redirect(toUrl);
-          } else {
-            return NextResponse.redirect(new URL(toUrl, request.url));
-          }
-        }
-      }
-    } catch (err) {
-      console.error("[REDIRECT CHECK] Error:", err);
-      // Continue if redirect check fails
-    }
-  }
-
-  // ========================================
-  // 4. AUTH CHECK FOR PROTECTED ROUTES
+  // 5. AUTH CHECK FOR PROTECTED ROUTES
   // ========================================
   const token = await getToken({
     req: request,
