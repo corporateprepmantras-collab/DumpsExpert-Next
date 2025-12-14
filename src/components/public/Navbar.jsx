@@ -6,17 +6,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import dumpslogo from "../../assets/logo/premantras_logo.png";
 import NavbarSearch from "./NavbarSearch";
-import { ShoppingCart, Menu, X } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ShoppingCart, Menu, X, ChevronDown, User } from "lucide-react";
 import useCartStore from "@/store/useCartStore";
 
 const navlinks = [
@@ -35,33 +25,28 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [dropdownData, setDropdownData] = useState({ ItDumps: [], blogs: [] });
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // ✅ SAME AS BEFORE: Subscribe to cart changes
+  // Subscribe to cart changes
   useEffect(() => {
-    // Initial cart count
     setCartItemCount(useCartStore.getState().cartItems.length);
-
-    // Subscribe to cart changes
     const unsubscribe = useCartStore.subscribe((state) =>
       setCartItemCount(state.cartItems.length)
     );
-
     return () => unsubscribe();
   }, []);
 
-  // ✅ OPTIMIZED: Fetch categories with sessionStorage caching (SAME UI)
+  // Fetch categories with sessionStorage caching
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // ✅ NEW: Check sessionStorage first (instant load)
         const cached = sessionStorage.getItem("navbar_categories_cache");
         if (cached) {
           console.log("📦 Categories from cache");
           setDropdownData(JSON.parse(cached));
-          return; // Don't fetch if cached
+          return;
         }
 
-        // ✅ OPTIMIZED: Parallel requests (same as before)
         const [blogRes, productRes] = await Promise.all([
           fetch("/api/blogs/blog-categories"),
           fetch("/api/product-categories"),
@@ -70,20 +55,16 @@ export default function Navbar() {
         const blogData = blogRes.ok ? await blogRes.json() : [];
         const productData = productRes.ok ? await productRes.json() : [];
 
-        // ✅ SAME: Data transformation
         const categories = {
           blogs: blogData.map((c) => c.category),
           ItDumps: productData.map((p) => p.name),
         };
 
         setDropdownData(categories);
-
-        // ✅ NEW: Cache for this session
         sessionStorage.setItem(
           "navbar_categories_cache",
           JSON.stringify(categories)
         );
-
         console.log("🌐 Categories fetched and cached");
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -91,9 +72,9 @@ export default function Navbar() {
     };
 
     fetchCategories();
-  }, []); // SAME: Only run once
+  }, []);
 
-  // ✅ SAME: Fetch user data (no changes)
+  // Fetch user data
   useEffect(() => {
     if (status === "authenticated" && session?.user?.email) {
       const fetchUserData = async () => {
@@ -110,7 +91,7 @@ export default function Navbar() {
     }
   }, [status, session]);
 
-  // ✅ SAME: Logout handler (no changes)
+  // Logout handler
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -120,7 +101,7 @@ export default function Navbar() {
     }
   };
 
-  // ✅ SAME: Dashboard redirect logic (no changes)
+  // Dashboard redirect logic
   const getDashboardPath = () => {
     if (!userData) return "/dashboard/guest";
     const { role, subscription } = userData;
@@ -130,7 +111,17 @@ export default function Navbar() {
     return "/dashboard/guest";
   };
 
-  // ✅ SAME: All UI exactly the same as before
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setUserMenuOpen(false);
+    };
+    if (userMenuOpen) {
+      document.addEventListener("click", handleClickOutside);
+    }
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [userMenuOpen]);
+
   return (
     <>
       <nav className="bg-white fixed w-full shadow z-50 flex justify-between items-center py-2 lg:px-28 px-4">
@@ -163,10 +154,12 @@ export default function Navbar() {
                   className="hover:text-gray-500 flex items-center gap-1"
                 >
                   {item.label}
-                  {hasDropdown && <span className="text-sm">&#9662;</span>}
+                  {hasDropdown && (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
                 </Link>
                 {hasDropdown && activeDropdown === item.dropdownKey && (
-                  <ul className="absolute top-full left-0 bg-white border rounded-lg shadow-lg w-48 z-50">
+                  <ul className="absolute top-full left-0 bg-white border rounded-lg shadow-lg w-48 z-50 mt-2">
                     {dropdownData[item.dropdownKey].map((sub, i) => (
                       <li key={i}>
                         <Link
@@ -175,7 +168,7 @@ export default function Navbar() {
                               ? "ItDumps"
                               : "blogsPages"
                           }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg"
                         >
                           {sub}
                         </Link>
@@ -197,7 +190,7 @@ export default function Navbar() {
 
           {/* Cart with Counter */}
           <Link href="/cart" className="relative">
-            <ShoppingCart className="hover:text-gray-500" />
+            <ShoppingCart className="hover:text-gray-500 cursor-pointer" />
             {cartItemCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                 {cartItemCount}
@@ -207,49 +200,67 @@ export default function Navbar() {
 
           {/* Authenticated User */}
           {status === "authenticated" ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="p-0 h-auto">
-                  <Avatar>
-                    <AvatarImage
-                      src={
-                        userData?.profileImage ||
-                        "https://via.placeholder.com/40"
-                      }
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUserMenuOpen(!userMenuOpen);
+                }}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                  {userData?.profileImage ? (
+                    <img
+                      src={userData.profileImage}
+                      alt={userData?.name || "User"}
+                      className="w-full h-full object-cover"
                     />
-                    <AvatarFallback>
-                      {userData?.name?.charAt(0) || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64" align="end">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span className="font-semibold">
-                      {userData?.name || session?.user?.email}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {userData?.email}
-                    </span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href={getDashboardPath()}>Dashboard</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={handleLogout}
+                  ) : (
+                    <User className="w-6 h-6 text-gray-500" />
+                  )}
+                </div>
+              </button>
+
+              {/* User Dropdown Menu */}
+              {userMenuOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-64 bg-white border rounded-lg shadow-lg z-[9999]"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <div className="px-4 py-3 border-b">
+                    <div className="font-semibold">
+                      {userData?.name || session?.user?.email}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {userData?.email}
+                    </div>
+                  </div>
+
+                  <div className="py-1">
+                    <Link
+                      href={getDashboardPath()}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <Link
               href="/auth/signin"
-              className="hidden lg:inline-block bg-[#113d48] text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+              className="hidden lg:inline-block bg-[#113d48] text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
             >
               Login / Register
             </Link>
@@ -257,13 +268,12 @@ export default function Navbar() {
 
           {/* Mobile Menu Toggle */}
           <div className="lg:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={() => setIsOpen(!isOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               {isOpen ? <X size={30} /> : <Menu size={30} />}
-            </Button>
+            </button>
           </div>
         </div>
       </nav>
@@ -271,7 +281,9 @@ export default function Navbar() {
       {/* Mobile Nav Overlay */}
       <div
         className={`fixed top-0 left-0 h-full w-full bg-black/70 z-40 transition-opacity duration-200 ${
-          isOpen ? "block opacity-100" : "hidden opacity-0"
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         } lg:hidden`}
         onClick={() => setIsOpen(false)}
       ></div>
@@ -282,10 +294,13 @@ export default function Navbar() {
           isOpen ? "translate-x-0" : "translate-x-full"
         } lg:hidden flex flex-col pt-8`}
       >
-        <div className="flex justify-end ">
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+        <div className="flex justify-end">
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors mr-4"
+          >
             <X size={30} />
-          </Button>
+          </button>
         </div>
         <ul className="flex flex-col gap-2 px-6 py-2 font-semibold">
           {navlinks.map((item, index) => {
@@ -303,7 +318,7 @@ export default function Navbar() {
                   </Link>
                   {hasDropdown && (
                     <button
-                      className="p-1"
+                      className="p-2"
                       onClick={() =>
                         setActiveDropdown(
                           activeDropdown === item.dropdownKey
@@ -312,7 +327,13 @@ export default function Navbar() {
                         )
                       }
                     >
-                      <span className="text-sm">&#9662;</span>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform ${
+                          activeDropdown === item.dropdownKey
+                            ? "rotate-180"
+                            : ""
+                        }`}
+                      />
                     </button>
                   )}
                 </div>
@@ -326,7 +347,7 @@ export default function Navbar() {
                               ? "ItDumps"
                               : "blogsPages"
                           }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg"
                           onClick={() => setIsOpen(false)}
                         >
                           {sub}
@@ -343,7 +364,7 @@ export default function Navbar() {
           <NavbarSearch hideOnLarge={true} />
           <Link
             href="/cart"
-            className="flex items-center gap-2 py-2"
+            className="flex items-center gap-2 py-2 hover:text-gray-500"
             onClick={() => setIsOpen(false)}
           >
             <ShoppingCart />
@@ -357,7 +378,7 @@ export default function Navbar() {
           {status === "authenticated" ? (
             <Link
               href={getDashboardPath()}
-              className="py-2"
+              className="py-2 hover:text-gray-500"
               onClick={() => setIsOpen(false)}
             >
               Dashboard
@@ -365,7 +386,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/auth/signin"
-              className="bg-[#113d48] text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+              className="bg-[#113d48] text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-center transition-colors"
               onClick={() => setIsOpen(false)}
             >
               Login / Register
