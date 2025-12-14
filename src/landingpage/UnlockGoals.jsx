@@ -141,11 +141,11 @@ const WhyChooseSection = () => {
         </div>
 
         {/* Scrollable Cards Section */}
-        <div className="md:w-1/2 bg-white">
+        <div className="md:w-1/2 bg-white h-screen overflow-y-scroll snap-y snap-mandatory">
           {cardData.map((card, index) => (
             <section
               key={index}
-              className="h-screen flex flex-col items-center justify-center px-8 text-center border-b border-gray-100 last:border-b-0"
+              className="h-screen snap-start flex flex-col items-center justify-center px-8 text-center"
             >
               <div className="relative mb-8">
                 <div className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
