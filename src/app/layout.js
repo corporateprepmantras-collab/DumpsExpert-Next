@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Inter, Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/public/Navbar";
 import Providers from "@/components/providers";
@@ -11,22 +11,6 @@ const inter = Inter({
   preload: true,
   variable: "--font-inter",
   weight: ["400", "500", "600", "700"],
-});
-
-const geistSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-  display: "swap",
-  preload: true,
-  weight: ["400", "500"],
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-  display: "swap",
-  preload: false,
-  weight: ["400"],
 });
 
 // ✅ OPTIMIZED: Lazy load Footer (below the fold, not critical)
@@ -130,7 +114,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} scroll-smooth`}
+      className={`${inter.variable}  scroll-smooth`}
       suppressHydrationWarning
     >
       <head>
