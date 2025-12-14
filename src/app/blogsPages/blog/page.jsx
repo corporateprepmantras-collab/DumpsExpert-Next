@@ -1,4 +1,4 @@
-import BlogDetail from "./BlogDetail";
+import BlogDetail from "./[slug]/BlogDetail";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
