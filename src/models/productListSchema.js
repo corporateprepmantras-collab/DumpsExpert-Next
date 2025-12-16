@@ -1,48 +1,59 @@
-// models/Product.js
-import mongoose from 'mongoose';
+// models/productListSchema.js
+import mongoose from "mongoose";
 
 const productListSchema = new mongoose.Schema(
   {
-    sapExamCode: String,
-    imageUrl: String,
-    title: String,
-    price: String,
-    category: String,
-    status: String,
-    action: String,
-    samplePdfUrl: { type: String, default: '' },
-    mainPdfUrl: { type: String, default: '' },
+    sapExamCode: { type: String, default: "" },
+    imageUrl: { type: String, default: "" },
+    title: { type: String, default: "" },
+    price: { type: String, default: "" },
+    category: { type: String, default: "" },
+    status: { type: String, default: "" },
+    action: { type: String, default: "" },
+    samplePdfUrl: { type: String, default: "" },
+    mainPdfUrl: { type: String, default: "" },
 
-    dumpsPriceInr: String,
-    dumpsPriceUsd: String,
-    dumpsMrpInr: String,
-    dumpsMrpUsd: String,
+    dumpsPriceInr: { type: String, default: "" },
+    dumpsPriceUsd: { type: String, default: "" },
+    dumpsMrpInr: { type: String, default: "" },
+    dumpsMrpUsd: { type: String, default: "" },
 
-    onlinePriceInr: String,
-    onlinePriceUsd: String,
-    onlineMrpInr: String,
-    onlineMrpUsd: String,
+    onlinePriceInr: { type: String, default: "" },
+    onlinePriceUsd: { type: String, default: "" },
+    onlineMrpInr: { type: String, default: "" },
+    onlineMrpUsd: { type: String, default: "" },
 
-    comboPriceInr: String,
-    comboPriceUsd: String,
-    comboMrpInr: String,
-    comboMrpUsd: String,
+    comboPriceInr: { type: String, default: "" },
+    comboPriceUsd: { type: String, default: "" },
+    comboMrpInr: { type: String, default: "" },
+    comboMrpUsd: { type: String, default: "" },
 
-    sku: String,
-    longDescription: String,
-    Description: String,
-    slug: String,
-    metaTitle: String,
-    metaKeywords: String,
-    metaDescription: String,
-    schema: String,
+    sku: { type: String, default: "" },
+    longDescription: { type: String, default: "" },
+    Description: { type: String, default: "" },
+    slug: { type: String, default: "" },
+    metaTitle: { type: String, default: "" },
+    metaKeywords: { type: String, default: "" },
+    metaDescription: { type: String, default: "" },
+    schema: { type: String, default: "" },
 
-    faqs: [
-      {
-        question: { type: String, required: true },
-        answer: { type: String, required: true },
-      },
-    ],
+    // New exam information fields
+    examCode: { type: String, default: "" },
+    examName: { type: String, default: "" },
+    totalQuestions: { type: String, default: "" },
+    passingScore: { type: String, default: "" },
+    duration: { type: String, default: "" },
+    examLastUpdated: { type: Date, default: null },
+
+    faqs: {
+      type: [
+        {
+          question: { type: String, required: true },
+          answer: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
 
     lastUpdatedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -53,6 +64,10 @@ const productListSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Prevent model overwrite in development (for Next.js hot reload)
-const Product = mongoose.models.Product || mongoose.model('Product', productListSchema);
+// Clear any existing model to prevent conflicts
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+
+const Product = mongoose.model("Product", productListSchema);
 export default Product;

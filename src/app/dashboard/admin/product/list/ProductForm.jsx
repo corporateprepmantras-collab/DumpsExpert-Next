@@ -35,6 +35,13 @@ const ProductForm = ({ mode }) => {
     metaKeywords: "",
     metaDescription: "",
     schema: "",
+    // New exam information fields
+    examCode: "",
+    examName: "",
+    totalQuestions: "",
+    passingScore: "",
+    duration: "",
+    examLastUpdated: "",
   });
 
   const [existingFiles, setExistingFiles] = useState({
@@ -43,7 +50,6 @@ const ProductForm = ({ mode }) => {
     mainPdfUrl: "",
   });
 
-  // Track which files have been explicitly removed
   const [removedFiles, setRemovedFiles] = useState({
     imageUrl: false,
     samplePdfUrl: false,
@@ -54,7 +60,6 @@ const ProductForm = ({ mode }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch categories
   useEffect(() => {
     fetch("/api/product-categories")
       .then((res) => res.json())
@@ -62,7 +67,6 @@ const ProductForm = ({ mode }) => {
       .catch(() => setCategories([]));
   }, []);
 
-  // Load product data in edit mode
   useEffect(() => {
     if (mode === "edit" && id) {
       fetch(`/api/products?id=${id}`)
@@ -79,13 +83,15 @@ const ProductForm = ({ mode }) => {
               image: null,
               samplePdf: null,
               mainPdf: null,
+              examLastUpdated: p.examLastUpdated
+                ? new Date(p.examLastUpdated).toISOString().split("T")[0]
+                : "",
             }));
             setExistingFiles({
               imageUrl: p.imageUrl || "",
               samplePdfUrl: p.samplePdfUrl || "",
               mainPdfUrl: p.mainPdfUrl || "",
             });
-            // Reset removed files tracker
             setRemovedFiles({
               imageUrl: false,
               samplePdfUrl: false,
@@ -100,22 +106,16 @@ const ProductForm = ({ mode }) => {
     }
   }, [mode, id]);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handler to remove an existing file
   const handleRemoveExistingFile = (field) => {
-    // Clear the existing file URL in local state
     setExistingFiles((prev) => ({ ...prev, [field]: "" }));
-
-    // Mark this file as removed
     setRemovedFiles((prev) => ({ ...prev, [field]: true }));
   };
 
-  // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -125,13 +125,11 @@ const ProductForm = ({ mode }) => {
       return;
     }
 
-    // Validate image for new products
     if (mode === "add" && !form.image) {
       setError("Product image is required");
       return;
     }
 
-    // For edit mode, check if image exists (either existing or new)
     if (mode === "edit" && !form.image && !existingFiles.imageUrl) {
       setError("Product image is required");
       return;
@@ -141,7 +139,6 @@ const ProductForm = ({ mode }) => {
 
     const formData = new FormData();
 
-    // Append all form fields (except file fields)
     Object.keys(form).forEach((key) => {
       if (key !== "image" && key !== "samplePdf" && key !== "mainPdf") {
         if (form[key] !== null && form[key] !== undefined) {
@@ -150,20 +147,15 @@ const ProductForm = ({ mode }) => {
       }
     });
 
-    // Handle image file
     if (form.image) {
-      // New image uploaded
       formData.append("image", form.image);
     } else if (removedFiles.imageUrl) {
-      // Explicitly removed - send empty string
       formData.append("imageUrl", "");
       formData.append("removeImage", "true");
     } else if (existingFiles.imageUrl) {
-      // Keep existing
       formData.append("imageUrl", existingFiles.imageUrl);
     }
 
-    // Handle sample PDF
     if (form.samplePdf) {
       formData.append("samplePdf", form.samplePdf);
     } else if (removedFiles.samplePdfUrl) {
@@ -173,7 +165,6 @@ const ProductForm = ({ mode }) => {
       formData.append("samplePdfUrl", existingFiles.samplePdfUrl);
     }
 
-    // Handle main PDF
     if (form.mainPdf) {
       formData.append("mainPdf", form.mainPdf);
     } else if (removedFiles.mainPdfUrl) {
@@ -207,7 +198,6 @@ const ProductForm = ({ mode }) => {
     }
   };
 
-  // Delete product
   const handleDelete = async () => {
     if (!id) return;
 
@@ -235,19 +225,16 @@ const ProductForm = ({ mode }) => {
 
   return (
     <div className="max-w-4xl pt-20 mx-auto p-6 bg-white rounded shadow">
-      {/* Header */}
       <h2 className="text-2xl font-bold mb-6">
         {mode === "add" ? "Add New Product" : "Edit Product"}
       </h2>
 
-      {/* Error Display */}
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded border border-red-300">
           {error}
         </div>
       )}
 
-      {/* Main Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -301,6 +288,80 @@ const ProductForm = ({ mode }) => {
               required
               className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+        </div>
+
+        {/* Exam Information Section */}
+        <div className="border-t pt-4">
+          <h3 className="text-lg font-semibold mb-3 text-gray-800">
+            Exam Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-1 text-gray-700">Exam Code</label>
+              <input
+                name="examCode"
+                value={form.examCode}
+                onChange={handleChange}
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 text-gray-700">Exam Name</label>
+              <input
+                name="examName"
+                value={form.examName}
+                onChange={handleChange}
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 text-gray-700">
+                Total Questions
+              </label>
+              <input
+                name="totalQuestions"
+                type="number"
+                value={form.totalQuestions}
+                onChange={handleChange}
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 text-gray-700">Passing Score</label>
+              <input
+                name="passingScore"
+                value={form.passingScore}
+                onChange={handleChange}
+                placeholder="e.g., 70% or 700/1000"
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 text-gray-700">Duration</label>
+              <input
+                name="duration"
+                value={form.duration}
+                onChange={handleChange}
+                placeholder="e.g., 90 minutes"
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 text-gray-700">Last Updated</label>
+              <input
+                name="examLastUpdated"
+                type="date"
+                value={form.examLastUpdated}
+                onChange={handleChange}
+                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
         </div>
 
@@ -424,7 +485,6 @@ const ProductForm = ({ mode }) => {
             File Uploads
           </h3>
           <div className="space-y-6">
-            {/* Product Image */}
             <div>
               <label className="block mb-2 font-medium text-gray-700">
                 Product Image*
@@ -439,7 +499,6 @@ const ProductForm = ({ mode }) => {
               />
             </div>
 
-            {/* Sample PDF */}
             <div>
               <label className="block mb-2 font-medium text-gray-700">
                 Sample PDF
@@ -456,7 +515,6 @@ const ProductForm = ({ mode }) => {
               />
             </div>
 
-            {/* Main PDF */}
             <div>
               <label className="block mb-2 font-medium text-gray-700">
                 Main PDF
@@ -611,4 +669,3 @@ const ProductForm = ({ mode }) => {
 };
 
 export default ProductForm;
-  

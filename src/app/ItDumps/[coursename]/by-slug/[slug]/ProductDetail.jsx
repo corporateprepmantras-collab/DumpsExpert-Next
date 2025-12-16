@@ -8,6 +8,11 @@ import {
   FaStar,
   FaUser,
   FaExclamationTriangle,
+  FaClipboardList,
+  FaClock,
+  FaTrophy,
+  FaFileAlt,
+  FaCalendarAlt,
 } from "react-icons/fa";
 import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
@@ -142,7 +147,6 @@ async function fetchReviews(productId) {
     const response = await fetch(`/api/reviews?productId=${productId}`);
     const data = await response.json();
     const all = data.data || [];
-    // Client-side: only show published reviews on product page
     return all.filter((r) => r.status === "Publish");
   } catch (error) {
     console.error("Error fetching reviews:", error);
@@ -189,28 +193,16 @@ export default function ProductDetailsPage() {
   const [activeIndex, setActiveIndex] = useState(null);
   const [isLoadingExams, setIsLoadingExams] = useState(true);
 
-  // Check if product is available
   const productAvailable = isProductAvailable(product);
-  useEffect(() => {
-    if (product) {
-      console.log("=== PRODUCT AVAILABILITY CHECK ===");
-      console.log("Product Title:", product.title);
-      console.log("mainPdfUrl value:", product.mainPdfUrl);
-      console.log("mainPdfUrl type:", typeof product.mainPdfUrl);
-      console.log("Is Available:", productAvailable);
-      console.log("================================");
-    }
-  }, [product]);
+
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
 
-    // Check if mainPdfUrl exists for PDF and Combo types
     if ((type === "regular" || type === "combo") && !productAvailable) {
       toast.error("⚠️ This product is currently unavailable (PDF not found)");
       return;
     }
 
-    // Validate pricing
     if (
       type === "online" &&
       examPrices.priceInr === 0 &&
@@ -231,7 +223,6 @@ export default function ProductDetailsPage() {
 
     const examDetails = exams.length > 0 ? exams[0] : {};
 
-    // Build complete item with ALL required fields
     let item = {
       _id: product._id,
       productId: product._id,
@@ -239,12 +230,8 @@ export default function ProductDetailsPage() {
       type: type,
       title: product.title,
       name: product.title,
-
-      // PDF URLs - CRITICAL for orders
       mainPdfUrl: product.mainPdfUrl || "",
       samplePdfUrl: product.samplePdfUrl || "",
-
-      // Pricing
       dumpsPriceInr: toNum(product.dumpsPriceInr),
       dumpsPriceUsd: toNum(product.dumpsPriceUsd),
       dumpsMrpInr: toNum(product.dumpsMrpInr),
@@ -257,8 +244,6 @@ export default function ProductDetailsPage() {
       examPriceUsd: examPrices.priceUsd,
       examMrpInr: examPrices.mrpInr,
       examMrpUsd: examPrices.mrpUsd,
-
-      // Product details
       imageUrl: product.imageUrl || "",
       slug: product.slug,
       category: product.category,
@@ -284,7 +269,6 @@ export default function ProductDetailsPage() {
       quantity: 1,
     };
 
-    // Set type-specific pricing and names
     switch (type) {
       case "regular":
         item.title = `${product.title} [PDF]`;
@@ -354,7 +338,6 @@ export default function ProductDetailsPage() {
 
         setIsLoadingExams(false);
 
-        // Load reviews from backend for this product (no mocks)
         const fetchedReviews = productData?._id
           ? await fetchReviews(productData._id)
           : [];
@@ -399,13 +382,11 @@ export default function ProductDetailsPage() {
   const handleAddReview = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!reviewForm.name || !reviewForm.comment || !reviewForm.rating) {
       toast.error("Please fill all fields and provide a rating");
       return;
     }
 
-    // Submit review
     const reviewData = {
       productId: product._id,
       name: reviewForm.name,
@@ -419,11 +400,9 @@ export default function ProductDetailsPage() {
       toast.success("Review submitted successfully 🎉");
       setReviewForm({ name: "", comment: "", rating: 0 });
 
-      // Refresh reviews
       const updatedReviews = await fetchReviews(product._id);
       setReviews(updatedReviews);
 
-      // Recalculate average rating
       if (updatedReviews.length > 0) {
         const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
         setAvgRating((total / updatedReviews.length).toFixed(1));
@@ -513,7 +492,103 @@ export default function ProductDetailsPage() {
             Category: <strong>{product.category}</strong>
           </p>
 
-          {!isLoadingExams && hasOnlineExam && exams.length > 0 && (
+          {/* NEW: Exam Information Card */}
+          {(product.examCode ||
+            product.examName ||
+            product.totalQuestions ||
+            product.passingScore ||
+            product.duration ||
+            product.examLastUpdated) && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <h3 className="font-semibold text-base mb-3 text-blue-900 flex items-center gap-2">
+                <FaFileAlt className="text-blue-600" />
+                Exam Information
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {product.examCode && (
+                  <div className="flex items-start gap-2">
+                    <FaClipboardList className="text-blue-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-600">Exam Code</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {product.examCode}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {product.examName && (
+                  <div className="flex items-start gap-2">
+                    <FaFileAlt className="text-blue-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-600">Exam Name</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {product.examName}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {product.totalQuestions && (
+                  <div className="flex items-start gap-2">
+                    <FaClipboardList className="text-blue-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-600">Total Questions</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {product.totalQuestions}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {product.passingScore && (
+                  <div className="flex items-start gap-2">
+                    <FaTrophy className="text-yellow-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-600">Passing Score</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {product.passingScore}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {product.duration && (
+                  <div className="flex items-start gap-2">
+                    <FaClock className="text-green-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-600">Duration</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {product.duration}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {product.examLastUpdated && (
+                  <div className="flex items-start gap-2">
+                    <FaCalendarAlt className="text-purple-600 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-600">Last Updated</p>
+                      <p className="text-sm font-semibold text-gray-800">
+                        {new Date(product.examLastUpdated).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* {!isLoadingExams && hasOnlineExam && exams.length > 0 && (
             <div className="pt-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
               <p className="font-semibold text-sm md:text-base mb-2">
                 📚 Online Exam Available
@@ -535,7 +610,7 @@ export default function ProductDetailsPage() {
                 </p>
               </div>
             </div>
-          )}
+          )} */}
 
           {avgRating && (
             <div className="flex items-center gap-2 flex-wrap">
@@ -765,7 +840,7 @@ export default function ProductDetailsPage() {
         </div>
       </div>
 
-      {/* Full Width Sections Below - Normal Scroll */}
+      {/* Full Width Sections Below */}
       <div className="container mx-auto px-4 my-10">
         <h2 className="text-lg font-semibold mb-2">Detailed Overview:</h2>
         <div
@@ -835,7 +910,6 @@ function ReviewsSection({
   handleAddReview,
   isLoading = false,
 }) {
-  // Filter only published reviews for display
   const publishedReviews = reviews.filter((r) => r.status === "Publish");
 
   return (
@@ -861,7 +935,6 @@ function ReviewsSection({
                   key={r._id || i}
                   className="border rounded-lg p-4 shadow-sm bg-white hover:shadow-md transition-shadow"
                 >
-                  {/* Star Rating */}
                   <div className="flex items-center gap-1 mb-2">
                     {[...Array(5)].map((_, idx) => (
                       <FaStar
@@ -876,17 +949,14 @@ function ReviewsSection({
                     </span>
                   </div>
 
-                  {/* Customer Name */}
                   <p className="font-semibold text-gray-800 mb-1">
                     {r.customer || r.name || "Anonymous"}
                   </p>
 
-                  {/* Comment */}
                   <p className="text-gray-700 text-sm leading-relaxed mb-2">
                     {r.comment}
                   </p>
 
-                  {/* Date */}
                   <p className="text-xs text-gray-400">
                     {new Date(r.createdAt || r.date).toLocaleDateString(
                       "en-US",
@@ -903,7 +973,6 @@ function ReviewsSection({
           )}
         </div>
 
-        {/* Show total count */}
         {!isLoading && publishedReviews.length > 0 && (
           <p className="text-sm text-gray-500 mt-3 text-center">
             Showing {publishedReviews.length} review
@@ -912,11 +981,9 @@ function ReviewsSection({
         )}
       </div>
 
-      {/* Review Form */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Write a Review</h2>
         <div className="grid gap-4">
-          {/* Name Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Your Name *
@@ -932,7 +999,6 @@ function ReviewsSection({
             />
           </div>
 
-          {/* Rating */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Rating *
@@ -959,7 +1025,6 @@ function ReviewsSection({
             </div>
           </div>
 
-          {/* Comment Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Your Review *
@@ -976,7 +1041,6 @@ function ReviewsSection({
             />
           </div>
 
-          {/* Submit Button */}
           <button
             onClick={handleAddReview}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
@@ -984,7 +1048,6 @@ function ReviewsSection({
             Submit Review
           </button>
 
-          {/* Info Message */}
           <p className="text-xs text-gray-500 text-center">
             Your review will be published after admin approval
           </p>
