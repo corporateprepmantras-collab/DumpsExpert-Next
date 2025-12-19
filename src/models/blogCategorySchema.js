@@ -2,85 +2,28 @@ import mongoose from "mongoose";
 
 const blogCategorySchema = new mongoose.Schema(
   {
-    sectionName: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    category: {
-      type: String,
-      required: true,
-    },
-    language: {
-      type: String,
-      required: true,
-      trim: true,
-      enum: ["en", "es", "fr", "hi"],
-    },
-    slug: {
-      type: String,
-      required: true,
-      trim: true,
-      unique: true,
-    },
-    imageUrl: {
-      type: String,
-      required: true,
-    },
-    imagePublicId: {
-      type: String,
-    },
-    metaTitle: {
-      type: String,
-      required: true,
-    },
-    metaKeywords: {
-      type: String,
-      required: true,
-    },
-    metaDescription: {
-      type: String,
-      required: true,
-    },
-    schema: {
-      type: String,
-      default: "{}",
-      validate: {
-        validator: function (v) {
-          try {
-            JSON.parse(v);
-            return true;
-          } catch {
-            return false;
-          }
-        },
-        message: "Invalid JSON format",
-      },
-    },
-    openGraphTitle: {
-      type: String,
-      default: "",
-    },
-    openGraphDescription: {
-      type: String,
-      default: "",
-    },
-    openGraphImage: {
-      type: String,
-      default: "",
-    },
-    twitterTitle: {
-      type: String,
-      default: "",
-    },
-    twitterDescription: {
-      type: String,
-      default: "",
-    },
-    twitterImage: {
-      type: String,
-      default: "",
-    },
+    sectionName: String,
+    category: String,
+    language: String,
+    slug: String,
+
+    imageUrl: String,
+    imagePublicId: String,
+
+    metaTitle: String,
+    metaKeywords: String,
+    metaDescription: String,
+
+    // Store ANY text (JSON or normal text)
+    schema: String,
+
+    openGraphTitle: String,
+    openGraphDescription: String,
+    openGraphImage: String,
+
+    twitterTitle: String,
+    twitterDescription: String,
+    twitterImage: String,
   },
   { timestamps: true }
 );
