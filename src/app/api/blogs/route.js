@@ -4,13 +4,16 @@ import { Blog } from "@/models";
 import { uploadToCloudinaryBlog } from "@/lib/cloudinary";
 import { serializeMongoArray, serializeMongoDoc } from "@/lib/mongoHelpers";
 
+/* ===========================
+   GET: List Blogs
+=========================== */
 export async function GET(request) {
   try {
     await connectMongoDB();
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page")) || 1;
-    const limit = parseInt(searchParams.get("limit")) || 10;
+    const page = Number(searchParams.get("page")) || 1;
+    const limit = Number(searchParams.get("limit")) || 10;
     const category = searchParams.get("category");
     const search = searchParams.get("search");
 
@@ -37,70 +40,66 @@ export async function GET(request) {
       .lean();
 
     const total = await Blog.countDocuments(query);
-    const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
       data: serializeMongoArray(blogs),
-      totalPages,
-      currentPage: page,
       total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
     });
   } catch (error) {
-    console.error("❌ /api/blogs error:", error);
+    console.error("❌ GET /api/blogs error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+/* ===========================
+   POST: Create Blog
+   (NO VALIDATION)
+=========================== */
 export async function POST(request) {
   try {
     await connectMongoDB();
-
     const formData = await request.formData();
+
+    let imageUrl = "";
+    let imagePublicId = "";
+
     const image = formData.get("image");
 
-    if (!image) {
-      return NextResponse.json({ error: "Image is required" }, { status: 400 });
+    // upload ONLY if image exists
+    if (image && typeof image === "object") {
+      const uploadResult = await uploadToCloudinaryBlog(image);
+      imageUrl = uploadResult?.secure_url || "";
+      imagePublicId = uploadResult?.public_id || "";
     }
-
-    const slug = formData.get("slug");
-
-    // Slug Regex Validation
-    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-    if (!slugRegex.test(slug)) {
-      return NextResponse.json(
-        {
-          error:
-            "Invalid slug format. Use only lowercase letters, numbers, and hyphens.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const uploadResult = await uploadToCloudinaryBlog(image);
 
     const blogData = {
       title: formData.get("title"),
       content: formData.get("content"),
       category: formData.get("category"),
-      slug,
-      imageUrl: uploadResult.secure_url,
-      imagePublicId: uploadResult.public_id,
+      slug: formData.get("slug"),
+
+      imageUrl,
+      imagePublicId,
+
       status: formData.get("status"),
+
       metaTitle: formData.get("metaTitle"),
       metaKeywords: formData.get("metaKeywords"),
       metaDescription: formData.get("metaDescription"),
-      schema: formData.get("schema") || "{}",
+
+      schema: formData.get("schema"),
     };
 
-    const blog = new Blog(blogData);
-    await blog.save();
+    const blog = await Blog.create(blogData);
 
     return NextResponse.json(
       { data: serializeMongoDoc(blog.toObject()) },
       { status: 201 }
     );
   } catch (error) {
-    console.error("❌ /api/blogs POST error:", error);
+    console.error("❌ POST /api/blogs error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

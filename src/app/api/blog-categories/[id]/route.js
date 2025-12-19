@@ -3,12 +3,14 @@ import { connectMongoDB } from "@/lib/mongo";
 import BlogCategory from "@/models/blogCategorySchema";
 import { uploadToCloudinaryBlog, deleteFromCloudinary } from "@/lib/cloudinary";
 
-export async function GET(request, context) {
+/* ===========================
+   GET: Single Category
+=========================== */
+export async function GET(request, { params }) {
   try {
-    const { params } = await context;
     await connectMongoDB();
 
-    const category = await BlogCategory.findOne({ _id: params.id });
+    const category = await BlogCategory.findById(params.id);
 
     if (!category) {
       return NextResponse.json(
@@ -23,11 +25,15 @@ export async function GET(request, context) {
   }
 }
 
+/* ===========================
+   PUT: Update Category
+   (NO VALIDATION)
+=========================== */
 export async function PUT(request, { params }) {
   try {
     await connectMongoDB();
 
-    const category = await BlogCategory.findOne({ _id: params.id });
+    const category = await BlogCategory.findById(params.id);
 
     if (!category) {
       return NextResponse.json(
@@ -38,38 +44,37 @@ export async function PUT(request, { params }) {
 
     const formData = await request.formData();
     const image = formData.get("image");
-    const slug = formData.get("slug");
 
-    // Slug Regex Validation
-    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-    if (!slugRegex.test(slug)) {
-      return NextResponse.json(
-        {
-          error:
-            "Invalid slug format. Use only lowercase letters, numbers, and hyphens.",
-        },
-        { status: 400 }
-      );
-    }
     let updateData = {
       sectionName: formData.get("sectionName"),
-      slug,
+      slug: formData.get("slug"),
       language: formData.get("language"),
       category: formData.get("category"),
+
       metaTitle: formData.get("metaTitle"),
       metaKeywords: formData.get("metaKeywords"),
       metaDescription: formData.get("metaDescription"),
-      schema: formData.get("schema") || "{}",
+
+      schema: formData.get("schema"),
+
+      openGraphTitle: formData.get("openGraphTitle"),
+      openGraphDescription: formData.get("openGraphDescription"),
+      openGraphImage: formData.get("openGraphImage"),
+
+      twitterTitle: formData.get("twitterTitle"),
+      twitterDescription: formData.get("twitterDescription"),
+      twitterImage: formData.get("twitterImage"),
     };
 
-    if (image && image.name !== "undefined") {
+    // Replace image ONLY if new image is sent
+    if (image && typeof image === "object") {
       if (category.imagePublicId) {
         await deleteFromCloudinary(category.imagePublicId);
       }
 
       const uploadResult = await uploadToCloudinaryBlog(image);
-      updateData.imageUrl = uploadResult.secure_url;
-      updateData.imagePublicId = uploadResult.public_id;
+      updateData.imageUrl = uploadResult?.secure_url || "";
+      updateData.imagePublicId = uploadResult?.public_id || "";
     }
 
     const updatedCategory = await BlogCategory.findByIdAndUpdate(
@@ -84,11 +89,14 @@ export async function PUT(request, { params }) {
   }
 }
 
+/* ===========================
+   DELETE: Remove Category
+=========================== */
 export async function DELETE(request, { params }) {
   try {
     await connectMongoDB();
 
-    const category = await BlogCategory.findOne({ _id: params.id });
+    const category = await BlogCategory.findById(params.id);
 
     if (!category) {
       return NextResponse.json(
@@ -97,13 +105,16 @@ export async function DELETE(request, { params }) {
       );
     }
 
+    // delete image if exists
     if (category.imagePublicId) {
       await deleteFromCloudinary(category.imagePublicId);
     }
 
     await BlogCategory.findByIdAndDelete(params.id);
 
-    return NextResponse.json({ message: "Category deleted successfully" });
+    return NextResponse.json({
+      message: "Category deleted successfully",
+    });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
