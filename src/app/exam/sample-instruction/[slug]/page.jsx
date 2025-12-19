@@ -11,12 +11,8 @@ import {
   BookOpen,
   Target,
   Info,
-  Sparkles,
   ArrowRight,
   FlaskConical,
-  Timer,
-  TrendingUp,
-  Zap,
 } from "lucide-react";
 
 export default function SampleInstructionsPage() {
@@ -64,17 +60,13 @@ export default function SampleInstructionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-12 max-w-md w-full border border-white/20">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
           <div className="flex flex-col items-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
-              <Loader2 className="w-16 h-16 text-emerald-600 animate-spin relative z-10" />
-            </div>
-            <p className="text-gray-700 text-lg font-semibold mt-6">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+            <p className="text-gray-700 text-base font-medium mt-4">
               Loading sample test...
             </p>
-            <p className="text-gray-500 text-sm mt-2">Please wait a moment</p>
           </div>
         </div>
       </div>
@@ -83,19 +75,19 @@ export default function SampleInstructionsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-12 max-w-md w-full border border-white/20">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
           <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mb-6 shadow-lg">
-              <AlertCircle className="w-10 h-10 text-red-600" />
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
               Oops! Something Went Wrong
             </h2>
-            <p className="text-red-600 mb-6">{error}</p>
+            <p className="text-red-600 mb-4 text-sm">{error}</p>
             <button
               onClick={() => router.back()}
-              className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
             >
               Go Back
             </button>
@@ -107,21 +99,21 @@ export default function SampleInstructionsPage() {
 
   if (!exam) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-12 max-w-md w-full border border-white/20">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
           <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6 shadow-lg">
-              <FileText className="w-10 h-10 text-gray-500" />
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <FileText className="w-8 h-8 text-gray-500" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
               No Test Found
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4 text-sm">
               No instructions are available for this sample test.
             </p>
             <button
               onClick={() => router.back()}
-              className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
             >
               Go Back
             </button>
@@ -132,194 +124,145 @@ export default function SampleInstructionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-12 px-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-300/30 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-teal-300/30 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-300/30 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "0.5s" }}
-        ></div>
-      </div>
-
-      <div className="max-w-5xl mx-auto relative z-10">
+    <div className="min-h-screen bg-gray-50 py-6 px-4">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full blur-xl opacity-60 animate-pulse"></div>
-              <div className="relative w-20 h-20 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-full flex items-center justify-center shadow-2xl">
-                <FlaskConical className="w-10 h-10 text-white" />
-              </div>
-            </div>
-          </div>
-          <div className="inline-flex items-center gap-2 bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-full mb-4">
-            <Sparkles className="w-4 h-4 text-emerald-600" />
-            <span className="text-emerald-700 font-semibold text-sm">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full mb-3">
+            <FlaskConical className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-700 font-medium text-xs">
               Sample Test
             </span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Sample Test Instructions
           </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Practice and familiarize yourself before the main examination
+          <p className="text-gray-600 text-sm">
+            Practice before the main examination
           </p>
         </div>
 
         {/* Main Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Exam Header */}
-          <div className="relative bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-8 text-white overflow-hidden">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-
-            <div className="relative z-10 flex items-start gap-6">
-              <div className="flex-shrink-0 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
-                <BookOpen className="w-8 h-8" />
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6" />
               </div>
               <div className="flex-1">
-                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full mb-3">
-                  <Zap className="w-4 h-4" />
-                  <span className="text-sm font-medium">Practice Mode</span>
-                </div>
-                <h2 className="text-4xl font-bold mb-3">{exam.name}</h2>
-                <div className="flex items-center gap-3 text-white/90">
-                  <Award className="w-5 h-5" />
-                  <span className="text-lg font-semibold">
-                    Code: {exam.code}
-                  </span>
+                <h2 className="text-2xl font-bold mb-1">{exam.name}</h2>
+                <div className="flex items-center gap-2 text-blue-100 text-sm">
+                  <Award className="w-4 h-4" />
+                  <span>Code: {exam.code}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Exam Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 bg-gradient-to-br from-gray-50 to-white">
+          <div className="grid grid-cols-3 gap-4 p-6 bg-gray-50 border-b">
             {/* Duration Card */}
-            <div className="group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:scale-105 hover:border-emerald-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md">
-                  <Clock className="w-7 h-7 text-emerald-600" />
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-600" />
                 </div>
-                <p className="text-sm text-gray-600 font-medium mb-1">
-                  Duration
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {exam.sampleDuration}{" "}
-                  <span className="text-lg text-gray-600">min</span>
-                </p>
+                <div>
+                  <p className="text-xs text-gray-600">Duration</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {exam.sampleDuration} <span className="text-sm">min</span>
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Marks Card */}
-            <div className="group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:scale-105 hover:border-teal-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-teal-200 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md">
-                  <FileText className="w-7 h-7 text-teal-600" />
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-green-600" />
                 </div>
-                <p className="text-sm text-gray-600 font-medium mb-1">
-                  Marks per Question
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {exam.eachQuestionMark}{" "}
-                  <span className="text-lg text-gray-600">marks</span>
-                </p>
+                <div>
+                  <p className="text-xs text-gray-600">Marks/Question</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {exam.eachQuestionMark}{" "}
+                    <span className="text-sm">marks</span>
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Passing Score Card */}
-            <div className="group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:scale-105 hover:border-cyan-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-gradient-to-br from-cyan-100 to-cyan-200 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md">
-                  <Target className="w-7 h-7 text-cyan-600" />
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                  <Target className="w-5 h-5 text-purple-600" />
                 </div>
-                <p className="text-sm text-gray-600 font-medium mb-1">
-                  Passing Score
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {exam.passingScore}
-                  <span className="text-lg text-gray-600">%</span>
-                </p>
+                <div>
+                  <p className="text-xs text-gray-600">Passing Score</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {exam.passingScore}
+                    <span className="text-sm">%</span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Instructions Section */}
-          <div className="p-8 bg-white">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-lg flex items-center justify-center">
-                <Info className="w-5 h-5 text-emerald-600" />
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                <Info className="w-4 h-4 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-gray-900">
                 Test Guidelines
               </h3>
             </div>
 
             {exam.sampleInstructions ? (
               <div
-                className="prose prose-emerald max-w-none bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100 shadow-inner"
+                className="prose prose-sm max-w-none bg-blue-50 rounded-lg p-4 border border-blue-100"
                 dangerouslySetInnerHTML={{ __html: exam.sampleInstructions }}
               />
             ) : (
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100 shadow-inner">
-                <ul className="space-y-4 text-gray-700">
-                  <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mt-0.5">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="flex-1">
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <ul className="space-y-2 text-gray-700 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>
                       This is a practice test to help you prepare for the main
                       examination.
                     </span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mt-0.5">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="flex-1">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>
                       Read each question carefully and select the most
                       appropriate answer.
                     </span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mt-0.5">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="flex-1">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>
                       You can navigate between questions using the question
                       palette.
                     </span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mt-0.5">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="flex-1">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>
                       Make sure to submit your test before the timer runs out.
                     </span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mt-0.5">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="flex-1">
-                      Once submitted, you cannot change your answers.
-                    </span>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>Once submitted, you cannot change your answers.</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mt-0.5">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="flex-1">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>
                       Use this sample test to understand the exam pattern and
                       timing.
                     </span>
@@ -329,61 +272,29 @@ export default function SampleInstructionsPage() {
             )}
           </div>
 
-          {/* Benefits Section */}
-          <div className="px-8 pb-8">
-            <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-2xl p-6 border border-emerald-200">
-              <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
-                Why Take This Sample Test?
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-600">•</span>
-                  <span>Get familiar with the exam interface and format</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-600">•</span>
-                  <span>Practice time management skills</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-600">•</span>
-                  <span>Identify areas that need more preparation</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-600">•</span>
-                  <span>Build confidence before the actual exam</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Agreement Section */}
-          <div className="p-8 bg-gradient-to-br from-gray-50 to-white border-t border-gray-100">
-            <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mb-6 hover:border-emerald-300 transition-colors">
-              <label className="flex items-start gap-4 cursor-pointer group">
-                <div className="flex-shrink-0 mt-1">
-                  <input
-                    type="checkbox"
-                    id="agree"
-                    checked={agreed}
-                    onChange={(e) => setAgreed(e.target.checked)}
-                    className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer"
-                  />
-                </div>
-                <div className="flex-1">
-                  <span className="text-gray-900 font-medium group-hover:text-emerald-600 transition-colors">
-                    I have read and understood all the test instructions and
-                    agree to abide by the rules and regulations.
-                  </span>
-                </div>
+          <div className="p-6 bg-gray-50 border-t">
+            <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="agree"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer mt-0.5"
+                />
+                <span className="text-gray-900 text-sm">
+                  I have read and understood all the test instructions and agree
+                  to abide by the rules and regulations.
+                </span>
               </label>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div className="flex gap-3 justify-between items-center">
               <button
                 onClick={() => router.back()}
-                className="w-full sm:w-auto px-8 py-4 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors text-sm"
               >
                 Go Back
               </button>
@@ -391,21 +302,21 @@ export default function SampleInstructionsPage() {
               <button
                 onClick={handleStart}
                 disabled={!agreed}
-                className={`w-full sm:w-auto px-12 py-4 rounded-xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-3 ${
+                className={`px-8 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
                   agreed
-                    ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 hover:shadow-xl hover:scale-105"
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                <FlaskConical className="w-6 h-6" />
+                <FlaskConical className="w-4 h-4" />
                 <span>Start Sample Test</span>
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
             {!agreed && (
-              <p className="text-center text-amber-600 text-sm mt-4 flex items-center justify-center gap-2">
-                <AlertCircle className="w-4 h-4" />
+              <p className="text-center text-amber-600 text-xs mt-3 flex items-center justify-center gap-1">
+                <AlertCircle className="w-3 h-3" />
                 Please agree to the terms before starting the sample test
               </p>
             )}
@@ -413,12 +324,12 @@ export default function SampleInstructionsPage() {
         </div>
 
         {/* Footer Note */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-600 text-sm">
+        <div className="mt-6 text-center">
+          <p className="text-gray-600 text-xs">
             Need assistance?{" "}
             <a
               href="/support"
-              className="text-emerald-600 hover:text-emerald-700 font-semibold"
+              className="text-blue-600 hover:text-blue-700 font-medium"
             >
               Contact Support
             </a>
