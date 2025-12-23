@@ -329,7 +329,6 @@ export const authOptions = {
   debug: process.env.NODE_ENV !== "production", // Disable debug in production
   cookies: {
     sessionToken: {
-      // Set both legacy and __Secure- prefixed cookie names for edge compatibility
       name:
         process.env.NODE_ENV === "production"
           ? "__Secure-next-auth.session-token"
@@ -339,11 +338,7 @@ export const authOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 24 * 60 * 60, // 24 hours
-        domain:
-          process.env.NODE_ENV === "production"
-            ? "dumps-expert-next.vercel.app"
-            : undefined,
+        maxAge: 24 * 60 * 60,
       },
     },
     callbackUrl: {
@@ -352,10 +347,6 @@ export const authOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        domain:
-          process.env.NODE_ENV === "production"
-            ? "dumps-expert-next.vercel.app"
-            : undefined,
       },
     },
     csrfToken: {
@@ -365,38 +356,6 @@ export const authOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        domain:
-          process.env.NODE_ENV === "production"
-            ? "dumps-expert-next.vercel.app"
-            : undefined,
-      },
-    },
-    state: {
-      name: "next-auth.state",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 900,
-        domain:
-          process.env.NODE_ENV === "production"
-            ? "dumps-expert-next.vercel.app"
-            : undefined,
-      },
-    },
-    pkceCodeVerifier: {
-      name: "next-auth.pkce.code_verifier",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 900,
-        domain:
-          process.env.NODE_ENV === "production"
-            ? "dumps-expert-next.vercel.app"
-            : undefined,
       },
     },
   },
