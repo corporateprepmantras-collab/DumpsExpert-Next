@@ -6,22 +6,21 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
 
-
   async redirects() {
-  return [
-    {
-      source: "/:path*",
-      has: [
-        {
-          type: "host",
-          value: "prepmantras.com",
-        },
-      ],
-      destination: "https://www.prepmantras.com/:path*",
-      permanent: true,
-    },
-  ];
-},
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "prepmantras.com",
+          },
+        ],
+        destination: "https://www.prepmantras.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
 
   images: {
     formats: ["image/avif", "image/webp"],
@@ -55,6 +54,25 @@ const nextConfig = {
   async headers() {
     return [
       // ✅ Static assets caching
+      {
+        source: "/api/auth/session",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/api/auth/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
+          },
+        ],
+      },
+
       {
         source: "/:all*(svg|jpg|png|webp|avif|woff|woff2|ttf|otf|eot)",
         locale: false,
