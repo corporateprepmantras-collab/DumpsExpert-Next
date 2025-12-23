@@ -149,15 +149,24 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com https://*.vercel-scripts.com",
-              "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
+
+              // ✅ REQUIRED FOR NEXTAUTH + GOOGLE
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com https://*.vercel-scripts.com",
+
+              "style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app https://dumps-expert-next.vercel.app",
+
               "img-src 'self' data: https: blob:",
+
               "font-src 'self' data:",
-              "connect-src 'self' https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com https://*.vercel-insights.com",
-              "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://vercel.live",
+
+              // 🔥 MOST IMPORTANT
+              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com https://*.vercel-insights.com",
+
+              "frame-src 'self' https://accounts.google.com https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://vercel.live",
+
               "worker-src 'self' blob:",
               "base-uri 'self'",
-              "form-action 'self' https://checkout.razorpay.com https://www.paypal.com",
+              "form-action 'self' https://accounts.google.com https://checkout.razorpay.com https://www.paypal.com",
             ].join("; "),
           },
         ],
