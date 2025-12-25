@@ -219,7 +219,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              // ✅ FIX IS HERE
+              
               "connect-src 'self' https://ipapi.co https://*.razorpay.com https://api.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel-insights.com",
               "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://vercel.live",
               "frame-ancestors 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com",
