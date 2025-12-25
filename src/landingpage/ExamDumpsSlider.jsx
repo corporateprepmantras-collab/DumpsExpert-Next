@@ -12,6 +12,8 @@ export default function ExamDumpsSlider({ products = [] }) {
   const [visibleItems, setVisibleItems] = useState(new Set());
   const observerRef = useRef(null);
 
+
+  
   // Responsive visible cards
   useEffect(() => {
     const handleResize = () => {
