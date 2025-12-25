@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, X, AlertCircle } from "lucide-react";
+import { Check, X, AlertCircle, ArrowUp } from "lucide-react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import banner from "@/assets/landingassets/banner.webp";
@@ -88,11 +88,24 @@ export default function HomePage({
   const [showModal, setShowModal] = useState(false);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // ✅ Ensure client-side only rendering
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // ✅ Show/hide scroll to top button
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleScroll = () => {
+      setShowScrollTop(window.pageYOffset > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [mounted]);
 
   // ✅ Show announcement modal with safe storage
   useEffect(() => {
@@ -160,6 +173,13 @@ export default function HomePage({
         );
       }
     }
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }, []);
 
   // ✅ Check for data issues
@@ -302,6 +322,20 @@ export default function HomePage({
         </div>
       )}
 
+      {/* ========== Scroll to Top Button ========== */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 z-40 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300"
+          aria-label="Scroll to top"
+          style={{
+            animation: "fadeInUp 0.3s ease-out",
+          }}
+        >
+          <ArrowUp size={24} strokeWidth={2.5} />
+        </button>
+      )}
+
       {/* ========== Announcement Modal ========== */}
       {showModal && announcement?.active && (
         <div
@@ -420,6 +454,19 @@ export default function HomePage({
 
         {faqs.length > 0 && <GeneralFAQs faqs={faqs} />}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </>
   );
 }
