@@ -1,61 +1,54 @@
-// // app/api/student/stats/route.js
-// import { getServerSession } from "next-auth";
-// import { authOptions } from "@/lib/auth/authOptions";
-// import { NextResponse } from "next/server";
-// import connectDB from "@/lib/mongodb";
-// import Order from "@/models/Order"; // Adjust path as needed
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/authOptions";
+import { NextResponse } from "next/server";
+import connectDB from "@/lib/mongo";
+import Payment from "@/models/paymentSchema";
 
-// export async function GET(request) {
-//   try {
-//     const session = await getServerSession(authOptions);
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
 
-//     if (!session?.user) {
-//       return NextResponse.json(
-//         { success: false, error: "Unauthorized" },
-//         { status: 401 }
-//       );
-//     }
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-//     await connectDB();
+    await connectDB();
 
-//     const studentId = session.user.id || session.user._id;
+    const userId = session.user.id;
 
-//     // Fetch orders for this student
-//     const orders = await Order.find({ studentId })
-//       .select("status")
-//       .lean();
+    const payments = await Payment.find({ user: userId })
+      .select("status")
+      .lean();
 
-//     // Calculate completed and pending
-//     const completed = orders.filter(order => 
-//       order.status === 'completed' || 
-//       order.status === 'delivered' ||
-//       order.status === 'success'
-//     ).length;
+    const completed = payments.filter(
+      (p) => p.status === "completed" || p.status === "success"
+    ).length;
 
-//     const pending = orders.filter(order => 
-//       order.status === 'pending' || 
-//       order.status === 'processing' ||
-//       order.status === 'payment_pending'
-//     ).length;
+    const pending = payments.filter(
+      (p) => p.status === "pending" || p.status === "processing"
+    ).length;
 
-//     return NextResponse.json({
-//       success: true,
-//       data: {
-//         completed,
-//         pending,
-//         total: orders.length,
-//       },
-//     });
+    return NextResponse.json({
+      success: true,
+      data: {
+        completed,
+        pending,
+        total: payments.length,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Student stats error:", error);
 
-//   } catch (error) {
-//     console.error("Stats API Error:", error);
-//     return NextResponse.json(
-//       { 
-//         success: false, 
-//         error: "Failed to fetch stats",
-//         data: { completed: 0, pending: 0, total: 0 }
-//       },
-//       { status: 500 }
-//     );
-//   }
-// }
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch stats",
+        data: { completed: 0, pending: 0, total: 0 },
+      },
+      { status: 500 }
+    );
+  }
+}

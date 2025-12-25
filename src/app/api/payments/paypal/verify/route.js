@@ -8,7 +8,7 @@ const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret); // Use LiveEnvironment for production
 const client = new paypal.core.PayPalHttpClient(environment);
 
-export async function POST(request) {
+  export async function POST(request) {
   try {
     const { orderId, amount, userId } = await request.json();
 
