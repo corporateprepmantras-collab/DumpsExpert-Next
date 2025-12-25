@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/public/Navbar";
 import Providers from "@/components/providers";
-
+import favicon from "./favicon.ico";
 // ✅ Font (safe & stable)
 const inter = Inter({
   subsets: ["latin"],
@@ -67,8 +67,8 @@ export const metadata = {
     follow: true,
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: { favicon },
+    apple: { favicon },
   },
 };
 
