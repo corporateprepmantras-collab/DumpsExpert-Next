@@ -7,64 +7,177 @@ import {
   FaYoutube,
   FaTwitter,
   FaInstagram,
-  FaCcVisa,
-  FaCcMastercard,
-  FaCcAmex,
-  FaCcPaypal,
-  FaCcDiscover,
   FaWhatsapp,
 } from "react-icons/fa";
 import dumpslogo from "../../assets/logo/premantras_logo.png";
-
+import PaymentGateway from "../../assets/landingassets/paymentGateway.png";
 export default function Footer() {
   return (
     <footer className="bg-[#1E1E24] overflow-hidden text-white px-4 sm:px-6 lg:px-20 py-12">
       {/* Top Grid Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-8">
-        {/* Disclaimer */}
+        {/* About PrepMantras */}
         <div>
-          <h3 className="font-bold text-base mb-4">Disclaimer :</h3>
-          <p className="text-gray-300 text-sm leading-relaxed mb-6">
-            We provide top-quality dumps, practice exams, and study materials
-            for various certifications. Join us to ensure success in your IT
-            career!
-          </p>
           <Image
             src={dumpslogo}
-            alt="DumpsXpert Logo"
-            className="mt-4"
+            alt="PrepMantras Logo"
+            className="mb-4  bg-white"
             width={200}
             height={60}
             placeholder="blur"
           />
+          <p className="text-gray-300 text-sm leading-relaxed">
+            At PrepMantras, our mission is simple — your exam success. We help
+            students clear exams faster and smarter by providing 100% authentic,
+            exam-focused questions designed to boost confidence and accuracy.
+            Thousands of students have already achieved success with our
+            courses.
+          </p>
         </div>
 
-        {/* Quick Links */}
+        {/* Popular Categories */}
         <div>
-          <h3 className="font-bold text-base mb-4">Quick Links</h3>
+          <h3 className="font-bold text-base mb-4">Popular Categories</h3>
+          <div className="text-gray-300 text-sm leading-relaxed">
+            <Link
+              href="/ItDumps/sap"
+              className="hover:text-white transition-colors"
+            >
+              SAP
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/azure"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              AZURE
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/aws"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              AWS
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/gcp"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              GCP
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/salesforce"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              SALESFORCE
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/cisco"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              CISCO
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/comptia"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              COMPTIA
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/pmi"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              PMI
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/oracle"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              ORACLE
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/axelos"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              AXELOS
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/isc2"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              ISC2
+            </Link>{" "}
+            |
+            <Link
+              href="/ItDumps/microsoft"
+              className="hover:text-white transition-colors"
+            >
+              {" "}
+              Microsoft
+            </Link>
+          </div>
+        </div>
+
+        {/* Popular Links */}
+        <div>
+          <h3 className="font-bold text-base mb-4">Popular Links</h3>
           <ul className="space-y-2">
-            <li>
-              <Link
-                href="/"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/ItDumps/sap"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                SAP Dumps
-              </Link>
-            </li>
             <li>
               <Link
                 href="/about"
                 className="text-gray-300 hover:text-white transition-colors"
               >
                 About Us
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/ItDumps"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                IT Dumps
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/guarantee"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Guarantee
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/privacy-policy"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Privacy Policy
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/terms"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Terms & Conditions
               </Link>
             </li>
           </ul>
@@ -130,90 +243,58 @@ export default function Footer() {
             </a>
           </div>
         </div>
+      </div>
 
-        {/* Newsletter */}
-        <div>
-          <h3 className="font-bold text-base mb-4">
-            Subscribe to Our Newsletter
-          </h3>
-          <p className="text-gray-300 text-sm leading-relaxed">
-            Stay updated with the latest dumps and certification news.
-          </p>
-        </div>
+      {/* Disclaimer Section */}
+      <div className="py-8">
+        <h3 className="font-bold text-base mb-4">Disclaimer</h3>
+        <ul className="text-gray-300 text-sm leading-relaxed space-y-3">
+          <li>
+            PrepMantras.com is not affiliated with, endorsed by, or associated
+            with SAP SE, Microsoft Azure, Amazon Web Services (AWS), Google
+            Cloud Platform (GCP), or any other certification provider.
+            PrepMantras provides practice questions and study materials intended
+            to support exam preparation and learning.
+          </li>
+          <li>
+            All training resources and mock tests available on our platform are
+            created by industry professionals for educational purposes only.
+            PrepMantras does not claim ownership of any trademarks, logos, or
+            brand names mentioned on this website. All certification names and
+            trademarks are the property of their respective owners.
+          </li>
+        </ul>
       </div>
 
       {/* Payment Methods Section */}
-      <div className="py-2">
-        <h3 className="font-bold text-base mb-6 ">We Accept</h3>
-        <div className="flex flex-wrap  gap-4">
-          {/* Visa */}
-          <div className="bg-white rounded-sm  w-16 h-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-            <FaCcVisa className="text-5xl text-[#1A1F71]" />
-          </div>
-
-          {/* Mastercard */}
-          <div className="bg-white rounded-sm  w-16 h-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-            <FaCcMastercard className="text-5xl bg-cover text-[#EB001B]" />
-          </div>
-
-          {/* American Express */}
-          <div className="bg-white rounded-sm  w-16 h-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-            <FaCcAmex className="text-5xl text-[#006FCF]" />
-          </div>
-
-          {/* PayPal */}
-          <div className="bg-white rounded-sm  w-16 h-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-            <FaCcPaypal className="text-5xl text-[#003087]" />
-          </div>
-
-          {/* Discover */}
-          <div className="bg-white rounded-sm  w-16 h-10 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-            <FaCcDiscover className="text-5xl text-[#FF6000]" />
-          </div>
+      <div className="py-6">
+        <h3 className="font-bold text-base mb-6">We Accept</h3>
+        <div>
+          <img
+            src={PaymentGateway}
+            alt="Payment Methods"
+            className="h-8 object-contain"
+          />
         </div>
       </div>
 
       {/* Divider */}
       <div className="border-t border-gray-700 my-8"></div>
 
-      {/* Bottom Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-center text-center text-gray-400 text-sm gap-4">
-        <div className="order-2 md:order-1">
-          © 2025 Exam Dump. All Rights Reserved. Designed By{" "}
-          <Link
-            href="https://dumpsxpert.com"
-            className="text-white hover:underline"
-            target="_blank"
-          >
-            Dumpsxpert.Com
-          </Link>
-        </div>
-        <div className="flex flex-wrap justify-center gap-4 order-1 md:order-2">
-          <Link
-            href="/guarantee"
-            className="hover:text-white transition-colors"
-          >
-            Guarantee
-          </Link>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <Link href="/terms" className="hover:text-white transition-colors">
-            Terms & Condition
-          </Link>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <Link
-            href="/privacy-policy"
-            className="hover:text-white transition-colors"
-          >
-            Privacy Policy
-          </Link>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <Link
-            href="/refund-policy"
-            className="hover:text-white transition-colors"
-          >
-            Refund Policy
-          </Link>
-        </div>
+      {/* Bottom Section */}
+      <div className="text-center text-gray-400 text-sm leading-relaxed mb-6">
+        <p>
+          PrepMantras.com is an independent exam-preparation platform and is not
+          affiliated with, endorsed by, or associated with SAP SE, Microsoft
+          Azure, AWS, GCP, or any certification provider. All trademarks, logos,
+          and certification names are the property of their respective owners
+          and are used for identification purposes only.
+        </p>
+      </div>
+
+      {/* Copyright */}
+      <div className="text-center text-gray-400 text-sm">
+        © 2025 PrepMantras.com. All rights reserved.
       </div>
     </footer>
   );
