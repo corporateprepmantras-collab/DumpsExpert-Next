@@ -180,12 +180,7 @@ export default function SignUp() {
           >
             Sign Up with Google
           </button>
-          <button
-            onClick={() => handleOAuthSignUp("facebook")}
-            className="w-full bg-blue-800 text-white py-2 rounded hover:bg-blue-900"
-          >
-            Sign Up with Facebook
-          </button>
+
         </div>
 
         <p className="mt-4 text-center">

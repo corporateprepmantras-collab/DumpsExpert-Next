@@ -25,6 +25,9 @@ const Cart = () => {
   const removeFromCart = useCartStore((state) => state.removeFromCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const clearCart = useCartStore((state) => state.clearCart);
+  const [userCountry, setUserCountry] = useState("IN"); // default India
+  const isIndia = userCountry === "IN";
+  const isInternational = userCountry !== "IN";
 
   const router = useRouter();
 
@@ -189,6 +192,29 @@ const Cart = () => {
     const numAmount = Number(amount) || 0;
     return `${getCurrencySymbol(currency)}${numAmount.toFixed(2)}`;
   };
+
+  useEffect(() => {
+    const detectCurrency = async () => {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+
+        setSelectedCurrency(data.currency || "INR");
+        setUserCountry(data.country_code || "IN");
+
+        console.log("🌍 Location detected:", {
+          country: data.country_code,
+          currency: data.currency,
+        });
+      } catch (err) {
+        console.error("Currency detection failed", err);
+        setSelectedCurrency("INR");
+        setUserCountry("IN"); // safe fallback
+      }
+    };
+
+    detectCurrency();
+  }, []);
 
   // Fetch userId from /api/user/me
   useEffect(() => {
@@ -1033,16 +1059,26 @@ const Cart = () => {
               </div>
 
               {/* Razorpay Payment Option */}
-              <button
-                onClick={handleRazorpayPayment}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
-              >
-                <span>💳</span>
-                <span>Pay with Razorpay</span>
-                <span className="ml-auto">
-                  {formatPrice(grandTotal, selectedCurrency)}
-                </span>
-              </button>
+              {isIndia && (
+                <>
+                  <button
+                    onClick={handleRazorpayPayment}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
+                  >
+                    <span>💳</span>
+                    <span>Pay with Razorpay</span>
+                    <span className="ml-auto">
+                      {formatPrice(grandTotal, selectedCurrency)}
+                    </span>
+                  </button>
+                  <p className="text-xs text-gray-500 text-center">
+                    {isIndia
+                      ? "Payments in India are supported via Razorpay (UPI, Cards, Net Banking)"
+                      : "International payments are supported via PayPal / Stripe"}
+                  </p>
+                </>
+              )}
+
               {selectedCurrency === "USD" && (
                 <p className="text-xs text-amber-600 text-center -mt-2">
                   Note: USD amount will be converted to INR for Razorpay payment
@@ -1059,51 +1095,23 @@ const Cart = () => {
               </div>
 
               {/* PayPal Payment Option */}
-              <div className="w-full">
-                {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID &&
-                process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID !==
-                  "YOUR_PAYPAL_CLIENT_ID" ? (
+              {isInternational && (
+                <div className="w-full">
                   <PayPalScriptProvider
                     options={{
                       "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-                      currency: "USD", // PayPal sandbox works best with USD
+                      currency: "USD",
                       intent: "capture",
-                      vault: false,
-                      commit: true,
                     }}
                   >
                     <PayPalButtons
-                      style={{
-                        layout: "vertical",
-                        color: "gold",
-                        shape: "rect",
-                        label: "paypal",
-                        height: 45,
-                      }}
                       createOrder={createPayPalOrder}
                       onApprove={onPayPalApprove}
-                      onError={(error) => {
-                        console.error("PayPal error:", error);
-                        toast.error("PayPal payment failed. Please try again.");
-                      }}
-                      onCancel={() => {
-                        toast.info("Payment cancelled");
-                      }}
-                      onInit={(data, actions) => {
-                        console.log("PayPal buttons initialized");
-                      }}
-                      forceReRender={[grandTotal]}
+                      onError={() => toast.error("Payment failed")}
                     />
                   </PayPalScriptProvider>
-                ) : (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                    <p className="text-sm text-yellow-800">
-                      PayPal is currently unavailable. Please use Razorpay or
-                      contact support.
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <p className="text-xs text-gray-500 text-center">
                 Razorpay: UPI, Cards, Net Banking & Wallets

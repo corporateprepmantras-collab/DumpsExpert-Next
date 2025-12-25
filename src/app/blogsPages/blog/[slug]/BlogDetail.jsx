@@ -15,7 +15,7 @@ const BlogDetail = ({ slug }) => {
     const fetchBlog = async () => {
       try {
         // ✅ Fetch single blog detail
-        const res = await fetch(`/api/blogs/slug/${slug}`, {
+        const res = await fetch(`/api/blogs/slug/${slug}?status=publish`, {
           cache: "no-store",
         });
         const data = await res.json();
@@ -96,24 +96,6 @@ const BlogDetail = ({ slug }) => {
           className="prose max-w-none text-gray-800"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
-
-        <div className="mt-10 border-t pt-4 text-sm text-gray-500 space-y-2">
-          {blog.category && (
-            <p>
-              <strong>Category:</strong> {blog.category}
-            </p>
-          )}
-          {blog.language && (
-            <p>
-              <strong>Language:</strong> {blog.language}
-            </p>
-          )}
-          {blog.metaKeywords && (
-            <p>
-              <strong>Tags:</strong> {blog.metaKeywords}
-            </p>
-          )}
-        </div>
       </div>
 
       {/* Other Blogs */}

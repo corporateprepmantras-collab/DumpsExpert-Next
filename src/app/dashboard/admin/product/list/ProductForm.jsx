@@ -41,7 +41,7 @@ const ProductForm = ({ mode }) => {
     totalQuestions: "",
     passingScore: "",
     duration: "",
-    examLastUpdated: "",
+    examLastUpdated: Date.now(),
   });
 
   const [existingFiles, setExistingFiles] = useState({
@@ -352,16 +352,7 @@ const ProductForm = ({ mode }) => {
               />
             </div>
 
-            <div>
-              <label className="block mb-1 text-gray-700">Last Updated</label>
-              <input
-                name="examLastUpdated"
-                type="date"
-                value={form.examLastUpdated}
-                onChange={handleChange}
-                className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          
           </div>
         </div>
 

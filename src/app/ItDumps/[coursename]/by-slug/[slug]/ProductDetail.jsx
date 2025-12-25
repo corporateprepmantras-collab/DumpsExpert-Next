@@ -662,6 +662,20 @@ export default function ProductDetailsPage() {
                       % off)
                     </span>
                   </p>
+                  <p className="text-blue-600 font-bold text-sm md:text-base">
+                    ${product.dumpsPriceUsd ?? "N/A"}
+                    <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
+                      ${product.dumpsMrpUsd ?? "N/A"}
+                    </span>
+                    <span className="text-gray-600 text-xs md:text-sm ml-1">
+                      (
+                      {calculateDiscount(
+                        product.dumpsMrpUsd,
+                        product.dumpsPriceUsd
+                      )}
+                      % off)
+                    </span>
+                  </p>
                 </div>
 
                 <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">

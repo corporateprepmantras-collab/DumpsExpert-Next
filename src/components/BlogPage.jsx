@@ -19,58 +19,80 @@ export default function BlogPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`/api/blogs/blog-categories`);
-        const valid = res.data?.filter((c) => !!c.category);
-        setCategories(valid);
+        const res = await axios.get("/api/blogs/blog-categories");
+
+        // ✅ handle all possible response shapes
+        const categoriesArray =
+          res.data?.data || res.data?.categories || res.data || [];
+
+        setCategories(
+          Array.isArray(categoriesArray)
+            ? categoriesArray.filter((c) => c?.category)
+            : []
+        );
       } catch (err) {
         console.error("Error fetching categories:", err);
+        setCategories([]);
       }
     };
+
     fetchCategories();
   }, []);
 
   // ✅ Fetch blogs (based on route)
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      setLoading(true);
-      try {
-        let res;
+ useEffect(() => {
+  const fetchBlogs = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("/api/blogs");
 
-        if (pathname.includes("/blogsPages/blog-categories")) {
-          // Fetch all blogs
-          res = await axios.get(`/api/blogs`);
-          setBlogs(res.data?.data || []);
-        } else if (selectedCategory) {
-          // Fetch by category slug
-          res = await axios.get(`/api/blogsPages/${selectedCategory}`);
-          setBlogs(res.data?.blogs || []);
-        }
+      // ✅ normalize API response
+      const allBlogs =
+        res.data?.data ||
+        res.data?.blogs ||
+        res.data ||
+        [];
 
-        // ✅ Extract all blog data for recent posts
-        const allBlogs = res?.data?.data || res?.data?.blogs || [];
+      console.log("ALL BLOGS 👉", allBlogs);
 
-        // ✅ Filter out any undefined or missing createdAt
-        const validBlogs = allBlogs.filter((b) => b.createdAt);
+      // ✅ status may be "publish" OR true
+      const published = allBlogs.filter(
+        (b) => b.status === "publish" || b.status === true
+      );
 
-        // ✅ Sort newest → oldest
-        const recent = validBlogs
+      // ✅ category filter (SAFE)
+      const filteredBlogs = selectedCategory
+        ? published.filter(
+            (b) =>
+              b.categorySlug === selectedCategory ||
+              b.category === selectedCategory
+          )
+        : published;
+
+      setBlogs(filteredBlogs);
+
+      // ✅ recent posts
+      setRecentPosts(
+        published
+          .filter((b) => b?.createdAt)
           .sort(
             (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              new Date(b.createdAt).getTime() -
+              new Date(a.createdAt).getTime()
           )
-          .slice(0, 10);
+          .slice(0, 10)
+      );
+    } catch (err) {
+      console.error("Error fetching blogs:", err);
+      setBlogs([]);
+      setRecentPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setRecentPosts(recent);
-      } catch (err) {
-        console.error("Error fetching blogs:", err);
-        setRecentPosts([]); // fallback to empty
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBlogs();
-  }, [selectedCategory, pathname]);
+  fetchBlogs();
+}, [selectedCategory]);
 
   return (
     <div className="min-h-screen bg-white">

@@ -20,17 +20,14 @@ function getBaseUrl() {
 // Helper function to fetch blog data
 async function fetchBlogForMetadata(slug) {
   const baseUrl = getBaseUrl();
-  const url = `${baseUrl}/api/blogs/slug/${slug}`;
+  const url = `${baseUrl}/api/blogs/slug/${slug}?status=publish`;
 
   console.log("🔍 Attempting to fetch blog from:", url);
   console.log("🔍 Base URL:", baseUrl);
   console.log("🔍 Slug:", slug);
 
   try {
-    const res = await fetch(url, {
-      cache: "no-store",
-      next: { revalidate: 0 },
-    }).catch((fetchError) => {
+    const res = await fetch(url, {}).catch((fetchError) => {
       console.error("❌ Fetch request failed:", fetchError.message);
       throw fetchError;
     });
@@ -225,10 +222,7 @@ export async function generateStaticParams() {
 
     console.log("🔍 Fetching blogs for static generation:", url);
 
-    const res = await fetch(url, {
-      next: { revalidate: 3600 },
-      cache: "no-store",
-    });
+    const res = await fetch(url, {});
 
     if (!res.ok) {
       console.error("❌ Failed to fetch blogs for static generation");

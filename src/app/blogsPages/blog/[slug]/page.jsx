@@ -20,7 +20,7 @@ function getBaseUrl() {
 // Helper function to fetch blog data
 async function fetchBlogForMetadata(slug) {
   const baseUrl = getBaseUrl();
-  const url = `${baseUrl}/api/blogs/slug/${slug}`;
+  const url = `${baseUrl}/api/blogs/slug/${slug}?status=publish`;
 
   console.log("🔍 Attempting to fetch blog from:", url);
   console.log("🔍 Base URL:", baseUrl);

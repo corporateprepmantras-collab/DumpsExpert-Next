@@ -113,16 +113,39 @@ async function fetchCategories() {
 }
 
 async function fetchBlogs() {
-  const result = await fetchWithTimeout("/api/blogs", 8000);
-  if (result.error) return [];
+  try {
+    const result = await fetchWithTimeout("/api/blogs", 8000);
 
-  const data = result.data;
-  let blogs = [];
-  if (Array.isArray(data)) blogs = data;
-  else if (Array.isArray(data?.blogs)) blogs = data.blogs;
-  else if (Array.isArray(data?.data)) blogs = data.data;
+    if (!result || result.error) {
+      console.error("fetchBlogs error:", result?.error);
+      return [];
+    }
 
-  return blogs.slice(0, 50);
+    const data = result.data;
+    let blogs = [];
+
+    // ✅ normalize API response
+    if (Array.isArray(data)) {
+      blogs = data;
+    } else if (Array.isArray(data?.blogs)) {
+      blogs = data.blogs;
+    } else if (Array.isArray(data?.data)) {
+      blogs = data.data;
+    } else {
+      console.error("Unexpected blogs response:", data);
+      return [];
+    }
+
+    // ✅ only published blogs
+    const published = blogs.filter(
+      (b) => b?.status === "publish" || b?.status === true
+    );
+
+    return published.slice(0, 50);
+  } catch (err) {
+    console.error("fetchBlogs exception:", err);
+    return [];
+  }
 }
 
 async function fetchFAQs() {

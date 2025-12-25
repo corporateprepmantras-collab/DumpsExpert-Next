@@ -1,116 +1,178 @@
+// app/dashboard/student/page.js
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
 import { redirect } from "next/navigation";
 import StudentDashboardClient from "@/components/StudentDashboardClient";
 
-// ✅ Enable ISR caching
-export const revalidate = 300; // 5 minutes
+export const revalidate = 300;
 
-// ✅ Fetch all dashboard data in parallel
 async function getDashboardData(session) {
-  const BASE_URL =
-    process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com";
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
   try {
-    // ✅ Fetch ALL data in parallel (no waterfall!)
-    const [userRes, statsRes, examsRes, coursesRes, resultsRes] =
-      await Promise.all([
-        fetch(`${BASE_URL}/api/user/me`, {
-          headers: {
-            Cookie: `next-auth.session-token=${session.sessionToken}`,
-          },
-          next: { revalidate: 300 },
-          cache: "force-cache",
-        }),
-        fetch(`${BASE_URL}/api/student/stats`, {
-          headers: {
-            Cookie: `next-auth.session-token=${session.sessionToken}`,
-          },
-          next: { revalidate: 300 },
-          cache: "force-cache",
-        }),
-        fetch(`${BASE_URL}/api/student/exams`, {
-          headers: {
-            Cookie: `next-auth.session-token=${session.sessionToken}`,
-          },
-          next: { revalidate: 300 },
-          cache: "force-cache",
-        }),
-        fetch(`${BASE_URL}/api/student/courses`, {
-          headers: {
-            Cookie: `next-auth.session-token=${session.sessionToken}`,
-          },
-          next: { revalidate: 300 },
-          cache: "force-cache",
-        }),
-        fetch(`${BASE_URL}/api/student/results`, {
-          headers: {
-            Cookie: `next-auth.session-token=${session.sessionToken}`,
-          },
-          next: { revalidate: 300 },
-          cache: "force-cache",
-        }),
-      ]);
+    const studentId = session?.user?.id || session?.user?._id;
 
-    // ✅ Parse responses in parallel
-    const [userData, statsData, examsData, coursesData, resultsData] =
-      await Promise.all([
-        userRes.ok ? userRes.json() : null,
-        statsRes.ok ? statsRes.json() : { completed: 4, pending: 2 },
-        examsRes.ok ? examsRes.json() : { upcoming: 2, total: 6 },
-        coursesRes.ok ? coursesRes.json() : { active: 4, total: 10 },
-        resultsRes.ok ? resultsRes.json() : { attempts: [83, 92, 89] },
-      ]);
+    if (!studentId) {
+      throw new Error("Student ID not found in session");
+    }
+
+    // Fetch orders and results in parallel
+    const [ordersRes, resultsRes, userRes] = await Promise.all([
+      fetch(`${BASE_URL}/api/student/orders`, {
+        headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
+        next: { revalidate: 300 },
+        cache: "force-cache",
+      }),
+      fetch(`${BASE_URL}/api/results?studentId=${studentId}`, {
+        headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
+        next: { revalidate: 300 },
+        cache: "force-cache",
+      }),
+      fetch(`${BASE_URL}/api/user/me`, {
+        headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
+        next: { revalidate: 300 },
+        cache: "force-cache",
+      }),
+    ]);
+
+    // Parse responses
+    const ordersResponse = await ordersRes.json();
+    const resultsResponse = await resultsRes.json();
+    const userData = userRes.ok ? await userRes.json() : null;
+
+    // Extract orders array (handle multiple formats)
+    let ordersArray = [];
+    if (Array.isArray(ordersResponse)) {
+      ordersArray = ordersResponse;
+    } else if (ordersResponse?.orders) {
+      ordersArray = ordersResponse.orders;
+    } else if (ordersResponse?.data) {
+      ordersArray = ordersResponse.data;
+    }
+
+    // Extract results array
+    const resultsArray = resultsResponse?.data || resultsResponse || [];
+
+    // Calculate order statistics
+    const completedOrders = ordersArray.filter((o) => o.status === "completed");
+    const pendingOrders = ordersArray.filter(
+      (o) => o.status === "pending" || o.status === "processing"
+    );
+
+    // Count products by type
+    let totalPDFs = 0;
+    let totalOnlineExams = 0;
+    let totalCombos = 0;
+
+    completedOrders.forEach((order) => {
+      if (order.courseDetails && Array.isArray(order.courseDetails)) {
+        order.courseDetails.forEach((course) => {
+          if (course.type === "regular") totalPDFs++;
+          else if (course.type === "online") totalOnlineExams++;
+          else if (course.type === "combo") totalCombos++;
+        });
+      }
+    });
+
+    // Process results
+    const processedResults =
+      resultsArray.length > 0
+        ? {
+            attempts: resultsArray.map((result) => ({
+              id: result._id,
+              examName:
+                result.examId?.title || result.examCode || "Unknown Exam",
+              score: result.percentage || 0,
+              correctAnswers: result.correct || 0,
+              totalQuestions: result.totalQuestions || 0,
+              timeTaken: result.duration || 0,
+              date: result.completedAt || result.createdAt,
+              passed: result.percentage >= 50,
+              attempt: result.attempt || 1,
+            })),
+            totalAttempts: resultsArray.length,
+            averageScore: Math.round(
+              resultsArray.reduce((sum, r) => sum + (r.percentage || 0), 0) /
+                resultsArray.length
+            ),
+            highestScore: Math.max(
+              ...resultsArray.map((r) => r.percentage || 0),
+              0
+            ),
+            lowestScore: Math.min(
+              ...resultsArray
+                .map((r) => r.percentage || 0)
+                .filter((p) => p > 0),
+              100
+            ),
+          }
+        : {
+            attempts: [],
+            totalAttempts: 0,
+            averageScore: 0,
+            highestScore: 0,
+            lowestScore: 0,
+          };
 
     return {
       user: userData || {
-        name: "Student User",
+        name: session?.user?.name || "Student User",
         email: session?.user?.email || "student@example.com",
-        profileImage:
-          session?.user?.profileImage || "https://via.placeholder.com/60",
+        profileImage: session?.user?.image || "https://via.placeholder.com/120",
       },
-      stats: statsData,
-      exams: examsData,
-      courses: coursesData,
-      results: resultsData,
+      stats: {
+        completed: completedOrders.length,
+        pending: pendingOrders.length,
+        totalOrders: ordersArray.length,
+      },
+      exams: {
+        upcoming: totalOnlineExams,
+        total: totalOnlineExams + totalCombos,
+        available: totalOnlineExams,
+      },
+      courses: {
+        totalPDFs,
+        totalOnlineExams,
+        totalCombos,
+        active: totalPDFs + totalOnlineExams + totalCombos,
+        total: totalPDFs + totalOnlineExams + totalCombos,
+      },
+      results: processedResults,
     };
   } catch (error) {
-    console.error("❌ Dashboard data fetch error:", error);
-
-    // Return default data if fetch fails
+    console.error("❌ Dashboard error:", error);
     return {
       user: {
-        name: "Student User",
+        name: session?.user?.name || "Student User",
         email: session?.user?.email || "student@example.com",
-        profileImage: "https://via.placeholder.com/60",
+        profileImage: "https://via.placeholder.com/120",
       },
-      stats: { completed: 4, pending: 2 },
-      exams: { upcoming: 2, total: 6 },
-      courses: { active: 4, total: 10 },
-      results: { attempts: [83, 92, 89] },
+      stats: { completed: 0, pending: 0, totalOrders: 0 },
+      exams: { upcoming: 0, total: 0, available: 0 },
+      courses: {
+        totalPDFs: 0,
+        totalOnlineExams: 0,
+        totalCombos: 0,
+        active: 0,
+        total: 0,
+      },
+      results: {
+        attempts: [],
+        totalAttempts: 0,
+        averageScore: 0,
+        highestScore: 0,
+        lowestScore: 0,
+      },
     };
   }
 }
 
-// ✅ Main Server Component
 export default async function StudentDashboardPage() {
-  // ✅ Get session on server
   const session = await getServerSession(authOptions);
+  if (!session) redirect("/auth/signin");
 
-  // ✅ Redirect if not authenticated
-  if (!session) {
-    redirect("/auth/signin");
-  }
-
-  // ✅ Check if user is a student (add your logic)
-  // if (session.user.role !== 'student') {
-  //   redirect('/dashboard/guest');
-  // }
-
-  // ✅ Fetch all data (happens on server)
   const dashboardData = await getDashboardData(session);
 
-  // ✅ Pass data to client component
   return <StudentDashboardClient {...dashboardData} />;
 }
 
