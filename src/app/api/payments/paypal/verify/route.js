@@ -1,109 +1,118 @@
 import { NextResponse } from "next/server";
 import paypal from "@paypal/checkout-server-sdk";
-import Payment from "@/models/paymentSchema";
-import User from "@/models/userInfoSchema";
-
-const clientId = process.env.PAYPAL_CLIENT_ID;
-const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret); // Use LiveEnvironment for production
-const client = new paypal.core.PayPalHttpClient(environment);
+import connectDB from "@/lib/db";
+import User from "@/models/User";
 
 export async function POST(request) {
   try {
     const { orderId, amount, userId } = await request.json();
 
-    // Validate required fields
-    if (!orderId || !amount) {
-      console.error("Missing required fields:", { orderId, amount });
+    console.log("🔍 Verifying PayPal payment:", { orderId, amount, userId });
+
+    if (!orderId) {
       return NextResponse.json(
-        { success: false, error: "Missing required payment details" },
+        { error: "Order ID is required" },
         { status: 400 }
       );
     }
 
-    // Verify environment variables
-    if (!clientId || !clientSecret) {
-      console.error("PayPal credentials not configured");
-      return NextResponse.json(
-        { success: false, error: "Server configuration error" },
-        { status: 500 }
-      );
-    }
-
-    // Verify PayPal order
-    const paypalRequest = new paypal.orders.OrdersGetRequest(orderId);
-    const order = await client.execute(paypalRequest);
-
-    if (
-      order.result.status !== "APPROVED" &&
-      order.result.status !== "COMPLETED"
-    ) {
-      console.error("Invalid order status:", {
-        orderId,
-        status: order.result.status,
-      });
-      return NextResponse.json(
-        { success: false, error: "Invalid order status" },
-        { status: 400 }
-      );
-    }
-
-    // Verify amount
-    const paypalAmount = parseFloat(
-      order.result.purchase_units[0].amount.value
+    // Initialize PayPal client
+    const environment = new paypal.core.LiveEnvironment(
+      process.env.PAYPAL_CLIENT_ID,
+      process.env.PAYPAL_CLIENT_SECRET
     );
-    if (paypalAmount !== parseFloat(amount)) {
-      console.error("Amount mismatch:", {
-        provided: amount,
-        actual: paypalAmount,
-      });
+
+    const client = new paypal.core.PayPalHttpClient(environment);
+
+    // Capture the order
+    const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
+    captureRequest.requestBody({});
+
+    console.log("💰 Capturing PayPal payment...");
+    const capture = await client.execute(captureRequest);
+
+    console.log("✅ Payment captured:", capture.result.id);
+    console.log("📊 Payment status:", capture.result.status);
+
+    // Verify payment status
+    if (capture.result.status !== "COMPLETED") {
       return NextResponse.json(
-        { success: false, error: "Amount mismatch" },
+        {
+          success: false,
+          error: "Payment not completed",
+          status: capture.result.status,
+        },
         { status: 400 }
       );
     }
 
-    // Update user and create payment record concurrently
-    const operations = [
-      Payment.create({
-        user: userId || null,
-        amount: paypalAmount,
-        currency: order.result.purchase_units[0].amount.currency_code || "INR",
-        paymentMethod: "paypal",
-        paymentId: orderId,
-        status: "completed",
-      }),
-    ];
+    // Get payment amount from capture
+    const paidAmount = parseFloat(
+      capture.result.purchase_units[0].payments.captures[0].amount.value
+    );
 
-    if (userId) {
-      operations.push(
-        User.findByIdAndUpdate(
-          userId,
-          {
-            subscription: "yes",
-            role: "student",
-          },
-          { new: true }
-        )
+    // Verify amount matches
+    if (Math.abs(paidAmount - parseFloat(amount)) > 0.01) {
+      console.error("❌ Amount mismatch:", {
+        paidAmount,
+        expectedAmount: amount,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Payment amount verification failed",
+          details: `Expected ${amount}, but received ${paidAmount}`,
+        },
+        { status: 400 }
       );
     }
 
-    await Promise.all(operations);
+    // Update user subscription in database
+    if (userId) {
+      await connectDB();
+      const user = await User.findByIdAndUpdate(
+        userId,
+        {
+          role: "paid",
+          subscription: {
+            status: "active",
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+          },
+        },
+        { new: true }
+      );
 
-    console.log("Payment verified and processed:", { orderId, userId });
+      console.log("✅ User subscription updated:", user.email);
+
+      return NextResponse.json({
+        success: true,
+        paymentId: capture.result.id,
+        status: capture.result.status,
+        amount: paidAmount,
+        user: {
+          id: user._id,
+          role: user.role,
+          subscription: user.subscription,
+        },
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      paymentId: orderId,
+      paymentId: capture.result.id,
+      status: capture.result.status,
+      amount: paidAmount,
     });
   } catch (error) {
-    console.error("PayPal payment verification failed:", {
-      error: error.message,
-      stack: error.stack,
-      orderId,
-      userId,
-    });
+    console.error("❌ PayPal verify error:", error);
+
     return NextResponse.json(
-      { success: false, error: "Payment verification failed" },
+      {
+        success: false,
+        error: "Payment verification failed",
+        details: error.message || "Unknown error",
+      },
       { status: 500 }
     );
   }

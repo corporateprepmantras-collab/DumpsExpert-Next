@@ -1,130 +1,92 @@
 import { NextResponse } from "next/server";
 import paypal from "@paypal/checkout-server-sdk";
 
-/* ---------------- HELPERS ---------------- */
-
-function getCountryFromRequest(request) {
-  const cfCountry = request.headers.get("cf-ipcountry");
-  if (cfCountry) return cfCountry;
-
-  return (
-    request.headers.get("x-vercel-ip-country") ||
-    request.headers.get("x-country-code") ||
-    "US"
-  );
-}
-
-function getCurrencyByCountry(country) {
-  if (country === "IN") return "INR";
-  if (country === "US") return "USD";
-  return "USD";
-}
-
-/* ---------------- POST HANDLER ---------------- */
-
 export async function POST(request) {
   try {
     const { amount, userId } = await request.json();
 
-    console.log("📥 PayPal order creation request:", {
-      amount,
-      userId,
-    });
+    console.log("🟦 PayPal create order request:", { amount, userId });
 
-    if (!amount) {
+    /* ---------------- VALIDATION ---------------- */
+    if (!amount || Number(amount) <= 0) {
       return NextResponse.json(
-        { error: "Missing required order details" },
+        { success: false, error: "Invalid amount" },
         { status: 400 }
       );
     }
 
-    /* 🌍 LOCATION DETECTION */
-    const country = getCountryFromRequest(request);
-    const uiCurrency = getCurrencyByCountry(country);
-
-    console.log("🌍 Location detected:", {
-      country,
-      uiCurrency,
-      userId,
-    });
-
-    /* 🔐 PAYPAL CREDS */
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
+    if (!userId) {
       return NextResponse.json(
-        {
-          error: "PayPal is not configured on the server",
-          hint: "Add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to .env.local",
-        },
+        { success: false, error: "User not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+      return NextResponse.json(
+        { success: false, error: "PayPal not configured on server" },
         { status: 500 }
       );
     }
 
-    /* 🧾 PAYPAL CLIENT */
-    const environment = new paypal.core.SandboxEnvironment(
-      clientId,
-      clientSecret
+    /* ---------------- PAYPAL CLIENT (LIVE) ---------------- */
+    const environment = new paypal.core.LiveEnvironment(
+      process.env.PAYPAL_CLIENT_ID,
+      process.env.PAYPAL_CLIENT_SECRET
     );
+
     const client = new paypal.core.PayPalHttpClient(environment);
 
-    /* ⚠️ PayPal Sandbox → USD only */
-    const paypalCurrency = "USD";
-
+    /* ---------------- CREATE ORDER ---------------- */
     const paypalRequest = new paypal.orders.OrdersCreateRequest();
+    paypalRequest.prefer("return=representation");
+
     paypalRequest.requestBody({
       intent: "CAPTURE",
       purchase_units: [
         {
           amount: {
-            currency_code: paypalCurrency,
+            currency_code: "USD", // MUST BE USD
             value: Number(amount).toFixed(2),
           },
-          description: "Order from DumpsExpert",
+          description: "DumpsExpert Purchase",
+          custom_id: userId,
         },
       ],
       application_context: {
         brand_name: "DumpsExpert",
-        landing_page: "NO_PREFERENCE",
+        landing_page: "LOGIN",
         user_action: "PAY_NOW",
-        return_url: `${
-          process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-        }/cart`,
-        cancel_url: `${
-          process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-        }/cart`,
+        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success?provider=paypal`,
+        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
       },
     });
 
-    console.log("📤 Sending request to PayPal...");
-
     const order = await client.execute(paypalRequest);
 
-    if (!order?.result?.id) {
-      throw new Error("Invalid PayPal response");
-    }
+    console.log("✅ PayPal order created:", order.result.id);
 
-    console.log("✅ PayPal order created:", {
-      orderId: order.result.id,
-      status: order.result.status,
-      paypalCurrency,
-      userCountry: country,
-      uiCurrency,
-    });
+    /* ---------------- APPROVAL URL ---------------- */
+    const approvalUrl = order.result.links.find(
+      (link) => link.rel === "approve"
+    )?.href;
+
+    if (!approvalUrl) {
+      throw new Error("PayPal approval URL not found");
+    }
 
     return NextResponse.json({
       success: true,
       orderId: order.result.id,
-      country,
-      currency: uiCurrency, // for frontend display
+      approvalUrl,
     });
   } catch (error) {
-    console.error("❌ PayPal order creation failed:", error);
+    console.error("❌ PayPal order error:", error);
 
     return NextResponse.json(
       {
-        error: "Payment initiation failed",
+        success: false,
+        error: "PayPal order creation failed",
         details: error.message,
       },
       { status: 500 }
