@@ -29,6 +29,10 @@ export async function POST(request) {
       );
     }
 
+    /* ---------------- BASE URL (SAFE) ---------------- */
+    const BASE_URL =
+      process.env.NEXT_PUBLIC_BASE_URL || "https://www.prepmantras.com";
+
     /* ---------------- PAYPAL CLIENT (LIVE) ---------------- */
     const environment = new paypal.core.LiveEnvironment(
       process.env.PAYPAL_CLIENT_ID,
@@ -46,7 +50,7 @@ export async function POST(request) {
       purchase_units: [
         {
           amount: {
-            currency_code: "USD", // MUST BE USD
+            currency_code: "USD", // REQUIRED for PayPal
             value: Number(amount).toFixed(2),
           },
           description: "DumpsExpert Purchase",
@@ -57,8 +61,8 @@ export async function POST(request) {
         brand_name: "DumpsExpert",
         landing_page: "LOGIN",
         user_action: "PAY_NOW",
-        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success?provider=paypal`,
-        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
+        return_url: `${BASE_URL}/payment-success?provider=paypal`,
+        cancel_url: `${BASE_URL}/cart`,
       },
     });
 
@@ -66,8 +70,7 @@ export async function POST(request) {
 
     console.log("✅ PayPal order created:", order.result.id);
 
-    /* ---------------- APPROVAL URL ---------------- */
-    const approvalUrl = order.result.links.find(
+    const approvalUrl = order.result.links?.find(
       (link) => link.rel === "approve"
     )?.href;
 
@@ -87,7 +90,7 @@ export async function POST(request) {
       {
         success: false,
         error: "PayPal order creation failed",
-        details: error.message,
+        details: error?.message || error,
       },
       { status: 500 }
     );

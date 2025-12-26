@@ -12,7 +12,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-
+import Link from "next/link";
 const GuestDashboard = () => {
   const [currentView, setCurrentView] = useState("dashboard");
   const [loading, setLoading] = useState(false);
@@ -59,6 +59,7 @@ const GuestDashboard = () => {
       icon: BookOpen,
       color: "bg-blue-50 text-blue-600",
       action: "Browse Now",
+      href: "/ItDumps",
     },
     {
       title: "Practice Tests",
@@ -66,6 +67,7 @@ const GuestDashboard = () => {
       icon: Award,
       color: "bg-purple-50 text-purple-600",
       action: "Start Practice",
+      href: "/ItDumps",
     },
     {
       title: "Study Materials",
@@ -73,6 +75,7 @@ const GuestDashboard = () => {
       icon: BookOpen,
       color: "bg-green-50 text-green-600",
       action: "View Resources",
+      href: "/ItDumps",
     },
   ];
 
@@ -297,9 +300,11 @@ const GuestDashboard = () => {
                 <span>Free Updates for 3 Months</span>
               </li>
             </ul>
-            <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
-              Upgrade to Premium
-            </button>
+            <Link href="/ItDumps">
+              <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
+                Buy Your First Exam Now
+              </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -350,23 +355,25 @@ const GuestDashboard = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-xl transition-shadow duration-300"
-            >
-              <div
-                className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}
-              >
-                <feature.icon size={24} />
+            <Link key={index} href="/ItDumps" className="block">
+              <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-xl transition-shadow duration-300 cursor-pointer">
+                <div
+                  className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}
+                >
+                  <feature.icon size={24} />
+                </div>
+
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {feature.title}
+                </h3>
+
+                <p className="text-gray-600 mb-4">{feature.description}</p>
+
+                <span className="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+                  {feature.action} →
+                </span>
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-gray-600 mb-4">{feature.description}</p>
-              <button className="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
-                {feature.action} →
-              </button>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -640,7 +647,7 @@ const GuestDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen pt-10 bg-gray-50">
       {/* Sidebar */}
       <aside className="w-64 bg-white shadow-lg border-r border-gray-200 fixed h-screen">
         <div className="p-6">
