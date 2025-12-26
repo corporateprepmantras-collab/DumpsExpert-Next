@@ -413,26 +413,85 @@ export default function HomePage({
         </section>
 
         {/* ========== Trending Certification Dumps ========== */}
-        <section className="py-16 px-4 md:px-12 bg-white">
-          <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
-            Top Trending Certification Dumps
-          </h2>
-
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {dumps && dumps.length > 0 ? (
-              dumps.map((dump) => (
-                <Button
-                  key={dump._id}
-                  variant="secondary"
-                  className="text-xs sm:text-sm md:text-base bg-[#113d48] text-white hover:bg-[#1a2e33] px-4 py-2 transition-colors"
-                >
-                  {dump.title}
-                </Button>
-              ))
-            ) : (
-              <p className="text-gray-500 text-sm">
-                No certification dumps available
+        <section className="py-12 px-4 sm:py-16 sm:px-6 lg:px-12 bg-gradient-to-b from-white to-gray-50">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-8 sm:mb-10">
+              <div className="inline-flex items-center justify-center gap-2 mb-3">
+                <span className="text-orange-500 font-semibold text-sm sm:text-base uppercase tracking-wide">
+                  Trending Now
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                Top Trending Certification Dumps
+              </h2>
+              <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+                Most popular certifications professionals are pursuing this
+                month
               </p>
+            </div>
+
+            {/* Dumps Grid */}
+            {dumps && dumps.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                {dumps.map((dump, index) => (
+                  <button
+                    key={dump._id}
+                    className="group relative bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-white border-2 border-gray-200 hover:border-orange-500 rounded-xl px-4 py-3 sm:px-5 sm:py-4 text-left transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-1 active:translate-y-0"
+                  >
+                    {/* Badge Number */}
+                    <div className="absolute -top-2 -left-2 bg-orange-500 text-white w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-lg group-hover:scale-110 transition-transform">
+                      {index + 1}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2">
+                          {dump.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          View Details →
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Hover Effect Line */}
+                    <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-orange-500 to-orange-600 w-0 group-hover:w-full transition-all duration-300 rounded-b-xl" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
+                <p className="text-gray-500 text-sm sm:text-base font-medium">
+                  No certification dumps available
+                </p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                  Check back soon for trending certifications
+                </p>
+              </div>
+            )}
+
+            {/* View All Button */}
+            {dumps && dumps.length > 0 && (
+              <div className="text-center mt-8 sm:mt-12">
+                <button className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 sm:px-8 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-sm sm:text-base">
+                  View All Certifications
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </button>
+              </div>
             )}
           </div>
         </section>

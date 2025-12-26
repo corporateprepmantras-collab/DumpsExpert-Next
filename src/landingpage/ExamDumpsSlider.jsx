@@ -12,8 +12,6 @@ export default function ExamDumpsSlider({ products = [] }) {
   const [visibleItems, setVisibleItems] = useState(new Set());
   const observerRef = useRef(null);
 
-
-  
   // Responsive visible cards
   useEffect(() => {
     const handleResize = () => {
@@ -219,11 +217,11 @@ export default function ExamDumpsSlider({ products = [] }) {
                     className="block flex flex-col h-full"
                   >
                     {/* Image Container */}
-                    <div className="relative w-full h-56 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden flex-shrink-0">
+                    <div className="relative w-full h-48 sm:h-56 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden flex-shrink-0">
                       <img
                         src={product.imageUrl || "/placeholder.png"}
                         alt={product.title}
-                        className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110 pointer-events-none"
+                        className="w-full h-full object-contain object-center p-4 sm:object-cover sm:p-0 transition-transform duration-700 group-hover:scale-110 pointer-events-none"
                         loading="lazy"
                         decoding="async"
                         draggable="false"

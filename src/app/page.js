@@ -85,7 +85,7 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
 
 // ✅ Fetch functions with fallbacks
 async function fetchDumps() {
-  const result = await fetchWithTimeout("/trending", 8000);
+  const result = await fetchWithTimeout("/api/trending", 8000);
   if (result.error) return [];
 
   const data = result.data;
