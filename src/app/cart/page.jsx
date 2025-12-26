@@ -791,7 +791,7 @@ const Cart = () => {
                         )}
                       </div>
 
-                      {/* Quantity Controls */}
+                      {/* Quantity Controls
                       <div className="flex items-center gap-3">
                         <div className="flex items-center border border-gray-300 rounded">
                           <button
@@ -822,7 +822,7 @@ const Cart = () => {
                         >
                           Remove
                         </button>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 );
