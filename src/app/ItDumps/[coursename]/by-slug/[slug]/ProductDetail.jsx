@@ -825,57 +825,10 @@ export default function ProductDetailsPage() {
                 </div>
               )}
           </div>
-
           {/* Description */}
-          {/* Description */}
-          <div className="bg-white rounded-2xl shadow-md p-4 mt-4 w-full overflow-hidden">
-            <h2 className="text-base font-bold text-gray-900 mb-2">
-              Description
-            </h2>
-
-            <div className="w-full overflow-x-auto">
-              <div
-                className="
-        prose prose-sm max-w-full
-        prose-p:text-gray-700
-        prose-li:text-gray-700
-        prose-a:text-blue-600
-        prose-a:break-all
-        prose-headings:break-words
-
-        break-words
-        whitespace-normal
-
-        [&_*]:max-w-full
-        [&_*]:break-words
-
-        [&_img]:max-w-full
-        [&_img]:h-auto
-
-        [&_table]:max-w-full
-        [&_table]:block
-        [&_table]:overflow-x-auto
-
-        [&_pre]:max-w-full
-        [&_pre]:overflow-x-auto
-
-        [&_code]:break-all
-      "
-                style={{
-                  wordBreak: "break-word",
-                  overflowWrap: "anywhere",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: product.Description || "No description available",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Long Description */}
           <div className="bg-white rounded-2xl shadow-lg p-4">
             <h2 className="text-lg font-bold mb-3 text-gray-900">
-              Detailed Overview
+              Description
             </h2>
 
             <div className="relative w-full overflow-visible">
@@ -904,11 +857,48 @@ export default function ProductDetailsPage() {
                   overflowWrap: "anywhere",
                 }}
                 dangerouslySetInnerHTML={{
-                  __html:
-                    product.longDescription || "No detailed overview available",
+                  __html: product.Description || "No description available",
                 }}
               />
             </div>
+          </div>
+
+          {/* Long Description */}
+          <div className="bg-white rounded-2xl shadow-lg p-4 overflow-hidden">
+            <h2 className="text-lg font-bold mb-3 text-gray-900">
+              Detailed Overview
+            </h2>
+            <div
+              className="
+                prose prose-sm max-w-full
+                prose-p:text-gray-700 prose-p:break-words
+                prose-li:text-gray-700 prose-li:break-words
+                prose-strong:text-gray-900
+                prose-a:text-blue-600 prose-a:break-all
+                prose-headings:break-words
+                break-words
+                overflow-hidden
+                [&_*]:max-w-full
+                [&_*]:break-words
+                [&_img]:max-w-full
+                [&_img]:h-auto
+                [&_table]:block
+                [&_table]:max-w-full
+                [&_table]:overflow-x-auto
+                [&_pre]:overflow-x-auto
+                [&_pre]:max-w-full
+                [&_code]:break-all
+              "
+              style={{
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+                maxWidth: "100%",
+              }}
+              dangerouslySetInnerHTML={{
+                __html:
+                  product.longDescription || "No detailed overview available",
+              }}
+            />
           </div>
         </div>
       </div>
