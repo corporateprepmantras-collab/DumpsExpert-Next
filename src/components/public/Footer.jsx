@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FaFacebookF,
   FaLinkedinIn,
@@ -11,6 +12,12 @@ import dumpslogo from "../../assets/logo/premantras_logo.png";
 import PaymentGateway from "../../assets/landingassets/paymentGateway.png";
 
 export default function Footer() {
+  const router = useRouter();
+
+  const handleNavigation = (path) => {
+    router.push(path);
+  };
+
   return (
     <footer className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-gray-300 relative overflow-hidden">
       {/* Subtle background pattern */}
@@ -72,12 +79,14 @@ export default function Footer() {
                 "Microsoft",
               ].map((cat, i, arr) => (
                 <span key={cat}>
-                  <Link
-                    href="#"
-                    className="hover:text-blue-400 transition-colors"
+                  <button
+                    onClick={() =>
+                      handleNavigation(`/category/${cat.toLowerCase()}`)
+                    }
+                    className="hover:text-blue-400 transition-colors cursor-pointer"
                   >
                     {cat}
-                  </Link>
+                  </button>
                   {i < arr.length - 1 && <span className="ml-2">|</span>}
                 </span>
               ))}
@@ -91,44 +100,44 @@ export default function Footer() {
             </h3>
             <ul className="space-y-1 text-xs text-gray-400">
               <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-400 transition-colors"
+                <button
+                  onClick={() => handleNavigation("/about-us")}
+                  className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   About Us
-                </Link>
+                </button>
               </li>
               <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-400 transition-colors"
+                <button
+                  onClick={() => handleNavigation("/products")}
+                  className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   IT Dumps
-                </Link>
+                </button>
               </li>
               <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-400 transition-colors"
+                <button
+                  onClick={() => handleNavigation("/guarantee")}
+                  className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   Guarantee
-                </Link>
+                </button>
               </li>
               <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-400 transition-colors"
+                <button
+                  onClick={() => handleNavigation("/privacy-policy")}
+                  className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   Privacy Policy
-                </Link>
+                </button>
               </li>
               <li>
-                <Link
-                  href="#"
-                  className="hover:text-blue-400 transition-colors"
+                <button
+                  onClick={() => handleNavigation("/terms-and-conditions")}
+                  className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   Terms & Conditions
-                </Link>
+                </button>
               </li>
             </ul>
           </div>
@@ -139,30 +148,38 @@ export default function Footer() {
               Connect With Us
             </h3>
             <div className="flex gap-2 mb-3 flex-wrap">
-              <Link
-                href="#"
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaFacebookF className="text-white text-sm" />
-              </Link>
-              <Link
-                href="#"
+              </a>
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-blue-700 hover:bg-blue-800 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaLinkedinIn className="text-white text-sm" />
-              </Link>
-              <Link
-                href="#"
+              </a>
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-red-600 hover:bg-red-700 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaYoutube className="text-white text-sm" />
-              </Link>
-              <Link
-                href="#"
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-gradient-to-br from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaInstagram className="text-white text-sm" />
-              </Link>
+              </a>
             </div>
             <div className="mt-3">
               <p className="text-xs text-gray-400 mb-2 font-semibold">
