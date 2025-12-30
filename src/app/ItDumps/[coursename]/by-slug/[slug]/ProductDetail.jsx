@@ -198,6 +198,8 @@ export default function ProductDetailsPage() {
 
   const productAvailable = isProductAvailable(product);
 
+  // Update the handleAddToCart function in your ProductDetailsPage component
+
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
 
@@ -221,6 +223,17 @@ export default function ProductDetailsPage() {
       toNum(product.comboPriceUsd) === 0
     ) {
       toast.error("⚠️ Combo package is not available for this product");
+      return;
+    }
+
+    // Check if item already exists in cart
+    const cartStore = useCartStore.getState();
+    const existingItem = cartStore.cartItems.find(
+      (item) => item._id === product._id && item.type === type
+    );
+
+    if (existingItem) {
+      toast.info("ℹ️ This item is already in your cart");
       return;
     }
 
@@ -269,7 +282,6 @@ export default function ProductDetailsPage() {
       metaKeywords: product.metaKeywords || "",
       metaDescription: product.metaDescription || "",
       schema: product.schema || "",
-      quantity: 1,
     };
 
     switch (type) {

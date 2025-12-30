@@ -25,7 +25,6 @@ const Cart = () => {
 
   const cartItems = useCartStore((state) => state.cartItems);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
-  const updateQuantity = useCartStore((state) => state.updateQuantity);
   const clearCart = useCartStore((state) => state.clearCart);
   const [userCountry, setUserCountry] = useState("IN");
   const isIndia = userCountry === "IN";
@@ -135,7 +134,7 @@ const Cart = () => {
   const calculateSubtotal = () => {
     return cartItems.reduce((acc, item) => {
       const itemPrice = getItemPrice(item, selectedCurrency);
-      return acc + itemPrice * (item.quantity || 1);
+      return acc + itemPrice; // Remove quantity multiplication
     }, 0);
   };
 
@@ -217,13 +216,6 @@ const Cart = () => {
       setAppliedCoupon(null);
       setCouponCode("");
     }
-  };
-
-  const handleQuantityChange = (id, type, operation) => {
-    updateQuantity(id, type, operation);
-    toast.success(
-      `Quantity ${operation === "inc" ? "increased" : "decreased"}`
-    );
   };
 
   const handleCoupon = async () => {
@@ -348,7 +340,6 @@ const Cart = () => {
           metaKeywords: item.metaKeywords,
           metaDescription: item.metaDescription,
           schema: item.schema,
-          quantity: item.quantity || 1,
         };
       }),
       totalAmount: grandTotal,
@@ -641,16 +632,23 @@ const Cart = () => {
             Shopping Cart
           </h1>
 
-          {/* Simple Currency Switcher */}
+          {/* Enhanced Currency Switcher */}
           <div className="relative">
             <button
               onClick={() => setShowCurrencySwitcher(!showCurrencySwitcher)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:border-gray-400 transition-colors text-sm font-medium"
+              className="flex items-center gap-3 px-5 py-2.5 bg-white border-2 border-gray-300 rounded-lg hover:border-blue-500 transition-all shadow-sm hover:shadow-md text-sm font-semibold"
             >
-              <span>{selectedCurrency === "USD" ? "$" : "₹"}</span>
-              <span>{selectedCurrency}</span>
+              <span className="text-2xl">
+                {selectedCurrency === "USD" ? "💵" : "💰"}
+              </span>
+              <div className="flex flex-col items-start">
+                <span className="text-xs text-gray-500">Currency</span>
+                <span className="text-base font-bold text-gray-900">
+                  {selectedCurrency}
+                </span>
+              </div>
               <svg
-                className={`w-4 h-4 transition-transform ${
+                className={`w-5 h-5 transition-transform duration-200 text-gray-600 ${
                   showCurrencySwitcher ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -667,42 +665,111 @@ const Cart = () => {
             </button>
 
             {showCurrencySwitcher && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                <div className="p-2">
-                  <button
-                    onClick={() => {
-                      setSelectedCurrency("INR");
-                      setShowCurrencySwitcher(false);
-                      setAppliedCoupon(null);
-                      setCouponCode("");
-                      toast.success("Currency changed to INR");
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded text-sm ${
-                      selectedCurrency === "INR"
-                        ? "bg-blue-50 text-blue-700 font-medium"
-                        : "hover:bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    ₹ Indian Rupee (INR)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedCurrency("USD");
-                      setShowCurrencySwitcher(false);
-                      setAppliedCoupon(null);
-                      setCouponCode("");
-                      toast.success("Currency changed to USD");
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded text-sm mt-1 ${
-                      selectedCurrency === "USD"
-                        ? "bg-blue-50 text-blue-700 font-medium"
-                        : "hover:bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    $ US Dollar (USD)
-                  </button>
+              <>
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowCurrencySwitcher(false)}
+                ></div>
+
+                {/* Dropdown */}
+                <div className="absolute right-0 mt-2 w-64 bg-white border-2 border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                    <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      Select Currency
+                    </p>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setSelectedCurrency("INR");
+                        setShowCurrencySwitcher(false);
+                        setAppliedCoupon(null);
+                        setCouponCode("");
+                        toast.success("Currency changed to INR (₹)");
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all ${
+                        selectedCurrency === "INR"
+                          ? "bg-blue-500 text-white font-bold shadow-lg transform scale-[1.02]"
+                          : "hover:bg-gray-100 text-gray-700 font-medium"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">💰</span>
+                        <div>
+                          <div className="font-bold">Indian Rupee</div>
+                          <div
+                            className={`text-xs ${
+                              selectedCurrency === "INR"
+                                ? "text-blue-100"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            INR (₹)
+                          </div>
+                        </div>
+                        {selectedCurrency === "INR" && (
+                          <svg
+                            className="w-5 h-5 ml-auto"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedCurrency("USD");
+                        setShowCurrencySwitcher(false);
+                        setAppliedCoupon(null);
+                        setCouponCode("");
+                        toast.success("Currency changed to USD ($)");
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-lg text-sm mt-2 transition-all ${
+                        selectedCurrency === "USD"
+                          ? "bg-blue-500 text-white font-bold shadow-lg transform scale-[1.02]"
+                          : "hover:bg-gray-100 text-gray-700 font-medium"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">💵</span>
+                        <div>
+                          <div className="font-bold">US Dollar</div>
+                          <div
+                            className={`text-xs ${
+                              selectedCurrency === "USD"
+                                ? "text-blue-100"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            USD ($)
+                          </div>
+                        </div>
+                        {selectedCurrency === "USD" && (
+                          <svg
+                            className="w-5 h-5 ml-auto"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -744,7 +811,7 @@ const Cart = () => {
                 return (
                   <div
                     key={`${item._id}-${item.type}`}
-                    className="bg-white rounded-lg shadow-sm p-6 flex items-start gap-4"
+                    className="bg-white rounded-lg shadow-sm p-6 flex items-start gap-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex-shrink-0">
                       <Image
@@ -789,40 +856,35 @@ const Cart = () => {
                             </span>
                           </>
                         )}
+
+                        {/* Debug info - remove after testing */}
+                        <span className="text-xs text-gray-400 ml-2">
+                          (Type: {item.type || "regular"})
+                        </span>
                       </div>
 
-                      {/* Quantity Controls
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center border border-gray-300 rounded">
-                          <button
-                            onClick={() =>
-                              handleQuantityChange(item._id, item.type, "dec")
-                            }
-                            className="px-3 py-1 hover:bg-gray-100 disabled:opacity-50"
-                            disabled={item.quantity <= 1}
-                          >
-                            -
-                          </button>
-                          <span className="px-4 py-1 border-x border-gray-300">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              handleQuantityChange(item._id, item.type, "inc")
-                            }
-                            className="px-3 py-1 hover:bg-gray-100"
-                          >
-                            +
-                          </button>
-                        </div>
-
+                      {/* Remove Button */}
+                      <div className="flex items-center gap-3 mt-2">
                         <button
                           onClick={() => handleDelete(item._id, item.type)}
-                          className="text-red-600 hover:text-red-700 text-sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border border-red-200"
                         >
-                          Remove
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                          Remove from Cart
                         </button>
-                      </div> */}
+                      </div>
                     </div>
                   </div>
                 );

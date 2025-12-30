@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 
-// ✅ OPTIMIZED: Cart store with better performance
+// ✅ OPTIMIZED: Cart store WITHOUT quantity - one item per type only
 const cartStore = (set, get) => ({
   cartItems: [],
   isLoading: false,
   lastUpdated: null,
 
-  // ✅ OPTIMIZED: Add to cart with validation
+  // ✅ OPTIMIZED: Add to cart - prevents duplicates
   addToCart: (item) => {
     if (!item || !item._id) {
       console.error("❌ Invalid item:", item);
@@ -20,38 +20,45 @@ const cartStore = (set, get) => ({
       id: item._id,
     });
 
+    // ✅ Check if item already exists (same product + same type)
     const existing = get().cartItems.find(
       (i) => i._id === item._id && i.type === item.type
     );
 
     if (existing) {
-      // ✅ OPTIMIZED: Update existing item
-      set({
-        cartItems: get().cartItems.map((i) =>
-          i._id === item._id && i.type === item.type
-            ? { ...i, quantity: (i.quantity || 1) + 1 }
-            : i
-        ),
-        lastUpdated: Date.now(),
-      });
-      console.log("📦 Item quantity updated");
-      return true;
+      console.log("ℹ️ Item already in cart, not adding duplicate");
+      return false; // Don't add duplicate
     }
 
-    // ✅ OPTIMIZED: Safe number conversion
-    const toNum = (val) => {
+    // ✅ OPTIMIZED: Safe number conversion with logging
+    const toNum = (val, fieldName = "") => {
       if (val === null || val === undefined || val === "") return 0;
       const num = Number(val);
-      return isNaN(num) ? 0 : num;
+      const result = isNaN(num) ? 0 : num;
+      if (fieldName && result === 0 && val !== 0) {
+        console.log(`⚠️ ${fieldName} conversion resulted in 0:`, val);
+      }
+      return result;
     };
 
-    // ✅ OPTIMIZED: Store only necessary fields (smaller storage)
+    // Log incoming item prices for debugging
+    console.log("📊 Item prices:", {
+      title: item.title,
+      type: item.type,
+      dumpsPriceInr: item.dumpsPriceInr,
+      dumpsPriceUsd: item.dumpsPriceUsd,
+      priceINR: item.priceINR,
+      priceUSD: item.priceUSD,
+      price: item.price,
+    });
+
+    // ✅ OPTIMIZED: Store only necessary fields (NO quantity field)
     const cartItem = {
       _id: item._id,
       productId: item.productId || item._id,
       title: item.title || item.name,
+      name: item.name || item.title,
       type: item.type || "regular",
-      quantity: 1,
 
       // ✅ Pricing - All converted to numbers
       price: toNum(item.price),
@@ -59,20 +66,49 @@ const cartStore = (set, get) => ({
       priceUSD: toNum(item.priceUSD),
       dumpsPriceInr: toNum(item.dumpsPriceInr),
       dumpsPriceUsd: toNum(item.dumpsPriceUsd),
+      dumpsMrpInr: toNum(item.dumpsMrpInr),
+      dumpsMrpUsd: toNum(item.dumpsMrpUsd),
       examPriceInr: toNum(item.examPriceInr),
       examPriceUsd: toNum(item.examPriceUsd),
+      examMrpInr: toNum(item.examMrpInr),
+      examMrpUsd: toNum(item.examMrpUsd),
       comboPriceInr: toNum(item.comboPriceInr),
       comboPriceUsd: toNum(item.comboPriceUsd),
+      comboMrpInr: toNum(item.comboMrpInr),
+      comboMrpUsd: toNum(item.comboMrpUsd),
 
       // ✅ Product info
       category: item.category,
       sapExamCode: item.sapExamCode,
+      code: item.code || item.sapExamCode,
       imageUrl: item.imageUrl,
+      slug: item.slug,
+      sku: item.sku,
 
       // ✅ Exam details
       numberOfQuestions: item.numberOfQuestions,
       duration: item.duration,
       passingScore: item.passingScore,
+      eachQuestionMark: item.eachQuestionMark,
+
+      // ✅ PDF URLs
+      mainPdfUrl: item.mainPdfUrl || "",
+      samplePdfUrl: item.samplePdfUrl || "",
+
+      // ✅ Instructions & Descriptions
+      mainInstructions: item.mainInstructions || "",
+      sampleInstructions: item.sampleInstructions || "",
+      Description: item.Description || "",
+      longDescription: item.longDescription || "",
+
+      // ✅ Meta & Status
+      status: item.status || "active",
+      action: item.action || "",
+      metaTitle: item.metaTitle || "",
+      metaKeywords: item.metaKeywords || "",
+      metaDescription: item.metaDescription || "",
+      schema: item.schema || "",
+      courseId: item.courseId || item._id,
     };
 
     set({
@@ -92,25 +128,10 @@ const cartStore = (set, get) => ({
       ),
       lastUpdated: Date.now(),
     });
-    console.log(`🗑️ Item removed: ${id}`);
+    console.log(`🗑️ Item removed: ${id} (${type})`);
   },
 
-  // ✅ OPTIMIZED: Update quantity
-  updateQuantity: (id, type, newQuantity) => {
-    if (newQuantity < 1) {
-      get().removeFromCart(id, type);
-      return;
-    }
-
-    set({
-      cartItems: get().cartItems.map((item) =>
-        item._id === id && item.type === type
-          ? { ...item, quantity: newQuantity }
-          : item
-      ),
-      lastUpdated: Date.now(),
-    });
-  },
+  // ✅ REMOVED: No updateQuantity function needed
 
   // ✅ OPTIMIZED: Clear cart
   clearCart: () => {
@@ -123,36 +144,79 @@ const cartStore = (set, get) => ({
     if (!item) return 0;
 
     const type = item.type || "regular";
-    const key = `${type}Price${currency === "USD" ? "Usd" : "Inr"}`;
+    const toNum = (val) => {
+      if (val === null || val === undefined || val === "") return 0;
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
 
-    // ✅ Fallback chain for pricing
-    const price =
-      item[key] ||
-      (currency === "USD" ? item.priceUSD : item.priceINR) ||
-      item.price ||
-      0;
-
-    return Math.max(0, Number(price) || 0);
+    if (currency === "USD") {
+      switch (type) {
+        case "combo":
+          return (
+            toNum(item.comboPriceUsd) ||
+            toNum(item.priceUSD) ||
+            toNum(item.price) ||
+            0
+          );
+        case "online":
+          return (
+            toNum(item.examPriceUsd) ||
+            toNum(item.priceUSD) ||
+            toNum(item.price) ||
+            0
+          );
+        case "regular":
+        default:
+          return (
+            toNum(item.dumpsPriceUsd) ||
+            toNum(item.priceUSD) ||
+            toNum(item.price) ||
+            0
+          );
+      }
+    } else {
+      switch (type) {
+        case "combo":
+          return (
+            toNum(item.comboPriceInr) ||
+            toNum(item.priceINR) ||
+            toNum(item.price) ||
+            0
+          );
+        case "online":
+          return (
+            toNum(item.examPriceInr) ||
+            toNum(item.priceINR) ||
+            toNum(item.price) ||
+            0
+          );
+        case "regular":
+        default:
+          return (
+            toNum(item.dumpsPriceInr) ||
+            toNum(item.priceINR) ||
+            toNum(item.price) ||
+            0
+          );
+      }
+    }
   },
 
-  // ✅ OPTIMIZED: Get cart total (memoized calculation)
+  // ✅ OPTIMIZED: Get cart total (NO quantity multiplication)
   getCartTotal: (currency = "INR") => {
     return get().cartItems.reduce((total, item) => {
       const price = get().getItemPrice(item, currency);
-      const quantity = item.quantity || 1;
-      return total + price * quantity;
+      return total + price; // No quantity multiplication
     }, 0);
   },
 
-  // ✅ OPTIMIZED: Get item count
+  // ✅ OPTIMIZED: Get item count (just count of items)
   getItemCount: () => {
-    return get().cartItems.reduce(
-      (count, item) => count + (item.quantity || 1),
-      0
-    );
+    return get().cartItems.length; // No quantity sum
   },
 
-  // ✅ OPTIMIZED: Get unique product count
+  // ✅ OPTIMIZED: Get unique product count (same as item count now)
   getUniqueItemCount: () => {
     return get().cartItems.length;
   },
@@ -177,12 +241,12 @@ const useCartStore = create(
   subscribeWithSelector(
     persist(cartStore, {
       name: "prepmantras-cart",
-      version: 6, // Incremented for cleanup
+      version: 7, // Incremented for no-quantity system
 
-      // ✅ Migration handler
+      // ✅ Migration handler - clear old cart with quantity system
       migrate: (persistedState, version) => {
-        if (version < 6) {
-          console.log("🔄 Migrating cart to v6");
+        if (version < 7) {
+          console.log("🔄 Migrating cart to v7 (no-quantity system)");
           return { cartItems: [], lastUpdated: null };
         }
         return persistedState;
@@ -203,9 +267,6 @@ const useCartStore = create(
     })
   )
 );
-//rate limiter
-// frontend filds check 
-// amount varifaction .. and stuff from backend . also  and quantity
 
 // ✅ OPTIMIZED: Selectors for better performance (only re-render what changed)
 export const useCartItems = () => useCartStore((state) => state.cartItems);
@@ -220,8 +281,6 @@ export const useLastUpdated = () => useCartStore((state) => state.lastUpdated);
 export const addToCart = (item) => useCartStore.getState().addToCart(item);
 export const removeFromCart = (id, type) =>
   useCartStore.getState().removeFromCart(id, type);
-export const updateQuantity = (id, type, quantity) =>
-  useCartStore.getState().updateQuantity(id, type, quantity);
 export const clearCart = () => useCartStore.getState().clearCart();
 export const getCartTotal = (currency = "INR") =>
   useCartStore.getState().getCartTotal(currency);
