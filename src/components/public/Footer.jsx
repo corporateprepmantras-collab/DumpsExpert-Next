@@ -101,7 +101,7 @@ export default function Footer() {
             <ul className="space-y-1 text-xs text-gray-400">
               <li>
                 <button
-                  onClick={() => handleNavigation("/about-us")}
+                  onClick={() => handleNavigation("/about")}
                   className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   About Us
@@ -109,7 +109,7 @@ export default function Footer() {
               </li>
               <li>
                 <button
-                  onClick={() => handleNavigation("/products")}
+                  onClick={() => handleNavigation("/itDumps")}
                   className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   IT Dumps
@@ -133,7 +133,7 @@ export default function Footer() {
               </li>
               <li>
                 <button
-                  onClick={() => handleNavigation("/terms-and-conditions")}
+                  onClick={() => handleNavigation("/terms")}
                   className="hover:text-blue-400 transition-colors cursor-pointer text-left"
                 >
                   Terms & Conditions
