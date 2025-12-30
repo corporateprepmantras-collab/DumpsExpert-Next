@@ -13,43 +13,45 @@ export default function SignUp() {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+
   const router = useRouter();
+
+  /* ---------------- SEND OTP ---------------- */
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    setError("");
+    if (sendingOtp) return;
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
+    setError("");
+    setSendingOtp(true);
 
     try {
-      const response = await fetch("/api/signup/otp-send", {
+      const res = await fetch("/api/signup/otp-send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!response.ok) {
-        setError(data.message || data.error || "Failed to send OTP");
-        if (
-          data.message?.includes("already exists") ||
-          data.error?.includes("already exists")
-        ) {
-          router.push("/auth/signin");
-        }
+      if (!res.ok) {
+        setError(data.message || "Failed to send OTP");
+        setSendingOtp(false);
         return;
       }
 
       setStep(2);
-    } catch (err) {
-      setError("An error occurred while sending OTP. Please try again.");
-      console.error("Send OTP error:", err);
+
+      // 🔒 lock resend for 30 seconds
+      setTimeout(() => setSendingOtp(false), 30000);
+    } catch {
+      setError("Network error. Try again.");
+      setSendingOtp(false);
     }
   };
+
+  /* ---------------- VERIFY OTP ---------------- */
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
@@ -61,51 +63,27 @@ export default function SignUp() {
     }
 
     try {
-      const response = await fetch("/api/signup/otp-verify", {
+      const res = await fetch("/api/signup/otp-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, password, name }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || data.error || "OTP verification failed");
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "OTP verification failed");
         return;
       }
 
-      // Attempt to sign in with credentials
-      const result = await signIn("credentials", {
+      await signIn("credentials", {
         email,
         password,
         redirect: false,
       });
 
-      if (result?.error) {
-        setError(result.error || "Sign-in failed");
-        return;
-      }
-
-      // Refresh session to update JWT claims
-      await signIn(undefined, { redirect: false });
-
-      // Redirect to dashboard
-      router.push(data.redirect || "/dashboard");
-    } catch (err) {
-      setError("An error occurred during OTP verification. Please try again.");
-      console.error("Verify OTP error:", err);
-    }
-  };
-
-  const handleOAuthSignUp = async (provider) => {
-    try {
-      const result = await signIn(provider, { callbackUrl: "/dashboard" });
-      if (result?.error) {
-        setError("OAuth sign-up failed");
-      }
-    } catch (err) {
-      setError("An error occurred during OAuth sign-up. Please try again.");
-      console.error("OAuth signup error:", err);
+      router.push("/dashboard");
+    } catch {
+      setError("Verification failed");
     }
   };
 
@@ -117,89 +95,71 @@ export default function SignUp() {
 
         {step === 1 ? (
           <form onSubmit={handleSendOTP}>
-            <div className="mb-4">
-              <label className="block text-gray-700">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
-                required
-              />
-            </div>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full mb-4 px-3 py-2 border rounded"
+              required
+            />
+
             <button
-              type="submit"
-              className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+              disabled={sendingOtp}
+              className={`w-full py-2 rounded text-white ${
+                sendingOtp ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
+              }`}
             >
-              Send OTP
+              {sendingOtp ? "Sending OTP..." : "Send OTP"}
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerifyOTP}>
-            <div className="mb-4">
-              <label className="block text-gray-700">Name</label>
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full mb-3 px-3 py-2 border rounded"
+              required
+            />
+
+            <div className="relative mb-3">
               <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border rounded pr-10"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
             </div>
-            <div className="mb-4">
-              <label className="block text-gray-700">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border rounded pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700">OTP</label>
-              <input
-                type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-            >
+
+            <input
+              type="text"
+              placeholder="OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              className="w-full mb-4 px-3 py-2 border rounded"
+              required
+            />
+
+            <button className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
               Verify OTP & Sign Up
             </button>
           </form>
         )}
 
-        <div className="mt-4">
-          <button
-            onClick={() => handleOAuthSignUp("google")}
-            className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 mb-2"
-          >
-            Sign Up with Google
-          </button>
-        </div>
-
         <p className="mt-4 text-center">
           Already have an account?{" "}
-          <Link href="/auth/signin" className="text-blue-500 hover:underline">
+          <Link href="/auth/signin" className="text-blue-500">
             Sign In
           </Link>
         </p>
