@@ -139,7 +139,7 @@ export async function generateMetadata({ params }) {
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const url = `${siteUrl}/ItDumps/sap/by-slug/${slug}`;
+    const url = `${siteUrl}/ItDumps/sap/${slug}`;
     const imageUrl = product.imageUrl || `${siteUrl}/default-product.webp`;
 
     // Clean description from HTML

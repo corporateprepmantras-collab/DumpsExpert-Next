@@ -213,7 +213,7 @@ export default function ExamDumpsSlider({ products = [] }) {
                   }}
                 >
                   <a
-                    href={`/ItDumps/sap/by-slug/${slug}`}
+                    href={`/ItDumps/sap/${slug}`}
                     className="block flex flex-col h-full"
                   >
                     {/* Image Container */}

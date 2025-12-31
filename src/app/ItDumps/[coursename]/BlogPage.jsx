@@ -107,9 +107,7 @@ const BlogPage = () => {
             "url(https://t3.ftcdn.net/jpg/03/16/91/28/360_F_316912806_RCeHVmUx5LuBMi7MKYTY5arkE4I0DcpU.jpg)",
         }}
       >
-        <h1 className="text-4xl pt-24 font-bold text-center mb-6">
-          OUR BLOGS
-        </h1>
+        <h1 className="text-4xl pt-24 font-bold text-center mb-6">OUR BLOGS</h1>
 
         {/* ================= Categories Filter ================= */}
         <div className="flex flex-wrap justify-center gap-2">
@@ -153,13 +151,12 @@ const BlogPage = () => {
           ) : error ? (
             <p className="text-center text-red-500 col-span-full">{error}</p>
           ) : filteredBlogs.length === 0 ? (
-            <p className="text-gray-600 italic col-span-full">No blogs found.</p>
+            <p className="text-gray-600 italic col-span-full">
+              No blogs found.
+            </p>
           ) : (
             filteredBlogs.map((blog, idx) => (
-              <Link
-                key={blog._id ?? idx}
-                href={`/blogsPages/by-slug/${blog.slug}`}
-              >
+              <Link key={blog._id ?? idx} href={`/blogsPages/${blog.slug}`}>
                 <BlogCard
                   title={blog.title}
                   description={blog.metaDescription}
@@ -193,7 +190,7 @@ const BlogPage = () => {
               {recentPosts.map((post) => (
                 <li key={post._id ?? post.slug}>
                   <Link
-                    href={`/blogsPages/by-slug/${post.slug}`}
+                    href={`/blogsPages/${post.slug}`}
                     className="text-blue-600 hover:underline block"
                   >
                     {post.title}

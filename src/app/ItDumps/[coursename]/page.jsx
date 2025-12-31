@@ -319,7 +319,7 @@ export default async function CategoryPage({ params, searchParams }) {
                       </td>
                       <td className="px-4 py-3">
                         <Link
-                          href={`/ItDumps/${coursename}/by-slug/${product.slug}`}
+                          href={`/ItDumps/${coursename}/${product.slug}`}
                           className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md shadow-sm transition"
                         >
                           See Details
@@ -360,7 +360,7 @@ export default async function CategoryPage({ params, searchParams }) {
                   </div>
                   <div className="absolute bottom-4 left-4 right-4">
                     <Link
-                      href={`/ItDumps/${coursename}/by-slug/${product.slug}`}
+                      href={`/ItDumps/${coursename}/${product.slug}`}
                       className="block bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow transition"
                     >
                       See Details

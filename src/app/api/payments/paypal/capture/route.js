@@ -28,23 +28,17 @@ export async function POST(request) {
       throw new Error("Payment not completed");
     }
 
-    const transactionId =
-      capture.result.purchase_units[0].payments.captures[0].id;
+    const paymentId = capture.result.purchase_units[0].payments.captures[0].id;
 
     return NextResponse.json({
       success: true,
-      paymentId: transactionId,
+      paymentId,
       status: capture.result.status,
     });
   } catch (error) {
-    console.error("❌ PayPal capture error:", error);
-
+    console.error("❌ PayPal capture failed:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: "PayPal capture failed",
-        details: error?.message,
-      },
+      { success: false, error: "PayPal capture failed" },
       { status: 500 }
     );
   }

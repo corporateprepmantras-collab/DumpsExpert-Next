@@ -150,7 +150,7 @@ export default function AboutUs() {
               return (
                 <a
                   key={product._id}
-                  href={`/ItDumps/sap/by-slug/${slug}`}
+                  href={`/ItDumps/sap/${slug}`}
                   className="group bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden flex flex-col"
                 >
                   <div className="h-52 bg-orange-50 overflow-hidden">

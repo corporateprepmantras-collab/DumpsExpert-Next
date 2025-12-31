@@ -34,7 +34,7 @@ export default function SearchPage() {
     const slug = encodeURIComponent(product.slug || product.title);
     return (
       <Link
-        href={`/ItDumps/${product.category}/by-slug/${slug}`}
+        href={`/ItDumps/${product.category}/${slug}`}
         className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col hover:shadow-lg transition"
       >
         <img

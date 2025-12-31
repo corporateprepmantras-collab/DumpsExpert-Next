@@ -588,29 +588,23 @@ const Cart = () => {
     }
 
     try {
-      const amountInUSD = grandTotal;
+      toast.loading("Redirecting to PayPal...");
 
       const response = await axios.post("/api/payments/paypal/create-order", {
-        amount: amountInUSD,
-        currency: "USD",
+        amount: grandTotal,
         userId,
       });
 
-      if (!response.data?.success || !response.data?.orderId) {
-        throw new Error(response.data.error || "Failed to create PayPal order");
+      if (!response.data?.success || !response.data?.approvalUrl) {
+        throw new Error("PayPal approval URL missing");
       }
 
-      return response.data.orderId;
+      toast.dismiss();
+      window.location.href = response.data.approvalUrl; // ✅ USE THIS
     } catch (error) {
-      console.error("❌ PayPal order creation failed:", error);
-      const errorMsg =
-        error.response?.data?.hint ||
-        error.response?.data?.details ||
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to create PayPal order";
-      toast.error(errorMsg);
-      throw error;
+      toast.dismiss();
+      toast.error("Failed to initiate PayPal payment");
+      console.error(error);
     }
   };
 
@@ -1037,36 +1031,10 @@ const Cart = () => {
                   <div className="w-full space-y-3">
                     {/* Manual PayPal Button */}
                     <button
-                      onClick={async () => {
-                        try {
-                          toast.loading("Creating PayPal payment...");
-                          const orderId = await createPayPalOrder();
-
-                          if (orderId) {
-                            toast.dismiss();
-                            // Redirect to PayPal for payment
-                            window.location.href = `https://www.sandbox.paypal.com/checkoutnow?token=${orderId}`;
-                          }
-                        } catch (error) {
-                          toast.dismiss();
-                          console.error("PayPal payment failed:", error);
-                          toast.error("Failed to initiate PayPal payment");
-                        }
-                      }}
+                      onClick={createPayPalOrder}
                       className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-lg shadow transition"
                     >
-                      <svg
-                        className="w-5 h-5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 0 0-.794.68l-.04.22-.63 3.993-.032.17a.804.804 0 0 1-.794.679H7.72a.483.483 0 0 1-.477-.558L7.418 21h1.518l.95-6.02h1.385c4.678 0 7.75-2.203 8.796-6.502z" />
-                        <path d="M2.379 0h7.99c1.384 0 2.485.296 3.089 1.037.532.653.693 1.633.447 2.993l-.035.193v.289l.476.27c.33.176.602.373.816.59.73.736.983 1.845.71 3.328-.88 4.783-3.726 6.917-8.465 6.917H6.053a.944.944 0 0 0-.931.802l-.025.14-1.055 6.698-.03.16a.545.545 0 0 1-.538.46H.79a.484.484 0 0 1-.477-.558L2.379 0z" />
-                      </svg>
-                      <span>Pay with PayPal</span>
-                      <span className="ml-auto">
-                        {formatPrice(grandTotal, selectedCurrency)}
-                      </span>
+                      Pay with PayPal
                     </button>
 
                     <p className="text-xs text-gray-500 text-center">
