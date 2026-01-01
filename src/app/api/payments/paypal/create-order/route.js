@@ -3,15 +3,24 @@ import paypal from "@paypal/checkout-server-sdk";
 
 export async function POST(request) {
   try {
-    const { orderId } = await request.json();
+    const { amount, userId, currency = "USD" } = await request.json();
 
-    if (!orderId) {
+    // Validate inputs
+    if (!amount || amount <= 0) {
       return NextResponse.json(
-        { success: false, error: "Missing orderId" },
+        { success: false, error: "Invalid amount" },
         { status: 400 }
       );
     }
 
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Initialize PayPal SDK
     const environment = new paypal.core.LiveEnvironment(
       process.env.PAYPAL_CLIENT_ID,
       process.env.PAYPAL_CLIENT_SECRET
@@ -19,31 +28,57 @@ export async function POST(request) {
 
     const client = new paypal.core.PayPalHttpClient(environment);
 
-    const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
-    captureRequest.requestBody({});
+    // Create order request
+    const orderRequest = new paypal.orders.OrdersCreateRequest();
+    orderRequest.prefer("return=representation");
 
-    const capture = await client.execute(captureRequest);
+    orderRequest.requestBody({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          amount: {
+            currency_code: currency,
+            value: amount.toFixed(2),
+          },
+          description: "DumpsExpert IT Certification Materials",
+        },
+      ],
+      application_context: {
+        brand_name: "DumpsExpert",
+        landing_page: "NO_PREFERENCE",
+        user_action: "PAY_NOW",
+        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
+        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
+      },
+    });
 
-    if (capture.result.status !== "COMPLETED") {
-      throw new Error("Payment not completed");
+    // Execute the order creation
+    const order = await client.execute(orderRequest);
+
+    // Get approval URL
+    const approvalUrl = order.result.links.find(
+      (link) => link.rel === "approve"
+    )?.href;
+
+    if (!approvalUrl) {
+      throw new Error("Approval URL not found in PayPal response");
     }
 
-    const transactionId =
-      capture.result.purchase_units[0].payments.captures[0].id;
+    console.log("✅ PayPal order created:", order.result.id);
 
     return NextResponse.json({
       success: true,
-      paymentId: transactionId,
-      status: capture.result.status,
+      orderId: order.result.id,
+      approvalUrl: approvalUrl,
     });
   } catch (error) {
-    console.error("❌ PayPal capture error:", error);
+    console.error("❌ PayPal create order error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "PayPal capture failed",
-        details: error?.message,
+        error: "Failed to create PayPal order",
+        details: error?.message || "Unknown error",
       },
       { status: 500 }
     );

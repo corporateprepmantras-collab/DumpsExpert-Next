@@ -4,15 +4,17 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import useCartStore from "@/store/useCartStore";
 import cartImg from "../../assets/landingassets/emptycart.webp";
-import { useSession, signIn } from "next-auth/react";
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { useSession } from "next-auth/react";
 
 const Cart = () => {
   const { data: session, status, update } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
@@ -21,16 +23,12 @@ const Cart = () => {
   const [userId, setUserId] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState("INR");
   const [showCurrencySwitcher, setShowCurrencySwitcher] = useState(false);
-  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [isProcessingPayPal, setIsProcessingPayPal] = useState(false);
 
   const cartItems = useCartStore((state) => state.cartItems);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
   const clearCart = useCartStore((state) => state.clearCart);
   const [userCountry, setUserCountry] = useState("IN");
-  const isIndia = userCountry === "IN";
-  const isInternational = userCountry !== "IN";
-
-  const router = useRouter();
 
   const getItemPrice = (item, currency) => {
     const type = item.type || "regular";
@@ -134,7 +132,7 @@ const Cart = () => {
   const calculateSubtotal = () => {
     return cartItems.reduce((acc, item) => {
       const itemPrice = getItemPrice(item, selectedCurrency);
-      return acc + itemPrice; // Remove quantity multiplication
+      return acc + itemPrice;
     }, 0);
   };
 
@@ -164,6 +162,96 @@ const Cart = () => {
     const numAmount = Number(amount) || 0;
     return `${getCurrencySymbol(currency)}${numAmount.toFixed(2)}`;
   };
+
+  // Handle PayPal return from redirect
+  useEffect(() => {
+    const handlePayPalReturn = async () => {
+      const token = searchParams.get("token");
+      const payerId = searchParams.get("PayerID");
+
+      if (
+        token &&
+        payerId &&
+        !isProcessingPayPal &&
+        userId &&
+        cartItems.length > 0
+      ) {
+        setIsProcessingPayPal(true);
+        toast.loading("Processing PayPal payment...");
+
+        try {
+          // Verify payment with backend
+          const verifyResponse = await axios.post(
+            "/api/payments/paypal/verify",
+            {
+              orderId: token,
+              amount: grandTotal,
+              userId,
+            }
+          );
+
+          if (!verifyResponse.data.success) {
+            throw new Error(
+              verifyResponse.data.error || "Payment verification failed"
+            );
+          }
+
+          toast.dismiss();
+          toast.loading("Creating your order...");
+
+          // Create order
+          const orderPayload = createOrderPayload(
+            "paypal",
+            verifyResponse.data.paymentId
+          );
+          const orderResponse = await axios.post("/api/order", orderPayload);
+
+          if (!orderResponse.data.success) {
+            throw new Error(
+              orderResponse.data.error || "Order creation failed"
+            );
+          }
+
+          // Update session if user data returned
+          if (verifyResponse.data.user) {
+            await update({
+              user: {
+                ...session.user,
+                role: verifyResponse.data.user.role,
+                subscription: verifyResponse.data.user.subscription,
+              },
+            });
+          }
+
+          clearCart();
+          toast.dismiss();
+          toast.success("Payment successful! Order created.");
+
+          // Clean URL and redirect
+          setTimeout(() => {
+            router.replace("/dashboard/student");
+          }, 1000);
+        } catch (error) {
+          console.error("PayPal verification failed:", error);
+          toast.dismiss();
+          toast.error(
+            error.response?.data?.error || error.message || "Payment failed"
+          );
+
+          // Remove PayPal params from URL
+          setTimeout(() => {
+            router.replace("/cart");
+          }, 2000);
+        } finally {
+          setIsProcessingPayPal(false);
+        }
+      }
+    };
+
+    if (userId && cartItems.length > 0) {
+      handlePayPalReturn();
+    }
+  }, [searchParams, userId, cartItems.length, grandTotal]);
 
   useEffect(() => {
     const detectCurrency = async () => {
@@ -515,66 +603,6 @@ const Cart = () => {
     }
   };
 
-  const onPayPalApprove = async (data) => {
-    try {
-      toast.loading("Verifying payment...");
-
-      const paymentVerification = await axios.post(
-        "/api/payments/paypal/verify",
-        {
-          orderId: data.orderID,
-          amount: grandTotal,
-          userId,
-        }
-      );
-
-      if (!paymentVerification.data.success) {
-        throw new Error(
-          paymentVerification.data.error || "Payment verification failed"
-        );
-      }
-
-      toast.dismiss();
-      toast.loading("Creating your order...");
-
-      const orderPayload = createOrderPayload(
-        "paypal",
-        paymentVerification.data.paymentId
-      );
-      const orderResponse = await axios.post("/api/order", orderPayload);
-
-      if (!orderResponse.data.success) {
-        throw new Error(orderResponse.data.error || "Order creation failed");
-      }
-
-      clearCart();
-
-      if (paymentVerification.data.user) {
-        await update({
-          user: {
-            ...session.user,
-            role: paymentVerification.data.user.role,
-            subscription: paymentVerification.data.user.subscription,
-          },
-        });
-      }
-
-      toast.dismiss();
-      toast.success("Payment successful! Order created.");
-      setShowPaymentModal(false);
-      router.push("/dashboard/student");
-    } catch (error) {
-      console.error("PayPal payment verification failed:", error);
-      toast.dismiss();
-      const errorMsg =
-        error.response?.data?.error ||
-        error.response?.data?.details?.[0] ||
-        error.message ||
-        "Payment verification failed";
-      toast.error(errorMsg);
-    }
-  };
-
   const createPayPalOrder = async () => {
     if (status === "unauthenticated" || !userId) {
       toast.error("Please log in to proceed with payment");
@@ -593,6 +621,7 @@ const Cart = () => {
       const response = await axios.post("/api/payments/paypal/create-order", {
         amount: grandTotal,
         userId,
+        currency: selectedCurrency,
       });
 
       if (!response.data?.success || !response.data?.approvalUrl) {
@@ -600,7 +629,7 @@ const Cart = () => {
       }
 
       toast.dismiss();
-      window.location.href = response.data.approvalUrl; // ✅ USE THIS
+      window.location.href = response.data.approvalUrl;
     } catch (error) {
       toast.dismiss();
       toast.error("Failed to initiate PayPal payment");
@@ -660,13 +689,11 @@ const Cart = () => {
 
             {showCurrencySwitcher && (
               <>
-                {/* Backdrop */}
                 <div
                   className="fixed inset-0 z-40"
                   onClick={() => setShowCurrencySwitcher(false)}
                 ></div>
 
-                {/* Dropdown */}
                 <div className="absolute right-0 mt-2 w-64 bg-white border-2 border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden">
                   <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
                     <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
@@ -834,7 +861,6 @@ const Cart = () => {
                         )}
                       </div>
 
-                      {/* Pricing */}
                       <div className="flex items-baseline gap-2 mb-3 flex-wrap">
                         <span className="text-xl font-bold text-blue-600">
                           {formatPrice(itemPrice, selectedCurrency)}
@@ -850,14 +876,8 @@ const Cart = () => {
                             </span>
                           </>
                         )}
-
-                        {/* Debug info - remove after testing */}
-                        <span className="text-xs text-gray-400 ml-2">
-                          (Type: {item.type || "regular"})
-                        </span>
                       </div>
 
-                      {/* Remove Button */}
                       <div className="flex items-center gap-3 mt-2">
                         <button
                           onClick={() => handleDelete(item._id, item.type)}
@@ -1006,10 +1026,8 @@ const Cart = () => {
                 </div>
               </div>
 
-              {/* Payment Options based on Currency */}
               {selectedCurrency === "INR" ? (
                 <>
-                  {/* Razorpay for INR */}
                   <button
                     onClick={handleRazorpayPayment}
                     className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition"
@@ -1027,9 +1045,7 @@ const Cart = () => {
                 </>
               ) : (
                 <>
-                  {/* PayPal for USD and other currencies */}
                   <div className="w-full space-y-3">
-                    {/* Manual PayPal Button */}
                     <button
                       onClick={createPayPalOrder}
                       className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-lg shadow transition"
