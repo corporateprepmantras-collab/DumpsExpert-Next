@@ -105,10 +105,19 @@ const ProductForm = ({ mode }) => {
         });
     }
   }, [mode, id]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    // Auto-convert slug: spaces to hyphens, uppercase to lowercase
+    if (name === "slug") {
+      const formattedSlug = value
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, ""); // Remove special characters except hyphens
+      setForm((prev) => ({ ...prev, [name]: formattedSlug }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleRemoveExistingFile = (field) => {
@@ -351,8 +360,6 @@ const ProductForm = ({ mode }) => {
                 className="border border-gray-300 w-full px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-          
           </div>
         </div>
 

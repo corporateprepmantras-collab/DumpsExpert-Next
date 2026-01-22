@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { FaChevronRight, FaShoppingCart } from "react-icons/fa";
+import { FaChevronRight, FaChevronLeft, FaShoppingCart } from "react-icons/fa";
 
 async function fetchAllProducts() {
   try {
@@ -17,14 +17,16 @@ async function fetchAllProducts() {
 
 export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   const router = useRouter();
+  const scrollContainerRef = useRef(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     async function loadProducts() {
       setIsLoading(true);
       const allProducts = await fetchAllProducts();
-      // Filter out current product
       const filtered = allProducts.filter((p) => p.slug !== currentSlug);
       setRelatedProducts(filtered);
       setIsLoading(false);
@@ -34,6 +36,43 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
       loadProducts();
     }
   }, [currentSlug]);
+
+  const checkScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } =
+        scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScrollButtons();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener("scroll", checkScrollButtons);
+      window.addEventListener("resize", checkScrollButtons);
+      return () => {
+        container.removeEventListener("scroll", checkScrollButtons);
+        window.removeEventListener("resize", checkScrollButtons);
+      };
+    }
+  }, [relatedProducts]);
+
+  const scroll = (direction) => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = scrollContainerRef.current.clientWidth * 0.8;
+      const newScrollLeft =
+        direction === "left"
+          ? scrollContainerRef.current.scrollLeft - scrollAmount
+          : scrollContainerRef.current.scrollLeft + scrollAmount;
+
+      scrollContainerRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: "smooth",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -58,121 +97,113 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">
             Related Products
           </h2>
-          <FaChevronRight className="text-gray-400 text-xl hidden md:block" />
+
+          {/* Desktop Navigation Arrows */}
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => scroll("left")}
+              disabled={!canScrollLeft}
+              className={`p-2 rounded-full transition-all ${
+                canScrollLeft
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              <FaChevronLeft className="text-sm" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              disabled={!canScrollRight}
+              className={`p-2 rounded-full transition-all ${
+                canScrollRight
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              <FaChevronRight className="text-sm" />
+            </button>
+          </div>
         </div>
 
-        {/* Mobile: Horizontal scroll */}
-        <div className="md:hidden">
-          <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+        {/* Scrollable Container */}
+        <div className="relative">
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+          >
             {relatedProducts.slice(0, maxProducts).map((product) => (
               <div
                 key={product._id}
-                className="min-w-[160px] max-w-[160px] bg-white rounded-xl shadow-md hover:shadow-xl transition-all snap-start flex-shrink-0 cursor-pointer"
+                className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden"
                 onClick={() => router.push(`/product/${product.slug}`)}
               >
-                <div className="p-3">
-                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 mb-3">
+                <div className="p-3 md:p-4 h-full flex flex-col">
+                  {/* Product Image */}
+                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:scale-105 transition-transform">
                     <img
                       src={product.imageUrl}
                       alt={product.title}
-                      className="h-24 w-full object-contain"
+                      className="h-24 sm:h-28 md:h-32 w-full object-contain"
                     />
                   </div>
 
-                  <h3 className="text-xs font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px]">
+                  {/* Product Title */}
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors">
                     {product.title}
                   </h3>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-blue-600">
-                        ₹{product.dumpsPriceInr}
+                  {/* Price Section */}
+                  <div className="flex items-baseline gap-1 md:gap-2 mb-2 flex-wrap">
+                    <p className="text-sm sm:text-base font-bold text-blue-600">
+                      ₹{product.dumpsPriceInr}
+                    </p>
+                    {product.dumpsMrpInr > product.dumpsPriceInr && (
+                      <p className="text-xs text-gray-500 line-through">
+                        ₹{product.dumpsMrpInr}
                       </p>
-                      {product.dumpsMrpInr > product.dumpsPriceInr && (
-                        <p className="text-xs text-gray-500 line-through">
-                          ₹{product.dumpsMrpInr}
-                        </p>
+                    )}
+                  </div>
+
+                  {/* Discount Badge */}
+                  {product.dumpsMrpInr > product.dumpsPriceInr && (
+                    <div className="inline-block bg-green-100 text-green-800 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
+                      {Math.round(
+                        ((product.dumpsMrpInr - product.dumpsPriceInr) /
+                          product.dumpsMrpInr) *
+                          100
                       )}
+                      % OFF
                     </div>
+                  )}
+
+                  {/* View Details Button - Hidden on mobile, visible on hover on desktop */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/product/${product.slug}`);
+                    }}
+                    className="hidden md:flex w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-2 rounded-lg font-medium text-sm transition-all items-center justify-center gap-2 opacity-0 group-hover:opacity-100 mt-auto"
+                  >
+                    <FaShoppingCart className="text-xs" />
+                    View Details
+                  </button>
+
+                  {/* Mobile: Show arrow */}
+                  <div className="md:hidden flex items-center justify-end mt-auto pt-2">
                     <FaChevronRight className="text-blue-600 text-xs" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Scroll indicator */}
-          <div className="flex justify-center gap-1 mt-2">
-            {[...Array(Math.min(3, relatedProducts.length))].map((_, i) => (
-              <div key={i} className="h-1 w-8 bg-blue-200 rounded-full" />
-            ))}
-          </div>
-        </div>
-
-        {/* Tablet & Desktop: Grid */}
-        <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {relatedProducts.slice(0, maxProducts).map((product) => (
-            <div
-              key={product._id}
-              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden"
-              onClick={() => router.push(`/product/${product.slug}`)}
-            >
-              <div className="p-4">
-                <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-3 mb-3 group-hover:scale-105 transition-transform">
-                  <img
-                    src={product.imageUrl}
-                    alt={product.title}
-                    className="h-32 w-full object-contain"
-                  />
-                </div>
-
-                <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[40px] group-hover:text-blue-600 transition-colors">
-                  {product.title}
-                </h3>
-
-                <div className="flex items-baseline gap-2 mb-3">
-                  <p className="text-base font-bold text-blue-600">
-                    ₹{product.dumpsPriceInr}
-                  </p>
-                  {product.dumpsMrpInr > product.dumpsPriceInr && (
-                    <p className="text-xs text-gray-500 line-through">
-                      ₹{product.dumpsMrpInr}
-                    </p>
-                  )}
-                </div>
-
-                {product.dumpsMrpInr > product.dumpsPriceInr && (
-                  <div className="inline-block bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full mb-2">
-                    {Math.round(
-                      ((product.dumpsMrpInr - product.dumpsPriceInr) /
-                        product.dumpsMrpInr) *
-                        100
-                    )}
-                    % OFF
-                  </div>
-                )}
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/product/${product.slug}`);
-                  }}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100"
-                >
-                  <FaShoppingCart className="text-xs" />
-                  View Details
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* Show more link */}
         {relatedProducts.length > maxProducts && (
-          <div className="text-center mt-6">
+          <div className="text-center mt-6 md:mt-8">
             <button
               onClick={() => router.push("/products")}
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm md:text-base"
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm md:text-base transition-colors"
             >
               View All Products
               <FaChevronRight className="text-xs" />
