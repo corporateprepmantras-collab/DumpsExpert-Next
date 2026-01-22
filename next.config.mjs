@@ -126,7 +126,6 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            // value: "public, s-maxage=600, stale-while-revalidate=1800",
             value: "no-store",
           },
         ],
@@ -185,7 +184,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
 
-              // ✅ REQUIRED FOR NEXTAUTH + GOOGLE
+              // ✅ REQUIRED FOR NEXTAUTH + GOOGLE + PAYMENTS
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com https://*.vercel-scripts.com",
 
               "style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app https://dumps-expert-next.vercel.app",
@@ -194,8 +193,8 @@ const nextConfig = {
 
               "font-src 'self' data:",
 
-              // 🔥 MOST IMPORTANT
-              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com https://*.vercel-insights.com",
+              // 🔥 MOST IMPORTANT - Added ipapi.co for currency detection
+              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://ipapi.co https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com https://*.vercel-insights.com",
 
               "frame-src 'self' https://accounts.google.com https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://vercel.live",
 
@@ -207,7 +206,7 @@ const nextConfig = {
         ],
       },
 
-      // ✅ Cart page specific CSP
+      // ✅ Cart page specific CSP (with enhanced permissions)
       {
         source: "/cart",
         headers: [
@@ -219,8 +218,10 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              
-              "connect-src 'self' https://ipapi.co https://*.razorpay.com https://api.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel-insights.com",
+
+              // Currency detection + payment gateways
+              "connect-src 'self' https://ipapi.co https://*.razorpay.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.paypal.com https://vercel.live https://*.vercel.app https://vitals.vercel-insights.com https://*.vercel-insights.com",
+
               "frame-src 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com https://www.paypal.com https://*.paypal.com https://vercel.live",
               "frame-ancestors 'self' https://checkout.razorpay.com https://*.razorpay.com https://api.razorpay.com",
               "worker-src 'self' blob:",
@@ -234,9 +235,7 @@ const nextConfig = {
   },
 
   webpack: (config, { dev, isServer }) => {
-    // 🔥 REMOVED: Problematic custom optimization that breaks CSS
     // Let Next.js handle optimization by default
-
     return config;
   },
 

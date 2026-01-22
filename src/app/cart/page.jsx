@@ -253,19 +253,150 @@ const Cart = () => {
     }
   }, [searchParams, userId, cartItems.length, grandTotal]);
 
+  // Replace the entire currency detection useEffect in Cart component with this improved version:
+
   useEffect(() => {
     const detectCurrency = async () => {
       try {
-        const res = await fetch("https://ipapi.co/json/");
+        // First attempt: Use ipapi.co
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        const res = await fetch("https://ipapi.co/json/", {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
         const data = await res.json();
-        setSelectedCurrency(data.currency || "INR");
-        setUserCountry(data.country_code || "IN");
+
+        if (data.currency && data.country_code) {
+          setSelectedCurrency(data.currency);
+          setUserCountry(data.country_code);
+          console.log(
+            "✅ Currency detected:",
+            data.currency,
+            data.country_code
+          );
+          return;
+        }
       } catch (err) {
-        console.error("Currency detection failed", err);
-        setSelectedCurrency("INR");
-        setUserCountry("IN");
+        console.warn("ipapi.co failed, using fallback detection:", err.message);
       }
+
+      // Fallback 1: Try timezone-based detection
+      try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log("🌍 Detected timezone:", timezone);
+
+        // Map common timezones to currencies
+        const timezoneMap = {
+          // North America
+          "America/New_York": { currency: "USD", country: "US" },
+          "America/Chicago": { currency: "USD", country: "US" },
+          "America/Denver": { currency: "USD", country: "US" },
+          "America/Los_Angeles": { currency: "USD", country: "US" },
+          "America/Phoenix": { currency: "USD", country: "US" },
+          "America/Toronto": { currency: "CAD", country: "CA" },
+          "America/Vancouver": { currency: "CAD", country: "CA" },
+
+          // Europe
+          "Europe/London": { currency: "GBP", country: "GB" },
+          "Europe/Paris": { currency: "EUR", country: "FR" },
+          "Europe/Berlin": { currency: "EUR", country: "DE" },
+          "Europe/Rome": { currency: "EUR", country: "IT" },
+          "Europe/Madrid": { currency: "EUR", country: "ES" },
+
+          // Asia
+          "Asia/Kolkata": { currency: "INR", country: "IN" },
+          "Asia/Calcutta": { currency: "INR", country: "IN" },
+          "Asia/Dubai": { currency: "AED", country: "AE" },
+          "Asia/Singapore": { currency: "SGD", country: "SG" },
+          "Asia/Tokyo": { currency: "JPY", country: "JP" },
+          "Asia/Hong_Kong": { currency: "HKD", country: "HK" },
+
+          // Australia
+          "Australia/Sydney": { currency: "AUD", country: "AU" },
+          "Australia/Melbourne": { currency: "AUD", country: "AU" },
+        };
+
+        // Check exact timezone match
+        if (timezoneMap[timezone]) {
+          const detected = timezoneMap[timezone];
+          setSelectedCurrency(detected.currency);
+          setUserCountry(detected.country);
+          console.log("✅ Currency detected from timezone:", detected.currency);
+          return;
+        }
+
+        // Check continent-based fallback
+        if (
+          timezone.includes("Asia/Kolkata") ||
+          timezone.includes("Asia/Calcutta")
+        ) {
+          setSelectedCurrency("INR");
+          setUserCountry("IN");
+          console.log("✅ Currency set to INR (India timezone)");
+          return;
+        } else if (
+          timezone.includes("America/") &&
+          !timezone.includes("Argentina") &&
+          !timezone.includes("Brazil") &&
+          !timezone.includes("Mexico")
+        ) {
+          setSelectedCurrency("USD");
+          setUserCountry("US");
+          console.log("✅ Currency set to USD (North America timezone)");
+          return;
+        }
+      } catch (tzError) {
+        console.warn("Timezone detection failed:", tzError);
+      }
+
+      // Fallback 2: Try browser language
+      try {
+        const language = navigator.language || navigator.userLanguage;
+        console.log("🗣️ Detected language:", language);
+
+        const languageMap = {
+          "en-US": { currency: "USD", country: "US" },
+          "en-GB": { currency: "GBP", country: "GB" },
+          "en-IN": { currency: "INR", country: "IN" },
+          hi: { currency: "INR", country: "IN" },
+          "hi-IN": { currency: "INR", country: "IN" },
+          "en-CA": { currency: "CAD", country: "CA" },
+          "en-AU": { currency: "AUD", country: "AU" },
+        };
+
+        if (languageMap[language]) {
+          const detected = languageMap[language];
+          setSelectedCurrency(detected.currency);
+          setUserCountry(detected.country);
+          console.log("✅ Currency detected from language:", detected.currency);
+          return;
+        }
+
+        // Check language prefix
+        if (language.startsWith("hi") || language.includes("-IN")) {
+          setSelectedCurrency("INR");
+          setUserCountry("IN");
+          console.log("✅ Currency set to INR (Indian language)");
+          return;
+        }
+      } catch (langError) {
+        console.warn("Language detection failed:", langError);
+      }
+
+      // Final fallback: Default to INR
+      console.log("⚠️ Using default currency: INR");
+      setSelectedCurrency("INR");
+      setUserCountry("IN");
     };
+
     detectCurrency();
   }, []);
 
