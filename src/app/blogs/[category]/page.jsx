@@ -85,12 +85,10 @@ export default function BlogPage() {
           backgroundImage: `url(https://t3.ftcdn.net/jpg/03/16/91/28/360_F_316912806_RCeHVmUx5LuBMi7MKYTY5arkE4I0DcpU.jpg)`,
         }}
       >
-        <h1 className="text-4xl pt-24 font-bold text-center mb-6">OUR BLOGS</h1>
-
-        {/* Categories */}
+        <h1 className="text-4xl pt-24 font-bold text-center mb-6">OUR BLOG </h1>
         <div className="flex flex-wrap justify-center gap-2">
           {/* All blogs */}
-          <Link href="/blogsPages">
+          <Link href="/blogs">
             <button
               className={`px-4 py-1 rounded-full border ${
                 !selectedCategory
@@ -101,21 +99,6 @@ export default function BlogPage() {
               All
             </button>
           </Link>
-
-          {/* Dynamic categories */}
-          {categories.map((cat) => (
-            <Link key={cat._id} href={`/blogsPages/${cat.category}`}>
-              <button
-                className={`px-4 py-1 rounded-full border ${
-                  selectedCategory.toLowerCase() === cat.category.toLowerCase()
-                    ? "bg-white text-black font-semibold"
-                    : "bg-transparent border-white"
-                }`}
-              >
-                {cat.category}
-              </button>
-            </Link>
-          ))}
         </div>
       </div>
 
@@ -132,10 +115,7 @@ export default function BlogPage() {
             </p>
           ) : (
             blogs.map((blog) => (
-              <Link
-                key={blog._id}
-                href={`/blogsPages/blog/${blog.slug || blog._id}`}
-              >
+              <Link key={blog._id} href={`/blog/${blog.slug || blog._id}`}>
                 <div className="bg-gray-100 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
                   {blog.imageUrl && (
                     <img
@@ -182,7 +162,7 @@ export default function BlogPage() {
               {recentPosts.map((post) => (
                 <li key={post._id}>
                   <Link
-                    href={`/blogsPages/blog/${post.categories || post._id}`}
+                    href={`/blogs/${post.categories || post._id}`}
                     className="text-blue-600 hover:underline block"
                   >
                     {post.sectionName}

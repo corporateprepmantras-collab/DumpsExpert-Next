@@ -111,7 +111,7 @@ const BlogPage = () => {
 
         {/* ================= Categories Filter ================= */}
         <div className="flex flex-wrap justify-center gap-2">
-          <Link href="/blogsPages/blog-categories">
+          <Link href="/blog/blog-categories">
             <button
               className={`px-4 py-1 rounded-full border ${
                 !categorySlug ? "bg-white text-black" : "bg-transparent"
@@ -190,7 +190,7 @@ const BlogPage = () => {
               {recentPosts.map((post) => (
                 <li key={post._id ?? post.slug}>
                   <Link
-                    href={`/blogsPages/${post.slug}`}
+                    href={`/blog/${post.slug}`}
                     className="text-blue-600 hover:underline block"
                   >
                     {post.title}

@@ -114,12 +114,14 @@ const BlogPage = () => {
           </h1>
           <div className="flex flex-wrap justify-center gap-2">
             {categories.map((cat) => (
-              <button
-                key={cat._id ?? cat.category}
-                className="px-4 py-1 rounded-full border bg-transparent border-white"
-              >
-                {cat.category}
-              </button>
+              <Link href={`/blogs/${cat.category}`}>
+                <button
+                  key={cat._id ?? cat.category}
+                  className="px-4 py-1 rounded-full border bg-transparent border-white"
+                >
+                  {cat.category}
+                </button>
+              </Link>
             ))}
           </div>
         </div>
@@ -138,7 +140,7 @@ const BlogPage = () => {
               </p>
             ) : (
               blogs.map((blog, idx) => (
-                <Link href={`/blogsPages/${blog.slug}`} className="block">
+                <Link href={`/blog/${blog.slug}`} className="block">
                   <BlogCard
                     key={blog._id ?? blog.slug ?? idx}
                     slug={blog.slug}
@@ -169,7 +171,7 @@ const BlogPage = () => {
                 {recentPosts.map((post) => (
                   <li key={post._id ?? post.slug}>
                     <Link
-                      href={`/blogsPages/${post.categories}`}
+                      href={`/blog/${post.slug}`}
                       className="text-blue-600 hover:underline block"
                     >
                       {post.title}
