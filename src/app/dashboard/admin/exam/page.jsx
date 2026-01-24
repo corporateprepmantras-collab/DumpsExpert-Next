@@ -31,7 +31,7 @@ export default function ExamsPage() {
   const handleDelete = async (examId) => {
     if (
       !window.confirm(
-        "Are you sure you want to delete this exam? All related questions will also be deleted."
+        "Are you sure you want to delete this exam? All related questions will also be deleted.",
       )
     ) {
       return;
@@ -98,7 +98,7 @@ export default function ExamsPage() {
 
   return (
     <div className="p-6 pt-20">
-    <ExamList
+      <ExamList
         exams={exams}
         onDelete={handleDelete}
         onEdit={(examId) => router.push(`/dashboard/admin/exam/${examId}`)}

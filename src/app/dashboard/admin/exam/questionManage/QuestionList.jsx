@@ -21,7 +21,11 @@ const truncateText = (text, wordLimit = 5) => {
 };
 
 // Main component for displaying list of questions
-const QuestionList = ({ examId, questions: initialQuestions }) => {
+const QuestionList = ({
+  examId,
+  questions: initialQuestions,
+  hideAddButton,
+}) => {
   // Initialize router for navigation
   const router = useRouter();
   // State to manage questions list
@@ -82,15 +86,17 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
         <h2 className="text-2xl font-semibold text-gray-800">
           Questions & Answers List
         </h2>
-        <button
-          // Navigate to add question page
-          onClick={() =>
-            router.push(`/dashboard/admin/exam/${examId}/questions/new`)
-          }
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium shadow"
-        >
-          + Add Question
-        </button>
+        {!hideAddButton && (
+          <button
+            // Navigate to add question page
+            onClick={() =>
+              router.push(`/dashboard/admin/exam/${examId}/questions/new`)
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium shadow"
+          >
+            + Add Question
+          </button>
+        )}
       </div>
 
       {/* Table to display questions */}
@@ -135,11 +141,11 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                     {q.correctAnswers && q.correctAnswers.length > 0
                       ? q.correctAnswers.join(", ")
                       : q.matchingPairs?.correctMatches &&
-                        Object.keys(q.matchingPairs.correctMatches).length > 0
-                      ? Object.entries(q.matchingPairs.correctMatches)
-                          .map(([left, right]) => `${left} - ${right}`)
-                          .join(", ")
-                      : "N/A"}
+                          Object.keys(q.matchingPairs.correctMatches).length > 0
+                        ? Object.entries(q.matchingPairs.correctMatches)
+                            .map(([left, right]) => `${left} - ${right}`)
+                            .join(", ")
+                        : "N/A"}
                   </td>
 
                   <td className="p-3">
@@ -167,7 +173,7 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                     <button
                       onClick={() =>
                         router.push(
-                          `/dashboard/admin/exam/${examId}/questions/${q._id}`
+                          `/dashboard/admin/exam/${examId}/questions/${q._id}`,
                         )
                       }
                       className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-xs"
@@ -276,7 +282,7 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                               />
                             )}
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
@@ -308,7 +314,7 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                               />
                             )}
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
@@ -325,15 +331,15 @@ const QuestionList = ({ examId, questions: initialQuestions }) => {
                       <div className="bg-green-50 border border-green-200 rounded p-4">
                         <div className="grid grid-cols-1 gap-2">
                           {Object.entries(
-                            previewQuestion.matchingPairs.correctMatches
+                            previewQuestion.matchingPairs.correctMatches,
                           ).map(([leftId, rightId]) => {
                             const leftItem =
                               previewQuestion.matchingPairs.leftItems?.find(
-                                (item) => item.id === leftId
+                                (item) => item.id === leftId,
                               );
                             const rightItem =
                               previewQuestion.matchingPairs.rightItems?.find(
-                                (item) => item.id === rightId
+                                (item) => item.id === rightId,
                               );
 
                             return (

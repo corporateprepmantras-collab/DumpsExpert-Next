@@ -18,13 +18,9 @@ const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto "
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-50">
       {/* Modal container */}
-      <div
-        className="relative rounded-lg shadow-xl max-w-lg w-full mx-4 my-8 bg-white"
-      >
+      <div className="relative rounded-lg shadow-xl max-w-5xl w-full mx-4 my-8 bg-white max-h-[90vh] overflow-y-auto">
         {/* Modal content */}
         <div className="p-6">{children}</div>
 

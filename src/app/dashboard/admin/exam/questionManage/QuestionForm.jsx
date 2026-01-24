@@ -11,11 +11,11 @@ import { Plus, Trash2, Link } from "lucide-react";
 import ImageUploader from "@/components/dashboard/ImageUploader";
 
 // Main component for adding/editing questions
-const QuestionForm = () => {
+const QuestionForm = ({ onSuccess, examId: propExamId }) => {
   // Get route parameters
   const params = useParams();
-  // Extract examId and questionId from params
-  const examId = params.examId;
+  // Extract examId and questionId from params (or use prop)
+  const examId = propExamId || params.examId;
   const questionId = params.questionId;
 
   // Initialize router for navigation
@@ -349,7 +349,7 @@ const QuestionForm = () => {
       submitData.append("options", JSON.stringify(formData.options));
       submitData.append(
         "correctAnswers",
-        JSON.stringify(formData.correctAnswers)
+        JSON.stringify(formData.correctAnswers),
       );
       submitData.append("isSample", formData.isSample.toString());
       submitData.append("explanation", formData.explanation);
@@ -371,7 +371,7 @@ const QuestionForm = () => {
       if (formData.questionType === "matching") {
         submitData.append(
           "matchingPairs",
-          JSON.stringify(formData.matchingPairs)
+          JSON.stringify(formData.matchingPairs),
         );
 
         // Append matching images for each item
@@ -386,7 +386,7 @@ const QuestionForm = () => {
           const pastedUrls = pastedImageUrls[key] || [];
           submitData.append(
             `pastedImages-left-${item.id}`,
-            JSON.stringify(pastedUrls)
+            JSON.stringify(pastedUrls),
           );
         });
 
@@ -401,7 +401,7 @@ const QuestionForm = () => {
           const pastedUrls = pastedImageUrls[key] || [];
           submitData.append(
             `pastedImages-right-${item.id}`,
-            JSON.stringify(pastedUrls)
+            JSON.stringify(pastedUrls),
           );
         });
       }
@@ -422,6 +422,12 @@ const QuestionForm = () => {
 
       if (result.success) {
         alert(`Question ${isEditing ? "updated" : "created"} successfully!`);
+
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          onSuccess(result.data);
+        }
+
         if (!isEditing) {
           // Reset form after successful creation
           setFormData({
@@ -604,7 +610,7 @@ const QuestionForm = () => {
                             "left",
                             index,
                             "text",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -636,7 +642,7 @@ const QuestionForm = () => {
                                   e.preventDefault();
                                   handlePastedImageUrl(
                                     `left-${item.id}`,
-                                    e.target.value
+                                    e.target.value,
                                   );
                                   e.target.value = "";
                                 }
@@ -662,7 +668,7 @@ const QuestionForm = () => {
                                   onClick={() =>
                                     handleRemovePastedUrl(
                                       `left-${item.id}`,
-                                      urlIndex
+                                      urlIndex,
                                     )
                                   }
                                   className="text-red-500 hover:text-red-700"
@@ -670,7 +676,7 @@ const QuestionForm = () => {
                                   <Trash2 size={14} />
                                 </button>
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -696,7 +702,7 @@ const QuestionForm = () => {
                                 {rightItem.text.substring(0, 30)}
                                 {rightItem.text.length > 30 ? "..." : ""}
                               </option>
-                            )
+                            ),
                           )}
                         </select>
                       </div>
@@ -745,7 +751,7 @@ const QuestionForm = () => {
                             "right",
                             index,
                             "text",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
@@ -777,7 +783,7 @@ const QuestionForm = () => {
                                   e.preventDefault();
                                   handlePastedImageUrl(
                                     `right-${item.id}`,
-                                    e.target.value
+                                    e.target.value,
                                   );
                                   e.target.value = "";
                                 }
@@ -803,7 +809,7 @@ const QuestionForm = () => {
                                   onClick={() =>
                                     handleRemovePastedUrl(
                                       `right-${item.id}`,
-                                      urlIndex
+                                      urlIndex,
                                     )
                                   }
                                   className="text-red-500 hover:text-red-700"
@@ -811,7 +817,7 @@ const QuestionForm = () => {
                                   <Trash2 size={14} />
                                 </button>
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
