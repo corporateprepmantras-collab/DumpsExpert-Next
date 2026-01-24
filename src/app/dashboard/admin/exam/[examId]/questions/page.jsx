@@ -103,7 +103,7 @@ export default function QuestionsPage() {
   }
 
   return (
-    <div className="p-6 pt-20">
+    <div className="p-6 mt-20 pt-10">
       {/* Header with Add Question Button */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Exam Questions</h1>
