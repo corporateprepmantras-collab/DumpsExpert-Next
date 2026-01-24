@@ -447,7 +447,7 @@ export default function ProductDetailsPage() {
       <div className="container mx-auto px-4 pt-2 pb-3">
         <Breadcrumbs />
       </div>
-
+{/* //updated ui */}
       {/* Product Unavailability Alert */}
       {!productAvailable && product && (
         <div className="container mx-auto px-4 mb-4">
