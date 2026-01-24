@@ -523,7 +523,7 @@ export default function ProductDetailsPage() {
                       <p className="text-xs text-gray-600">Exam Code</p>
                       <p className="text-sm font-semibold text-gray-800">
                         {product.examCode}
-                      </p>
+                      </p> 
                     </div>
                   </div>
                 )}

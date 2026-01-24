@@ -187,7 +187,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                     <FaShoppingCart className="text-xs" />
                     View Details
                   </button>
-
+ x
                   {/* Mobile: Show arrow */}
                   <div className="md:hidden flex items-center justify-end mt-auto pt-2">
                     <FaChevronRight className="text-blue-600 text-xs" />
@@ -202,7 +202,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
         {relatedProducts.length > maxProducts && (
           <div className="text-center mt-6 md:mt-8">
             <button
-              onClick={() => router.push("/products")}
+              onClick={() => router.push("/ItDumps")}
               className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm md:text-base transition-colors"
             >
               View All Products
