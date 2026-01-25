@@ -20,18 +20,32 @@ export async function GET() {
 export async function POST(request) {
   try {
     await connectMongoDB();
-    const { title } = await request.json();
+    const { title, link } = await request.json();
 
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    const newItem = await Trending.create({ title });
+    if (!link || !link.trim()) {
+      return NextResponse.json({ error: "Link is required" }, { status: 400 });
+    }
+
+    // Sanitize link - remove leading/trailing slashes
+    const sanitizedLink = link.replace(/^\/+|\/+$/g, "").trim();
+
+    if (!sanitizedLink) {
+      return NextResponse.json(
+        { error: "Link cannot be empty after sanitization" },
+        { status: 400 },
+      );
+    }
+
+    const newItem = await Trending.create({ title, link: sanitizedLink });
     const serialized = serializeMongoDoc(newItem.toObject());
 
     return NextResponse.json(
       { message: "Certification added successfully", data: serialized },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("❌ /api/trending POST error:", error);
@@ -55,7 +69,7 @@ export async function DELETE(request) {
     if (!item) {
       return NextResponse.json(
         { error: "Certification not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 

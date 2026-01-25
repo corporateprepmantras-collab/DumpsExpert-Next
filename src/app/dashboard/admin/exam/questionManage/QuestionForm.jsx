@@ -949,7 +949,8 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subject
+                  Subject{" "}
+                  <span className="text-gray-400 text-xs">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -963,7 +964,8 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Topic
+                  Topic{" "}
+                  <span className="text-gray-400 text-xs">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -978,7 +980,8 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tags (comma separated)
+                Tags <span className="text-gray-400 text-xs">(Optional)</span> -
+                comma separated
               </label>
               <input
                 type="text"
@@ -997,7 +1000,8 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Explanation
+                Explanation{" "}
+                <span className="text-gray-400 text-xs">(Optional)</span>
               </label>
               <textarea
                 name="explanation"

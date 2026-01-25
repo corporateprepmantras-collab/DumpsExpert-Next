@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 const examSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    eachQuestionMark: { type: Number },
     duration: { type: Number, required: true },
     sampleDuration: { type: Number },
     passingScore: { type: Number },
@@ -32,7 +31,7 @@ const examSchema = new mongoose.Schema(
     //   required: true,
     // },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // ✅ Prevent OverwriteModelError in Next.js dev environment

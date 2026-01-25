@@ -41,7 +41,7 @@ content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' htt
 **Key Addition:**
 ```javascript
 application_context: {
-  brand_name: "DumpsExpert",
+  brand_name: "Prepmantra",
   landing_page: "NO_PREFERENCE",
   user_action: "PAY_NOW",
   return_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/cart`,

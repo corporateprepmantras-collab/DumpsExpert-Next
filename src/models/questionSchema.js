@@ -55,7 +55,6 @@ const questionSchema = new mongoose.Schema(
       type: String,
       enum: ["easy", "medium", "hard"],
       default: "medium",
-      required: true,
     },
     marks: {
       type: Number,
@@ -65,10 +64,9 @@ const questionSchema = new mongoose.Schema(
     negativeMarks: {
       type: Number,
       default: 0,
-      required: true,
     },
-    subject: { type: String, required: true },
-    topic: { type: String, required: true },
+    subject: { type: String, required: false, default: "" },
+    topic: { type: String, required: false, default: "" },
     tags: { type: [String], default: [] },
 
     // ✅ Options (radio / checkbox)
@@ -91,14 +89,14 @@ const questionSchema = new mongoose.Schema(
     },
 
     isSample: { type: Boolean, default: false },
-    explanation: { type: String },
+    explanation: { type: String, default: "" },
     status: {
       type: String,
       enum: ["publish", "draft"],
       default: "draft",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // ✅ Prevent duplicate question codes under same exam

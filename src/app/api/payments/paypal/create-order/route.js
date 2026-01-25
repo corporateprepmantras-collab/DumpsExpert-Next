@@ -40,11 +40,11 @@ export async function POST(request) {
             currency_code: currency,
             value: amount.toFixed(2),
           },
-          description: "DumpsExpert IT Certification Materials",
+          description: "Prepmantra IT Certification Materials",
         },
       ],
       application_context: {
-        brand_name: "DumpsExpert",
+        brand_name: "Prepmantra",
         landing_page: "NO_PREFERENCE",
         user_action: "PAY_NOW",
         return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,

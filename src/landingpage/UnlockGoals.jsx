@@ -98,54 +98,54 @@ const WhyChooseSection = () => {
   return (
     <div className="w-full bg-gradient-to-b from-white via-gray-50 to-gray-100">
       {/* Desktop View */}
-      <div className="hidden md:flex md:flex-row w-full min-h-screen">
+      <div className="hidden md:flex md:flex-row w-full min-h-[75vh]">
         {/* Sticky Left Panel */}
-        <div className="md:w-1/2 md:sticky md:top-0 h-auto md:h-screen bg-gradient-to-br from-indigo-800 via-indigo-700 to-purple-800 text-white p-8 sm:p-12 flex flex-col justify-center items-center">
+        <div className="md:w-1/2 md:sticky md:top-0 h-auto md:h-[75vh] bg-gradient-to-br from-indigo-800 via-indigo-700 to-purple-800 text-white p-8 sm:p-12 flex flex-col justify-center items-center">
           <div className="text-center">
             <div className="mb-6 flex justify-center">
               <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
                 <Award className="text-white" size={32} />
               </div>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
               Why Choose <br />
               <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
                 Prepmantras?
               </span>
             </h2>
-            <p className="text-lg md:text-xl text-white/90 leading-relaxed max-w-lg">
+            <p className="text-sm md:text-base text-white/90 leading-relaxed max-w-lg">
               Unlock your potential with our premium resources.
               <br className="hidden sm:block" />
-              <span className="block mt-3">
+              <span className="block mt-2">
                 Real questions, real results, real support — all designed to
                 help you succeed.
               </span>
             </p>
 
             {/* Quick Stats */}
-            <div className="mt-12 space-y-4">
+            <div className="mt-8 space-y-3">
               <div className="flex items-center gap-3">
-                <CheckCircle size={24} className="text-cyan-300" />
-                <span className="text-lg">100% Verified Content</span>
+                <CheckCircle size={20} className="text-cyan-300" />
+                <span className="text-sm">100% Verified Content</span>
               </div>
               <div className="flex items-center gap-3">
-                <Zap size={24} className="text-yellow-300" />
-                <span className="text-lg">Instant Access</span>
+                <Zap size={20} className="text-yellow-300" />
+                <span className="text-sm">Instant Access</span>
               </div>
               <div className="flex items-center gap-3">
-                <Clock size={24} className="text-pink-300" />
-                <span className="text-lg">24/7 Support</span>
+                <Clock size={20} className="text-pink-300" />
+                <span className="text-sm">24/7 Support</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Scrollable Cards Section */}
-        <div className="md:w-1/2 bg-white h-screen overflow-y-scroll snap-y snap-mandatory">
+        <div className="md:w-1/2 bg-white h-[75vh] overflow-y-scroll snap-y snap-mandatory">
           {cardData.map((card, index) => (
             <section
               key={index}
-              className="h-screen snap-start flex flex-col items-center justify-center px-8 text-center"
+              className="h-[75vh] snap-start flex flex-col items-center justify-center px-8 text-center"
             >
               <div className="relative mb-8">
                 <div className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
@@ -164,10 +164,10 @@ const WhyChooseSection = () => {
                 </div>
               </div>
 
-              <h3 className="text-2xl md:text-3xl font-bold mb-4 text-gray-900">
+              <h3 className="text-lg md:text-xl font-bold mb-3 text-gray-900">
                 {card.title}
               </h3>
-              <p className="max-w-2xl text-gray-600 text-base md:text-lg leading-relaxed">
+              <p className="max-w-2xl text-gray-600 text-sm md:text-base leading-relaxed">
                 {card.description}
               </p>
 

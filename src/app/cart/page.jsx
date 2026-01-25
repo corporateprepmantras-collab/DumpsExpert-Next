@@ -187,12 +187,12 @@ const Cart = () => {
               orderId: token,
               amount: grandTotal,
               userId,
-            }
+            },
           );
 
           if (!verifyResponse.data.success) {
             throw new Error(
-              verifyResponse.data.error || "Payment verification failed"
+              verifyResponse.data.error || "Payment verification failed",
             );
           }
 
@@ -202,13 +202,13 @@ const Cart = () => {
           // Create order
           const orderPayload = createOrderPayload(
             "paypal",
-            verifyResponse.data.paymentId
+            verifyResponse.data.paymentId,
           );
           const orderResponse = await axios.post("/api/order", orderPayload);
 
           if (!orderResponse.data.success) {
             throw new Error(
-              orderResponse.data.error || "Order creation failed"
+              orderResponse.data.error || "Order creation failed",
             );
           }
 
@@ -229,13 +229,13 @@ const Cart = () => {
 
           // Clean URL and redirect
           setTimeout(() => {
-            router.replace("/dashboard/student");
+            router.replace("/dashboard/student/myOrders");
           }, 1000);
         } catch (error) {
           console.error("PayPal verification failed:", error);
           toast.dismiss();
           toast.error(
-            error.response?.data?.error || error.message || "Payment failed"
+            error.response?.data?.error || error.message || "Payment failed",
           );
 
           // Remove PayPal params from URL
@@ -280,7 +280,7 @@ const Cart = () => {
           console.log(
             "✅ Currency detected:",
             data.currency,
-            data.country_code
+            data.country_code,
           );
           return;
         }
@@ -485,8 +485,8 @@ const Cart = () => {
         toast.success(
           `Coupon applied! You saved ${formatPrice(
             actualDiscount,
-            selectedCurrency
-          )}`
+            selectedCurrency,
+          )}`,
         );
       } else {
         const errorMsg =
@@ -628,7 +628,7 @@ const Cart = () => {
         key: razorpayKey,
         amount: Math.round(razorpayAmount * 100),
         currency: razorpayCurrency,
-        name: "DumpsExpert",
+        name: "PrepMantra",
         description: "Purchase IT Certification Materials",
         order_id: orderId,
         handler: async (razorpayResponse) => {
@@ -644,12 +644,12 @@ const Cart = () => {
                 amount: grandTotal,
                 originalCurrency: selectedCurrency,
                 userId,
-              }
+              },
             );
 
             if (!paymentVerification.data.success) {
               throw new Error(
-                paymentVerification.data.error || "Payment verification failed"
+                paymentVerification.data.error || "Payment verification failed",
               );
             }
 
@@ -658,13 +658,13 @@ const Cart = () => {
 
             const orderPayload = createOrderPayload(
               "razorpay",
-              paymentVerification.data.paymentId
+              paymentVerification.data.paymentId,
             );
             const orderResponse = await axios.post("/api/order", orderPayload);
 
             if (!orderResponse.data.success) {
               throw new Error(
-                orderResponse.data.error || "Order creation failed"
+                orderResponse.data.error || "Order creation failed",
               );
             }
 
@@ -685,7 +685,7 @@ const Cart = () => {
             setShowPaymentModal(false);
 
             setTimeout(() => {
-              router.push("/dashboard/student");
+              router.push("/dashboard/student/myOrders");
             }, 1000);
           } catch (error) {
             console.error("Order creation failed:", error);
@@ -957,7 +957,7 @@ const Cart = () => {
                 const itemMRP = getItemMRP(item, selectedCurrency);
                 const itemDiscount = calculateItemDiscount(
                   item,
-                  selectedCurrency
+                  selectedCurrency,
                 );
 
                 return (

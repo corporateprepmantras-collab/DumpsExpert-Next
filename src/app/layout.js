@@ -17,6 +17,14 @@ const Footer = dynamic(() => import("@/components/public/Footer"), {
   ssr: true,
 });
 
+// ✅ Conditional Footer Wrapper
+function FooterWrapper() {
+  return typeof window !== "undefined" &&
+    !window.location.pathname.includes("/dashboard/admin") ? (
+    <Footer />
+  ) : null;
+}
+
 // ✅ Metadata (CORRECT)
 export const metadata = {
   title: {
@@ -39,7 +47,7 @@ export const metadata = {
   authors: [{ name: "Prepmantras" }],
 
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com"
+    process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com",
   ),
 
   alternates: {
@@ -110,7 +118,7 @@ export default function RootLayout({ children }) {
             {children}
           </main>
 
-          <Footer />
+          <FooterWrapper />
         </Providers>
       </body>
     </html>

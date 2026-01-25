@@ -7,7 +7,7 @@ export async function sendNotificationEmail(contact) {
     SMTP_USER,
     SMTP_PASS,
     ADMIN_EMAIL,
-    SITE_NAME = "Dumpsexpert",
+    SITE_NAME = "PrepMantra",
   } = process.env;
 
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !ADMIN_EMAIL) {
@@ -54,7 +54,7 @@ export async function sendReplyEmail(contact, replyMessage, customSubject) {
     SMTP_PORT,
     SMTP_USER,
     SMTP_PASS,
-    SITE_NAME = "Dumpsexpert",
+    SITE_NAME = "PrepMantra",
   } = process.env;
 
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {

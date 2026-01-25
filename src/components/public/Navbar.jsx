@@ -20,7 +20,6 @@ import useCartStore from "@/store/useCartStore";
 const navlinks = [
   { label: "Home", path: "/" },
   { label: "About Us", path: "/about" },
-  { label: "SAP", path: "/ItDumps/sap" },
   { label: "IT Dumps", path: "/ItDumps", dropdownKey: "ItDumps" },
   { label: "Blogs", path: "/blogs", dropdownKey: "blogs" },
   { label: "Contact Us", path: "/contact" },

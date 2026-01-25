@@ -32,12 +32,12 @@ export default function ExamDumpsSlider({ products = [] }) {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setVisibleItems(
-              (prev) => new Set([...prev, entry.target.dataset.index])
+              (prev) => new Set([...prev, entry.target.dataset.index]),
             );
           }
         });
       },
-      { threshold: 0.1, rootMargin: "0px" }
+      { threshold: 0.1, rootMargin: "0px" },
     );
 
     return () => {
@@ -53,7 +53,7 @@ export default function ExamDumpsSlider({ products = [] }) {
 
     const interval = setInterval(() => {
       setStartIndex((prev) =>
-        prev + visibleCards < products.length ? prev + visibleCards : 0
+        prev + visibleCards < products.length ? prev + visibleCards : 0,
       );
     }, 5000);
 
@@ -63,7 +63,7 @@ export default function ExamDumpsSlider({ products = [] }) {
   // Navigation callbacks
   const nextSlide = useCallback(() => {
     setStartIndex((prev) =>
-      prev + visibleCards < products.length ? prev + visibleCards : 0
+      prev + visibleCards < products.length ? prev + visibleCards : 0,
     );
   }, [products.length, visibleCards]);
 
@@ -71,7 +71,7 @@ export default function ExamDumpsSlider({ products = [] }) {
     setStartIndex((prev) =>
       prev - visibleCards >= 0
         ? prev - visibleCards
-        : Math.max(0, products.length - visibleCards)
+        : Math.max(0, products.length - visibleCards),
     );
   }, [products.length, visibleCards]);
 
@@ -144,7 +144,7 @@ export default function ExamDumpsSlider({ products = [] }) {
 
   return (
     <div className="w-full py-16 px-4 bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-[1400px] mx-auto">
+      <div className="max-w-[1100px] mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-3">
@@ -188,7 +188,7 @@ export default function ExamDumpsSlider({ products = [] }) {
           onTouchEnd={handleTouchEnd}
         >
           <div
-            className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 transition-transform duration-500 ease-out"
+            className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 transition-transform duration-500 ease-out"
             style={{ transform: `translateX(${dragDelta}px)` }}
           >
             {visibleProducts.map((product, index) => {
@@ -202,7 +202,7 @@ export default function ExamDumpsSlider({ products = [] }) {
                       observerRef.current.observe(el);
                     }
                   }}
-                  className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 flex flex-col h-full opacity-0 translate-y-8"
+                  className="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 flex flex-col h-full opacity-0 translate-y-8"
                   style={{
                     opacity: visibleItems.has(String(index)) ? 1 : 0,
                     transform: visibleItems.has(String(index))
@@ -217,7 +217,7 @@ export default function ExamDumpsSlider({ products = [] }) {
                     className="block flex flex-col h-full"
                   >
                     {/* Image Container */}
-                    <div className="relative w-full h-48 sm:h-56 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden flex-shrink-0">
+                    <div className="relative w-full h-40 sm:h-48 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden flex-shrink-0">
                       <img
                         src={product.imageUrl || "/placeholder.png"}
                         alt={product.title}
@@ -233,17 +233,17 @@ export default function ExamDumpsSlider({ products = [] }) {
                     </div>
 
                     {/* Content */}
-                    <div className="p-5 flex flex-col flex-grow pointer-events-none">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors duration-300 line-clamp-2">
+                    <div className="p-4 flex flex-col flex-grow pointer-events-none">
+                      <h3 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors duration-300 line-clamp-2">
                         {product.sapExamCode || product.title}
                       </h3>
 
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[40px] flex-grow">
+                      <p className="text-gray-600 text-xs mb-3 line-clamp-2 min-h-[36px] flex-grow leading-relaxed">
                         {product.Description?.replace(/<[^>]+>/g, "") ||
                           "Comprehensive exam preparation material with real practice questions."}
                       </p>
 
-                      <div className="flex items-center gap-1 mb-3">
+                      <div className="flex items-center gap-1 mb-2">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
@@ -258,29 +258,29 @@ export default function ExamDumpsSlider({ products = [] }) {
                       <div className="border-t border-gray-100 pt-3 mb-3"></div>
 
                       {/* Pricing */}
-                      <div className="mb-4">
+                      <div className="mb-3">
                         <div className="flex items-baseline gap-2 mb-1">
-                          <span className="text-xl font-bold text-orange-500">
+                          <span className="text-lg font-bold text-orange-500">
                             ₹{product.dumpsPriceInr?.trim() || "N/A"}
                           </span>
-                          <span className="text-base font-semibold text-orange-500">
+                          <span className="text-sm font-semibold text-orange-500">
                             ${product.dumpsPriceUsd?.trim() || "N/A"}
                           </span>
                         </div>
                         {product.dumpsMrpInr && (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="line-through text-xs text-gray-400">
+                          <div className="flex items-center gap-2 flex-wrap text-xs">
+                            <span className="line-through text-gray-400">
                               ₹{product.dumpsMrpInr}
                             </span>
-                            <span className="line-through text-xs text-gray-400">
+                            <span className="line-through text-gray-400">
                               ${product.dumpsMrpUsd}
                             </span>
-                            <span className="text-xs font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                            <span className="font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
                               Save{" "}
                               {Math.round(
                                 ((product.dumpsMrpInr - product.dumpsPriceInr) /
                                   product.dumpsMrpInr) *
-                                  100
+                                  100,
                               )}
                               %
                             </span>
@@ -290,7 +290,7 @@ export default function ExamDumpsSlider({ products = [] }) {
 
                       {/* Button */}
                       <button
-                        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm mt-auto pointer-events-auto hover:scale-[1.02] active:scale-[0.98]"
+                        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-2 px-3 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs mt-auto pointer-events-auto hover:scale-[1.02] active:scale-[0.98]"
                         onClick={(e) => {
                           e.preventDefault();
                         }}

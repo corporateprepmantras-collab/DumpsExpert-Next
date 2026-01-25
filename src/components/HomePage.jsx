@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Check, X, AlertCircle, ArrowUp } from "lucide-react";
 import Image from "next/image";
@@ -22,11 +23,11 @@ const GeneralFAQs = dynamic(() => import("@/landingpage/GeneralFAQs"), {
 });
 const ContentDumpsFirst = dynamic(
   () => import("@/landingpage/ContentBoxFirst"),
-  { ssr: false }
+  { ssr: false },
 );
 const ContentDumpsSecond = dynamic(
   () => import("@/landingpage/ContentBoxSecond"),
-  { ssr: false }
+  { ssr: false },
 );
 const Testimonial = dynamic(() => import("@/landingpage/Testimonial"), {
   ssr: false,
@@ -89,6 +90,24 @@ export default function HomePage({
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [trendingItems, setTrendingItems] = useState([]);
+
+  // ✅ Fetch trending items
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const res = await fetch("/api/trending");
+        const data = await res.json();
+        setTrendingItems(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch trending items:", error);
+      }
+    };
+
+    if (mounted) {
+      fetchTrending();
+    }
+  }, [mounted]);
 
   // ✅ Ensure client-side only rendering
   useEffect(() => {
@@ -149,7 +168,7 @@ export default function HomePage({
             window.location.reload();
           } else {
             alert(
-              "Failed to clear cache. Please clear manually via browser settings."
+              "Failed to clear cache. Please clear manually via browser settings.",
             );
           }
         }
@@ -169,7 +188,7 @@ export default function HomePage({
         window.location.reload();
       } else {
         alert(
-          "Failed to clear cache. Please clear manually via browser settings."
+          "Failed to clear cache. Please clear manually via browser settings.",
         );
       }
     }
@@ -432,12 +451,17 @@ export default function HomePage({
             </div>
 
             {/* Dumps Grid */}
-            {dumps && dumps.length > 0 ? (
+            {trendingItems && trendingItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {dumps.map((dump, index) => (
+                {trendingItems.map((item, index) => (
                   <button
-                    key={dump._id}
-                    className="group relative bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-white border-2 border-gray-200 hover:border-orange-500 rounded-xl px-4 py-3 sm:px-5 sm:py-4 text-left transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-1 active:translate-y-0"
+                    key={item._id}
+                    onClick={() => {
+                      if (item.link) {
+                        window.location.href = `/${item.link}`;
+                      }
+                    }}
+                    className="group relative bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-white border-2 border-gray-200 hover:border-orange-500 rounded-xl px-4 py-3 sm:px-5 sm:py-4 text-left transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-1 active:translate-y-0 cursor-pointer"
                   >
                     {/* Badge Number */}
                     <div className="absolute -top-2 -left-2 bg-orange-500 text-white w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-lg group-hover:scale-110 transition-transform">
@@ -448,7 +472,7 @@ export default function HomePage({
                     <div className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2">
-                          {dump.title}
+                          {item.title}
                         </h3>
                         <p className="text-xs text-gray-500 mt-0.5">
                           View Details →
@@ -464,7 +488,7 @@ export default function HomePage({
             ) : (
               <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
                 <p className="text-gray-500 text-sm sm:text-base font-medium">
-                  No certification dumps available
+                  No trending certifications available
                 </p>
                 <p className="text-gray-400 text-xs sm:text-sm mt-2">
                   Check back soon for trending certifications
@@ -473,24 +497,26 @@ export default function HomePage({
             )}
 
             {/* View All Button */}
-            {dumps && dumps.length > 0 && (
+            {trendingItems && trendingItems.length > 0 && (
               <div className="text-center mt-8 sm:mt-12">
-                <button className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 sm:px-8 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-sm sm:text-base">
-                  View All Certifications
-                  <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                </button>
+                <Link href="/ItDumps">
+                  <button className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 sm:px-8 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-sm sm:text-base">
+                    View All Certifications
+                    <svg
+                      className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </button>
+                </Link>
               </div>
             )}
           </div>

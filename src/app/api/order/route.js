@@ -29,8 +29,8 @@ const authUserModel =
         image: { type: String },
         emailVerified: { type: Date },
       },
-      { collection: "authUsers" }
-    )
+      { collection: "authUsers" },
+    ),
   );
 
 // ============= SECURITY HELPERS =============
@@ -42,7 +42,7 @@ function checkRateLimit(userId) {
 
   // Clean old requests
   const recentRequests = userRequests.filter(
-    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW
+    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW,
   );
 
   if (recentRequests.length >= MAX_REQUESTS) {
@@ -116,7 +116,7 @@ async function verifyItemPrices(items, currency) {
       const actualPrice = getActualPrice(
         dbProduct,
         item.type || "regular",
-        currency
+        currency,
       );
       const clientPrice = Number(item.price) || 0;
 
@@ -134,7 +134,7 @@ async function verifyItemPrices(items, currency) {
           difference: priceDiff,
         });
         errors.push(
-          `Price mismatch for ${item.title}: Expected ${actualPrice}, got ${clientPrice}`
+          `Price mismatch for ${item.title}: Expected ${actualPrice}, got ${clientPrice}`,
         );
         continue;
       }
@@ -146,9 +146,10 @@ async function verifyItemPrices(items, currency) {
         continue;
       }
 
-      // Add verified item with database prices
+      // Add verified item with database prices and ensure category present
       verifiedItems.push({
         ...item,
+        category: item.category || dbProduct.category || "",
         price: actualPrice,
         quantity,
         verifiedAt: new Date(),
@@ -245,7 +246,7 @@ export async function POST(request) {
       console.error("❌ Unauthorized: No valid session");
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -281,7 +282,7 @@ export async function POST(request) {
       console.error("❌ Rate limit exceeded for user:", session.user.id);
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -290,7 +291,7 @@ export async function POST(request) {
       console.error("❌ User ID mismatch");
       return NextResponse.json(
         { error: "Unauthorized: User ID mismatch" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -298,7 +299,7 @@ export async function POST(request) {
       console.error("❌ Invalid userId:", userId);
       return NextResponse.json(
         { error: "Invalid user ID format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -313,7 +314,7 @@ export async function POST(request) {
       console.error("❌ Invalid items:", items);
       return NextResponse.json(
         { error: "Items must be a non-empty array" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -321,7 +322,7 @@ export async function POST(request) {
       console.error("❌ Too many items:", items.length);
       return NextResponse.json(
         { error: "Maximum 20 items allowed per order" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -338,7 +339,7 @@ export async function POST(request) {
       console.error("❌ Item validation errors:", itemValidationErrors);
       return NextResponse.json(
         { error: "Invalid items", details: itemValidationErrors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -347,7 +348,7 @@ export async function POST(request) {
       console.error("❌ Invalid currency:", currency);
       return NextResponse.json(
         { error: "Invalid currency. Use INR or USD" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -355,7 +356,7 @@ export async function POST(request) {
     console.log("🔍 Verifying prices against database...");
     const { verifiedItems, errors: priceErrors } = await verifyItemPrices(
       items,
-      currency
+      currency,
     );
 
     if (priceErrors.length > 0) {
@@ -365,7 +366,7 @@ export async function POST(request) {
           error: "Price verification failed. Please refresh and try again.",
           details: priceErrors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -376,7 +377,7 @@ export async function POST(request) {
 
     // Allow 1% tolerance for rounding
     const subtotalDiff = Math.abs(
-      calculatedSubtotal - (subtotal || totalAmount)
+      calculatedSubtotal - (subtotal || totalAmount),
     );
     const subtotalTolerance = calculatedSubtotal * 0.01;
 
@@ -392,7 +393,7 @@ export async function POST(request) {
           calculated: calculatedSubtotal,
           received: subtotal || totalAmount,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -404,14 +405,14 @@ export async function POST(request) {
       const couponResult = await verifyCoupon(
         couponCode,
         calculatedSubtotal,
-        currency
+        currency,
       );
 
       if (!couponResult.isValid) {
         console.error("❌ Coupon verification failed:", couponResult.error);
         return NextResponse.json(
           { error: couponResult.error || "Invalid coupon" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -430,7 +431,7 @@ export async function POST(request) {
         });
         return NextResponse.json(
           { error: "Discount verification failed" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -452,7 +453,7 @@ export async function POST(request) {
           calculated: calculatedTotal,
           received: totalAmount,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -461,7 +462,7 @@ export async function POST(request) {
       console.error("❌ Missing payment details");
       return NextResponse.json(
         { error: "Payment details required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -469,7 +470,7 @@ export async function POST(request) {
       console.error("❌ Invalid payment method:", paymentMethod);
       return NextResponse.json(
         { error: "Invalid payment method" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -494,6 +495,7 @@ export async function POST(request) {
       slug: item.slug || "",
       imageUrl: item.imageUrl || "",
       type: item.type || "regular",
+      category: item.category || "",
       mainPdfUrl: item.mainPdfUrl || "",
       expiryDate: expiryDate,
       isExpired: false,
@@ -583,7 +585,7 @@ export async function POST(request) {
     });
     return NextResponse.json(
       { error: `Order creation failed: ${error.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -598,7 +600,7 @@ export async function GET(request) {
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -606,7 +608,7 @@ export async function GET(request) {
     if (!user || user.role !== "admin") {
       return NextResponse.json(
         { error: "Forbidden: Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -618,7 +620,7 @@ export async function GET(request) {
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         return NextResponse.json(
           { error: "Invalid user ID format" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       query.user = userId;
@@ -634,7 +636,7 @@ export async function GET(request) {
     console.error("❌ Order retrieval failed:", error);
     return NextResponse.json(
       { error: `Order retrieval failed: ${error.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -649,7 +651,7 @@ export async function PATCH(request) {
     if (!session || !session.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized: Please log in" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -657,7 +659,7 @@ export async function PATCH(request) {
     if (!user || user.role !== "admin") {
       return NextResponse.json(
         { error: "Forbidden: Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -666,7 +668,7 @@ export async function PATCH(request) {
     if (!orderId) {
       return NextResponse.json(
         { error: "Order ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -700,7 +702,7 @@ export async function PATCH(request) {
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
       { $set: updateData },
-      { new: true }
+      { new: true },
     );
 
     if (pdfChanges.length > 0) {
@@ -730,7 +732,7 @@ export async function PATCH(request) {
     console.error("❌ Order update failed:", error);
     return NextResponse.json(
       { error: `Order update failed: ${error.message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

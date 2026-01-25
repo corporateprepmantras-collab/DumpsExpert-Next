@@ -115,6 +115,12 @@ const ProductForm = ({ mode }) => {
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9-]/g, ""); // Remove special characters except hyphens
       setForm((prev) => ({ ...prev, [name]: formattedSlug }));
+    } else if (name === "sapExamCode") {
+      // Auto-fill examCode when sapExamCode is filled
+      setForm((prev) => ({ ...prev, sapExamCode: value, examCode: value }));
+    } else if (name === "examCode") {
+      // Auto-fill sapExamCode when examCode is filled
+      setForm((prev) => ({ ...prev, examCode: value, sapExamCode: value }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -211,7 +217,7 @@ const ProductForm = ({ mode }) => {
     if (!id) return;
 
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product? This action cannot be undone."
+      "Are you sure you want to delete this product? This action cannot be undone.",
     );
     if (!confirmDelete) return;
 

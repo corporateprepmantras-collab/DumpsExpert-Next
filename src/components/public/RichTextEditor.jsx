@@ -97,7 +97,7 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
       false,
       `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;">
         ${linkText}
-      </a>`
+      </a>`,
     );
 
     onChange(editorRef.current.innerHTML);
@@ -157,7 +157,7 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
           </figcaption>
         </figure>
         <p></p>
-        `
+        `,
       );
 
       onChange(editorRef.current.innerHTML);
@@ -188,7 +188,7 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
       <label className="block mb-2 font-medium">{label}</label>
 
       {/* Toolbar */}
-      <div className="border rounded-t bg-gray-100 p-2 flex flex-wrap gap-1">
+      <div className="sticky top-0 z-10 border rounded-t bg-gray-100 p-2 flex flex-wrap gap-1 shadow-sm">
         <select
           className="border p-1 text-sm"
           onChange={(e) =>
@@ -214,7 +214,7 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
             >
               {btn.icon}
             </button>
-          )
+          ),
         )}
 
         <input

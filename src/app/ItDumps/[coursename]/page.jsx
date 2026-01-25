@@ -40,8 +40,8 @@ async function fetchCategoryData(coursename) {
           products = Array.isArray(prodData.data)
             ? prodData.data
             : Array.isArray(prodData)
-            ? prodData
-            : [];
+              ? prodData
+              : [];
           console.log("✅ Products loaded:", products.length);
         } catch (parseError) {
           console.error("❌ Products JSON parse error:", parseError.message);
@@ -65,8 +65,8 @@ async function fetchCategoryData(coursename) {
           categories = Array.isArray(catData.data)
             ? catData.data
             : Array.isArray(catData)
-            ? catData
-            : [];
+              ? catData
+              : [];
           console.log("✅ Categories loaded:", categories.length);
         } catch (parseError) {
           console.error("❌ Categories JSON parse error:", parseError.message);
@@ -75,7 +75,7 @@ async function fetchCategoryData(coursename) {
         const text = await catRes.text();
         console.error(
           "❌ Categories returned non-JSON:",
-          text.substring(0, 200)
+          text.substring(0, 200),
         );
       }
     } else if (catRes) {
@@ -87,13 +87,13 @@ async function fetchCategoryData(coursename) {
     const matchedCategory = categories.find(
       (c) =>
         c.slug?.toLowerCase() === coursename.toLowerCase() ||
-        c.name?.toLowerCase() === coursename.toLowerCase()
+        c.name?.toLowerCase() === coursename.toLowerCase(),
     );
 
     const categoryProducts = products.filter(
       (p) =>
         p.category?.toLowerCase().replace(/\s+/g, "-") ===
-        coursename.toLowerCase()
+        coursename.toLowerCase(),
     );
     console.log("✅ Matched category:", matchedCategory?.name);
     console.log("✅ Filtered products:", categoryProducts.length);
@@ -209,7 +209,7 @@ export default async function CategoryPage({ params, searchParams }) {
   const filteredProducts = products.filter(
     (p) =>
       p.title?.toLowerCase().includes(searchTerm) ||
-      p.sapExamCode?.toLowerCase().includes(searchTerm)
+      p.sapExamCode?.toLowerCase().includes(searchTerm),
   );
 
   // ✅ Sort products alphabetically by exam code
@@ -289,9 +289,9 @@ export default async function CategoryPage({ params, searchParams }) {
                 <thead className="bg-gray-100 text-gray-700 uppercase text-sm">
                   <tr>
                     <th className="px-4 py-3">{coursename} Exam Code</th>
-                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3 w-36">Name</th>
                     <th className="px-4 py-3">Price</th>
-                    <th className="px-4 py-3">Details</th>
+                    <th className="px-4 py-3 w-40">Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -303,24 +303,19 @@ export default async function CategoryPage({ params, searchParams }) {
                       <td className="px-4 py-3 font-semibold text-blue-900">
                         {product.sapExamCode}
                       </td>
-                      <td className="px-4 py-3">{product.title}</td>
-                      <td className="px-4 py-3">
-                        <span className="block text-xs text-gray-600">
-                          Starting at:
-                        </span>
-                        <span className="font-semibold text-green-700">
+                      <td className="px-2 py-3 w-34 align-top truncate">
+                        {product.title}
+                      </td>
+                      <td className="px-2 py-3 text-right align-top space-y-1">
+                        <span className="block font-semibold text-green-700">
                           ₹{product.dumpsPriceInr?.trim()} ($
                           {product.dumpsPriceUsd})
                         </span>
-                        <span className="block text-xs line-through text-gray-500">
-                          ₹{product.dumpsMrpInr?.trim()} (${product.dumpsMrpUsd}
-                          )
-                        </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 w-40 min-w-[10rem]">
                         <Link
                           href={`/ItDumps/${coursename}/${product.slug}`}
-                          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md shadow-sm transition"
+                          className="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-md shadow-sm font-semibold transition"
                         >
                           See Details
                         </Link>
@@ -348,8 +343,8 @@ export default async function CategoryPage({ params, searchParams }) {
                     <p className="text-sm text-gray-600">Name</p>
                     <p className="text-base font-medium">{product.title}</p>
                   </div>
-                  <div className="mb-2 text-center">
-                    <p className="text-sm text-gray-600">Price</p>
+                  <div className="mb-4 text-center space-y-1">
+                    <p className="text-sm text-gray-600">Starting at:</p>
                     <p className="text-black font-semibold">
                       ₹{product.dumpsPriceInr?.trim()} (${product.dumpsPriceUsd}
                       )
@@ -358,15 +353,14 @@ export default async function CategoryPage({ params, searchParams }) {
                       ₹{product.dumpsMrpInr?.trim()} (${product.dumpsMrpUsd})
                     </p>
                   </div>
-                  <div className="absolute bottom-4 left-4 right-4">
+                  <div className="w-full">
                     <Link
                       href={`/ItDumps/${coursename}/${product.slug}`}
-                      className="block bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow transition"
+                      className="block w-full bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow transition"
                     >
                       See Details
                     </Link>
                   </div>
-                  <div className="h-10" />
                 </div>
               ))}
             </div>

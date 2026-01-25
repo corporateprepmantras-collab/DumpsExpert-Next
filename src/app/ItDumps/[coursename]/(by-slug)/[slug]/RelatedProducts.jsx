@@ -146,12 +146,10 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                       className="h-24 sm:h-28 md:h-32 w-full object-contain"
                     />
                   </div>
-
                   {/* Product Title */}
                   <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors">
                     {product.title}
                   </h3>
-
                   {/* Price Section */}
                   <div className="flex items-baseline gap-1 md:gap-2 mb-2 flex-wrap">
                     <p className="text-sm sm:text-base font-bold text-blue-600">
@@ -163,31 +161,18 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                       </p>
                     )}
                   </div>
-
                   {/* Discount Badge */}
                   {product.dumpsMrpInr > product.dumpsPriceInr && (
                     <div className="inline-block bg-green-100 text-green-800 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
                       {Math.round(
                         ((product.dumpsMrpInr - product.dumpsPriceInr) /
                           product.dumpsMrpInr) *
-                          100
+                          100,
                       )}
                       % OFF
                     </div>
                   )}
 
-                  {/* View Details Button - Hidden on mobile, visible on hover on desktop */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/product/${product.slug}`);
-                    }}
-                    className="hidden md:flex w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-2 rounded-lg font-medium text-sm transition-all items-center justify-center gap-2 opacity-0 group-hover:opacity-100 mt-auto"
-                  >
-                    <FaShoppingCart className="text-xs" />
-                    View Details
-                  </button>
- x
                   {/* Mobile: Show arrow */}
                   <div className="md:hidden flex items-center justify-end mt-auto pt-2">
                     <FaChevronRight className="text-blue-600 text-xs" />

@@ -101,36 +101,38 @@ const BlogDetail = ({ slug }) => {
       {/* Other Blogs */}
       {recentBlogs.length > 0 && (
         <div className="md:col-span-1">
-          <h2 className="text-2xl font-bold mb-6">Other Blogs</h2>
-          <div className="space-y-6">
-            {recentBlogs.map((b) => (
-              <Link key={b._id} href={`/blogsPages/blog/${b.slug}`}>
-                <Card className="overflow-hidden transition-transform transform hover:scale-[1.02] duration-200 shadow-sm hover:shadow-md">
-                  {b.imageUrl && (
-                    <img
-                      src={b.imageUrl}
-                      alt={b.title}
-                      className="w-full h-36 object-cover"
-                    />
-                  )}
-                  <CardContent className="p-3">
-                    <h3 className="text-md font-semibold mb-1 line-clamp-2">
-                      {b.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-1">
-                      {new Date(b.createdAt).toLocaleDateString("en-IN", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                    <span className="text-sm text-blue-600 hover:underline">
-                      Read more →
-                    </span>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+          <div className="sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6">Other Blogs</h2>
+            <div className="space-y-6">
+              {recentBlogs.slice(0, 3).map((b) => (
+                <Link key={b._id} href={`/blogsPages/blog/${b.slug}`}>
+                  <Card className="overflow-hidden transition-transform transform hover:scale-[1.02] duration-200 shadow-sm hover:shadow-md">
+                    {b.imageUrl && (
+                      <img
+                        src={b.imageUrl}
+                        alt={b.title}
+                        className="w-full h-36 object-cover"
+                      />
+                    )}
+                    <CardContent className="p-3">
+                      <h3 className="text-md font-semibold mb-1 line-clamp-2">
+                        {b.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 mb-1">
+                        {new Date(b.createdAt).toLocaleDateString("en-IN", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                      <span className="text-sm text-blue-600 hover:underline">
+                        Read more →
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}

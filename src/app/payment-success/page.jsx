@@ -27,7 +27,7 @@ export default function PayPalSuccess() {
         const res = await axios.post(
           "/api/payments/paypal/capture",
           { orderId },
-          { headers: { "Content-Type": "application/json" } }
+          { headers: { "Content-Type": "application/json" } },
         );
 
         console.log("✅ Capture response:", res.data);
@@ -38,7 +38,7 @@ export default function PayPalSuccess() {
 
         toast.dismiss();
         toast.success("Payment successful");
-        router.replace("/dashboard/student");
+        router.replace("/dashboard/student/myOrders");
       } catch (err) {
         toast.dismiss();
         console.error("❌ Capture failed:", err);

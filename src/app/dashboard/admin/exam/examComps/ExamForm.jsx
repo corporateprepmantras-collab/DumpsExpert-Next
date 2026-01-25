@@ -16,7 +16,7 @@ const SearchableSelect = ({
 
   // Filter options based on search
   const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    option.label.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Get selected option label
@@ -117,7 +117,6 @@ export default function ExamForm({ exam }) {
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    eachQuestionMark: "",
     duration: "",
     sampleDuration: "",
     passingScore: "",
@@ -156,7 +155,6 @@ export default function ExamForm({ exam }) {
       setFormData({
         ...formData,
         name: exam.name || "",
-        eachQuestionMark: exam.eachQuestionMark || "",
         duration: exam.duration || "",
         sampleDuration: exam.sampleDuration || "",
         passingScore: exam.passingScore || "",
@@ -189,7 +187,6 @@ export default function ExamForm({ exam }) {
       code: formData.code.trim(),
       duration: Number(formData.duration),
       eachQuestionMark: Number(formData.eachQuestionMark),
-      lastUpdatedBy: formData.lastUpdatedBy.trim(),
       mainInstructions: formData.mainInstructions.trim(),
       mrpINR: Number(formData.mrpINR),
       mrpUSD: Number(formData.mrpUSD),
@@ -243,12 +240,6 @@ export default function ExamForm({ exam }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           {[
             { name: "name", label: "Exam Name", type: "text" },
-            {
-              name: "eachQuestionMark",
-              label: "Each Question Mark",
-              type: "number",
-            },
-            { name: "duration", label: "Duration (Minutes)", type: "number" },
             {
               name: "sampleDuration",
               label: "Sample Duration",
@@ -453,7 +444,7 @@ const RichTextEditor = ({
             >
               {btn.icon}
             </button>
-          )
+          ),
         )}
 
         <input

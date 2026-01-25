@@ -12,6 +12,7 @@ const OrdersAll = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -80,7 +81,7 @@ const OrdersAll = () => {
 
       if (response.data.success) {
         setOrders((prevOrders) =>
-          prevOrders.filter((order) => !selectedOrders.includes(order._id))
+          prevOrders.filter((order) => !selectedOrders.includes(order._id)),
         );
         setSelectedOrders([]);
         setShowDeleteConfirm(false);
@@ -136,7 +137,7 @@ const OrdersAll = () => {
         "Payment ID": order.paymentId || "N/A",
         Status: order.status || "N/A",
         "Purchase Date": new Date(
-          order.purchaseDate || order.createdAt
+          order.purchaseDate || order.createdAt,
         ).toLocaleDateString(),
         Currency: order.currency || "INR",
         "Total Courses": order.courseDetails?.length || 0,
@@ -150,7 +151,7 @@ const OrdersAll = () => {
           ?.map((c) => c.sapExamCode || "N/A")
           .join(", "),
         Categories: order.courseDetails
-          ?.map((c) => c.category || "N/A")
+          ?.map((c) => c.category || fallbackCategory)
           .join(", "),
         SKUs: order.courseDetails?.map((c) => c.sku || "N/A").join(", "),
       }));
@@ -164,7 +165,7 @@ const OrdersAll = () => {
       headers.forEach((header, i) => {
         const maxLength = Math.max(
           header.length,
-          ...excelData.map((row) => String(row[header] || "").length)
+          ...excelData.map((row) => String(row[header] || "").length),
         );
         colWidths[i] = { wch: Math.min(maxLength + 2, 50) };
       });
@@ -191,6 +192,8 @@ const OrdersAll = () => {
     }
   };
 
+  const fallbackCategory = "Uncategorized";
+
   const filteredOrders = orders.filter((order) => {
     if (!order) return false;
 
@@ -209,18 +212,37 @@ const OrdersAll = () => {
       isWithinDate = orderDate <= new Date(endDate);
     }
 
+    // Category filter
+    let matchesCategory = true;
+    if (selectedCategory) {
+      matchesCategory = order.courseDetails?.some((course) => {
+        const courseCategory = course.category || fallbackCategory;
+        return courseCategory === selectedCategory;
+      });
+    }
+
     return (
       isWithinDate &&
+      matchesCategory &&
       (orderNumber.includes(query) ||
         customerName.includes(query) ||
         customerEmail.includes(query))
     );
   });
 
+  // Get unique categories from all orders
+  const categories = [
+    ...new Set(
+      orders.flatMap((order) =>
+        (order.courseDetails || []).map((c) => c.category || fallbackCategory),
+      ),
+    ),
+  ].sort();
+
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const handlePageChange = (newPage) => {
@@ -255,6 +277,23 @@ const OrdersAll = () => {
               setCurrentPage(1);
             }}
           />
+
+          {/* Category Filter */}
+          <select
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
 
           <input
             type="text"
@@ -354,6 +393,7 @@ const OrdersAll = () => {
                   <th className="px-4 py-2 border">Order #</th>
                   <th className="px-4 py-2 border">Customer</th>
                   <th className="px-4 py-2 border">Email</th>
+                  <th className="px-4 py-2 border">Categories</th>
                   <th className="px-4 py-2 border">Courses</th>
                   <th className="px-4 py-2 border">Date</th>
                   <th className="px-4 py-2 border">Status</th>
@@ -364,13 +404,15 @@ const OrdersAll = () => {
                 {paginatedOrders.length > 0 ? (
                   paginatedOrders.map((order) => {
                     const isExpanded = expandedCourses[order._id];
-                    const coursesText = order.courseDetails
-                      ?.map((c) => `${c.name} - ₹${c.price?.toFixed(2)}`)
-                      .join(", ") || "";
+                    const coursesText =
+                      order.courseDetails
+                        ?.map((c) => `${c.name} - ₹${c.price?.toFixed(2)}`)
+                        .join(", ") || "";
                     const shouldTruncate = coursesText.length > 100;
-                    const displayText = shouldTruncate && !isExpanded
-                      ? coursesText.substring(0, 100) + "..."
-                      : coursesText;
+                    const displayText =
+                      shouldTruncate && !isExpanded
+                        ? coursesText.substring(0, 100) + "..."
+                        : coursesText;
 
                     return (
                       <tr key={order._id} className="hover:bg-gray-50">
@@ -392,13 +434,39 @@ const OrdersAll = () => {
                           {order.user?.email || "N/A"}
                         </td>
                         <td className="px-4 py-2 border">
+                          {order.courseDetails &&
+                          order.courseDetails.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {[
+                                ...new Set(
+                                  order.courseDetails.map(
+                                    (c) => c.category || fallbackCategory,
+                                  ),
+                                ),
+                              ].map((cat) => (
+                                <span
+                                  key={cat}
+                                  className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded font-medium"
+                                >
+                                  {cat}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">N/A</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 border">
                           <div className="max-w-md">
-                            {order.courseDetails && order.courseDetails.length > 0 ? (
+                            {order.courseDetails &&
+                            order.courseDetails.length > 0 ? (
                               <div>
                                 <p className="text-sm">{displayText}</p>
                                 {shouldTruncate && (
                                   <button
-                                    onClick={() => toggleCoursesExpansion(order._id)}
+                                    onClick={() =>
+                                      toggleCoursesExpansion(order._id)
+                                    }
                                     className="text-blue-600 hover:text-blue-800 text-xs font-medium mt-1"
                                   >
                                     {isExpanded ? "Show Less" : "Show More"}
@@ -406,13 +474,15 @@ const OrdersAll = () => {
                                 )}
                               </div>
                             ) : (
-                              <span className="text-gray-400 text-sm">No courses</span>
+                              <span className="text-gray-400 text-sm">
+                                No courses
+                              </span>
                             )}
                           </div>
                         </td>
                         <td className="px-4 py-2 border">
                           {new Date(
-                            order.purchaseDate || order.createdAt
+                            order.purchaseDate || order.createdAt,
                           ).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-2 border">
@@ -421,10 +491,10 @@ const OrdersAll = () => {
                               order.status === "completed"
                                 ? "bg-green-500"
                                 : order.status === "pending"
-                                ? "bg-yellow-500"
-                                : order.status === "rejected"
-                                ? "bg-red-500"
-                                : "bg-gray-500"
+                                  ? "bg-yellow-500"
+                                  : order.status === "rejected"
+                                    ? "bg-red-500"
+                                    : "bg-gray-500"
                             }`}
                           >
                             {order.status || "N/A"}
@@ -438,7 +508,7 @@ const OrdersAll = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center py-4 text-gray-500">
+                    <td colSpan="9" className="text-center py-4 text-gray-500">
                       No orders found
                     </td>
                   </tr>

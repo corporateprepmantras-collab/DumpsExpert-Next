@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import {
   FaFacebook,
@@ -10,14 +11,14 @@ import {
   FaYoutube,
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
-
+import contactImg from "@/assets/contactAssets/image.png";
 // ✅ Lazy load these components to avoid build-time issues
 const ContactDataFirst = dynamic(
   () => import("@/app/contact/ContactDataFirst"),
   {
     ssr: false,
     loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded" />,
-  }
+  },
 );
 
 const ContactDataSecond = dynamic(
@@ -25,7 +26,7 @@ const ContactDataSecond = dynamic(
   {
     ssr: false,
     loading: () => <div className="h-48 bg-gray-50 animate-pulse rounded" />,
-  }
+  },
 );
 
 const Contact = () => {
@@ -77,6 +78,18 @@ const Contact = () => {
       <div className="flex flex-col md:flex-row w-full max-w-5xl gap-10">
         {/* Left Content */}
         <div className="flex flex-col flex-1 justify-center">
+          <div className="mb-6 flex justify-center">
+            <div className="w-32 h-32 rounded-full overflow-hidden shadow-md border border-gray-200 bg-white">
+              <Image
+                src={contactImg}
+                alt="Customer support"
+                width={128}
+                height={128}
+                className="w-full h-full object-cover"
+                priority
+              />
+            </div>
+          </div>
           <h3 className="text-2xl font-semibold mb-4">
             24x7 Support Available
           </h3>

@@ -11,13 +11,13 @@ export default function BlogSection({ blogs = [], categories = [] }) {
 
   const nextSlide = () => {
     setCurrentIndex((prev) =>
-      prev + slidesPerView >= blogs.length ? 0 : prev + 1
+      prev + slidesPerView >= blogs.length ? 0 : prev + 1,
     );
   };
 
   const prevSlide = () => {
     setCurrentIndex((prev) =>
-      prev === 0 ? Math.max(blogs.length - slidesPerView, 0) : prev - 1
+      prev === 0 ? Math.max(blogs.length - slidesPerView, 0) : prev - 1,
     );
   };
 
@@ -107,7 +107,7 @@ export default function BlogSection({ blogs = [], categories = [] }) {
                 <AnimatePresence mode="popLayout">
                   {visibleBlogs.map((blog, index) => {
                     const blogUrl = `https://www.prepmantras.com/blogsPages/blog/${encodeURIComponent(
-                      blog.slug || blog.title
+                      blog.slug || blog.title,
                     )}`;
 
                     return (
@@ -143,7 +143,7 @@ export default function BlogSection({ blogs = [], categories = [] }) {
                                     month: "short",
                                     day: "numeric",
                                     year: "numeric",
-                                  }
+                                  },
                                 )}
                               </div>
                             )}
@@ -174,7 +174,7 @@ export default function BlogSection({ blogs = [], categories = [] }) {
 
         {/* CTA */}
         <div className="text-center mt-12">
-          <Link href="/blogsPages">
+          <Link href="/blogs">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
