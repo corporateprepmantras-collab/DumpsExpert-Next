@@ -177,22 +177,6 @@ export default function SampleInstructionsPage() {
               </div>
             </div>
 
-            {/* Marks Card */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">Marks/Question</p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {exam.eachQuestionMark}{" "}
-                    <span className="text-sm">marks</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Passing Score Card */}
             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
               <div className="flex items-center gap-3 mb-2">

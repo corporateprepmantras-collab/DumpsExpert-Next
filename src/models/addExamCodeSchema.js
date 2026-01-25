@@ -8,11 +8,6 @@ const addExamCodeSchema = new mongoose.Schema(
       unique: true,
       trim: true
     },
-    eachQuestionMark: {
-      type: Number,
-      required: true,
-      min: 0
-    },
     durationInMinutes: {
       type: Number,
       required: true,
