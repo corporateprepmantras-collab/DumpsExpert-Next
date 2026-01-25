@@ -30,7 +30,7 @@ export default function SampleInstructionsPage() {
     const fetchInstructions = async () => {
       try {
         const res = await fetch(
-          `/api/exams/byslug/${encodeURIComponent(slug)}`
+          `/api/exams/byslug/${encodeURIComponent(slug)}`,
         );
         const data = await res.json();
 

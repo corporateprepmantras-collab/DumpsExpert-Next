@@ -484,7 +484,6 @@ export async function POST(request) {
       price: item.price,
       quantity: item.quantity,
       duration: item.duration || "",
-      eachQuestionMark: item.eachQuestionMark || "",
       code: item.code || item.sapExamCode || "",
       numberOfQuestions: item.numberOfQuestions || 0,
       passingScore: item.passingScore || "",

@@ -34,7 +34,6 @@ const orderSchema = new mongoose.Schema(
         },
         duration: String,
         numberOfQuestions: Number,
-        eachQuestionMark: String,
         passingScore: String,
         status: {
           type: String,
@@ -100,7 +99,7 @@ const orderSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Generate order number before saving

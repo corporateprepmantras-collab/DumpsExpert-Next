@@ -46,7 +46,7 @@ const extractExamPrices = (examData) => {
       examData.onlineExamPrice ||
       examData.onlineExamPriceInr ||
       examData.examPriceInr ||
-      examData.examPriceINR
+      examData.examPriceINR,
   );
 
   const priceUsd = toNum(
@@ -56,7 +56,7 @@ const extractExamPrices = (examData) => {
       examData.examPriceUsd ||
       examData.onlineExamPriceUsd ||
       examData.examPriceUSD ||
-      examData.onlineExamPriceUSD
+      examData.onlineExamPriceUSD,
   );
 
   const mrpInr = toNum(
@@ -66,7 +66,7 @@ const extractExamPrices = (examData) => {
       examData.mrp ||
       examData.examMrp ||
       examData.examMrpInr ||
-      examData.examMrpINR
+      examData.examMrpINR,
   );
 
   const mrpUsd = toNum(
@@ -74,7 +74,7 @@ const extractExamPrices = (examData) => {
       examData.mrpUsd ||
       examData.mrp_usd ||
       examData.examMrpUsd ||
-      examData.examMrpUSD
+      examData.examMrpUSD,
   );
 
   return {
@@ -229,7 +229,7 @@ export default function ProductDetailsPage() {
     // Check if item already exists in cart
     const cartStore = useCartStore.getState();
     const existingItem = cartStore.cartItems.find(
-      (item) => item._id === product._id && item.type === type
+      (item) => item._id === product._id && item.type === type,
     );
 
     if (existingItem) {
@@ -267,8 +267,6 @@ export default function ProductDetailsPage() {
       code: product.code || product.sapExamCode,
       sku: product.sku,
       duration: product.duration || examDetails.duration || "",
-      eachQuestionMark:
-        product.eachQuestionMark || examDetails.eachQuestionMark || "",
       numberOfQuestions:
         product.numberOfQuestions || examDetails.numberOfQuestions || 0,
       passingScore: product.passingScore || examDetails.passingScore || "",
@@ -336,16 +334,16 @@ export default function ProductDetailsPage() {
         } else {
           const prices = {
             priceInr: toNum(
-              productData?.examPriceInr || productData?.onlineExamPriceInr
+              productData?.examPriceInr || productData?.onlineExamPriceInr,
             ),
             priceUsd: toNum(
-              productData?.examPriceUsd || productData?.onlineExamPriceUsd
+              productData?.examPriceUsd || productData?.onlineExamPriceUsd,
             ),
             mrpInr: toNum(
-              productData?.examMrpInr || productData?.onlineExamMrpInr
+              productData?.examMrpInr || productData?.onlineExamMrpInr,
             ),
             mrpUsd: toNum(
-              productData?.examMrpUsd || productData?.onlineExamMrpUsd
+              productData?.examMrpUsd || productData?.onlineExamMrpUsd,
             ),
           };
           setExamPrices(prices);
@@ -447,7 +445,7 @@ export default function ProductDetailsPage() {
       <div className="container mx-auto px-4 pt-2 pb-3">
         <Breadcrumbs />
       </div>
-{/* //updated ui */}
+      {/* //updated ui */}
       {/* Product Unavailability Alert */}
       {!productAvailable && product && (
         <div className="container mx-auto px-4 mb-4">
@@ -500,7 +498,6 @@ export default function ProductDetailsPage() {
           <h1 className="text-2xl md:text-3xl font-bold break-words">
             {product.title}
           </h1>
-        
 
           {/* NEW: Exam Information Card */}
           {(product.examCode ||
@@ -523,7 +520,7 @@ export default function ProductDetailsPage() {
                       <p className="text-xs text-gray-600">Exam Code</p>
                       <p className="text-sm font-semibold text-gray-800">
                         {product.examCode}
-                      </p> 
+                      </p>
                     </div>
                   </div>
                 )}
@@ -662,7 +659,7 @@ export default function ProductDetailsPage() {
                       (
                       {calculateDiscount(
                         product.dumpsMrpInr,
-                        product.dumpsPriceInr
+                        product.dumpsPriceInr,
                       )}
                       % off)
                     </span>
@@ -676,7 +673,7 @@ export default function ProductDetailsPage() {
                       (
                       {calculateDiscount(
                         product.dumpsMrpUsd,
-                        product.dumpsPriceUsd
+                        product.dumpsPriceUsd,
                       )}
                       % off)
                     </span>
@@ -689,7 +686,7 @@ export default function ProductDetailsPage() {
                       onClick={() =>
                         handleDownload(
                           product.samplePdfUrl,
-                          `${product.title}-Sample.pdf`
+                          `${product.title}-Sample.pdf`,
                         )
                       }
                       className="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-700"
@@ -738,7 +735,7 @@ export default function ProductDetailsPage() {
                           (
                           {calculateDiscount(
                             examPrices.mrpInr,
-                            examPrices.priceInr
+                            examPrices.priceInr,
                           )}
                           % off)
                         </span>
@@ -799,7 +796,7 @@ export default function ProductDetailsPage() {
                         (
                         {calculateDiscount(
                           product.comboMrpInr,
-                          product.comboPriceInr
+                          product.comboPriceInr,
                         )}
                         % off)
                       </span>
@@ -926,7 +923,7 @@ export default function ProductDetailsPage() {
         )}
       </div>
 
-     <RelatedProducts currentSlug={slug} maxProducts={10} />
+      <RelatedProducts currentSlug={slug} maxProducts={10} />
 
       <Toaster />
     </div>
@@ -952,7 +949,7 @@ function ReviewsSection({
       acc.count += 1;
       return acc;
     },
-    { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, total: 0, count: 0 }
+    { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, total: 0, count: 0 },
   );
 
   const avgRating =
@@ -1107,7 +1104,7 @@ function ReviewsSection({
                       <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                         {new Date(r.createdAt || r.date).toLocaleDateString(
                           "en-US",
-                          { month: "short", day: "numeric", year: "numeric" }
+                          { month: "short", day: "numeric", year: "numeric" },
                         )}
                       </span>
                     </div>

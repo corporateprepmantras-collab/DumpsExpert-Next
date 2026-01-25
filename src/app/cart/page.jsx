@@ -545,7 +545,6 @@ const Cart = () => {
           samplePdfUrl: item.samplePdfUrl || "",
           mainPdfUrl: item.mainPdfUrl || "",
           duration: item.duration || "",
-          eachQuestionMark: item.eachQuestionMark || "",
           numberOfQuestions: item.numberOfQuestions || "0",
           passingScore: item.passingScore || "",
           mainInstructions: item.mainInstructions || "",

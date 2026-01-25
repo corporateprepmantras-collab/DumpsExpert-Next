@@ -22,7 +22,7 @@ const cartStore = (set, get) => ({
 
     // ✅ Check if item already exists (same product + same type)
     const existing = get().cartItems.find(
-      (i) => i._id === item._id && i.type === item.type
+      (i) => i._id === item._id && i.type === item.type,
     );
 
     if (existing) {
@@ -89,7 +89,6 @@ const cartStore = (set, get) => ({
       numberOfQuestions: item.numberOfQuestions,
       duration: item.duration,
       passingScore: item.passingScore,
-      eachQuestionMark: item.eachQuestionMark,
 
       // ✅ PDF URLs
       mainPdfUrl: item.mainPdfUrl || "",
@@ -124,7 +123,7 @@ const cartStore = (set, get) => ({
   removeFromCart: (id, type = "regular") => {
     set({
       cartItems: get().cartItems.filter(
-        (item) => !(item._id === id && item.type === type)
+        (item) => !(item._id === id && item.type === type),
       ),
       lastUpdated: Date.now(),
     });
@@ -224,14 +223,14 @@ const cartStore = (set, get) => ({
   // ✅ OPTIMIZED: Check if item exists
   hasItem: (id, type = "regular") => {
     return get().cartItems.some(
-      (item) => item._id === id && item.type === type
+      (item) => item._id === id && item.type === type,
     );
   },
 
   // ✅ OPTIMIZED: Get item from cart
   getItem: (id, type = "regular") => {
     return get().cartItems.find(
-      (item) => item._id === id && item.type === type
+      (item) => item._id === id && item.type === type,
     );
   },
 });
@@ -264,8 +263,8 @@ const useCartStore = create(
           console.log(`✅ Cart loaded: ${state.cartItems.length} items`);
         }
       },
-    })
-  )
+    }),
+  ),
 );
 
 // ✅ OPTIMIZED: Selectors for better performance (only re-render what changed)
@@ -292,7 +291,7 @@ export const getItem = (id, type) => useCartStore.getState().getItem(id, type);
 export const subscribeToCart = (listener) => {
   return useCartStore.subscribe(
     (state) => state.cartItems,
-    (cartItems) => listener(cartItems)
+    (cartItems) => listener(cartItems),
   );
 };
 
@@ -300,7 +299,7 @@ export const subscribeToCart = (listener) => {
 export const subscribeToTotal = (currency, listener) => {
   return useCartStore.subscribe(
     (state) => state.getCartTotal(currency),
-    (total) => listener(total)
+    (total) => listener(total),
   );
 };
 
