@@ -26,7 +26,7 @@ export async function middleware(request) {
   ];
 
   const shouldSkipRedirect = skipRedirectPaths.some((path) =>
-    pathname.startsWith(path)
+    pathname.startsWith(path),
   );
 
   // ========================================
@@ -36,7 +36,7 @@ export async function middleware(request) {
     try {
       const baseUrl = request.nextUrl.origin;
       const redirectCheckUrl = `${baseUrl}/api/redirects/check?path=${encodeURIComponent(
-        pathname
+        pathname,
       )}`;
 
       const redirectRes = await fetch(redirectCheckUrl, {
@@ -50,7 +50,7 @@ export async function middleware(request) {
 
         if (redirectData.redirect && redirectData.toUrl) {
           console.log(
-            `[MIDDLEWARE] 🔀 Redirecting: ${pathname} → ${redirectData.toUrl}`
+            `[MIDDLEWARE] 🔀 Redirecting: ${pathname} → ${redirectData.toUrl}`,
           );
 
           // Determine if it's an external or internal URL
@@ -65,7 +65,7 @@ export async function middleware(request) {
             // Internal redirect
             return NextResponse.redirect(
               new URL(redirectData.toUrl, request.url),
-              301
+              301,
             );
           }
         }
@@ -81,14 +81,14 @@ export async function middleware(request) {
   // ========================================
   const maintenanceExcluded = ["/admin", "/dashboard", "/api", "/maintenance"];
   const isMaintenanceExcluded = maintenanceExcluded.some((p) =>
-    pathname.startsWith(p)
+    pathname.startsWith(p),
   );
 
   if (!isMaintenanceExcluded) {
     try {
       const maintenanceRes = await fetch(
         new URL("/api/maintenance-page", request.url),
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
 
       if (maintenanceRes.ok) {
@@ -124,13 +124,14 @@ export async function middleware(request) {
     "/api/categories",
     "/api/faqs",
     "/api/maintenance-page",
+    "/api/auth", // Allow NextAuth callback/signin without middleware touch
     "/api/redirects",
     "/_next",
     "/favicon.ico",
   ];
 
   const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
+    pathname.startsWith(route),
   );
 
   if (isPublicRoute) {

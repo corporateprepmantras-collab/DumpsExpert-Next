@@ -18,6 +18,7 @@ export async function middleware(request) {
     "/static/",
     "/favicon.ico",
     "/api/redirects", // Skip redirect API itself
+    "/api/auth", // Skip NextAuth to avoid state/cookie issues
   ];
 
   const shouldSkip = alwaysSkip.some((path) => pathname.startsWith(path));
@@ -38,7 +39,7 @@ export async function middleware(request) {
     "/unauthorized",
   ];
   const shouldCheckRedirect = !skipRedirectRoutes.some((route) =>
-    pathname.startsWith(route)
+    pathname.startsWith(route),
   );
 
   if (shouldCheckRedirect) {
@@ -47,7 +48,7 @@ export async function middleware(request) {
 
       const baseUrl = request.nextUrl.origin;
       const redirectCheckUrl = `${baseUrl}/api/redirects/check?path=${encodeURIComponent(
-        pathname
+        pathname,
       )}`;
 
       const redirectRes = await fetch(redirectCheckUrl, {
@@ -85,14 +86,14 @@ export async function middleware(request) {
   // ========================================
   const maintenanceExcluded = ["/admin", "/dashboard", "/api", "/maintenance"];
   const isMaintenanceExcluded = maintenanceExcluded.some((p) =>
-    pathname.startsWith(p)
+    pathname.startsWith(p),
   );
 
   if (!isMaintenanceExcluded) {
     try {
       const maintenanceRes = await fetch(
         new URL("/api/maintenance-page", request.url),
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
 
       if (maintenanceRes.ok) {
@@ -128,13 +129,14 @@ export async function middleware(request) {
     "/api/categories",
     "/api/faqs",
     "/api/maintenance-page",
+    "/api/auth", // Let NextAuth run without middleware side effects
     "/api/redirects",
     "/_next",
     "/favicon.ico",
   ];
 
   const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
+    pathname.startsWith(route),
   );
 
   if (isPublicRoute) {
