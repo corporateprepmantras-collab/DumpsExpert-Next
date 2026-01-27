@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 // Import axios instance for API calls
 import api from "axios";
+import QuestionForm from "./QuestionForm";
 
 // Helper function to truncate text for display
 const truncateText = (text, wordLimit = 5) => {
@@ -25,6 +26,7 @@ const QuestionList = ({
   examId,
   questions: initialQuestions,
   hideAddButton,
+  searchTerm = "",
 }) => {
   // Initialize router for navigation
   const router = useRouter();
@@ -32,6 +34,10 @@ const QuestionList = ({
   const [questions, setQuestions] = useState(initialQuestions || []);
   // State to manage question preview modal
   const [previewQuestion, setPreviewQuestion] = useState(null);
+  // State to manage add/edit modal
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const [keepModalOpen, setKeepModalOpen] = useState(true);
 
   // Effect to fetch questions if not provided as prop
   useEffect(() => {
@@ -78,6 +84,68 @@ const QuestionList = ({
     }
   };
 
+  // Function to open add question modal
+  const handleAddQuestion = () => {
+    setEditingQuestionId(null);
+    setShowQuestionModal(true);
+    setKeepModalOpen(true);
+  };
+
+  // Function to open edit question modal
+  const handleEditQuestion = (questionId) => {
+    setEditingQuestionId(questionId);
+    setShowQuestionModal(true);
+    setKeepModalOpen(true);
+  };
+
+  // Function to handle question form success
+  const handleQuestionSuccess = async (savedQuestion) => {
+    // Refresh questions list
+    try {
+      const { data } = await api.get(`/api/questions/byExam/${examId}`);
+      if (data?.success && Array.isArray(data.data)) {
+        setQuestions(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to refresh questions", err);
+    }
+
+    // Scroll modal to top after save
+    const modalBody = document.querySelector(".max-w-7xl.overflow-y-auto");
+    if (modalBody) {
+      modalBody.scrollTop = 0;
+    }
+
+    // Keep modal open if keepModalOpen is true
+    if (!keepModalOpen) {
+      setShowQuestionModal(false);
+      setEditingQuestionId(null);
+    }
+  };
+
+  // Function to close modal
+  const handleCloseModal = () => {
+    setShowQuestionModal(false);
+    setEditingQuestionId(null);
+  };
+
+  // Normalize search term once
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  // Filter questions by question text or code
+  const filteredQuestions = questions.filter((q) => {
+    if (!normalizedSearch) return true;
+    const codeMatch = q.questionCode
+      ?.toString()
+      .toLowerCase()
+      .includes(normalizedSearch);
+    const textMatch = q.questionText
+      ?.replace(/<[^>]+>/g, " ")
+      .toLowerCase()
+      .includes(normalizedSearch);
+    return codeMatch || textMatch;
+  });
+
   // Render component
   return (
     <div className="space-y-6">
@@ -88,13 +156,10 @@ const QuestionList = ({
         </h2>
         {!hideAddButton && (
           <button
-            // Navigate to add question page
-            onClick={() =>
-              router.push(`/dashboard/admin/exam/${examId}/questions/new`)
-            }
+            onClick={handleAddQuestion}
             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium shadow"
           >
-            + Add Question
+            + Add Questions
           </button>
         )}
       </div>
@@ -120,9 +185,9 @@ const QuestionList = ({
           {/* Table body */}
           <tbody className="text-sm text-gray-800">
             {/* Check if questions exist */}
-            {questions.length > 0 ? (
+            {filteredQuestions.length > 0 ? (
               // Map through questions and render each row
-              questions.map((q, index) => (
+              filteredQuestions.map((q, index) => (
                 <tr
                   key={q._id}
                   className="hover:bg-gray-50 border-b transition duration-300"
@@ -171,11 +236,7 @@ const QuestionList = ({
                   <td className="p-3 space-x-2">
                     {/* Edit button */}
                     <button
-                      onClick={() =>
-                        router.push(
-                          `/dashboard/admin/exam/${examId}/questions/${q._id}`,
-                        )
-                      }
+                      onClick={() => handleEditQuestion(q._id)}
                       className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-xs"
                     >
                       Edit
@@ -208,6 +269,47 @@ const QuestionList = ({
           </tbody>
         </table>
       </div>
+
+      {/* Modal for Add/Edit Question */}
+      {showQuestionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-y-auto relative">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-bold text-gray-800">
+                {editingQuestionId ? "Edit Question" : "Add Questions"}
+              </h2>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={keepModalOpen}
+                    onChange={(e) => setKeepModalOpen(e.target.checked)}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span>Keep modal open after save</span>
+                </label>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-500 hover:text-red-600 text-2xl font-bold"
+                >
+                  ✖
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <QuestionForm
+                examId={examId}
+                questionId={editingQuestionId}
+                onSuccess={handleQuestionSuccess}
+                isModal={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal for question preview */}
 

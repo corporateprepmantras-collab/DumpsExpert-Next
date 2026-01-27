@@ -9,14 +9,20 @@ import { Plus, Trash2, Link } from "lucide-react";
 
 // Import the Multiple Image Uploader component
 import ImageUploader from "@/components/dashboard/ImageUploader";
+import RichTextEditor from "@/components/public/RichTextEditor";
 
 // Main component for adding/editing questions
-const QuestionForm = ({ onSuccess, examId: propExamId }) => {
+const QuestionForm = ({
+  onSuccess,
+  examId: propExamId,
+  questionId: propQuestionId,
+  isModal = false,
+}) => {
   // Get route parameters
   const params = useParams();
   // Extract examId and questionId from params (or use prop)
   const examId = propExamId || params.examId;
-  const questionId = params.questionId;
+  const questionId = propQuestionId || params.questionId;
 
   // Initialize router for navigation
   const router = useRouter();
@@ -66,6 +72,46 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
   // State for tracking if we're editing an existing question
   const [isEditing, setIsEditing] = useState(false);
   const [imageUploadMode, setImageUploadMode] = useState({});
+
+  // Function to reset form to initial state
+  const resetForm = () => {
+    setFormData({
+      questionText: "",
+      questionCode: "",
+      questionType: "radio",
+      difficulty: "medium",
+      marks: 1,
+      negativeMarks: 0,
+      subject: "",
+      topic: "",
+      tags: [],
+      options: [
+        { label: "A", text: "", images: [] },
+        { label: "B", text: "", images: [] },
+        { label: "C", text: "", images: [] },
+        { label: "D", text: "", images: [] },
+      ],
+      correctAnswers: [],
+      matchingPairs: {
+        leftItems: [
+          { id: "L1", text: "", images: [] },
+          { id: "L2", text: "", images: [] },
+        ],
+        rightItems: [
+          { id: "R1", text: "", images: [] },
+          { id: "R2", text: "", images: [] },
+        ],
+        correctMatches: {},
+      },
+      isSample: false,
+      explanation: "",
+      status: "draft",
+    });
+    setQuestionImageFiles([]);
+    setOptionImageFiles({});
+    setMatchingImageFiles({});
+    setPastedImageUrls({});
+  };
 
   // Effect to fetch question data when editing
   useEffect(() => {
@@ -327,17 +373,88 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
     }));
   };
 
+  // Helper function to strip HTML and check if text is empty
+  const stripHtml = (html) => {
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, "").trim();
+  };
+
+  const isTextEmpty = (text) => {
+    const cleaned = stripHtml(text);
+    return !cleaned || cleaned.length === 0;
+  };
+
   // Function to handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Validate question text
+      if (isTextEmpty(formData.questionText)) {
+        alert("Please enter question text");
+        setLoading(false);
+        return;
+      }
+
+      // Validate options for non-matching types
+      if (formData.questionType !== "matching") {
+        const emptyOptions = formData.options.filter((opt) =>
+          isTextEmpty(opt.text),
+        );
+        if (emptyOptions.length > 0) {
+          alert("Please fill in all option texts (A, B, C, D)");
+          setLoading(false);
+          return;
+        }
+
+        if (!formData.correctAnswers || formData.correctAnswers.length === 0) {
+          alert("Please select at least one correct answer");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Validate matching pairs if type is matching
+      if (formData.questionType === "matching") {
+        // Check if all matching items have text
+        const emptyLeftItems = formData.matchingPairs.leftItems.filter((item) =>
+          isTextEmpty(item.text),
+        );
+        const emptyRightItems = formData.matchingPairs.rightItems.filter(
+          (item) => isTextEmpty(item.text),
+        );
+
+        if (emptyLeftItems.length > 0 || emptyRightItems.length > 0) {
+          alert("Please fill in all matching items text fields");
+          setLoading(false);
+          return;
+        }
+
+        // Check if all matches are set
+        const leftItemsCount = formData.matchingPairs.leftItems.length;
+        const matchesCount = Object.keys(
+          formData.matchingPairs.correctMatches,
+        ).length;
+
+        if (matchesCount < leftItemsCount) {
+          alert("Please set correct matches for all items in Column A");
+          setLoading(false);
+          return;
+        }
+      }
+
       const submitData = new FormData();
 
       // Append basic form data
       submitData.append("examId", examId);
       submitData.append("questionText", formData.questionText);
+
+      console.log("📝 FormData State:", {
+        questionText: formData.questionText,
+        options: formData.options,
+        questionType: formData.questionType,
+      });
       submitData.append("questionCode", formData.questionCode);
       submitData.append("questionType", formData.questionType);
       submitData.append("difficulty", formData.difficulty);
@@ -346,11 +463,16 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
       submitData.append("subject", formData.subject);
       submitData.append("topic", formData.topic);
       submitData.append("tags", JSON.stringify(formData.tags));
-      submitData.append("options", JSON.stringify(formData.options));
-      submitData.append(
-        "correctAnswers",
-        JSON.stringify(formData.correctAnswers),
-      );
+
+      // Only send options and correctAnswers for non-matching types
+      if (formData.questionType !== "matching") {
+        submitData.append("options", JSON.stringify(formData.options));
+        submitData.append(
+          "correctAnswers",
+          JSON.stringify(formData.correctAnswers),
+        );
+      }
+
       submitData.append("isSample", formData.isSample.toString());
       submitData.append("explanation", formData.explanation);
       submitData.append("status", formData.status);
@@ -360,12 +482,14 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
         submitData.append("questionImages", file);
       });
 
-      // Append multiple option images
-      Object.entries(optionImageFiles).forEach(([index, files]) => {
-        files.forEach((file) => {
-          submitData.append(`optionImages-${index}`, file);
+      // Append multiple option images (only for non-matching types)
+      if (formData.questionType !== "matching") {
+        Object.entries(optionImageFiles).forEach(([index, files]) => {
+          files.forEach((file) => {
+            submitData.append(`optionImages-${index}`, file);
+          });
         });
-      });
+      }
 
       // Append matching type data if applicable
       if (formData.questionType === "matching") {
@@ -428,44 +552,9 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
           onSuccess(result.data);
         }
 
+        // Reset form after successful creation (not editing)
         if (!isEditing) {
-          // Reset form after successful creation
-          setFormData({
-            questionText: "",
-            questionCode: "",
-            questionType: "radio",
-            difficulty: "medium",
-            marks: 1,
-            negativeMarks: 0,
-            subject: "",
-            topic: "",
-            tags: [],
-            options: [
-              { label: "A", text: "", images: [] },
-              { label: "B", text: "", images: [] },
-              { label: "C", text: "", images: [] },
-              { label: "D", text: "", images: [] },
-            ],
-            correctAnswers: [],
-            matchingPairs: {
-              leftItems: [
-                { id: "L1", text: "", images: [] },
-                { id: "L2", text: "", images: [] },
-              ],
-              rightItems: [
-                { id: "R1", text: "", images: [] },
-                { id: "R2", text: "", images: [] },
-              ],
-              correctMatches: {},
-            },
-            isSample: false,
-            explanation: "",
-            status: "draft",
-          });
-          setQuestionImageFiles([]);
-          setOptionImageFiles({});
-          setMatchingImageFiles({});
-          setPastedImageUrls({});
+          resetForm();
         }
       } else {
         alert(`Error: ${result.message}`);
@@ -489,11 +578,15 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
 
   // Render component
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">
-          {isEditing ? "Edit" : "Add"} Question
-        </h1>
+    <div
+      className={isModal ? "" : "max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen"}
+    >
+      <div className={isModal ? "" : "bg-white rounded-lg shadow-lg p-6"}>
+        {!isModal && (
+          <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">
+            {isEditing ? "Edit" : "Add"} Question
+          </h1>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
@@ -537,17 +630,12 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Question Text *
-              </label>
-              <textarea
-                name="questionText"
+              <RichTextEditor
+                label="Question Text *"
                 value={formData.questionText}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows="4"
-                placeholder="Enter your question here..."
-                required
+                onChange={(html) =>
+                  setFormData((prev) => ({ ...prev, questionText: html }))
+                }
               />
             </div>
 
@@ -603,19 +691,12 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
                         )}
                       </div>
 
-                      <textarea
+                      <RichTextEditor
+                        label=""
                         value={item.text}
-                        onChange={(e) =>
-                          handleMatchingItemChange(
-                            "left",
-                            index,
-                            "text",
-                            e.target.value,
-                          )
+                        onChange={(html) =>
+                          handleMatchingItemChange("left", index, "text", html)
                         }
-                        className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        rows="2"
-                        placeholder="Enter question text..."
                       />
 
                       <div className="space-y-3">
@@ -744,19 +825,12 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
                         )}
                       </div>
 
-                      <textarea
+                      <RichTextEditor
+                        label=""
                         value={item.text}
-                        onChange={(e) =>
-                          handleMatchingItemChange(
-                            "right",
-                            index,
-                            "text",
-                            e.target.value,
-                          )
+                        onChange={(html) =>
+                          handleMatchingItemChange("right", index, "text", html)
                         }
-                        className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        rows="2"
-                        placeholder="Enter answer text..."
                       />
 
                       <div className="space-y-3">
@@ -863,15 +937,12 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
                   </div>
 
                   <div className="mb-3">
-                    <textarea
+                    <RichTextEditor
+                      label=""
                       value={option.text}
-                      onChange={(e) =>
-                        handleOptionChange(index, "text", e.target.value)
+                      onChange={(html) =>
+                        handleOptionChange(index, "text", html)
                       }
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      rows="2"
-                      placeholder={`Enter option ${option.label} text...`}
-                      required
                     />
                   </div>
 
@@ -999,17 +1070,12 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Explanation{" "}
-                <span className="text-gray-400 text-xs">(Optional)</span>
-              </label>
-              <textarea
-                name="explanation"
+              <RichTextEditor
+                label="Explanation (Optional)"
                 value={formData.explanation}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                rows="3"
-                placeholder="Provide explanation for the correct answer..."
+                onChange={(html) =>
+                  setFormData((prev) => ({ ...prev, explanation: html }))
+                }
               />
             </div>
 
@@ -1045,13 +1111,24 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
           </div>
 
           <div className="flex justify-end gap-4 pt-6 border-t">
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
-              Cancel
-            </button>
+            {!isModal && (
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            )}
+            {isModal && !isEditing && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Clear Form
+              </button>
+            )}
             <button
               type="submit"
               disabled={loading}
@@ -1063,7 +1140,7 @@ const QuestionForm = ({ onSuccess, examId: propExamId }) => {
                   {isEditing ? "Updating..." : "Creating..."}
                 </>
               ) : (
-                <>{isEditing ? "Update Question" : "Create Question"}</>
+                <>{isEditing ? "Update Question" : "Save & Continue"}</>
               )}
             </button>
           </div>

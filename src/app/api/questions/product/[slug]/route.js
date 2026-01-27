@@ -15,20 +15,23 @@ export async function GET(req, { params }) {
     if (!product) {
       return new Response(
         JSON.stringify({ success: false, message: "Product not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+        { status: 404, headers: { "Content-Type": "application/json" } },
       );
     }
     console.log("✅ Found product:", product);
 
-    // Find ALL exams linked to this product
-    const exams = await ExamCode.find({ productId: product._id });
+    // Find ALL published exams linked to this product
+    const exams = await ExamCode.find({
+      productId: product._id,
+      status: "published",
+    });
     if (!exams || exams.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
           message: "No exams found for this product",
         }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+        { status: 404, headers: { "Content-Type": "application/json" } },
       );
     }
     console.log("✅ Found exams:", exams.length);
@@ -36,20 +39,23 @@ export async function GET(req, { params }) {
     // Collect all examIds
     const examIds = exams.map((exam) => exam._id);
 
-    // Fetch ALL questions for those examIds
-    const questions = await Question.find({ examId: { $in: examIds } });
+    // ✅ Fetch published questions for those examIds
+    const questions = await Question.find({
+      examId: { $in: examIds },
+      status: "publish",
+    });
 
     console.log("✅ Fetched questions:", questions.length);
 
-    return new Response(
-      JSON.stringify({ success: true, data: questions }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, data: questions }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("❌ Error fetching questions by product slug:", error);
     return new Response(
       JSON.stringify({ success: false, message: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }

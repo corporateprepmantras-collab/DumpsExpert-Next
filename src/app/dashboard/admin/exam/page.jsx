@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 export default function ExamsPage() {
   const router = useRouter();
   const [exams, setExams] = useState([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -14,10 +15,16 @@ export default function ExamsPage() {
     const fetchExams = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/exams");
+        const res = await fetch("/api/exams?all=true");
         const data = await res.json();
-        console.log("Fetched exams:", data); // Debugging line
-        setExams(data);
+        console.log("Fetched exams:", data);
+        console.log("First exam examCategory:", data[0]?.examCategory);
+        const normalized = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+        setExams(normalized);
       } catch (err) {
         setError("Failed to load exams");
         console.error("Exam fetch error:", err);
@@ -98,8 +105,23 @@ export default function ExamsPage() {
 
   return (
     <div className="p-6 pt-20">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h1 className="text-2xl font-semibold text-gray-800">Exams</h1>
+        <div className="w-full sm:w-80">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search exams by name..."
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+      </div>
       <ExamList
-        exams={exams}
+        exams={exams
+          .filter(Boolean)
+          .filter((exam) =>
+            exam?.name?.toLowerCase().includes(search.trim().toLowerCase()),
+          )}
         onDelete={handleDelete}
         onEdit={(examId) => router.push(`/dashboard/admin/exam/${examId}`)}
         onManageQuestions={(examId) =>

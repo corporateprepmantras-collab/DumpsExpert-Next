@@ -60,7 +60,7 @@ const BlogDetail = ({ slug }) => {
           Blog not found 😕
         </p>
         <Link
-          href="/blogsPages"
+          href="/blogs"
           className="text-blue-600 hover:underline text-sm"
         >
           ← Go back to all blogs

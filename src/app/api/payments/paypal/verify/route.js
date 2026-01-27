@@ -8,7 +8,7 @@ const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret); // Use LiveEnvironment for production
 const client = new paypal.core.PayPalHttpClient(environment);
 
-  export async function POST(request) {
+export async function POST(request) {
   try {
     const { orderId, amount, userId } = await request.json();
 
@@ -17,7 +17,7 @@ const client = new paypal.core.PayPalHttpClient(environment);
       console.error("Missing required fields:", { orderId, amount });
       return NextResponse.json(
         { success: false, error: "Missing required payment details" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -26,7 +26,7 @@ const client = new paypal.core.PayPalHttpClient(environment);
       console.error("PayPal credentials not configured");
       return NextResponse.json(
         { success: false, error: "Server configuration error" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -44,13 +44,15 @@ const client = new paypal.core.PayPalHttpClient(environment);
       });
       return NextResponse.json(
         { success: false, error: "Invalid order status" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
+    const isCaptured = order.result.status === "COMPLETED"; // Only treat as fully paid when captured
+
     // Verify amount
     const paypalAmount = parseFloat(
-      order.result.purchase_units[0].amount.value
+      order.result.purchase_units[0].amount.value,
     );
     if (paypalAmount !== parseFloat(amount)) {
       console.error("Amount mismatch:", {
@@ -59,7 +61,7 @@ const client = new paypal.core.PayPalHttpClient(environment);
       });
       return NextResponse.json(
         { success: false, error: "Amount mismatch" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -71,11 +73,12 @@ const client = new paypal.core.PayPalHttpClient(environment);
         currency: order.result.purchase_units[0].amount.currency_code || "INR",
         paymentMethod: "paypal",
         paymentId: orderId,
-        status: "completed",
+        status: isCaptured ? "completed" : order.result.status || "pending",
       }),
     ];
 
-    if (userId) {
+    // Only upgrade role/subscription after payment is fully captured
+    if (userId && isCaptured) {
       operations.push(
         User.findByIdAndUpdate(
           userId,
@@ -83,8 +86,8 @@ const client = new paypal.core.PayPalHttpClient(environment);
             subscription: "yes",
             role: "student",
           },
-          { new: true }
-        )
+          { new: true },
+        ),
       );
     }
 
@@ -104,7 +107,7 @@ const client = new paypal.core.PayPalHttpClient(environment);
     });
     return NextResponse.json(
       { success: false, error: "Payment verification failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

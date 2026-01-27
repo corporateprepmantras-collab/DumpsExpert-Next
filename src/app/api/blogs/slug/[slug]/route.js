@@ -16,12 +16,12 @@ export async function GET(request, { params }) {
     const tryFind = async (value) => {
       if (!value && value !== 0) return null;
       // direct exact match
-      let found = await BlogList.findOne({ slug: value });
+      let found = await BlogList.findOne({ slug: value, status: "publish" });
       if (found) return found;
 
       // try _id match
       try {
-        found = await BlogList.findOne({ _id: value });
+        found = await BlogList.findOne({ _id: value, status: "publish" });
         if (found) return found;
       } catch (e) {
         // ignore invalid ObjectId
@@ -52,11 +52,12 @@ export async function GET(request, { params }) {
 
       const normalized = normalize(rawSlug);
       if (normalized) {
-        blog = await BlogList.findOne({ slug: normalized });
+        blog = await BlogList.findOne({ slug: normalized, status: "publish" });
         if (!blog) {
           // case-insensitive regex as a last resort
           blog = await BlogList.findOne({
             slug: { $regex: `^${normalized}$`, $options: "i" },
+            status: "publish",
           });
         }
       }
@@ -71,7 +72,7 @@ export async function GET(request, { params }) {
         message: "Blog retrieved successfully",
         data: blog,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error retrieving blog by slug:", error);
@@ -80,7 +81,7 @@ export async function GET(request, { params }) {
         message: "Server error while retrieving blog",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

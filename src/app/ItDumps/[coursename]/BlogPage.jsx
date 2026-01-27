@@ -47,7 +47,7 @@ const BlogPage = () => {
         if (categorySlug) {
           // ✅ Fetch blogs by category
           const res = await axios.get(
-            `${baseUrl}/api/blogs/blog-categories/${categorySlug}`
+            `${baseUrl}/api/blogs/blog-categories/${categorySlug}`,
           );
           normalizedBlogs = normalizeBlogs(res.data.blogs);
         } else {
@@ -92,7 +92,7 @@ const BlogPage = () => {
     const filtered = blogs.filter(
       (blog) =>
         blog.title?.toLowerCase().includes(term) ||
-        blog.metaDescription?.toLowerCase().includes(term)
+        blog.metaDescription?.toLowerCase().includes(term),
     );
     setFilteredBlogs(filtered);
   };
@@ -124,7 +124,7 @@ const BlogPage = () => {
           {categories.map((cat) => (
             <Link
               key={cat._id ?? cat.category}
-              href={`/blogsPages/${cat.category?.toLowerCase()}`}
+              href={`/blogs/${cat.category?.toLowerCase()}`}
             >
               <button
                 className={`px-4 py-1 rounded-full border border-white ${

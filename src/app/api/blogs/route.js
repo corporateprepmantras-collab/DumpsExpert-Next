@@ -32,6 +32,9 @@ export async function GET(request) {
       ];
     }
 
+    // ✅ Filter published blogs for public API
+    query.status = "publish";
+
     const blogs = await Blog.find(query)
       .populate("category", "sectionName category")
       .sort({ createdAt: -1 })
@@ -96,7 +99,7 @@ export async function POST(request) {
 
     return NextResponse.json(
       { data: serializeMongoDoc(blog.toObject()) },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("❌ POST /api/blogs error:", error);

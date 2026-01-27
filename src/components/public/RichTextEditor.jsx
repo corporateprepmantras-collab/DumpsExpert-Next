@@ -77,8 +77,39 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
       return;
     }
 
+    // Focus editor before executing command
+    editorRef.current.focus();
     document.execCommand(format, false, value);
-    onChange(editorRef.current.innerHTML);
+
+    // Apply inline styles to lists for persistent styling
+    if (format === "insertUnorderedList" || format === "insertOrderedList") {
+      setTimeout(() => {
+        const lists = editorRef.current.querySelectorAll("ul, ol");
+        lists.forEach((list) => {
+          if (list.tagName === "UL") {
+            list.style.listStyleType = "disc";
+            list.style.paddingLeft = "40px";
+            list.style.marginTop = "8px";
+            list.style.marginBottom = "8px";
+          } else if (list.tagName === "OL") {
+            list.style.listStyleType = "decimal";
+            list.style.paddingLeft = "40px";
+            list.style.marginTop = "8px";
+            list.style.marginBottom = "8px";
+          }
+          // Style list items
+          const items = list.querySelectorAll("li");
+          items.forEach((item) => {
+            item.style.marginLeft = "0";
+            item.style.marginTop = "4px";
+            item.style.marginBottom = "4px";
+          });
+        });
+        onChange(editorRef.current.innerHTML);
+      }, 10);
+    } else {
+      onChange(editorRef.current.innerHTML);
+    }
   };
 
   /* ------------------ INSERT LINK ------------------ */
@@ -179,7 +210,9 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
 
   /* ------------------ INPUT CHANGE ------------------ */
   const handleInput = () => {
-    onChange(editorRef.current.innerHTML);
+    const html = editorRef.current.innerHTML;
+    console.log("🔄 RichTextEditor onChange:", html);
+    onChange(html);
   };
 
   /* ================================================= */
@@ -239,6 +272,15 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
     overflow-x-auto
     break-words
     max-w-full
+
+    [&_ul]:list-disc
+    [&_ul]:ml-6
+    [&_ul]:my-2
+    [&_ol]:list-decimal
+    [&_ol]:ml-6
+    [&_ol]:my-2
+    [&_li]:ml-4
+    [&_li]:my-1
 
     [&_table]:w-full
     [&_table]:table-fixed

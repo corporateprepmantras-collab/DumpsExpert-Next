@@ -17,14 +17,6 @@ const Footer = dynamic(() => import("@/components/public/Footer"), {
   ssr: true,
 });
 
-// ✅ Conditional Footer Wrapper
-function FooterWrapper() {
-  return typeof window !== "undefined" &&
-    !window.location.pathname.includes("/dashboard/admin") ? (
-    <Footer />
-  ) : null;
-}
-
 // ✅ Metadata (CORRECT)
 export const metadata = {
   title: {
@@ -118,7 +110,7 @@ export default function RootLayout({ children }) {
             {children}
           </main>
 
-          <FooterWrapper />
+          <Footer />
         </Providers>
       </body>
     </html>

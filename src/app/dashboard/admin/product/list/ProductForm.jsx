@@ -16,6 +16,7 @@ const ProductForm = ({ mode }) => {
     category: "",
     status: "",
     action: "",
+    publishStatus: "draft",
     image: null,
     samplePdf: null,
     mainPdf: null,
@@ -463,6 +464,21 @@ const ProductForm = ({ mode }) => {
               <option value="">Select Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">
+              Publish Status
+            </label>
+            <select
+              name="publishStatus"
+              value={form.publishStatus}
+              onChange={handleChange}
+              className="w-full border border-gray-300 px-4 py-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
             </select>
           </div>
 

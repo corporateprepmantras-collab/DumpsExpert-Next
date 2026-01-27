@@ -212,6 +212,13 @@ export default async function CategoryPage({ params, searchParams }) {
       p.sapExamCode?.toLowerCase().includes(searchTerm),
   );
 
+  // ✅ Price formatter with thousand grouping
+  const formatPrice = (value, symbol = "₹") => {
+    const num = Number((value || "").toString().replace(/[,\s]/g, ""));
+    if (!Number.isFinite(num)) return "NA";
+    return `${symbol}${num.toLocaleString("en-IN")}`;
+  };
+
   // ✅ Sort products alphabetically by exam code
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const codeA = (a.sapExamCode || "").toLowerCase();
@@ -220,21 +227,21 @@ export default async function CategoryPage({ params, searchParams }) {
   });
 
   return (
-    <div className="min-h-screen pt-28 pb-12 px-4 md:px-10 bg-gray-100">
-      <div className="max-w-5xl mx-auto mb-6">
+    <div className="min-h-screen pt-24 pb-10 px-3 md:px-8 bg-gray-100">
+      <div className="max-w-5xl mx-auto mb-4">
         <Breadcrumbs />
       </div>
 
       <div className="w-full max-w-5xl mx-auto">
         {/* ✅ Category Info */}
         {category && (
-          <div className="mb-8 shadow rounded-lg border p-6 bg-white">
-            <h1 className="text-3xl sm:text-4xl font-semibold text-gray-800 mb-4">
+          <div className="mb-6 shadow rounded-lg border p-5 bg-white">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-3">
               {category.name.toUpperCase()} Exam Dumps [2025]
             </h1>
             {category.description && (
               <div
-                className="prose max-w-none text-gray-700 mb-4"
+                className="prose max-w-none text-gray-700 mb-3 text-sm"
                 dangerouslySetInnerHTML={{ __html: category.description }}
               />
             )}
@@ -243,11 +250,11 @@ export default async function CategoryPage({ params, searchParams }) {
 
         {/* ✅ No category fallback */}
         {!category && (
-          <div className="mb-8 shadow rounded-lg border p-6 bg-white">
-            <h1 className="text-3xl sm:text-4xl font-semibold text-gray-800 mb-4">
+          <div className="mb-6 shadow rounded-lg border p-5 bg-white">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-3">
               {coursename.toUpperCase()} Exam Dumps [2025]
             </h1>
-            <p className="text-gray-700">
+            <p className="text-gray-700 text-sm">
               Explore verified {coursename.toUpperCase()} exam dumps and
               practice tests.
             </p>
@@ -255,26 +262,26 @@ export default async function CategoryPage({ params, searchParams }) {
         )}
 
         {/* ✅ Search + Results */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-          <p className="text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-5">
+          <p className="text-xs text-gray-600">
             Showing {sortedProducts.length} results
             {searchTerm && ` for "${searchTerm}"`}
           </p>
 
           <form
             method="get"
-            className="flex items-center border rounded-md shadow-sm w-full sm:w-[400px] bg-white"
+            className="flex items-center border rounded-md shadow-sm w-full sm:w-[360px] bg-white"
           >
             <input
               type="text"
               name="q"
               defaultValue={searchTerm}
               placeholder="Search Exam Code or Name"
-              className="w-full px-4 py-2 text-sm focus:outline-none rounded-l-md"
+              className="w-full px-3 py-2 text-xs focus:outline-none rounded-l-md"
             />
             <button
               type="submit"
-              className="px-4 py-2 text-gray-500 hover:text-gray-700"
+              className="px-3 py-2 text-gray-500 hover:text-gray-700 text-sm"
             >
               🔍
             </button>
@@ -285,37 +292,40 @@ export default async function CategoryPage({ params, searchParams }) {
         {sortedProducts.length > 0 ? (
           <>
             <div className="hidden md:block overflow-x-auto shadow rounded-lg border bg-white">
-              <table className="min-w-full text-left text-gray-800">
-                <thead className="bg-gray-100 text-gray-700 uppercase text-sm">
+              <table className="min-w-full text-left text-gray-800 text-sm">
+                <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
                   <tr>
-                    <th className="px-4 py-3">{coursename} Exam Code</th>
-                    <th className="px-4 py-3 w-36">Name</th>
-                    <th className="px-4 py-3">Price</th>
-                    <th className="px-4 py-3 w-40">Details</th>
+                    <th className="px-3 py-3">{coursename} Exam Code</th>
+                    <th className="px-3 py-3 w-36">Name</th>
+                    <th className="px-3 py-3">Price</th>
+                    <th className="px-3 py-3 w-36">Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sortedProducts.map((product) => (
                     <tr
                       key={product._id}
-                      className="border-t hover:bg-gray-50 transition"
+                      className="border-t hover:bg-gray-50 transition text-xs"
                     >
-                      <td className="px-4 py-3 font-semibold text-blue-900">
+                      <td className="px-3 py-2 font-semibold text-blue-900 whitespace-nowrap">
                         {product.sapExamCode}
                       </td>
-                      <td className="px-2 py-3 w-34 align-top truncate">
+                      <td className="px-2 py-2 w-34 align-top truncate">
                         {product.title}
                       </td>
-                      <td className="px-2 py-3 text-right align-top space-y-1">
-                        <span className="block font-semibold text-green-700">
-                          ₹{product.dumpsPriceInr?.trim()} ($
-                          {product.dumpsPriceUsd})
+                      <td className="px-2 py-2 text-right align-top space-y-1 whitespace-nowrap">
+                        <span className="block font-semibold text-green-700 text-sm">
+                          {formatPrice(product.dumpsPriceInr?.trim(), "₹")}
+                          <span className="text-[11px] text-gray-600">
+                            {" "}
+                            ( {formatPrice(product.dumpsPriceUsd, "$")})
+                          </span>
                         </span>
                       </td>
-                      <td className="px-4 py-3 w-40 min-w-[10rem]">
+                      <td className="px-3 py-2 w-36 min-w-[9rem]">
                         <Link
                           href={`/ItDumps/${coursename}/${product.slug}`}
-                          className="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-md shadow-sm font-semibold transition"
+                          className="block w-full text-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md shadow-sm font-semibold transition text-xs"
                         >
                           See Details
                         </Link>
@@ -331,32 +341,33 @@ export default async function CategoryPage({ params, searchParams }) {
               {sortedProducts.map((product) => (
                 <div
                   key={product._id}
-                  className="relative w-full max-w-sm rounded-xl shadow border border-gray-200 p-5 bg-white"
+                  className="relative w-full max-w-sm rounded-xl shadow border border-gray-200 p-4 bg-white text-sm"
                 >
                   <div className="mb-2 text-center">
-                    <p className="text-sm text-gray-600">Exam Code</p>
-                    <p className="text-lg font-semibold text-blue-900">
+                    <p className="text-xs text-gray-600">Exam Code</p>
+                    <p className="text-base font-semibold text-blue-900">
                       {product.sapExamCode}
                     </p>
                   </div>
                   <div className="mb-2 text-center">
-                    <p className="text-sm text-gray-600">Name</p>
-                    <p className="text-base font-medium">{product.title}</p>
+                    <p className="text-xs text-gray-600">Name</p>
+                    <p className="text-sm font-medium">{product.title}</p>
                   </div>
                   <div className="mb-4 text-center space-y-1">
-                    <p className="text-sm text-gray-600">Starting at:</p>
-                    <p className="text-black font-semibold">
-                      ₹{product.dumpsPriceInr?.trim()} (${product.dumpsPriceUsd}
-                      )
+                    <p className="text-xs text-gray-600">Starting at:</p>
+                    <p className="text-black font-semibold text-sm">
+                      {formatPrice(product.dumpsPriceInr?.trim(), "₹")} (
+                      {formatPrice(product.dumpsPriceUsd, "$")})
                     </p>
-                    <p className="text-xs line-through text-gray-500">
-                      ₹{product.dumpsMrpInr?.trim()} (${product.dumpsMrpUsd})
+                    <p className="text-[11px] line-through text-gray-500">
+                      {formatPrice(product.dumpsMrpInr?.trim(), "₹")} (
+                      {formatPrice(product.dumpsMrpUsd, "$")})
                     </p>
                   </div>
                   <div className="w-full">
                     <Link
                       href={`/ItDumps/${coursename}/${product.slug}`}
-                      className="block w-full bg-orange-500 hover:bg-orange-600 text-white text-sm text-center py-2 rounded-md shadow transition"
+                      className="block w-full bg-orange-500 hover:bg-orange-600 text-white text-xs text-center py-2 rounded-md shadow transition"
                     >
                       See Details
                     </Link>

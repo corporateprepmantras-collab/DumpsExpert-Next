@@ -1,15 +1,9 @@
 // components/admin/ExamList.jsx
-'use client';
+"use client";
 import React from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 
-const ExamList = ({ 
-  exams, 
-  onDelete, 
-  onEdit, 
-  onManageQuestions,
-  onAddNew 
-}) => {
+const ExamList = ({ exams, onDelete, onEdit, onManageQuestions, onAddNew }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -32,6 +26,7 @@ const ExamList = ({
               <th className="p-3 border-b text-left">Name</th>
               <th className="p-3 border-b text-left">Duration (min)</th>
               <th className="p-3 border-b text-left"># Questions</th>
+              <th className="p-3 border-b text-left">Category</th>
               <th className="p-3 border-b text-left">Price</th>
               <th className="p-3 border-b text-left">Status</th>
               <th className="p-3 border-b text-left">Actions</th>
@@ -46,7 +41,22 @@ const ExamList = ({
                 <td className="p-3 font-medium">{exam.code}</td>
                 <td className="p-3">{exam.name}</td>
                 <td className="p-3">{exam.duration} min</td>
-                <td className="p-3">{exam.numberOfQuestions}</td>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-blue-600">
+                      {exam.actualQuestionCount ?? 0}
+                    </span>
+                    {exam.numberOfQuestions !==
+                      (exam.actualQuestionCount ?? 0) && (
+                      <span className="text-xs text-gray-500">
+                        / {exam.numberOfQuestions} configured
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="p-3">
+                  {exam.examCategory?.name || exam.examCategoryName || "-"}
+                </td>
                 <td className="p-3">
                   <div>${exam.priceUSD}</div>
                   <div className="text-sm">₹{exam.priceINR}</div>
@@ -86,7 +96,7 @@ const ExamList = ({
             ))}
             {exams.length === 0 && (
               <tr>
-                <td colSpan="7" className="text-center py-4 text-gray-500">
+                <td colSpan="8" className="text-center py-4 text-gray-500">
                   No exams found. Create your first exam!
                 </td>
               </tr>

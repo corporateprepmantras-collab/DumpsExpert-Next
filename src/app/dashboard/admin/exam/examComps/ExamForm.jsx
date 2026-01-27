@@ -131,23 +131,37 @@ export default function ExamForm({ exam }) {
     sampleInstructions: "",
     lastUpdatedBy: "",
     productId: "",
+    examCategory: "",
   });
 
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [questionCount, setQuestionCount] = useState(null);
+  const [questionCountLoading, setQuestionCountLoading] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("/api/products/get");
+        const res = await fetch("/api/products");
         const data = await res.json();
         setProducts(data.data);
       } catch (err) {
         console.error("Failed to fetch products:", err);
       }
     };
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch("/api/product-categories");
+        const data = await res.json();
+        setCategories(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch categories:", err);
+      }
+    };
     fetchProducts();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -169,7 +183,33 @@ export default function ExamForm({ exam }) {
         sampleInstructions: exam.sampleInstructions || "",
         lastUpdatedBy: exam.lastUpdatedBy || "",
         productId: exam.productId || "",
+        examCategory:
+          exam.examCategory?._id ||
+          exam.examCategory ||
+          exam.examCategoryId ||
+          "",
       });
+
+      // Fetch question count only when editing
+      const loadQuestionCount = async () => {
+        try {
+          setQuestionCountLoading(true);
+          const res = await fetch(`/api/questions/byExam/${exam._id}`);
+          const data = await res.json();
+          if (data?.success && Array.isArray(data.data)) {
+            setQuestionCount(data.data.length);
+          } else {
+            setQuestionCount(0);
+          }
+        } catch (err) {
+          console.error("Failed to fetch question count:", err);
+          setQuestionCount(null);
+        } finally {
+          setQuestionCountLoading(false);
+        }
+      };
+
+      loadQuestionCount();
     }
   }, [exam]);
 
@@ -196,25 +236,33 @@ export default function ExamForm({ exam }) {
       priceINR: Number(formData.priceINR),
       priceUSD: Number(formData.priceUSD),
       productId: formData.productId,
+      examCategory: formData.examCategory || undefined,
       sampleDuration: Number(formData.sampleDuration),
       sampleInstructions: formData.sampleInstructions.trim(),
       status: formData.status || "unpublished",
     };
 
+    console.log("📤 Submitting exam with payload:", payload);
+    console.log("📦 examCategory value:", formData.examCategory);
+
     try {
       if (isEditing) {
-        await fetch(`/api/exams/${exam._id}`, {
+        const response = await fetch(`/api/exams/${exam._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+        const result = await response.json();
+        console.log("✅ Update response:", result);
         router.push("/dashboard/admin/exam");
       } else {
-        await fetch("/api/exams", {
+        const response = await fetch("/api/exams", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+        const result = await response.json();
+        console.log("✅ Create response:", result);
         router.push("/dashboard/admin/exam");
       }
     } catch (err) {
@@ -224,7 +272,11 @@ export default function ExamForm({ exam }) {
 
   // Convert products to options format
   const productOptions = Array.isArray(products)
-    ? products.map((p) => ({ value: p._id, label: p.title }))
+    ? products.map((p) => ({ value: p._id, label: p.sapExamCode }))
+    : [];
+
+  const categoryOptions = Array.isArray(categories)
+    ? categories.map((c) => ({ value: c._id, label: c.name }))
     : [];
 
   return (
@@ -232,6 +284,25 @@ export default function ExamForm({ exam }) {
       <h2 className="text-2xl md:text-3xl font-semibold text-gray-800">
         {isEditing ? "Edit Exam" : "Add New Exam"}
       </h2>
+
+      {isEditing && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-sm text-gray-500">Questions present</div>
+            <div className="text-2xl font-semibold text-gray-800">
+              {questionCountLoading ? "…" : (questionCount ?? "--")}
+            </div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-sm text-gray-500">
+              Configured question limit
+            </div>
+            <div className="text-2xl font-semibold text-gray-800">
+              {formData.numberOfQuestions || "--"}
+            </div>
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}
@@ -307,6 +378,26 @@ export default function ExamForm({ exam }) {
               }
               placeholder="Select a product"
             />
+          </div>
+
+          {/* Exam Category Dropdown */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Exam Category
+            </label>
+            <select
+              name="examCategory"
+              value={formData.examCategory}
+              onChange={handleChange}
+              className="w-full border rounded-lg px-4 py-2 text-sm shadow-sm"
+            >
+              <option value="">Select category</option>
+              {categoryOptions.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

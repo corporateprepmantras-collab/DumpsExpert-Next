@@ -1,7 +1,7 @@
 import { connectMongoDB } from "@/lib/mongo";
 import Question from "@/models/questionSchema";
-import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
+import { NextResponse } from "next/server";
+import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -9,11 +9,12 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ Get all questions by examId
+// ✅ Get all questions by examId (Admin endpoint - shows all including drafts)
 export async function GET(request, { params }) {
   const { examId } = await params;
   try {
     await connectMongoDB();
+    // ✅ Admin can see ALL questions (including draft)
     const questions = await Question.find({ examId });
 
     return NextResponse.json({
@@ -25,7 +26,7 @@ export async function GET(request, { params }) {
     console.error(error);
     return NextResponse.json(
       { success: false, message: "Server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -35,17 +36,17 @@ export async function POST(request, { params }) {
   const { examId } = await params;
   try {
     await connectMongoDB();
-    
+
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());
-    
+
     // Process options
-    const options = JSON.parse(data.options || '[]');
-    const correctAnswers = JSON.parse(data.correctAnswers || '[]');
-    
+    const options = JSON.parse(data.options || "[]");
+    const correctAnswers = JSON.parse(data.correctAnswers || "[]");
+
     // Upload question image if exists
-    const questionImageFile = formData.get('questionImage');
-    let questionImageUrl = '';
+    const questionImageFile = formData.get("questionImage");
+    let questionImageUrl = "";
     if (questionImageFile instanceof Blob && questionImageFile.size > 0) {
       questionImageUrl = await uploadImage(questionImageFile);
     }
@@ -58,7 +59,7 @@ export async function POST(request, { params }) {
           option.image = await uploadImage(optionImageFile);
         }
         return option;
-      })
+      }),
     );
 
     // Create new question
@@ -70,18 +71,18 @@ export async function POST(request, { params }) {
       correctAnswers,
       marks: Number(data.marks),
       negativeMarks: Number(data.negativeMarks),
-      isSample: data.isSample === 'true',
+      isSample: data.isSample === "true",
     });
 
     return NextResponse.json(
       { success: true, data: newQuestion },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
       { success: false, message: "Failed to create question" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -91,7 +92,7 @@ export async function PUT(request, { params }) {
   const { examId } = params;
   try {
     await connectMongoDB();
-    
+
     const formData = await request.formData();
     const data = Object.fromEntries(formData.entries());
     const { _id, ...updates } = data;
@@ -99,7 +100,7 @@ export async function PUT(request, { params }) {
     if (!_id) {
       return NextResponse.json(
         { success: false, message: "Question ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,7 +113,7 @@ export async function PUT(request, { params }) {
     }
 
     // Upload question image if exists
-    const questionImageFile = formData.get('questionImage');
+    const questionImageFile = formData.get("questionImage");
     if (questionImageFile instanceof Blob && questionImageFile.size > 0) {
       updates.questionImage = await uploadImage(questionImageFile);
     }
@@ -126,37 +127,38 @@ export async function PUT(request, { params }) {
             option.image = await uploadImage(optionImageFile);
           }
           return option;
-        })
+        }),
       );
     }
 
     // Convert number fields
     if (updates.marks) updates.marks = Number(updates.marks);
-    if (updates.negativeMarks) updates.negativeMarks = Number(updates.negativeMarks);
-    if (updates.isSample) updates.isSample = updates.isSample === 'true';
+    if (updates.negativeMarks)
+      updates.negativeMarks = Number(updates.negativeMarks);
+    if (updates.isSample) updates.isSample = updates.isSample === "true";
 
     const updatedQuestion = await Question.findOneAndUpdate(
       { _id, examId },
       updates,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedQuestion) {
       return NextResponse.json(
         { success: false, message: "Question not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: true, data: updatedQuestion },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
       { success: false, message: "Failed to update question" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -166,14 +168,14 @@ export async function DELETE(request, { params }) {
   const { examId } = await params;
   try {
     await connectMongoDB();
-    
+
     const { searchParams } = new URL(request.url);
-    const questionId = searchParams.get('id');
+    const questionId = searchParams.get("id");
 
     if (!questionId) {
       return NextResponse.json(
         { success: false, message: "Question ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -185,19 +187,19 @@ export async function DELETE(request, { params }) {
     if (!deletedQuestion) {
       return NextResponse.json(
         { success: false, message: "Question not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { success: true, message: "Question deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(error);
     return NextResponse.json(
       { success: false, message: "Failed to delete question" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -209,11 +211,11 @@ async function uploadImage(imageFile) {
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { resource_type: 'image' },
+      { resource_type: "image" },
       (error, result) => {
         if (error) reject(error);
         else resolve(result.secure_url);
-      }
+      },
     );
     stream.end(buffer);
   });

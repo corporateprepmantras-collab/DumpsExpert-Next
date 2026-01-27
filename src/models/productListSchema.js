@@ -10,6 +10,11 @@ const productListSchema = new mongoose.Schema(
     category: { type: String, default: "" },
     status: { type: String, default: "" },
     action: { type: String, default: "" },
+    publishStatus: {
+      type: String,
+      enum: ["draft", "published"],
+      default: "draft",
+    },
     samplePdfUrl: { type: String, default: "" },
     mainPdfUrl: { type: String, default: "" },
 
@@ -61,7 +66,7 @@ const productListSchema = new mongoose.Schema(
       required: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Clear any existing model to prevent conflicts

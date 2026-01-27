@@ -25,16 +25,25 @@ const examSchema = new mongoose.Schema(
       ref: "Product",
       required: true,
     },
+    examCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProductCategory",
+      required: false,
+    },
     // courseId: {
     //   type: mongoose.Schema.Types.ObjectId,
     //   ref: "Course",
     //   required: true,
     // },
   },
-  { timestamps: true },
+  { timestamps: true, strict: false },
 );
 
-// ✅ Prevent OverwriteModelError in Next.js dev environment
-const Exam = mongoose.models.Exam || mongoose.model("Exam", examSchema);
+// ✅ Delete cached model to ensure schema updates are applied
+if (mongoose.models.Exam) {
+  delete mongoose.models.Exam;
+}
+
+const Exam = mongoose.model("Exam", examSchema);
 
 export default Exam;

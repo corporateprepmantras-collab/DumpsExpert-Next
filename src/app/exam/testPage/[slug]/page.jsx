@@ -23,7 +23,7 @@ const ImageGallery = ({ images, alt = "Image" }) => {
 
   const goToPrev = () => {
     setCurrentIndex(
-      (prev) => (prev - 1 + validImages.length) % validImages.length
+      (prev) => (prev - 1 + validImages.length) % validImages.length,
     );
   };
 
@@ -143,14 +143,14 @@ export default function TestPage() {
         // Fetch questions
         try {
           const questionsRes = await axios.get(
-            `/api/questions/product/${slug}`
+            `/api/questions/product/${slug}`,
           );
           const responseData = questionsRes.data;
           console.log("❓ Questions API response:", responseData);
 
           if (responseData.success && Array.isArray(responseData.data)) {
             questionsData = responseData.data.filter(
-              (q) => q.isSample === true
+              (q) => q.isSample === true,
             );
             console.log("✅ Sample questions loaded:", questionsData.length);
           }
@@ -162,7 +162,7 @@ export default function TestPage() {
         if (examData) {
           setExam(examData);
           setTimeLeft(
-            (examData.sampleDuration || examData.duration || 60) * 60
+            (examData.sampleDuration || examData.duration || 60) * 60,
           );
         }
         if (questionsData.length > 0) {
@@ -206,7 +206,7 @@ export default function TestPage() {
           leftItems.forEach((leftItem) => {
             const correctRightId = correctMatches[leftItem.id];
             const correctItem = rightItems.find(
-              (item) => item.id === correctRightId
+              (item) => item.id === correctRightId,
             );
 
             let options = [];
@@ -215,7 +215,7 @@ export default function TestPage() {
               options = [...rightItems];
             } else {
               const wrongItems = rightItems.filter(
-                (item) => item.id !== correctRightId
+                (item) => item.id !== correctRightId,
               );
               const randomWrongItems = [...wrongItems]
                 .sort(() => Math.random() - 0.5)
@@ -226,7 +226,7 @@ export default function TestPage() {
             }
 
             initializedOptions[question._id][leftItem.id] = options.sort(
-              () => Math.random() - 0.5
+              () => Math.random() - 0.5,
             );
           });
         }
@@ -297,7 +297,7 @@ export default function TestPage() {
   const handleMatchingSelect = (
     questionId,
     leftItemId,
-    selectedRightItemId
+    selectedRightItemId,
   ) => {
     setMatchingAnswers((prev) => ({
       ...prev,
@@ -496,21 +496,21 @@ export default function TestPage() {
       if (data.success) {
         if (data.isTempStudent) {
           router.push(
-            `/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`
+            `/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`,
           );
         } else {
           router.push(`/student/result/${data.data._id}`);
         }
       } else {
         router.push(
-          `/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`
+          `/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`,
         );
       }
     } catch (error) {
       console.error("❌ Error saving result:", error);
       toast.error(error?.message);
       router.push(
-        `/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`
+        `/student/result/local?correct=${correct}&total=${totalQuestions}&attempted=${attempted}`,
       );
     }
   };
@@ -533,7 +533,7 @@ export default function TestPage() {
           {leftItems.map((leftItem, index) => {
             const currentMatchingOptions = getMatchingOptions(
               question._id,
-              leftItem.id
+              leftItem.id,
             );
 
             return (
@@ -570,7 +570,7 @@ export default function TestPage() {
                         handleMatchingSelect(
                           question._id,
                           leftItem.id,
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer"
@@ -590,7 +590,7 @@ export default function TestPage() {
                     {currentMatches[leftItem.id] &&
                       (() => {
                         const selectedRightItem = rightItems.find(
-                          (item) => item.id === currentMatches[leftItem.id]
+                          (item) => item.id === currentMatches[leftItem.id],
                         );
                         return selectedRightItem?.images?.length > 0 ? (
                           <div className="mt-3 p-2 bg-gray-50 rounded border">
@@ -644,7 +644,7 @@ export default function TestPage() {
     return (
       <>
         <div className="mb-4">
-          <strong className="text-lg">Q{current + 1}: </strong>
+          <strong className="text-base">Q{current + 1}: </strong>
           <span
             className="text-gray-800"
             dangerouslySetInnerHTML={{ __html: question.questionText }}
@@ -658,7 +658,7 @@ export default function TestPage() {
           {question.options.map((opt, i) => (
             <label
               key={i}
-              className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors text-sm"
             >
               <input
                 type={
@@ -670,7 +670,7 @@ export default function TestPage() {
                     : selected === opt.label
                 }
                 onChange={() => handleAnswer(question._id, opt.label)}
-                className="mt-1 transform scale-125"
+                className="mt-1 transform scale-110"
               />
               <div className="flex-1">
                 <div className="font-medium text-gray-800">
@@ -738,11 +738,11 @@ export default function TestPage() {
   const currentQuestion = questions[current];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 pt-20">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-800">
+    <div className="min-h-screen bg-gray-50 p-3 pt-16">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col min-h-[70vh]">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">
               Question {current + 1} of {questions.length}
             </h3>
             <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
@@ -750,18 +750,20 @@ export default function TestPage() {
             </span>
           </div>
 
-          <div className="min-h-[400px]">{renderQuestion(currentQuestion)}</div>
+          <div className="flex-1 min-h-[320px]">
+            {renderQuestion(currentQuestion)}
+          </div>
 
-          <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
+          <div className="sticky bottom-0 left-0 right-0 flex flex-wrap gap-2 mt-6 pt-4 border-t border-gray-200 text-sm bg-white z-10">
             <button
               onClick={() => markReview(currentQuestion._id)}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-md transition-colors"
             >
               Mark for Review
             </button>
             <button
               onClick={() => skip(currentQuestion._id)}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded-md transition-colors"
             >
               Skip
             </button>
@@ -769,24 +771,24 @@ export default function TestPage() {
               onClick={() =>
                 setCurrent((prev) => (prev + 1) % questions.length)
               }
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors ml-auto"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md transition-colors ml-auto"
             >
               Next Question
             </button>
           </div>
         </div>
 
-        <div className="w-full lg:w-80 bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit lg:sticky lg:top-24">
-          <h2 className="font-semibold text-gray-800 mb-4 text-lg">
+        <div className="w-full lg:w-72 bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-fit lg:sticky lg:top-20 text-sm">
+          <h2 className="font-semibold text-gray-800 mb-3 text-base">
             Question Palette
           </h2>
 
-          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-5 gap-2 mb-6">
+          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-5 gap-2 mb-5">
             {questions.map((q, i) => (
               <button
                 key={q._id}
-                className={`w-10 h-10 rounded-lg font-medium transition-all hover:scale-105 ${getStatusColor(
-                  statusMap[q._id]
+                className={`w-9 h-9 rounded-md text-xs font-semibold transition-all hover:scale-105 ${getStatusColor(
+                  statusMap[q._id],
                 )} ${
                   current === i ? "ring-2 ring-blue-400 ring-offset-2" : ""
                 }`}
@@ -797,11 +799,11 @@ export default function TestPage() {
             ))}
           </div>
 
-          <div className="border-t border-gray-200 pt-4 space-y-3">
-            <div className="flex justify-between items-center text-sm">
+          <div className="border-t border-gray-200 pt-3 space-y-3">
+            <div className="flex justify-between items-center text-xs">
               <span className="text-gray-600">Time Left:</span>
               <span
-                className={`font-mono font-bold text-lg ${
+                className={`font-mono font-bold text-base ${
                   timeLeft < 300 ? "text-red-600" : "text-gray-800"
                 }`}
               >
@@ -811,15 +813,17 @@ export default function TestPage() {
 
             <button
               onClick={handleSubmit}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors"
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-md font-semibold transition-colors text-sm"
             >
               Submit Test
             </button>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <h3 className="font-medium text-gray-700 mb-3">Status Legend</h3>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="mt-4 pt-3 border-t border-gray-200">
+            <h3 className="font-medium text-gray-700 mb-2 text-sm">
+              Status Legend
+            </h3>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded"></div>
                 <span>Answered</span>

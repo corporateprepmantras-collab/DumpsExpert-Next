@@ -9,21 +9,21 @@ export async function POST(request) {
     if (!amount || amount <= 0) {
       return NextResponse.json(
         { success: false, error: "Invalid amount" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "User ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Initialize PayPal SDK
     const environment = new paypal.core.LiveEnvironment(
       process.env.PAYPAL_CLIENT_ID,
-      process.env.PAYPAL_CLIENT_SECRET
+      process.env.PAYPAL_CLIENT_SECRET,
     );
 
     const client = new paypal.core.PayPalHttpClient(environment);
@@ -47,8 +47,8 @@ export async function POST(request) {
         brand_name: "Prepmantra",
         landing_page: "NO_PREFERENCE",
         user_action: "PAY_NOW",
-        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
-        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cart`,
+        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
+        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/student`,
       },
     });
 
@@ -57,7 +57,7 @@ export async function POST(request) {
 
     // Get approval URL
     const approvalUrl = order.result.links.find(
-      (link) => link.rel === "approve"
+      (link) => link.rel === "approve",
     )?.href;
 
     if (!approvalUrl) {
@@ -80,7 +80,7 @@ export async function POST(request) {
         error: "Failed to create PayPal order",
         details: error?.message || "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

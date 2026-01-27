@@ -109,10 +109,10 @@ export default function BlogPage() {
         {/* ✅ Category Tabs */}
         <div className="flex flex-wrap justify-center gap-2">
           {/* All */}
-          <Link href="/blogsPages/blog-categories">
+          <Link href="/blogs/blog-categories">
             <button
               className={`px-4 py-1 rounded-full border ${
-                pathname === "/blogsPages/blog-categories"
+                pathname === "/blogs/blog-categories"
                   ? "bg-white text-black font-semibold"
                   : "bg-transparent border-white"
               }`}
@@ -125,7 +125,7 @@ export default function BlogPage() {
           {categories.map((cat) => {
             const slug = cat.category.toLowerCase().replace(/\s+/g, "-");
             return (
-              <Link key={cat._id} href={`/blogsPages/${slug}`}>
+              <Link key={cat._id} href={`/blog/${slug}`}>
                 <button
                   className={`px-4 py-1 rounded-full border ${
                     selectedCategory === slug
@@ -157,7 +157,7 @@ export default function BlogPage() {
             blogs.map((blog) => (
               <Link
                 key={blog._id}
-                href={`/blogsPages/blog/${blog.slug || blog._id}`}
+                href={`/blog/${blog.slug || blog._id}`}
               >
                 <div className="bg-gray-100 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
                   {blog.imageUrl && (
@@ -205,7 +205,7 @@ export default function BlogPage() {
               {recentPosts.map((post) => (
                 <li key={post._id}>
                   <Link
-                    href={`/blogsPages/blog/${post.slug || post._id}`}
+                    href={`/blog/${post.slug || post._id}`}
                     className="text-blue-600 hover:underline block"
                   >
                     {post.sectionName}

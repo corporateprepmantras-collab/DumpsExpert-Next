@@ -364,6 +364,9 @@ const ProductList = () => {
                   Status
                 </th>
                 <th className="p-3 text-left font-semibold text-gray-700">
+                  Publish Status
+                </th>
+                <th className="p-3 text-left font-semibold text-gray-700">
                   Actions
                 </th>
               </tr>
@@ -473,6 +476,19 @@ const ProductList = () => {
                           }`}
                         ></span>
                         {product.status}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${
+                          product.publishStatus === "published"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-orange-100 text-orange-800"
+                        }`}
+                      >
+                        {product.publishStatus === "published"
+                          ? "Published"
+                          : "Draft"}
                       </span>
                     </td>
                     <td className="p-3">

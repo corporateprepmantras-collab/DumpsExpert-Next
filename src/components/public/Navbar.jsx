@@ -227,7 +227,7 @@ export default function Navbar() {
                             href={`/${
                               item.dropdownKey === "ItDumps"
                                 ? "ItDumps"
-                                : "blogsPages"
+                                : "blogs"
                             }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
                             className="block px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-[#113d48] hover:to-indigo-600 hover:text-white transition-all duration-200 border-b last:border-b-0 border-gray-100"
                           >
@@ -444,7 +444,7 @@ export default function Navbar() {
                             href={`/${
                               item.dropdownKey === "ItDumps"
                                 ? "ItDumps"
-                                : "blogsPages"
+                                : "blogs"
                             }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-white hover:text-[#113d48] transition-colors border-b last:border-b-0"
                             onClick={() => setIsOpen(false)}

@@ -6,14 +6,20 @@ import Product from "@/models/productListSchema";
 export async function GET() {
   try {
     await connectMongoDB();
-    const products = await Product.find();
+    const products = await Product.find({ publishStatus: "published" });
 
     if (!products || products.length === 0) {
-      return NextResponse.json({ message: "No products found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "No products found" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({ data: products }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ message: "Server error", error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { message: "Server error", error: error.message },
+      { status: 500 },
+    );
   }
 }
