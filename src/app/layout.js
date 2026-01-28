@@ -1,20 +1,30 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
-import Navbar from "@/components/public/Navbar";
 import Providers from "@/components/providers";
 
-// ✅ Font
+// ✅ Font - Only essential weights for faster load
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
+  preload: true,
   variable: "--font-inter",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "700"],
+  fallback: ["system-ui", "arial"],
 });
 
-// ✅ Lazy footer
+// ✅ Lazy load navbar and footer for faster Speed Index
+const Navbar = dynamic(() => import("@/components/public/Navbar"), {
+  ssr: false,
+  loading: () => (
+    <div className="sticky top-0 z-50 w-full h-16 bg-white border-b border-gray-200"></div>
+  ),
+});
+
+// ✅ Lazy footer - Client side only for faster Speed Index
 const Footer = dynamic(() => import("@/components/public/Footer"), {
-  ssr: true,
+  ssr: false,
+  loading: () => null,
 });
 
 // ✅ Metadata (CORRECT)
@@ -146,14 +156,20 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <head>
+        {/* Critical CSS for instant render */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `*,::before,::after{box-sizing:border-box;border:0 solid #e5e7eb}html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:Inter,system-ui,sans-serif}body{margin:0;line-height:inherit}h1{font-size:2rem;font-weight:700;line-height:1.2;color:#111827;margin:0 0 1rem}p{margin:0 0 1rem;color:#4b5563}.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-8{gap:2rem}.w-full{width:100%}.max-w-7xl{max-width:80rem}.mx-auto{margin-left:auto;margin-right:auto}.px-4{padding-left:1rem;padding-right:1rem}.pt-20{padding-top:5rem}.bg-white{background-color:#fff}.text-gray-600{color:#4b5563}.text-gray-900{color:#111827}.animate-pulse{animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}.bg-gray-200{background-color:#e5e7eb}.rounded-lg{border-radius:.5rem}@media(min-width:1024px){.lg\\:flex-row{flex-direction:row}.lg\\:w-1\\/2{width:50%}.lg\\:text-4xl{font-size:2.25rem}}`,
+          }}
+        />
+
         {/* Structured Data for SEO */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
 
-        {/* DNS Prefetch and Preconnect for faster loading */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        {/* Preconnect for faster font loading */}
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"
@@ -185,7 +201,7 @@ export default function RootLayout({ children }) {
         >
           Skip to main content
         </a>
-        
+
         <Providers>
           <header className="sticky top-0 z-50 w-full">
             <Navbar />

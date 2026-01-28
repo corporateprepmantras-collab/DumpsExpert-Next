@@ -127,11 +127,8 @@ export default function HomePage({
   // ✅ Ensure client-side only rendering
   useEffect(() => {
     setMounted(true);
-    // Set initial load complete after a short delay
-    const timer = setTimeout(() => {
-      setIsInitialLoad(false);
-    }, 100);
-    return () => clearTimeout(timer);
+    // Immediate render - no delay
+    setIsInitialLoad(false);
   }, []);
 
   // ✅ Show/hide scroll to top button
