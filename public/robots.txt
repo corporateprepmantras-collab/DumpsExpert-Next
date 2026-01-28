@@ -1,2 +1,20 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /student/
+Disallow: /_next/
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://www.prepmantras.com/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Specific bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /

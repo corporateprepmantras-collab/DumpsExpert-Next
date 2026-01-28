@@ -20,53 +20,67 @@ const Footer = dynamic(() => import("@/components/public/Footer"), {
 // ✅ Metadata (CORRECT)
 export const metadata = {
   title: {
-    default: "Prepmantras – #1 IT Exam Prep Provider",
+    default:
+      "Prepmantras – #1 IT Exam Prep Provider | Certification Dumps & Practice Tests",
     template: "%s | Prepmantras",
   },
   description:
-    "Pass your IT certifications in first attempt with trusted exam prep, practice tests & PDF guides by Prepmantras.",
+    "Pass your IT certifications in first attempt with trusted exam prep, practice tests & PDF guides by Prepmantras. AWS, SAP, Azure, CompTIA certification dumps with 99% pass rate.",
 
   keywords: [
     "IT certification",
     "exam prep",
     "practice tests",
     "certification dumps",
-    "AWS",
-    "SAP",
-    "Azure",
+    "AWS certification",
+    "SAP certification",
+    "Azure certification",
+    "CompTIA dumps",
+    "exam questions",
+    "certification training",
   ],
 
   authors: [{ name: "Prepmantras" }],
+  creator: "Prepmantras",
+  publisher: "Prepmantras",
+  category: "Education",
+  applicationName: "Prepmantras",
 
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com",
+    process.env.NEXT_PUBLIC_BASE_URL || "https://www.prepmantras.com",
   ),
 
   alternates: {
-    canonical: process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com",
+    canonical:
+      process.env.NEXT_PUBLIC_BASE_URL || "https://www.prepmantras.com",
   },
 
   openGraph: {
-    title: "Prepmantras – #1 IT Exam Prep Provider",
+    title: "Prepmantras – #1 IT Exam Prep Provider | 99% Pass Rate",
     description:
-      "Pass your IT certifications in first attempt with trusted exam prep.",
-    url: process.env.NEXT_PUBLIC_BASE_URL || "https://prepmantras.com",
+      "Pass your IT certifications in first attempt with trusted exam prep, practice tests & PDF guides. AWS, SAP, Azure, CompTIA certification dumps.",
+    url: process.env.NEXT_PUBLIC_BASE_URL || "https://www.prepmantras.com",
     siteName: "Prepmantras",
     type: "website",
+    locale: "en_US",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Prepmantras",
+        alt: "Prepmantras - IT Certification Exam Prep",
+        type: "image/png",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
+    site: "@prepmantras",
+    creator: "@prepmantras",
     title: "Prepmantras – #1 IT Exam Prep Provider",
-    description: "Pass your IT certifications in first attempt",
+    description:
+      "Pass your IT certifications in first attempt with 99% pass rate. Trusted by 50,000+ students.",
     images: ["/og-image.png"],
   },
 
@@ -81,10 +95,17 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
-//lkj//lksjdlfk
+
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    yandex: process.env.YANDEX_VERIFICATION,
+    bing: process.env.BING_VERIFICATION,
+  },
+
   // ✅ CORRECT ICONS (THIS FIXES YOUR CRASH)
   icons: {
     icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
     apple: "/favicon.ico",
   },
 };
@@ -98,6 +119,26 @@ export const viewport = {
 
 // ✅ Root Layout
 export default function RootLayout({ children }) {
+  // Add structured data for organization
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    name: "Prepmantras",
+    url: "https://www.prepmantras.com",
+    logo: "https://www.prepmantras.com/logo.png",
+    description:
+      "Leading IT certification exam preparation provider with 99% pass rate",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "Customer Service",
+      email: "support@prepmantras.com",
+    },
+    sameAs: [
+      "https://www.facebook.com/prepmantras",
+      "https://twitter.com/prepmantras",
+      "https://www.linkedin.com/company/prepmantras",
+    ],
+  };
   return (
     <html
       lang="en"
@@ -105,6 +146,12 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <head>
+        {/* Structured Data for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+
         {/* DNS Prefetch and Preconnect for faster loading */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link
@@ -131,12 +178,20 @@ export default function RootLayout({ children }) {
         className={`${inter.className} antialiased bg-white min-h-screen flex flex-col`}
         suppressHydrationWarning
       >
+        {/* Skip to main content for accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white"
+        >
+          Skip to main content
+        </a>
+        
         <Providers>
           <header className="sticky top-0 z-50 w-full">
             <Navbar />
           </header>
 
-          <main id="main-content" className="flex-1 w-full">
+          <main id="main-content" className="flex-1 w-full" role="main">{children}</main>
             {children}
           </main>
 

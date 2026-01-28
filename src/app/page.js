@@ -4,10 +4,29 @@
 
 import HomePage from "@/components/HomePage";
 
-// Add metadata for better SEO and spam score
+// Enhanced metadata for better SEO
 export const metadata = {
-  other: {
-    "google-site-verification": process.env.GOOGLE_SITE_VERIFICATION || "",
+  title: "Best IT Certification Exam Dumps & Practice Tests | 99% Pass Rate",
+  description:
+    "Get verified IT certification dumps for AWS, SAP, Azure, CompTIA & more. 50,000+ students passed with our practice tests. Money-back guarantee. Updated daily.",
+  keywords: [
+    "IT certification dumps",
+    "exam dumps",
+    "practice tests",
+    "AWS certification",
+    "SAP certification",
+    "Azure exam prep",
+    "CompTIA dumps",
+    "certification training",
+  ],
+  openGraph: {
+    title: "Best IT Certification Exam Dumps | Prepmantras",
+    description:
+      "Pass your IT certification exam in first attempt. Verified dumps, practice tests & PDF guides. 99% pass rate guaranteed.",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://www.prepmantras.com",
   },
 };
 

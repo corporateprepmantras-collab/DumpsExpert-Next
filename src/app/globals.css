@@ -3,6 +3,21 @@
 @tailwind utilities;
 
 /* ================================
+   CRITICAL CSS - INLINE STYLES
+================================ */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  body {
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+}
+
+/* ================================
    CSS VARIABLES (THEME)
 ================================ */
 :root {
