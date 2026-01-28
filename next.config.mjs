@@ -46,6 +46,46 @@ const nextConfig = {
       "framer-motion",
     ],
     serverActions: true,
+    optimizeServerReact: true,
+  },
+
+  // Performance optimizations
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      // Optimize chunks for faster loading
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: "deterministic",
+        runtimeChunk: "single",
+        splitChunks: {
+          chunks: "all",
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            framework: {
+              name: "framework",
+              chunks: "all",
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+              priority: 40,
+              enforce: true,
+            },
+            lib: {
+              test: /[\\/]node_modules[\\/]/,
+              name(module) {
+                const packageName = module.context.match(
+                  /[\\/]node_modules[\\/](.*?)([\\/]|$)/,
+                )?.[1];
+                return `npm.${packageName?.replace("@", "")}`;
+              },
+              priority: 30,
+              minChunks: 1,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
+    return config;
   },
 
   swcMinify: true,

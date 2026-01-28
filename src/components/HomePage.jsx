@@ -495,7 +495,7 @@ export default function HomePage({
           </div>
         </section>
 
-        {/* ========== Trending Certification Dumps ========== */}
+        {/* ========== Trending Certifications ========== */}
         <section className="py-12 px-4 sm:py-16 sm:px-6 lg:px-12 bg-gradient-to-b from-white to-gray-50">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
@@ -506,7 +506,7 @@ export default function HomePage({
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                Top Trending Certification Dumps
+                Popular Certification Exam Prep
               </h2>
               <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
                 Most popular certifications professionals are pursuing this
@@ -514,7 +514,7 @@ export default function HomePage({
               </p>
             </div>
 
-            {/* Dumps Grid */}
+            {/* Certifications Grid */}
             {trendingItems && trendingItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {trendingItems.map((item, index) => (

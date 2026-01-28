@@ -4,6 +4,13 @@
 
 import HomePage from "@/components/HomePage";
 
+// Add metadata for better SEO and spam score
+export const metadata = {
+  other: {
+    "google-site-verification": process.env.GOOGLE_SITE_VERIFICATION || "",
+  },
+};
+
 // ✅ FIXED: Proper URL resolution for Vercel
 const getAPIUrl = () => {
   // Server-side
@@ -54,7 +61,7 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
 
         if (attempt < retries) {
           await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * (attempt + 1))
+            setTimeout(resolve, 1000 * (attempt + 1)),
           );
           continue;
         }
@@ -106,8 +113,8 @@ async function fetchCategories() {
   const categories = Array.isArray(result.data)
     ? result.data
     : Array.isArray(result.data?.data)
-    ? result.data.data
-    : [];
+      ? result.data.data
+      : [];
 
   return categories;
 }
@@ -138,7 +145,7 @@ async function fetchBlogs() {
 
     // ✅ only published blogs
     const published = blogs.filter(
-      (b) => b?.status === "publish" || b?.status === true
+      (b) => b?.status === "publish" || b?.status === true,
     );
 
     return published.slice(0, 50);
@@ -185,8 +192,8 @@ async function fetchProducts() {
   const products = Array.isArray(data?.data)
     ? data.data
     : Array.isArray(data)
-    ? data
-    : [];
+      ? data
+      : [];
 
   return products;
 }
@@ -246,7 +253,7 @@ export default async function Page() {
   const errors = [];
 
   console.log(
-    `[Build] Starting page generation at ${new Date().toISOString()}`
+    `[Build] Starting page generation at ${new Date().toISOString()}`,
   );
   console.log(`[Build] API URL: ${getAPIUrl()}`);
 
@@ -303,7 +310,7 @@ export default async function Page() {
 
   console.log(`\n✅ Page built in ${buildTime}ms`);
   console.log(
-    `📊 Data: ${dumps.length} dumps, ${blogs.length} blogs, ${faqs.length} FAQs`
+    `📊 Data: ${dumps.length} dumps, ${blogs.length} blogs, ${faqs.length} FAQs`,
   );
 
   if (errors.length > 0) {

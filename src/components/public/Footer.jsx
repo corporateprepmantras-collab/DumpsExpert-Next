@@ -151,7 +151,8 @@ export default function Footer() {
               <a
                 href="https://facebook.com"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
+                aria-label="Follow us on Facebook"
                 className="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaFacebookF className="text-white text-sm" />
@@ -159,7 +160,8 @@ export default function Footer() {
               <a
                 href="https://linkedin.com"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
+                aria-label="Follow us on LinkedIn"
                 className="bg-blue-700 hover:bg-blue-800 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaLinkedinIn className="text-white text-sm" />
@@ -167,7 +169,8 @@ export default function Footer() {
               <a
                 href="https://youtube.com"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
+                aria-label="Subscribe to our YouTube channel"
                 className="bg-red-600 hover:bg-red-700 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaYoutube className="text-white text-sm" />
@@ -175,7 +178,8 @@ export default function Footer() {
               <a
                 href="https://instagram.com"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
+                aria-label="Follow us on Instagram"
                 className="bg-gradient-to-br from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 p-2 rounded-lg transition-all duration-300 hover:scale-110"
               >
                 <FaInstagram className="text-white text-sm" />
@@ -197,22 +201,22 @@ export default function Footer() {
         {/* Disclaimer Section */}
         <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 mb-6">
           <h3 className="text-xs font-bold text-white mb-2 tracking-wide">
-            Disclaimer
+            Legal Disclaimer
           </h3>
           <div className="space-y-2 text-[11px] leading-relaxed text-gray-400">
             <p>
-              * PrepMantras.com is not affiliated with, endorsed by, or
-              associated with SAP SE, Microsoft Azure, Amazon Web Services
-              (AWS), Google Cloud Platform (GCP), or any other certification
-              provider. PrepMantras provides practice questions and study
-              materials intended to support exam preparation and learning.
+              PrepMantras.com is an independent educational platform providing
+              study materials and practice questions. We are not affiliated with
+              or endorsed by SAP SE, Microsoft, Amazon Web Services, Google
+              Cloud, or other certification bodies. All company names and
+              certifications mentioned are trademarks of their respective
+              owners.
             </p>
             <p>
-              * All training resources and mock tests available on our platform
-              are created by industry professionals for educational purposes
-              only. PrepMantras does not claim ownership of any trademarks,
-              logos, or brand names mentioned on this website. All certification
-              names and trademarks are the property of their respective owners.
+              Our training resources are developed by certified professionals
+              for educational purposes. We respect intellectual property rights
+              and use certification names solely for reference and
+              identification.
             </p>
           </div>
         </div>

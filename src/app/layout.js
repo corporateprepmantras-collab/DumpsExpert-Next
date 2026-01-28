@@ -71,8 +71,15 @@ export const metadata = {
   },
 
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 
   // ✅ CORRECT ICONS (THIS FIXES YOUR CRASH)
@@ -97,6 +104,29 @@ export default function RootLayout({ children }) {
       className={`${inter.variable} scroll-smooth`}
       suppressHydrationWarning
     >
+      <head>
+        {/* DNS Prefetch and Preconnect for faster loading */}
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+
+        {/* Prevent spam score - Add verification meta tags */}
+        <meta
+          name="robots"
+          content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        />
+        <meta name="googlebot" content="index, follow" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="format-detection" content="telephone=no" />
+      </head>
       <body
         className={`${inter.className} antialiased bg-white min-h-screen flex flex-col`}
         suppressHydrationWarning
