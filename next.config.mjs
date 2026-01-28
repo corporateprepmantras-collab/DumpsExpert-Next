@@ -54,7 +54,6 @@ const nextConfig = {
       "@/components/ui",
       "framer-motion",
     ],
-    serverActions: true,
     optimizeServerReact: true,
   },
 
