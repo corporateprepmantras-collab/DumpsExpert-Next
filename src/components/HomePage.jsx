@@ -8,40 +8,43 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import banner from "@/assets/landingassets/banner.webp";
 
-// ✅ Lazy load heavy components with loading fallback
+// ✅ Lazy load heavy components with priority and no SSR for faster initial load
 const LoadingBox = () => (
-  <div className="py-12 px-4">
-    <div className="h-64 bg-gray-100 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
+  <div className="py-8 px-4">
+    <div className="h-48 bg-gray-100 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
   </div>
 );
 
+// Critical: Load first
+const ExamDumpsSlider = dynamic(() => import("@/landingpage/ExamDumpsSlider"), {
+  ssr: true, // Keep this one for initial content
+  loading: () => <LoadingBox />,
+});
+
+// Load after viewport
 const BlogSection = dynamic(() => import("@/landingpage/BlogSection"), {
   ssr: false,
-  loading: LoadingBox,
-});
-const ExamDumpsSlider = dynamic(() => import("@/landingpage/ExamDumpsSlider"), {
-  ssr: false,
-  loading: LoadingBox,
+  loading: () => <LoadingBox />,
 });
 const UnlockGoals = dynamic(() => import("@/landingpage/UnlockGoals"), {
   ssr: false,
-  loading: LoadingBox,
+  loading: () => <LoadingBox />,
 });
 const GeneralFAQs = dynamic(() => import("@/landingpage/GeneralFAQs"), {
   ssr: false,
-  loading: LoadingBox,
+  loading: () => <LoadingBox />,
 });
 const ContentDumpsFirst = dynamic(
   () => import("@/landingpage/ContentBoxFirst"),
-  { ssr: false, loading: LoadingBox },
+  { ssr: false, loading: () => <LoadingBox /> },
 );
 const ContentDumpsSecond = dynamic(
   () => import("@/landingpage/ContentBoxSecond"),
-  { ssr: false, loading: LoadingBox },
+  { ssr: false, loading: () => <LoadingBox /> },
 );
 const Testimonial = dynamic(() => import("@/landingpage/Testimonial"), {
   ssr: false,
-  loading: LoadingBox,
+  loading: () => <LoadingBox />,
 });
 
 const BENEFITS = [
@@ -226,50 +229,17 @@ export default function HomePage({
   if (!mounted || isInitialLoad) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Hero Section Skeleton */}
-        <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
-          <div className="w-full lg:w-1/2 mt-10 lg:mt-0 space-y-4">
-            <div className="h-12 bg-gray-200 rounded-lg animate-pulse w-3/4"></div>
-            <div className="h-6 bg-gray-200 rounded-lg animate-pulse w-full"></div>
-            <div className="h-6 bg-gray-200 rounded-lg animate-pulse w-5/6"></div>
-            <div className="space-y-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="h-6 bg-gray-200 rounded-lg animate-pulse w-4/5"
-                ></div>
-              ))}
-            </div>
+        {/* Minimal Hero Section Skeleton - Faster LCP */}
+        <section className="w-full bg-white pt-20 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-8">
+          <div className="w-full lg:w-1/2 space-y-3">
+            <div className="h-10 bg-gray-200 rounded-lg animate-pulse w-3/4"></div>
+            <div className="h-5 bg-gray-200 rounded-lg animate-pulse w-full"></div>
+            <div className="h-5 bg-gray-200 rounded-lg animate-pulse w-5/6"></div>
           </div>
           <div className="w-full lg:w-1/2 flex justify-center items-center">
-            <div className="w-full max-w-[600px] h-[400px] bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="w-full max-w-[500px] h-[300px] bg-gray-200 rounded-lg animate-pulse"></div>
           </div>
         </section>
-
-        {/* Trending Section Skeleton */}
-        <section className="py-12 px-4 sm:py-16 sm:px-6 lg:px-12 bg-gradient-to-b from-white to-gray-50">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-8 sm:mb-10">
-              <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-64 mx-auto mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded-lg animate-pulse w-96 mx-auto"></div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div
-                  key={i}
-                  className="h-24 bg-gray-200 rounded-xl animate-pulse"
-                ></div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Content Skeleton */}
-        <div className="py-12 px-4 space-y-8">
-          <div className="h-64 bg-gray-200 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
-          <div className="h-64 bg-gray-200 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
-          <div className="h-64 bg-gray-200 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
-        </div>
       </div>
     );
   }
@@ -457,24 +427,24 @@ export default function HomePage({
 
       <div className="p-2">
         {/* ========== Hero Section ========== */}
-        <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
-          <div className="w-full lg:w-1/2 mt-10 lg:mt-0">
-            <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4">
+        <section className="w-full bg-white pt-20 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-8">
+          <div className="w-full lg:w-1/2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight mb-3">
               Pass Your IT Certification Exam{" "}
               <span className="text-[#13677c]">On the First Try</span>
             </h1>
 
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-6">
+            <p className="text-base sm:text-lg text-gray-600 mb-4">
               Prepmantras offers industry-validated study materials, real exam
               Prep, and browser-based practice tests to help you get certified
               faster — and smarter.
             </p>
 
-            <ul className="space-y-3 text-gray-700 mb-6 text-sm sm:text-base">
+            <ul className="space-y-2 text-gray-700 mb-5 text-sm sm:text-base">
               {BENEFITS.map((item, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <div className="bg-[#7aa93c] rounded-full p-1.5 flex items-center justify-center w-7 h-7 flex-shrink-0">
-                    <Check className="text-white w-4 h-4" />
+                  <div className="bg-[#7aa93c] rounded-full p-1.5 flex items-center justify-center w-6 h-6 flex-shrink-0">
+                    <Check className="text-white w-3.5 h-3.5" />
                   </div>
                   <span>{item}</span>
                 </li>
@@ -486,29 +456,29 @@ export default function HomePage({
             <Image
               src={banner}
               alt="Professional IT certification preparation"
-              className="w-full max-w-[600px] h-auto object-contain"
+              className="w-full max-w-[500px] h-auto object-contain"
               placeholder="blur"
               priority
-              quality={85}
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
+              quality={75}
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 500px"
             />
           </div>
         </section>
 
         {/* ========== Trending Certifications ========== */}
-        <section className="py-12 px-4 sm:py-16 sm:px-6 lg:px-12 bg-gradient-to-b from-white to-gray-50">
+        <section className="py-8 px-4 sm:py-12 sm:px-6 lg:px-12 bg-gradient-to-b from-white to-gray-50">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-8 sm:mb-10">
-              <div className="inline-flex items-center justify-center gap-2 mb-3">
-                <span className="text-orange-500 font-semibold text-sm sm:text-base uppercase tracking-wide">
+            <div className="text-center mb-6 sm:mb-8">
+              <div className="inline-flex items-center justify-center gap-2 mb-2">
+                <span className="text-orange-500 font-semibold text-sm uppercase tracking-wide">
                   Trending Now
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                 Popular Certification Exam Prep
               </h2>
-              <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+              <p className="text-gray-600 text-sm max-w-2xl mx-auto">
                 Most popular certifications professionals are pursuing this
                 month
               </p>

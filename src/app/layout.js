@@ -191,7 +191,7 @@ export default function RootLayout({ children }) {
             <Navbar />
           </header>
 
-          <main id="main-content" className="flex-1 w-full" role="main">{children}</main>
+          <main id="main-content" className="flex-1 w-full" role="main">
             {children}
           </main>
 
