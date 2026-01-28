@@ -81,7 +81,7 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
-//lkj
+//lkj//lksjdlfk
   // ✅ CORRECT ICONS (THIS FIXES YOUR CRASH)
   icons: {
     icon: "/favicon.ico",
