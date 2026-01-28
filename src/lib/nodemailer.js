@@ -22,12 +22,33 @@ export async function sendNotificationEmail(contact) {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
+    tls: {
+      rejectUnauthorized: true,
+    },
+    dkim: {
+      domainName: process.env.DOMAIN_NAME || "prepmantras.com",
+      keySelector: process.env.DKIM_SELECTOR || "default",
+      privateKey: process.env.DKIM_PRIVATE_KEY || "",
+    },
   });
 
   const mailOptions = {
     from: `"${SITE_NAME}" <${SMTP_USER}>`,
     to: ADMIN_EMAIL,
+    replyTo: contact.email,
     subject: `New Contact Form Submission: ${contact.subject}`,
+    headers: {
+      'X-Priority': '3',
+      'X-Mailer': `${SITE_NAME} Contact Form`,
+      'List-Unsubscribe': `<mailto:${SMTP_USER}?subject=unsubscribe>`,
+    },
+    subject: `New Contact Form Submission: ${contact.subject}`,
+    headers: {
+      'X-Priority': '3',
+      'X-Mailer': `${SITE_NAME} Contact Form`,
+      'List-Unsubscribe': `<mailto:${SMTP_USER}?subject=unsubscribe>`,
+      'Precedence': 'bulk',
+    },
     html: `
       <h2>New Contact Form Submission</h2>
       <p><strong>Name:</strong> ${contact.name}</p>
@@ -69,6 +90,14 @@ export async function sendReplyEmail(contact, replyMessage, customSubject) {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
+    tls: {
+      rejectUnauthorized: true,
+    },
+    dkim: {
+      domainName: process.env.DOMAIN_NAME || "prepmantras.com",
+      keySelector: process.env.DKIM_SELECTOR || "default",
+      privateKey: process.env.DKIM_PRIVATE_KEY || "",
+    },
   });
 
   const subject = customSubject || `Re: ${contact.subject}`;
@@ -77,6 +106,11 @@ export async function sendReplyEmail(contact, replyMessage, customSubject) {
     from: `"${SITE_NAME}" <${SMTP_USER}>`,
     to: contact.email,
     subject: subject,
+    headers: {
+      'X-Priority': '3',
+      'X-Mailer': `${SITE_NAME} Support`,
+      'List-Unsubscribe': `<mailto:${SMTP_USER}?subject=unsubscribe>`,
+    },
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Hello ${contact.name},</h2>
