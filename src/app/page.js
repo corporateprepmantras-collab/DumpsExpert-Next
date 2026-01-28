@@ -311,5 +311,5 @@ export default async function Page() {
 
 // ✅ Aggressive caching for faster Speed Index
 export const revalidate = 300; // 5 minutes
-export const dynamic = 'force-static';
-export const fetchCache = 'force-cache';
+export const dynamic = "force-static";
+export const fetchCache = "force-cache";
