@@ -101,7 +101,7 @@ async function fetchProduct(slug) {
   try {
     // First try by slug
     let response = await fetch(`/api/products/get-by-slug/${slug}`, {
-      cache: 'no-store',
+      cache: "no-store",
     });
 
     let data = await response.json();
@@ -111,7 +111,7 @@ async function fetchProduct(slug) {
     if (!product && response.status === 404) {
       console.log(`Product not found by slug "${slug}", trying exam code...`);
       response = await fetch(`/api/products/get-by-exam-code/${slug}`, {
-        cache: 'no-store',
+        cache: "no-store",
       });
 
       if (response.ok) {
