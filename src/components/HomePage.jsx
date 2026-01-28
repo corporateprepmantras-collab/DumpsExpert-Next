@@ -8,29 +8,40 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import banner from "@/assets/landingassets/banner.webp";
 
-// ✅ Lazy load heavy components
+// ✅ Lazy load heavy components with loading fallback
+const LoadingBox = () => (
+  <div className="py-12 px-4">
+    <div className="h-64 bg-gray-100 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
+  </div>
+);
+
 const BlogSection = dynamic(() => import("@/landingpage/BlogSection"), {
   ssr: false,
+  loading: LoadingBox,
 });
 const ExamDumpsSlider = dynamic(() => import("@/landingpage/ExamDumpsSlider"), {
   ssr: false,
+  loading: LoadingBox,
 });
 const UnlockGoals = dynamic(() => import("@/landingpage/UnlockGoals"), {
   ssr: false,
+  loading: LoadingBox,
 });
 const GeneralFAQs = dynamic(() => import("@/landingpage/GeneralFAQs"), {
   ssr: false,
+  loading: LoadingBox,
 });
 const ContentDumpsFirst = dynamic(
   () => import("@/landingpage/ContentBoxFirst"),
-  { ssr: false },
+  { ssr: false, loading: LoadingBox },
 );
 const ContentDumpsSecond = dynamic(
   () => import("@/landingpage/ContentBoxSecond"),
-  { ssr: false },
+  { ssr: false, loading: LoadingBox },
 );
 const Testimonial = dynamic(() => import("@/landingpage/Testimonial"), {
   ssr: false,
+  loading: LoadingBox,
 });
 
 const BENEFITS = [
@@ -91,6 +102,7 @@ export default function HomePage({
   const [mounted, setMounted] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [trendingItems, setTrendingItems] = useState([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // ✅ Fetch trending items
   useEffect(() => {
@@ -112,6 +124,11 @@ export default function HomePage({
   // ✅ Ensure client-side only rendering
   useEffect(() => {
     setMounted(true);
+    // Set initial load complete after a short delay
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // ✅ Show/hide scroll to top button
@@ -206,8 +223,55 @@ export default function HomePage({
     dumps.length === 0 || blogs.length === 0 || faqs.length === 0;
 
   // Don't render until mounted (prevents hydration issues)
-  if (!mounted) {
-    return null;
+  if (!mounted || isInitialLoad) {
+    return (
+      <div className="min-h-screen bg-white">
+        {/* Hero Section Skeleton */}
+        <section className="w-full bg-white pt-24 px-4 sm:px-6 lg:px-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-10">
+          <div className="w-full lg:w-1/2 mt-10 lg:mt-0 space-y-4">
+            <div className="h-12 bg-gray-200 rounded-lg animate-pulse w-3/4"></div>
+            <div className="h-6 bg-gray-200 rounded-lg animate-pulse w-full"></div>
+            <div className="h-6 bg-gray-200 rounded-lg animate-pulse w-5/6"></div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="h-6 bg-gray-200 rounded-lg animate-pulse w-4/5"
+                ></div>
+              ))}
+            </div>
+          </div>
+          <div className="w-full lg:w-1/2 flex justify-center items-center">
+            <div className="w-full max-w-[600px] h-[400px] bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        </section>
+
+        {/* Trending Section Skeleton */}
+        <section className="py-12 px-4 sm:py-16 sm:px-6 lg:px-12 bg-gradient-to-b from-white to-gray-50">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-8 sm:mb-10">
+              <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-64 mx-auto mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded-lg animate-pulse w-96 mx-auto"></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 bg-gray-200 rounded-xl animate-pulse"
+                ></div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Content Skeleton */}
+        <div className="py-12 px-4 space-y-8">
+          <div className="h-64 bg-gray-200 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
+          <div className="h-64 bg-gray-200 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
+          <div className="h-64 bg-gray-200 rounded-lg animate-pulse max-w-7xl mx-auto"></div>
+        </div>
+      </div>
+    );
   }
 
   return (

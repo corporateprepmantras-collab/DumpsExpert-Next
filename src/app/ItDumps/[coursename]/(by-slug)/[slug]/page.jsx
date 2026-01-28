@@ -29,12 +29,11 @@ async function fetchProductForMetadata(slug) {
 
   try {
     const res = await fetch(url, {
-      cache: "no-store",
-      next: { revalidate: 0 },
+      next: { revalidate: 1800 },
     }).catch((fetchError) => {
       console.error("❌ Fetch request failed:", fetchError.message);
       console.error(
-        "❌ This usually means the API endpoint doesn't exist or the server is not running"
+        "❌ This usually means the API endpoint doesn't exist or the server is not running",
       );
       throw fetchError;
     });
@@ -115,8 +114,8 @@ export async function generateMetadata({ params }) {
       const reviewsRes = await fetch(
         `${getBaseUrl()}/api/reviews?productId=${product._id}`,
         {
-          cache: "no-store",
-        }
+          next: { revalidate: 3600 },
+        },
       );
       if (reviewsRes.ok) {
         const reviewsData = await reviewsRes.json();
@@ -274,7 +273,6 @@ export async function generateStaticParams() {
 
     const res = await fetch(url, {
       next: { revalidate: 3600 },
-      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -290,7 +288,7 @@ export async function generateStaticParams() {
       .map((product) => ({
         slug: product.slug,
       }))
-      .slice(0, 100);
+      .slice(0, 50); // Reduced for faster builds
 
     console.log(`✅ Generated ${params.length} static params`);
     return params;
@@ -304,13 +302,6 @@ export async function generateStaticParams() {
 export default async function ProductPage({ params }) {
   const { slug } = await params;
 
-  // Verify product exists before rendering
-  const product = await fetchProductForMetadata(slug);
-
-  if (!product || !product.title) {
-    notFound();
-  }
-
   return (
     <Suspense fallback={<ProductPageLoading />}>
       <ProductDetail slug={slug} />
@@ -318,6 +309,6 @@ export default async function ProductPage({ params }) {
   );
 }
 
-// Optional: Configure page behavior
-export const dynamic = "force-dynamic"; // or "auto" for ISR
-export const revalidate = 3600; // Revalidate every hour if using ISR
+// Configure page behavior for better performance
+export const dynamic = "auto"; // Enable ISR
+export const revalidate = 1800; // Revalidate every 30 minutes

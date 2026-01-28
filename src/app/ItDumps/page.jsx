@@ -3,8 +3,9 @@ import Link from "next/link";
 import { FaCheckCircle } from "react-icons/fa";
 import guarantee from "../../assets/userAssets/guaranteed.png";
 
-// ✅ Force this page to always be dynamic
-export const dynamic = "force-dynamic";
+// ✅ Enable ISR for better performance
+export const dynamic = "auto";
+export const revalidate = 1800; // Revalidate every 30 minutes
 
 /* ===========================
    ✅ Get correct base URL for server-side fetches
@@ -46,11 +47,10 @@ async function fetchSEO() {
     console.log(`🔍 [SEO] Fetching from: ${url}`);
 
     const res = await fetch(url, {
-      cache: "no-store",
+      next: { revalidate: 1800 },
       headers: {
         "Content-Type": "application/json",
       },
-      next: { revalidate: 0 },
     });
 
     if (!res.ok) {
@@ -87,10 +87,9 @@ async function getDumpsData() {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
       const res = await fetch(url, {
-        next: { revalidate: 60 },
+        next: { revalidate: 1800 },
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
         },
         signal: controller.signal,
       });
@@ -99,7 +98,7 @@ async function getDumpsData() {
 
       if (!res.ok) {
         console.error(
-          `❌ [Categories] Fetch failed: ${res.status} ${res.statusText}`
+          `❌ [Categories] Fetch failed: ${res.status} ${res.statusText}`,
         );
 
         // Retry on server errors (500+)
@@ -125,11 +124,11 @@ async function getDumpsData() {
 
       // ✅ Filter only published categories
       const publishedCategories = categories.filter(
-        (cat) => cat.status === "Publish"
+        (cat) => cat.status === "Publish",
       );
 
       console.log(
-        `✅ [Categories] Fetched ${categories.length} total, ${publishedCategories.length} published`
+        `✅ [Categories] Fetched ${categories.length} total, ${publishedCategories.length} published`,
       );
       return publishedCategories;
     } catch (error) {
@@ -215,7 +214,7 @@ export default async function ITDumpsPage() {
 
   const renderTime = Date.now() - startTime;
   console.log(
-    `✅ [ITDumps Page] Rendered in ${renderTime}ms with ${dumpsData.length} published categories\n`
+    `✅ [ITDumps Page] Rendered in ${renderTime}ms with ${dumpsData.length} published categories\n`,
   );
 
   return (
@@ -260,7 +259,7 @@ export default async function ITDumpsPage() {
                   <FaCheckCircle className="text-blue-600 text-lg flex-shrink-0" />
                   <span>{text}</span>
                 </div>
-              )
+              ),
             )}
           </div>
         </div>

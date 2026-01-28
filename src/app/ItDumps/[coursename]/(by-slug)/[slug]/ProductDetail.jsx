@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FaQuoteLeft } from "react-icons/fa";
-import RelatedProducts from "./RelatedProducts";
 import {
   FaCheckCircle,
   FaChevronRight,
@@ -20,6 +19,9 @@ import {
 import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
+
+// Lazy load heavy components
+const RelatedProducts = lazy(() => import("./RelatedProducts"));
 
 // Helper function to safely convert to number
 const toNum = (val) => {
@@ -86,12 +88,27 @@ const extractExamPrices = (examData) => {
   };
 };
 
-// Helper functions
+// Helper functions with caching
+const productCache = new Map();
+const reviewsCache = new Map();
+
 async function fetchProduct(slug) {
+  if (productCache.has(slug)) {
+    return productCache.get(slug);
+  }
+
   try {
-    const response = await fetch(`/api/products/get-by-slug/${slug}`);
+    const response = await fetch(`/api/products/get-by-slug/${slug}`, {
+      next: { revalidate: 1800 },
+    });
     const data = await response.json();
-    return data.data || null;
+    const product = data.data || null;
+
+    if (product) {
+      productCache.set(slug, product);
+    }
+
+    return product;
   } catch (error) {
     console.error("Error fetching product:", error);
     return null;
@@ -100,34 +117,31 @@ async function fetchProduct(slug) {
 
 async function fetchExamsByProductSlug(slug) {
   try {
-    const endpoints = [`/api/exams/byslug/${encodeURIComponent(slug)}`];
+    const response = await fetch(
+      `/api/exams/byslug/${encodeURIComponent(slug)}`,
+      {
+        next: { revalidate: 1800 },
+      },
+    );
 
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetch(endpoint);
-        if (!response.ok) continue;
+    if (!response.ok) return [];
 
-        const data = await response.json();
-        let exams = [];
+    const data = await response.json();
+    let exams = [];
 
-        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-          exams = data.data;
-        } else if (Array.isArray(data) && data.length > 0) {
-          exams = data;
-        } else if (
-          data.exams &&
-          Array.isArray(data.exams) &&
-          data.exams.length > 0
-        ) {
-          exams = data.exams;
-        }
-
-        if (exams.length > 0) return exams;
-      } catch (err) {
-        continue;
-      }
+    if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+      exams = data.data;
+    } else if (Array.isArray(data) && data.length > 0) {
+      exams = data;
+    } else if (
+      data.exams &&
+      Array.isArray(data.exams) &&
+      data.exams.length > 0
+    ) {
+      exams = data.exams;
     }
-    return [];
+
+    return exams;
   } catch (error) {
     console.error("Error fetching exams:", error);
     return [];
@@ -136,7 +150,9 @@ async function fetchExamsByProductSlug(slug) {
 
 async function fetchAllProducts() {
   try {
-    const response = await fetch(`/api/products`);
+    const response = await fetch(`/api/products?limit=12`, {
+      next: { revalidate: 3600 },
+    });
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -146,11 +162,20 @@ async function fetchAllProducts() {
 }
 
 async function fetchReviews(productId) {
+  if (reviewsCache.has(productId)) {
+    return reviewsCache.get(productId);
+  }
+
   try {
-    const response = await fetch(`/api/reviews?productId=${productId}`);
+    const response = await fetch(`/api/reviews?productId=${productId}`, {
+      next: { revalidate: 3600 },
+    });
     const data = await response.json();
     const all = data.data || [];
-    return all.filter((r) => r.status === "Publish");
+    const published = all.filter((r) => r.status === "Publish");
+
+    reviewsCache.set(productId, published);
+    return published;
   } catch (error) {
     console.error("Error fetching reviews:", error);
     return [];
@@ -322,10 +347,13 @@ export default function ProductDetailsPage() {
       try {
         setIsLoadingExams(true);
 
-        const productData = await fetchProduct(slug);
-        setProduct(productData);
+        // Fetch product and exams in parallel
+        const [productData, examsData] = await Promise.all([
+          fetchProduct(slug),
+          fetchExamsByProductSlug(slug),
+        ]);
 
-        const examsData = await fetchExamsByProductSlug(slug);
+        setProduct(productData);
         setExams(examsData);
 
         if (examsData.length > 0) {
@@ -351,21 +379,28 @@ export default function ProductDetailsPage() {
 
         setIsLoadingExams(false);
 
-        const fetchedReviews = productData?._id
-          ? await fetchReviews(productData._id)
-          : [];
+        // Fetch reviews and related products in parallel after initial load
+        if (productData?._id) {
+          Promise.all([fetchReviews(productData._id), fetchAllProducts()]).then(
+            ([fetchedReviews, allProducts]) => {
+              setReviews(fetchedReviews || []);
 
-        setReviews(fetchedReviews || []);
+              if (fetchedReviews && fetchedReviews.length > 0) {
+                const total = fetchedReviews.reduce(
+                  (sum, r) => sum + r.rating,
+                  0,
+                );
+                setAvgRating((total / fetchedReviews.length).toFixed(1));
+              } else {
+                setAvgRating(null);
+              }
 
-        if (fetchedReviews && fetchedReviews.length > 0) {
-          const total = fetchedReviews.reduce((sum, r) => sum + r.rating, 0);
-          setAvgRating((total / fetchedReviews.length).toFixed(1));
-        } else {
-          setAvgRating(null);
+              setRelatedProducts(
+                allProducts.filter((p) => p.slug !== slug).slice(0, 12),
+              );
+            },
+          );
         }
-
-        const allProducts = await fetchAllProducts();
-        setRelatedProducts(allProducts.filter((p) => p.slug !== slug));
       } catch (err) {
         console.error("❌ Error loading data:", err);
         setIsLoadingExams(false);
@@ -474,6 +509,8 @@ export default function ProductDetailsPage() {
               src={product.imageUrl}
               alt={product.title}
               className="w-full rounded-xl object-contain shadow-md max-h-[400px]"
+              loading="lazy"
+              decoding="async"
             />
 
             <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
@@ -923,7 +960,13 @@ export default function ProductDetailsPage() {
         )}
       </div>
 
-      <RelatedProducts currentSlug={slug} maxProducts={10} />
+      <Suspense
+        fallback={
+          <div className="py-8 text-center">Loading related products...</div>
+        }
+      >
+        <RelatedProducts currentSlug={slug} maxProducts={10} />
+      </Suspense>
 
       <Toaster />
     </div>

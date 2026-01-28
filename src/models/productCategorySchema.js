@@ -25,8 +25,13 @@ const productCategorySchema = new mongoose.Schema(
     },
     faqs: [faqSchema],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+
+// Add indexes for better query performance
+productCategorySchema.index({ status: 1 }); // For filtering published categories
+productCategorySchema.index({ slug: 1 }); // For category page lookups
+productCategorySchema.index({ name: 1 }); // For searching/sorting by name
 
 const ProductCategory =
   mongoose.models.ProductCategory ||

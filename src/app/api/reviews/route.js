@@ -24,10 +24,17 @@ export async function GET(req) {
         .sort({ createdAt: -1 });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: reviews,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: reviews,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        },
+      },
+    );
   } catch (error) {
     console.error("GET reviews error:", error);
     return NextResponse.json(
@@ -35,7 +42,7 @@ export async function GET(req) {
         success: false,
         error: "Failed to fetch reviews",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -58,21 +65,21 @@ export async function POST(req) {
     if (!payload.productId) {
       return NextResponse.json(
         { success: false, error: "productId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!payload.customer) {
       return NextResponse.json(
         { success: false, error: "customer is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (payload.rating == null) {
       return NextResponse.json(
         { success: false, error: "rating is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -89,7 +96,7 @@ export async function POST(req) {
         success: false,
         error: err.message || "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

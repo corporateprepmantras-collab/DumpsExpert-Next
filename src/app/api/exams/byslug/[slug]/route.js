@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
     if (!product) {
       return NextResponse.json(
         { message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -29,19 +29,24 @@ export async function GET(request, { params }) {
     if (!exams || exams.length === 0) {
       return NextResponse.json(
         { message: "No published exams found for this product" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     return NextResponse.json(
       { message: "Exams retrieved successfully", data: exams },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
+        },
+      },
     );
   } catch (error) {
     console.error("Error in GET /api/exams/byslug/[slug]:", error);
     return NextResponse.json(
       { message: "Failed to fetch exams for slug", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -57,7 +62,7 @@ export async function POST(request, { params }) {
     if (!review || !review.name || !review.comment || !review.rating) {
       return NextResponse.json(
         { message: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -66,7 +71,7 @@ export async function POST(request, { params }) {
     if (!product) {
       return NextResponse.json(
         { message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -81,13 +86,13 @@ export async function POST(request, { params }) {
 
     return NextResponse.json(
       { message: "Review created successfully", data: newReview },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Error in POST /api/exams/byslug/[slug]:", error);
     return NextResponse.json(
       { message: "Failed to create review for slug", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

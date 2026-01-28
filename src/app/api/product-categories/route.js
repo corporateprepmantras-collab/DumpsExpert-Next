@@ -11,14 +11,14 @@ export async function GET() {
 
     return NextResponse.json(categories, {
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=59",
+        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
       },
     });
   } catch (error) {
     console.error("GET Error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -55,7 +55,7 @@ export async function POST(req) {
         console.error("FAQ parsing error:", error);
         return NextResponse.json(
           { message: "Invalid FAQ format" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -64,7 +64,7 @@ export async function POST(req) {
     if (!name || name.length < 2) {
       return NextResponse.json(
         { message: "Name must be at least 2 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!["Publish", "Unpublish"].includes(status)) {
@@ -106,7 +106,7 @@ export async function POST(req) {
     console.error("POST Error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -122,7 +122,7 @@ export async function PUT(req) {
     if (!id) {
       return NextResponse.json(
         { message: "Category ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -131,7 +131,7 @@ export async function PUT(req) {
     if (!existingCategory) {
       return NextResponse.json(
         { message: "Category not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -160,7 +160,7 @@ export async function PUT(req) {
         console.error("FAQ parsing error:", error);
         return NextResponse.json(
           { message: "Invalid FAQ format" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -169,7 +169,7 @@ export async function PUT(req) {
     if (!name || name.length < 2) {
       return NextResponse.json(
         { message: "Name must be at least 2 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!["Publish", "Unpublish"].includes(status)) {
@@ -217,7 +217,7 @@ export async function PUT(req) {
         public_id: publicId,
         faqs,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     return NextResponse.json(updatedCategory, { status: 200 });
@@ -225,7 +225,7 @@ export async function PUT(req) {
     console.error("PUT Error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -241,7 +241,7 @@ export async function DELETE(req) {
     if (!id) {
       return NextResponse.json(
         { message: "Category ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -249,7 +249,7 @@ export async function DELETE(req) {
     if (!category) {
       return NextResponse.json(
         { message: "Category not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -266,13 +266,13 @@ export async function DELETE(req) {
 
     return NextResponse.json(
       { message: "Category deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("DELETE Error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

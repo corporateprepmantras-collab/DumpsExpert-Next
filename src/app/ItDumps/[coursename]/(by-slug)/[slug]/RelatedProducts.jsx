@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FaChevronRight, FaChevronLeft, FaShoppingCart } from "react-icons/fa";
 
-async function fetchAllProducts() {
+async function fetchAllProducts(limit = 12) {
   try {
-    const response = await fetch(`/api/products`);
+    const response = await fetch(`/api/products?limit=${limit}`, {
+      next: { revalidate: 3600 },
+    });
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -26,8 +28,10 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   useEffect(() => {
     async function loadProducts() {
       setIsLoading(true);
-      const allProducts = await fetchAllProducts();
-      const filtered = allProducts.filter((p) => p.slug !== currentSlug);
+      const allProducts = await fetchAllProducts(maxProducts + 2); // Fetch a few extra
+      const filtered = allProducts
+        .filter((p) => p.slug !== currentSlug)
+        .slice(0, maxProducts);
       setRelatedProducts(filtered);
       setIsLoading(false);
     }
@@ -35,7 +39,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
     if (currentSlug) {
       loadProducts();
     }
-  }, [currentSlug]);
+  }, [currentSlug, maxProducts]);
 
   const checkScrollButtons = () => {
     if (scrollContainerRef.current) {
@@ -144,6 +148,8 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                       src={product.imageUrl}
                       alt={product.title}
                       className="h-24 sm:h-28 md:h-32 w-full object-contain"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                   {/* Product Title */}

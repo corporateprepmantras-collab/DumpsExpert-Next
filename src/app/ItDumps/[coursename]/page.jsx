@@ -2,6 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
 
+// Enable ISR for better performance
+export const dynamic = "auto";
+export const revalidate = 1800; // Revalidate every 30 minutes
+
 /* ===========================
    ✅ Fetch category + products with graceful fallback
    =========================== */
@@ -13,15 +17,13 @@ async function fetchCategoryData(coursename) {
 
     const [prodRes, catRes] = await Promise.all([
       fetch(`${baseUrl}/api/products`, {
-        next: { revalidate: 60 },
-        cache: "no-store",
+        next: { revalidate: 1800 },
       }).catch((err) => {
         console.error("❌ Products fetch failed:", err.message);
         return null;
       }),
       fetch(`${baseUrl}/api/product-categories`, {
-        next: { revalidate: 60 },
-        cache: "no-store",
+        next: { revalidate: 1800 },
       }).catch((err) => {
         console.error("❌ Categories fetch failed:", err.message);
         return null;

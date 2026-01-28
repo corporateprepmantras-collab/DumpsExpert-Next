@@ -14,7 +14,7 @@ export async function GET(request, { params }) {
     if (!product) {
       return NextResponse.json(
         { message: "Product not found with this slug" },
-        { status: 404 }
+        { status: 404 },
       );
     }
     const reviews = await Review.find({
@@ -24,15 +24,21 @@ export async function GET(request, { params }) {
 
     product.reviews = reviews;
     console.log(reviews);
+
     return NextResponse.json(
       { message: "Product retrieved successfully by slug", data: product },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
+        },
+      },
     );
   } catch (error) {
     console.error("Error fetching product:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -44,10 +50,16 @@ export async function POST(request, { params }) {
     const review = await request.json();
 
     // Validate request body
-    if (!review || !review.customer || !review.comment || !review.rating || !review.status) {
+    if (
+      !review ||
+      !review.customer ||
+      !review.comment ||
+      !review.rating ||
+      !review.status
+    ) {
       return NextResponse.json(
         { message: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -56,7 +68,7 @@ export async function POST(request, { params }) {
     if (!product) {
       return NextResponse.json(
         { message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -73,12 +85,12 @@ export async function POST(request, { params }) {
 
     return NextResponse.json(
       { message: "Review created successfully", data: newReview },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     return NextResponse.json(
       { message: "Failed to create review for slug", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
