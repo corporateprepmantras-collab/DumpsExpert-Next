@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { FaQuoteLeft } from "react-icons/fa";
 import {
   FaCheckCircle,
@@ -517,13 +518,19 @@ export default function ProductDetailsPage() {
         {/* Left Column - Sticky */}
         <div className="md:w-[40%]">
           <div className="md:sticky md:top-24">
-            <img
-              src={product.imageUrl}
-              alt={product.title}
-              className="w-full rounded-xl object-contain shadow-md max-h-[400px]"
-              loading="lazy"
-              decoding="async"
-            />
+            <div className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-md bg-gray-50">
+              <Image
+                src={product.imageUrl}
+                alt={product.title}
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 40vw"
+                quality={75}
+                loading="lazy"
+                placeholder="blur"
+                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YzZjRmNiIvPjwvc3ZnPg=="
+              />
+            </div>
 
             <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
               {[
