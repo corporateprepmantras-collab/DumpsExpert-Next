@@ -1,6 +1,7 @@
 # Fix Spam Score (11% → Under 5%)
 
 ## ✅ Code Changes Complete
+
 Updated email configuration with authentication headers and DKIM support.
 
 ## 🔧 DNS Records Required
@@ -8,6 +9,7 @@ Updated email configuration with authentication headers and DKIM support.
 Add these DNS records to your domain registrar (GoDaddy/Namecheap/etc):
 
 ### 1. SPF Record (TXT)
+
 ```
 Type: TXT
 Host: @
@@ -16,12 +18,14 @@ TTL: 3600
 ```
 
 **Replace sendgrid.net with your actual email provider:**
+
 - Gmail/Google: `include:_spf.google.com`
 - SendGrid: `include:sendgrid.net`
 - Mailgun: `include:mailgun.org`
 - AWS SES: `include:amazonses.com`
 
 ### 2. DMARC Record (TXT)
+
 ```
 Type: TXT
 Host: _dmarc
@@ -30,12 +34,15 @@ TTL: 3600
 ```
 
 ### 3. DKIM Record (CNAME or TXT)
+
 Get this from your email provider:
+
 - **Gmail**: Google Admin Console → Apps → Gmail → Authenticate email
 - **SendGrid**: Settings → Sender Authentication → Domain Authentication
 - **Mailgun**: Sending → Domains → DNS Records
 
 Example DKIM record:
+
 ```
 Type: TXT
 Host: default._domainkey
@@ -44,11 +51,13 @@ TTL: 3600
 ```
 
 ### 4. Reverse DNS (PTR Record)
+
 Contact your email hosting provider to set up reverse DNS pointing to your domain.
 
 ## 📧 Email Content Improvements
 
 ### Avoid These (Spam Triggers):
+
 - ❌ ALL CAPS text
 - ❌ Excessive exclamation marks!!!
 - ❌ Words: FREE, GUARANTEED, CLICK NOW, LIMITED TIME
@@ -58,6 +67,7 @@ Contact your email hosting provider to set up reverse DNS pointing to your domai
 - ❌ No unsubscribe link
 
 ### Use These Instead:
+
 - ✅ Professional tone
 - ✅ Clear subject lines
 - ✅ Plain text version alongside HTML
@@ -69,9 +79,9 @@ Contact your email hosting provider to set up reverse DNS pointing to your domai
 ## 🌐 Domain Reputation
 
 ### Check Your Domain:
+
 1. **MXToolbox**: https://mxtoolbox.com/SuperTool.aspx
    - Check SPF, DMARC, DKIM, Blacklist
-   
 2. **Mail Tester**: https://www.mail-tester.com/
    - Send test email to their address
    - Get detailed spam score report
@@ -80,6 +90,7 @@ Contact your email hosting provider to set up reverse DNS pointing to your domai
    - Monitor sender reputation with Gmail
 
 ### Improve Sending Reputation:
+
 - Start with low volume, increase gradually
 - Monitor bounce rates (<2% is good)
 - Remove invalid email addresses
@@ -89,6 +100,7 @@ Contact your email hosting provider to set up reverse DNS pointing to your domai
 ## 🔐 Environment Variables
 
 Add to your `.env.local`:
+
 ```env
 DOMAIN_NAME=prepmantras.com
 DKIM_SELECTOR=default
@@ -113,6 +125,7 @@ DKIM_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
 ## 📊 Expected Results
 
 After implementing all fixes:
+
 - **Current**: 11% spam score
 - **After DNS**: 3-5% spam score
 - **Deliverability**: 95%+ inbox placement
@@ -121,6 +134,7 @@ After implementing all fixes:
 ## 🚀 Quick Test
 
 After DNS changes (wait 24-48 hours for propagation):
+
 1. Visit https://www.mail-tester.com/
 2. Send email to provided address
 3. Check your score (should be 8-10/10)
@@ -129,6 +143,7 @@ After DNS changes (wait 24-48 hours for propagation):
 ## 📞 Need Help?
 
 DNS propagation takes 24-48 hours. If spam score doesn't improve:
+
 1. Verify all DNS records at MXToolbox
 2. Check email provider's DKIM setup guide
 3. Ensure your IP isn't blacklisted

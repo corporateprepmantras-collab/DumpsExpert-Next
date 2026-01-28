@@ -38,16 +38,16 @@ export async function sendNotificationEmail(contact) {
     replyTo: contact.email,
     subject: `New Contact Form Submission: ${contact.subject}`,
     headers: {
-      'X-Priority': '3',
-      'X-Mailer': `${SITE_NAME} Contact Form`,
-      'List-Unsubscribe': `<mailto:${SMTP_USER}?subject=unsubscribe>`,
+      "X-Priority": "3",
+      "X-Mailer": `${SITE_NAME} Contact Form`,
+      "List-Unsubscribe": `<mailto:${SMTP_USER}?subject=unsubscribe>`,
     },
     subject: `New Contact Form Submission: ${contact.subject}`,
     headers: {
-      'X-Priority': '3',
-      'X-Mailer': `${SITE_NAME} Contact Form`,
-      'List-Unsubscribe': `<mailto:${SMTP_USER}?subject=unsubscribe>`,
-      'Precedence': 'bulk',
+      "X-Priority": "3",
+      "X-Mailer": `${SITE_NAME} Contact Form`,
+      "List-Unsubscribe": `<mailto:${SMTP_USER}?subject=unsubscribe>`,
+      Precedence: "bulk",
     },
     html: `
       <h2>New Contact Form Submission</h2>
@@ -107,9 +107,9 @@ export async function sendReplyEmail(contact, replyMessage, customSubject) {
     to: contact.email,
     subject: subject,
     headers: {
-      'X-Priority': '3',
-      'X-Mailer': `${SITE_NAME} Support`,
-      'List-Unsubscribe': `<mailto:${SMTP_USER}?subject=unsubscribe>`,
+      "X-Priority": "3",
+      "X-Mailer": `${SITE_NAME} Support`,
+      "List-Unsubscribe": `<mailto:${SMTP_USER}?subject=unsubscribe>`,
     },
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
