@@ -3,18 +3,22 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import ProductPageLoading from "./loading";
 
-// Helper to get the correct base URLd
+// Helper to get the correct base URL
 function getBaseUrl() {
   // For server-side rendering
   if (typeof window === "undefined") {
-    // Check if we're in production
+    // In production, use the environment variable or construct from headers
     if (process.env.NEXT_PUBLIC_BASE_URL) {
       return process.env.NEXT_PUBLIC_BASE_URL;
+    }
+    // In Vercel, use VERCEL_URL
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
     }
     // Default to localhost in development
     return "http://localhost:3000";
   }
-  // For client-side
+  // For client-side, use relative URLs
   return "";
 }
 
@@ -22,84 +26,52 @@ function getBaseUrl() {
 async function fetchProductForMetadata(slug) {
   const baseUrl = getBaseUrl();
 
-  // First, try fetching by slug
-  let url = `${baseUrl}/api/products/get-by-slug/${slug}`;
-
-  console.log("🔍 Attempting to fetch product from:", url);
+  console.log("🔍 Fetching product for slug:", slug);
   console.log("🔍 Base URL:", baseUrl);
-  console.log("🔍 Slug:", slug);
 
   try {
+    // First, try fetching by slug
+    let url = `${baseUrl}/api/products/get-by-slug/${slug}`;
+    console.log("🔍 Attempting slug fetch from:", url);
+
     let res = await fetch(url, {
       next: { revalidate: 1800 },
-    }).catch((fetchError) => {
-      console.error("❌ Fetch request failed:", fetchError.message);
-      console.error(
-        "❌ This usually means the API endpoint doesn't exist or the server is not running",
-      );
-      throw fetchError;
+      cache: "no-store", // Force fresh data on server
     });
 
-    console.log("✅ Fetch completed with status:", res.status);
+    console.log("✅ Slug fetch status:", res.status);
 
-    // If slug lookup fails, try exam code lookup
-    if (!res.ok) {
-      console.log("⚠️ Slug lookup failed, trying exam code lookup...");
+    // If slug lookup fails (404), try exam code lookup
+    if (res.status === 404) {
+      console.log("⚠️ Slug not found, trying exam code lookup...");
       url = `${baseUrl}/api/products/get-by-exam-code/${slug}`;
       console.log("🔍 Attempting exam code fetch from:", url);
 
       res = await fetch(url, {
         next: { revalidate: 1800 },
+        cache: "no-store",
       });
 
-      console.log("✅ Exam code fetch completed with status:", res.status);
+      console.log("✅ Exam code fetch status:", res.status);
     }
 
+    // If still not OK, return null
     if (!res.ok) {
       console.error(`❌ Failed to fetch product - Status: ${res.status}`);
-      console.error(`❌ Status Text: ${res.statusText}`);
-      console.error(`❌ URL: ${url}`);
-
-      // Try to read the error response
       try {
         const errorText = await res.text();
-        console.error(`❌ Response body:`, errorText.substring(0, 500));
+        console.error(`❌ Response:`, errorText.substring(0, 200));
       } catch (e) {
-        console.error("❌ Could not read error response body");
+        console.error("❌ Could not read error response");
       }
       return null;
     }
 
-    const contentType = res.headers.get("content-type");
-    console.log("✅ Content-Type:", contentType);
-
-    if (!contentType?.includes("application/json")) {
-      console.error("❌ Non-JSON response received");
-      const text = await res.text();
-      console.error("❌ Response:", text.substring(0, 500));
-      return null;
-    }
-
     const data = await res.json();
-    console.log("✅ Product data received");
-    console.log("✅ Product title:", data?.data?.title || "No title found");
+    console.log("✅ Product found:", data?.data?.title || "Unknown");
     return data?.data || null;
   } catch (error) {
-    console.error("❌ Error fetching product for metadata");
-    console.error("❌ Error type:", error.constructor.name);
-    console.error("❌ Error message:", error.message);
-    console.error("❌ Full error:", error);
-
-    // Check if it's a network error
-    if (
-      error.message.includes("fetch") ||
-      error.message.includes("ECONNREFUSED")
-    ) {
-      console.error("❌ NETWORK ERROR: Cannot connect to API");
-      console.error("❌ Make sure your API route exists at:", url);
-      console.error("❌ Check that your Next.js server is running");
-    }
-
+    console.error("❌ Error fetching product:", error.message);
     return null;
   }
 }

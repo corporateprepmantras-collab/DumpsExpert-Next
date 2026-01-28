@@ -99,22 +99,25 @@ async function fetchProduct(slug) {
   }
 
   try {
+    // First try by slug
     let response = await fetch(`/api/products/get-by-slug/${slug}`, {
-      next: { revalidate: 1800 },
+      cache: 'no-store',
     });
 
     let data = await response.json();
     let product = data.data || null;
 
-    // If not found by slug, try by exam code
-    if (!product) {
+    // If not found by slug (404 status), try by exam code
+    if (!product && response.status === 404) {
       console.log(`Product not found by slug "${slug}", trying exam code...`);
       response = await fetch(`/api/products/get-by-exam-code/${slug}`, {
-        next: { revalidate: 1800 },
+        cache: 'no-store',
       });
 
-      data = await response.json();
-      product = data.data || null;
+      if (response.ok) {
+        data = await response.json();
+        product = data.data || null;
+      }
     }
 
     if (product) {
