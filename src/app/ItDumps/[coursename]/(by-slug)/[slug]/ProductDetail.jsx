@@ -98,11 +98,23 @@ async function fetchProduct(slug) {
   }
 
   try {
-    const response = await fetch(`/api/products/get-by-slug/${slug}`, {
+    let response = await fetch(`/api/products/get-by-slug/${slug}`, {
       next: { revalidate: 1800 },
     });
-    const data = await response.json();
-    const product = data.data || null;
+
+    let data = await response.json();
+    let product = data.data || null;
+
+    // If not found by slug, try by exam code
+    if (!product) {
+      console.log(`Product not found by slug "${slug}", trying exam code...`);
+      response = await fetch(`/api/products/get-by-exam-code/${slug}`, {
+        next: { revalidate: 1800 },
+      });
+
+      data = await response.json();
+      product = data.data || null;
+    }
 
     if (product) {
       productCache.set(slug, product);

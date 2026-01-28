@@ -21,14 +21,16 @@ function getBaseUrl() {
 // Helper function to fetch product data
 async function fetchProductForMetadata(slug) {
   const baseUrl = getBaseUrl();
-  const url = `${baseUrl}/api/products/get-by-slug/${slug}`;
+
+  // First, try fetching by slug
+  let url = `${baseUrl}/api/products/get-by-slug/${slug}`;
 
   console.log("🔍 Attempting to fetch product from:", url);
   console.log("🔍 Base URL:", baseUrl);
   console.log("🔍 Slug:", slug);
 
   try {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       next: { revalidate: 1800 },
     }).catch((fetchError) => {
       console.error("❌ Fetch request failed:", fetchError.message);
@@ -39,6 +41,19 @@ async function fetchProductForMetadata(slug) {
     });
 
     console.log("✅ Fetch completed with status:", res.status);
+
+    // If slug lookup fails, try exam code lookup
+    if (!res.ok) {
+      console.log("⚠️ Slug lookup failed, trying exam code lookup...");
+      url = `${baseUrl}/api/products/get-by-exam-code/${slug}`;
+      console.log("🔍 Attempting exam code fetch from:", url);
+
+      res = await fetch(url, {
+        next: { revalidate: 1800 },
+      });
+
+      console.log("✅ Exam code fetch completed with status:", res.status);
+    }
 
     if (!res.ok) {
       console.error(`❌ Failed to fetch product - Status: ${res.status}`);
