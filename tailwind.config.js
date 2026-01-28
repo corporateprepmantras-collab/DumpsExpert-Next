@@ -1,7 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "!**/*.test.{js,jsx}",
+    "!**/node_modules/**",
+  ],
   theme: {
     extend: {
       borderRadius: {
