@@ -83,7 +83,7 @@ const ProductList = () => {
     <div className="bg-gray-50 min-h-screen pt-16 pb-4 w-full">
       <div className="w-full max-w-full px-3 sm:px-4">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-2 mb-2">
+        <div className="flex flex-row md:flex-row justify-between items-start gap-2 mb-2">
           <h2 className="text-lg font-bold text-gray-800">Products</h2>
 
           <div className="flex flex-row items-center gap-1.5 w-full md:w-auto flex-wrap">
