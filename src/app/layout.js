@@ -2,7 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
 import Providers from "@/components/providers";
-
+// ✅ Font setup with only essential weights
 // ✅ Font - Only essential weights for faster load
 const inter = Inter({
   subsets: ["latin"],
