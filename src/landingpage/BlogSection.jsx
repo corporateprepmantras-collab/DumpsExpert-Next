@@ -106,7 +106,7 @@ export default function BlogSection({ blogs = [], categories = [] }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <AnimatePresence mode="popLayout">
                   {visibleBlogs.map((blog, index) => {
-                    const blogUrl = `https://www.prepmantras.com/blogsPages/blog/${encodeURIComponent(
+                    const blogUrl = `/blog/${encodeURIComponent(
                       blog.slug || blog.title,
                     )}`;
 

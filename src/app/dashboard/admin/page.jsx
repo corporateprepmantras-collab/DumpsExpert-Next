@@ -18,7 +18,7 @@ ChartJS.register(
   LinearScale,
   BarElement,
   Tooltip,
-  Legend
+  Legend,
 );
 
 // Icon components
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState({
-  products: 0,
+    products: 0,
     exams: 0,
     totalCustomers: 0,
     students: 0,
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
       }
 
       const response = await fetch(
-        `/api/admin/dashboard?months=${chartMonths}`
+        `/api/admin/dashboard?months=${chartMonths}`,
       );
 
       if (!response.ok) {
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
         bgGradient: "from-teal-50 to-teal-100",
       },
     ],
-    [dashboardData]
+    [dashboardData],
   );
 
   const doughnutData = useMemo(
@@ -321,7 +321,7 @@ export default function AdminDashboard() {
         },
       ],
     }),
-    [dashboardData]
+    [dashboardData],
   );
 
   const barData = useMemo(
@@ -331,7 +331,7 @@ export default function AdminDashboard() {
         {
           label: `Monthly Sales (${currency})`,
           data: dashboardData.monthlyData.map((m) =>
-            currency === "INR" ? m.salesINR : m.salesUSD
+            currency === "INR" ? m.salesINR : m.salesUSD,
           ),
           backgroundColor: "rgba(99, 102, 241, 0.8)",
           borderRadius: 6,
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
         },
       ],
     }),
-    [dashboardData.monthlyData, currency]
+    [dashboardData.monthlyData, currency],
   );
 
   const chartOptions = useMemo(
@@ -425,7 +425,7 @@ export default function AdminDashboard() {
         },
       },
     }),
-    [currency]
+    [currency],
   );
 
   if (loading) {
@@ -446,7 +446,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen pt-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 sm:p-6">
+    <div className="min-h-screen pt-2 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col pt-20 sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
@@ -606,8 +606,8 @@ export default function AdminDashboard() {
                               order.status === "completed"
                                 ? "bg-green-100 text-green-700"
                                 : order.status === "pending"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-red-100 text-red-700"
                             }`}
                           >
                             {order.status}
@@ -668,7 +668,7 @@ export default function AdminDashboard() {
                         <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-gray-700 whitespace-nowrap">
                           {new Date(user.createdAt).toLocaleDateString(
                             "en-IN",
-                            { day: "2-digit", month: "short", year: "numeric" }
+                            { day: "2-digit", month: "short", year: "numeric" },
                           )}
                         </td>
                         <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm font-bold text-gray-900">
@@ -683,8 +683,8 @@ export default function AdminDashboard() {
                               user.role === "admin"
                                 ? "bg-purple-100 text-purple-700"
                                 : user.role === "student"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-gray-100 text-gray-700"
                             }`}
                           >
                             {user.role}

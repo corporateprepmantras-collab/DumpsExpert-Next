@@ -517,7 +517,7 @@ export default function ProductDetailsPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10">
+      <div className="container mx-auto px-4 flex flex-row md:flex-row gap-10">
         {/* Left Column - Sticky */}
         <div className="md:w-[40%]">
           <div className="md:sticky md:top-24">

@@ -105,7 +105,7 @@ const BlogDetail = ({ slug }) => {
             <h2 className="text-2xl font-bold mb-6">Other Blogs</h2>
             <div className="space-y-6">
               {recentBlogs.slice(0, 3).map((b) => (
-                <Link key={b._id} href={`/blogsPages/blog/${b.slug}`}>
+                <Link key={b._id} href={`/blog/${b.slug}`}>
                   <Card className="overflow-hidden transition-transform transform hover:scale-[1.02] duration-200 shadow-sm hover:shadow-md">
                     {b.imageUrl && (
                       <img

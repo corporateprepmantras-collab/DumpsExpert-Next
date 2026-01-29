@@ -141,7 +141,7 @@ export async function generateMetadata({ params }) {
         category.metaDescription ||
         `Get verified ${category.name} exam dumps and practice materials.`,
       images: [category.image || "/default-og.jpg"],
-      url: `https://prepmantras.com/ItDumps/${coursename}`,
+      url: `/ItDumps/${coursename}`,
     },
     twitter: {
       card: "summary_large_image",

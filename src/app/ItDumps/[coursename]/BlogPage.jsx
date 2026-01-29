@@ -156,7 +156,7 @@ const BlogPage = () => {
             </p>
           ) : (
             filteredBlogs.map((blog, idx) => (
-              <Link key={blog._id ?? idx} href={`/blogsPages/${blog.slug}`}>
+              <Link key={blog._id ?? idx} href={`/blogs/${blog.slug}`}>
                 <BlogCard
                   title={blog.title}
                   description={blog.metaDescription}

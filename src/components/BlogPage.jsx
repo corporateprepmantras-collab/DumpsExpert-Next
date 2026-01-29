@@ -28,7 +28,7 @@ export default function BlogPage() {
         setCategories(
           Array.isArray(categoriesArray)
             ? categoriesArray.filter((c) => c?.category)
-            : []
+            : [],
         );
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -40,59 +40,55 @@ export default function BlogPage() {
   }, []);
 
   // ✅ Fetch blogs (based on route)
- useEffect(() => {
-  const fetchBlogs = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get("/api/blogs");
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get("/api/blogs");
 
-      // ✅ normalize API response
-      const allBlogs =
-        res.data?.data ||
-        res.data?.blogs ||
-        res.data ||
-        [];
+        // ✅ normalize API response
+        const allBlogs = res.data?.data || res.data?.blogs || res.data || [];
 
-      console.log("ALL BLOGS 👉", allBlogs);
+        console.log("ALL BLOGS 👉", allBlogs);
 
-      // ✅ status may be "publish" OR true
-      const published = allBlogs.filter(
-        (b) => b.status === "publish" || b.status === true
-      );
+        // ✅ status may be "publish" OR true
+        const published = allBlogs.filter(
+          (b) => b.status === "publish" || b.status === true,
+        );
 
-      // ✅ category filter (SAFE)
-      const filteredBlogs = selectedCategory
-        ? published.filter(
-            (b) =>
-              b.categorySlug === selectedCategory ||
-              b.category === selectedCategory
-          )
-        : published;
+        // ✅ category filter (SAFE)
+        const filteredBlogs = selectedCategory
+          ? published.filter(
+              (b) =>
+                b.categorySlug === selectedCategory ||
+                b.category === selectedCategory,
+            )
+          : published;
 
-      setBlogs(filteredBlogs);
+        setBlogs(filteredBlogs);
 
-      // ✅ recent posts
-      setRecentPosts(
-        published
-          .filter((b) => b?.createdAt)
-          .sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime()
-          )
-          .slice(0, 10)
-      );
-    } catch (err) {
-      console.error("Error fetching blogs:", err);
-      setBlogs([]);
-      setRecentPosts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        // ✅ recent posts
+        setRecentPosts(
+          published
+            .filter((b) => b?.createdAt)
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime(),
+            )
+            .slice(0, 10),
+        );
+      } catch (err) {
+        console.error("Error fetching blogs:", err);
+        setBlogs([]);
+        setRecentPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchBlogs();
-}, [selectedCategory]);
+    fetchBlogs();
+  }, [selectedCategory]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -155,10 +151,7 @@ export default function BlogPage() {
             </p>
           ) : (
             blogs.map((blog) => (
-              <Link
-                key={blog._id}
-                href={`/blog/${blog.slug || blog._id}`}
-              >
+              <Link key={blog._id} href={`/blog/${blog.slug || blog._id}`}>
                 <div className="bg-gray-100 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
                   {blog.imageUrl && (
                     <img

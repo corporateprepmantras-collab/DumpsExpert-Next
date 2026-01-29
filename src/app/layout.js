@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
 import Providers from "@/components/providers";
+import LayoutShell from "@/components/LayoutShell";
 // ✅ Font setup with only essential weights
 // ✅ Font - Only essential weights for faster load
 const inter = Inter({
@@ -203,15 +204,9 @@ export default function RootLayout({ children }) {
         </a>
 
         <Providers>
-          <header className="sticky top-0 z-50 w-full">
-            <Navbar />
-          </header>
-
-          <main id="main-content" className="flex-1 w-full" role="main">
+          <LayoutShell navbar={<Navbar />} footer={<Footer />}>
             {children}
-          </main>
-
-          <Footer />
+          </LayoutShell>
         </Providers>
       </body>
     </html>
