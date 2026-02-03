@@ -7,6 +7,92 @@ import axios from "axios";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+const isExamPublished = (examDoc) => {
+  if (!examDoc) return false;
+
+  const boolFlags = [
+    examDoc.isPublished,
+    examDoc.published,
+    examDoc.publishSettings?.isPublished,
+    examDoc.publishSettings?.published,
+  ];
+
+  if (boolFlags.some((flag) => flag === true)) {
+    return true;
+  }
+
+  if (boolFlags.some((flag) => flag === false)) {
+    return false;
+  }
+
+  const statusCandidates = [
+    examDoc.status,
+    examDoc.state,
+    examDoc.publishStatus,
+  ]
+    .filter(Boolean)
+    .map((value) => value.toString().toLowerCase());
+
+  if (statusCandidates.some((status) => status.includes("draft"))) {
+    return false;
+  }
+
+  if (
+    statusCandidates.some((status) =>
+      ["published", "active", "live"].includes(status),
+    )
+  ) {
+    return true;
+  }
+
+  return true;
+};
+
+const isQuestionPublished = (questionDoc) => {
+  if (!questionDoc) return false;
+
+  const boolFlags = [
+    questionDoc.isPublished,
+    questionDoc.isSamplePublished,
+    questionDoc.publishSettings?.isPublished,
+    questionDoc.publishSettings?.samplePublished,
+  ];
+
+  if (boolFlags.some((flag) => flag === true)) {
+    return true;
+  }
+
+  if (boolFlags.some((flag) => flag === false)) {
+    return false;
+  }
+
+  const statusCandidates = [
+    questionDoc.status,
+    questionDoc.publishStatus,
+    questionDoc.visibility,
+  ]
+    .filter(Boolean)
+    .map((value) => value.toString().toLowerCase());
+
+  if (
+    statusCandidates.some((status) =>
+      ["draft", "unpublished", "inactive"].includes(status),
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    statusCandidates.some((status) =>
+      ["published", "active", "live"].includes(status),
+    )
+  ) {
+    return true;
+  }
+
+  return true;
+};
+
 // Image Gallery Component for multiple images
 const ImageGallery = ({ images, alt = "Image" }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -88,13 +174,15 @@ export default function TestPage() {
   const [exam, setExam] = useState(null);
   const [student, setStudent] = useState(null);
   const [isDataReady, setIsDataReady] = useState(false);
+  const [examUnavailable, setExamUnavailable] = useState(false);
   const router = useRouter();
   const { slug } = useParams();
 
   useEffect(() => {
     const initializeData = async () => {
       try {
-        console.log("🔄 Initializing data for slug:", slug);
+        setIsDataReady(false);
+        setExamUnavailable(false);
 
         let studentData = null;
         let examData = null;
@@ -158,33 +246,48 @@ export default function TestPage() {
           console.error("❌ Error fetching questions:", questionsError);
         }
 
-        if (studentData) setStudent(studentData);
-        if (examData) {
-          setExam(examData);
-          setTimeLeft(
-            (examData.sampleDuration || examData.duration || 60) * 60,
-          );
-        }
-        if (questionsData.length > 0) {
-          setQuestions(questionsData);
-          const initialStatus = {};
-          const initialMatching = {};
-          questionsData.forEach((q, index) => {
-            initialStatus[q._id] = index === 0 ? "Visited" : "Not Visited";
-            if (q.questionType === "matching") {
-              initialMatching[q._id] = {};
-            }
-          });
-          setStatusMap(initialStatus);
-          setMatchingAnswers(initialMatching);
+        if (studentData) {
+          setStudent(studentData);
         }
 
-        if (questionsData.length > 0) {
+        if (!examData || !isExamPublished(examData)) {
+          setExam(null);
+          setQuestions([]);
+          setStatusMap({});
+          setMatchingAnswers({});
+          setExamUnavailable(true);
           setIsDataReady(true);
-          console.log("✅ Data ready - starting test");
+          return;
         }
+
+        setExam(examData);
+        setTimeLeft((examData.sampleDuration || examData.duration || 60) * 60);
+
+        const sampleQuestions = Array.isArray(questionsData)
+          ? questionsData.filter(
+              (q) => q.isSample === true && isQuestionPublished(q),
+            )
+          : [];
+
+        setQuestions(sampleQuestions);
+
+        const initialStatus = {};
+        const initialMatching = {};
+
+        sampleQuestions.forEach((q, index) => {
+          initialStatus[q._id] = index === 0 ? "Visited" : "Not Visited";
+          if (q.questionType === "matching") {
+            initialMatching[q._id] = {};
+          }
+        });
+
+        setStatusMap(initialStatus);
+        setMatchingAnswers(initialMatching);
+        setCurrent(0);
+        setIsDataReady(true);
       } catch (error) {
         console.error("❌ Error initializing data:", error);
+        setIsDataReady(true);
       }
     };
 
@@ -233,6 +336,8 @@ export default function TestPage() {
       });
 
       setMatchingOptions(initializedOptions);
+    } else {
+      setMatchingOptions({});
     }
   }, [questions]);
 
@@ -690,17 +795,31 @@ export default function TestPage() {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "answered":
-        return "bg-green-500 text-white";
+        return "bg-emerald-100 text-emerald-700 border border-emerald-200";
       case "skipped":
-        return "bg-red-500 text-white";
+        return "bg-rose-100 text-rose-700 border border-rose-200";
       case "review":
-        return "bg-yellow-500 text-white";
+        return "bg-amber-100 text-amber-700 border border-amber-200";
       case "visited":
-        return "bg-blue-500 text-white";
+        return "bg-blue-100 text-blue-700 border border-blue-200";
       default:
-        return "bg-gray-300 text-gray-700";
+        return "bg-slate-100 text-slate-600 border border-slate-200";
     }
   };
+
+  const totalQuestions = questions.length;
+  const answeredCount = Object.values(statusMap).filter(
+    (status) => status?.toLowerCase() === "answered",
+  ).length;
+  const reviewCount = Object.values(statusMap).filter(
+    (status) => status?.toLowerCase() === "review",
+  ).length;
+  const skippedCount = Object.values(statusMap).filter(
+    (status) => status?.toLowerCase() === "skipped",
+  ).length;
+  const progress = totalQuestions
+    ? Math.round(((current + 1) / totalQuestions) * 100)
+    : 0;
 
   if (!isDataReady) {
     return (
@@ -713,16 +832,40 @@ export default function TestPage() {
     );
   }
 
+  if (examUnavailable) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center bg-white p-8 rounded-xl shadow-sm border border-gray-200 max-w-md">
+          <div className="text-5xl mb-4">🚫</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Exam Not Available
+          </h2>
+          <p className="text-gray-600 mb-4">
+            We could not find a published version of this exam. Please check
+            back later or contact support if you believe this is an error.
+          </p>
+          <button
+            onClick={() => router.back()}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center bg-white p-8 rounded-xl shadow-sm border border-gray-200 max-w-md">
           <div className="text-5xl mb-4">📝</div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">
-            No Sample Questions Available
+            No Published Sample Questions Available
           </h2>
           <p className="text-gray-600 mb-4">
-            There are no sample questions available for this test at the moment.
+            There are no published sample questions available for this test at
+            the moment.
           </p>
           <button
             onClick={() => router.back()}
@@ -738,111 +881,147 @@ export default function TestPage() {
   const currentQuestion = questions[current];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 pt-16">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col min-h-[70vh]">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Question {current + 1} of {questions.length}
-            </h3>
-            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-              Sample Test
-            </span>
-          </div>
-
-          <div className="flex-1 min-h-[320px]">
-            {renderQuestion(currentQuestion)}
-          </div>
-
-          <div className="sticky bottom-0 left-0 right-0 flex flex-wrap gap-2 mt-6 pt-4 border-t border-gray-200 text-sm bg-white z-10">
-            <button
-              onClick={() => markReview(currentQuestion._id)}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-md transition-colors"
-            >
-              Mark for Review
-            </button>
-            <button
-              onClick={() => skip(currentQuestion._id)}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded-md transition-colors"
-            >
-              Skip
-            </button>
-            <button
-              onClick={() =>
-                setCurrent((prev) => (prev + 1) % questions.length)
-              }
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md transition-colors ml-auto"
-            >
-              Next Question
-            </button>
-          </div>
-        </div>
-
-        <div className="w-full lg:w-72 bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-fit lg:sticky lg:top-20 text-sm">
-          <h2 className="font-semibold text-gray-800 mb-3 text-base">
-            Question Palette
-          </h2>
-
-          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-5 gap-2 mb-5">
-            {questions.map((q, i) => (
-              <button
-                key={q._id}
-                className={`w-9 h-9 rounded-md text-xs font-semibold transition-all hover:scale-105 ${getStatusColor(
-                  statusMap[q._id],
-                )} ${
-                  current === i ? "ring-2 ring-blue-400 ring-offset-2" : ""
-                }`}
-                onClick={() => goToQuestion(i)}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
-          <div className="border-t border-gray-200 pt-3 space-y-3">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-600">Time Left:</span>
-              <span
-                className={`font-mono font-bold text-base ${
-                  timeLeft < 300 ? "text-red-600" : "text-gray-800"
-                }`}
-              >
-                {formatTime(timeLeft)}
+    <div className="min-h-screen bg-white pt-10">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 lg:flex-row">
+        <div className="flex-1 space-y-6">
+          <main className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase text-slate-400">
+                  Question {current + 1}
+                </p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                {exam?.code || slug}
               </span>
             </div>
 
-            <button
-              onClick={handleSubmit}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-md font-semibold transition-colors text-sm"
-            >
-              Submit Test
-            </button>
-          </div>
+            <div className="mt-6">{renderQuestion(currentQuestion)}</div>
 
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <h3 className="font-medium text-gray-700 mb-2 text-sm">
-              Status Legend
-            </h3>
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded"></div>
+            <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5 text-sm">
+              <button
+                onClick={() => markReview(currentQuestion._id)}
+                className="rounded-full border border-amber-200 bg-amber-100 px-5 py-2 font-medium text-amber-700 transition hover:border-amber-300"
+              >
+                Mark for Review
+              </button>
+              <button
+                onClick={() => skip(currentQuestion._id)}
+                className="rounded-full border border-slate-200 bg-slate-100 px-5 py-2 font-medium text-slate-700 transition hover:border-slate-300"
+              >
+                Skip
+              </button>
+              <button
+                onClick={() =>
+                  setCurrent((prev) => (prev + 1) % totalQuestions)
+                }
+                className="ml-auto rounded-full bg-blue-600 px-6 py-2 font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              >
+                Next Question
+              </button>
+            </div>
+          </main>
+        </div>
+
+        <aside className="w-full max-w-xs space-y-6 self-start lg:sticky lg:top-10">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-800">
+                Question Palette
+              </h3>
+
+              <span className="text-xs uppercase text-slate-400">Jump</span>
+            </div>
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-semibold text-slate-900">
+                    {exam?.title || exam?.name || "Sample Practice Test"}
+                  </h1>
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-blue-700">
+                    Sample Test
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Practice the live exam flow with curated sample questions and
+                  track your progress as you go.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] md:justify-end">
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 font-medium text-emerald-700">
+                  Ans {answeredCount}
+                </span>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-1 font-medium text-amber-700">
+                  Review {reviewCount}
+                </span>
+                <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-1 font-medium text-rose-700">
+                  Skip {skippedCount}
+                </span>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {questions.map((q, i) => (
+                <button
+                  key={q._id}
+                  className={`h-9 w-9 rounded-lg text-xs font-semibold transition ${getStatusColor(
+                    statusMap[q._id],
+                  )} ${
+                    current === i
+                      ? "shadow ring-2 ring-blue-400"
+                      : "hover:-translate-y-0.5 hover:shadow"
+                  }`}
+                  onClick={() => goToQuestion(i)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-[10px]">
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <span>
+                    Question {current + 1} of {totalQuestions}
+                  </span>
+                  <span>{progress}% Complete</span>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs font-medium uppercase text-slate-500">
+                <span>Time Left</span>
+                <span>{formatTime(timeLeft)}</span>
+              </div>
+              <button
+                onClick={handleSubmit}
+                className="mt-4 w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                Submit Test
+              </button>
+            </div>
+            <div className="mt-5 space-y-2 text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-3 w-3 rounded-full bg-emerald-500"></span>
                 <span>Answered</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded"></div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-3 w-3 rounded-full bg-rose-500"></span>
                 <span>Skipped</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-3 w-3 rounded-full bg-amber-500"></span>
                 <span>Review</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-3 w-3 rounded-full bg-blue-500"></span>
                 <span>Visited</span>
               </div>
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

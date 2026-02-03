@@ -1,9 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
 const ExamCoursesPage = () => {
+  const router = useRouter();
   const [examCourses, setExamCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,8 +69,7 @@ const ExamCoursesPage = () => {
 
   const handleStartExam = (slug) => {
     console.log("Starting exam:", slug);
-    // Add your navigation logic here
-    // router.push(`/exam/${slug}`);
+    router.push(`/exam/mainExamPage/${slug}`);
   };
 
   const getPurchaseTypeDisplay = (type) => {
@@ -96,7 +97,7 @@ const ExamCoursesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-10">
       {/* Header */}
       <div className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -181,7 +182,7 @@ const ExamCoursesPage = () => {
                       <div className="flex items-start justify-between mb-2">
                         <span
                           className={`${getPurchaseTypeBadgeColor(
-                            course.purchaseType
+                            course.purchaseType,
                           )} px-3 py-1 rounded-full text-xs font-semibold`}
                         >
                           {getPurchaseTypeDisplay(course.purchaseType)}
@@ -234,7 +235,7 @@ const ExamCoursesPage = () => {
                                 day: "2-digit",
                                 month: "short",
                                 year: "numeric",
-                              }
+                              },
                             )}
                           </p>
                         </div>
@@ -262,7 +263,7 @@ const ExamCoursesPage = () => {
                                   day: "2-digit",
                                   month: "short",
                                   year: "numeric",
-                                }
+                                },
                               )}
                             </p>
                           </div>
@@ -326,44 +327,6 @@ const ExamCoursesPage = () => {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-around">
-          <button className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-            </svg>
-            <span className="text-xs">Home</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 text-blue-600">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-            </svg>
-            <span className="text-xs">Courses</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-xs">Progress</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-xs">Profile</span>
-          </button>
-        </div>
       </div>
     </div>
   );
