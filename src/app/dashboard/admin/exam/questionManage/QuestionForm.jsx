@@ -72,6 +72,7 @@ const QuestionForm = ({
   // State for tracking if we're editing an existing question
   const [isEditing, setIsEditing] = useState(false);
   const [imageUploadMode, setImageUploadMode] = useState({});
+  const [imageResetKey, setImageResetKey] = useState(0);
 
   // Function to reset form to initial state
   const resetForm = () => {
@@ -111,6 +112,7 @@ const QuestionForm = ({
     setOptionImageFiles({});
     setMatchingImageFiles({});
     setPastedImageUrls({});
+    setImageResetKey((prev) => prev + 1);
   };
 
   // Effect to fetch question data when editing
@@ -643,7 +645,10 @@ const QuestionForm = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Question Images (Optional - Multiple)
               </label>
-              <ImageUploader onImagesSelect={handleQuestionImagesSelect} />
+              <ImageUploader
+                resetKey={imageResetKey}
+                onImagesSelect={handleQuestionImagesSelect}
+              />
             </div>
           </div>
 
@@ -704,6 +709,7 @@ const QuestionForm = ({
                           Images (Multiple)
                         </label>
                         <ImageUploader
+                          resetKey={imageResetKey}
                           onImagesSelect={(files) =>
                             handleMatchingImagesSelect("left", item.id, files)
                           }
@@ -838,6 +844,7 @@ const QuestionForm = ({
                           Images (Multiple)
                         </label>
                         <ImageUploader
+                          resetKey={imageResetKey}
                           onImagesSelect={(files) =>
                             handleMatchingImagesSelect("right", item.id, files)
                           }
@@ -951,6 +958,7 @@ const QuestionForm = ({
                       Option Images (Optional - Multiple)
                     </label>
                     <ImageUploader
+                      resetKey={imageResetKey}
                       onImagesSelect={(files) =>
                         handleOptionImagesSelect(index, files)
                       }

@@ -63,7 +63,7 @@ export default function QuestionsPage() {
     setRefreshTrigger((prev) => prev + 1); // Trigger refresh
 
     // Scroll modal to top after save
-    const modalContent = document.querySelector(".max-h-\\[80vh\\]");
+    const modalContent = document.querySelector("[data-modal-content]");
     if (modalContent) {
       modalContent.scrollTop = 0;
     }
@@ -156,30 +156,51 @@ export default function QuestionsPage() {
       />
 
       {/* Add Question Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-4 border-b z-10">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Add New Questions
-            </h2>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        contentClassName="p-0"
+        showCloseButton={false}
+      >
+        <div className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur px-8 py-6 shadow-sm">
+          <div className="flex flex-row gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800">
+                Add New Questions
+              </h2>
+              <label className="mt-2 flex items-center gap-2 text-sm cursor-pointer text-gray-700">
                 <input
                   type="checkbox"
                   checked={keepModalOpen}
                   onChange={(e) => setKeepModalOpen(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="font-medium">Keep modal open after save</span>
               </label>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-red-600 text-xl font-bold"
-              >
-                ✖
-              </button>
             </div>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="self-start rounded-full border border-gray-200 p-2 text-gray-500 transition hover:border-gray-300 hover:text-red-600"
+              aria-label="Close modal"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
           </div>
+        </div>
+        <div className="px-8 pb-10 pt-6">
           <QuestionForm
             examId={examId}
             onSuccess={handleQuestionAdded}

@@ -1,14 +1,22 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 
-const ImageUploader = ({ onImagesSelect }) => {
+const ImageUploader = ({ onImagesSelect, resetKey = 0 }) => {
   const [images, setImages] = useState([]); // { file, preview }
+  const [isActive, setIsActive] = useState(false);
   const fileInputRef = useRef(null);
+  const containerRef = useRef(null);
+
+  const releasePreviews = (list) => {
+    list.forEach((img) => {
+      if (img?.preview) URL.revokeObjectURL(img.preview);
+    });
+  };
 
   // 🧩 Handle new files
   const handleFiles = (files) => {
     const validFiles = Array.from(files).filter((file) =>
-      file.type.startsWith("image/")
+      file.type.startsWith("image/"),
     );
 
     const newImages = validFiles.map((file) => ({
@@ -35,14 +43,23 @@ const ImageUploader = ({ onImagesSelect }) => {
   // 📋 Handle paste (multiple)
   useEffect(() => {
     const handlePaste = (e) => {
+      if (!containerRef.current) return;
+
+      const activeElement = document.activeElement;
+      const isWithinTarget =
+        activeElement && containerRef.current.contains(activeElement);
+
+      if (!isWithinTarget && !isActive) return;
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
       const files = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if (item.type.indexOf("image") !== -1) {
-          files.push(item.getAsFile());
+        if (item?.type?.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+          if (file) files.push(file);
         }
       }
 
@@ -51,11 +68,25 @@ const ImageUploader = ({ onImagesSelect }) => {
 
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
+  }, [isActive]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!containerRef.current) return;
+      if (!containerRef.current.contains(event.target)) {
+        setIsActive(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // ❌ Remove specific image
   const handleRemove = (index) => {
     setImages((prev) => {
+      const target = prev[index];
+      if (target?.preview) URL.revokeObjectURL(target.preview);
       const updated = prev.filter((_, i) => i !== index);
       onImagesSelect?.(updated.map((img) => img.file));
       return updated;
@@ -64,16 +95,46 @@ const ImageUploader = ({ onImagesSelect }) => {
 
   // 🧹 Clear all
   const handleRemoveAll = () => {
-    setImages([]);
+    setImages((prev) => {
+      releasePreviews(prev);
+      return [];
+    });
     onImagesSelect?.([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setIsActive(false);
   };
+
+  useEffect(() => {
+    setImages((prev) => {
+      releasePreviews(prev);
+      return [];
+    });
+    onImagesSelect?.([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setIsActive(false);
+  }, [resetKey]);
 
   return (
     <div
-      className="flex flex-col items-center justify-center w-full p-8 rounded-2xl shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all hover:shadow-xl"
+      ref={containerRef}
+      tabIndex={0}
+      role="group"
+      onFocus={() => setIsActive(true)}
+      onBlur={(event) => {
+        if (!containerRef.current) return;
+        const nextTarget = event.relatedTarget;
+        if (!nextTarget || !containerRef.current.contains(nextTarget)) {
+          setIsActive(false);
+        }
+      }}
+      className={`flex flex-col items-center justify-center w-full p-8 rounded-2xl shadow-lg bg-white dark:bg-gray-800 border transition-all hover:shadow-xl focus:outline-none ${
+        isActive
+          ? "border-blue-400 dark:border-blue-500 ring-2 ring-blue-100 dark:ring-blue-600"
+          : "border-gray-200 dark:border-gray-700"
+      }`}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
+      onMouseDown={() => setIsActive(true)}
     >
       {images.length > 0 ? (
         <div className="w-full flex flex-col items-center">

@@ -2,7 +2,14 @@
 
 import React, { useEffect } from "react";
 
-const Modal = ({ isOpen, onClose, children }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+  children,
+  className = "",
+  contentClassName = "",
+  showCloseButton = true,
+}) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -18,32 +25,41 @@ const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-50">
-      {/* Modal container */}
-      <div className="relative rounded-lg shadow-xl max-w-5xl w-full mx-4 my-8 bg-white max-h-[90vh] overflow-y-auto">
-        {/* Modal content */}
-        <div className="p-6">{children}</div>
-
-        {/* Cancel button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-8">
+      <div
+        className={`relative w-full max-w-[95vw] max-h-[95vh] bg-white rounded-2xl shadow-2xl overflow-hidden ${className}`}
+      >
+        <div
+          data-modal-content
+          className={`max-h-[95vh] overflow-y-auto ${
+            contentClassName ? contentClassName : "p-8"
+          }`}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          {children}
+        </div>
+
+        {showCloseButton && (
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-7 w-7"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
               strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );
