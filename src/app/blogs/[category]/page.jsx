@@ -45,14 +45,14 @@ export default function BlogPage() {
           ? allBlogs.filter(
               (b) =>
                 typeof b.category === "string" &&
-                b.category.toLowerCase() === selectedCategory.toLowerCase()
+                b.category.toLowerCase() === selectedCategory.toLowerCase(),
             )
           : allBlogs;
 
         // Filter by search query
         const filteredBlogs = search
           ? filteredByCategory.filter((b) =>
-              b.sectionName?.toLowerCase().includes(search.toLowerCase())
+              b.sectionName?.toLowerCase().includes(search.toLowerCase()),
             )
           : filteredByCategory;
 
@@ -62,7 +62,7 @@ export default function BlogPage() {
         const recent = [...allBlogs]
           .sort(
             (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           )
           .slice(0, 10);
         setRecentPosts(recent);
@@ -85,7 +85,9 @@ export default function BlogPage() {
           backgroundImage: `url(https://t3.ftcdn.net/jpg/03/16/91/28/360_F_316912806_RCeHVmUx5LuBMi7MKYTY5arkE4I0DcpU.jpg)`,
         }}
       >
-        <h1 className="text-4xl pt-24 font-bold text-center mb-6">OUR BLOG </h1>
+        <h1 className="text-4xl pt-24 font-bold text-center mb-6">
+          <span className="text-white"> OUR BLOG</span>{" "}
+        </h1>
         <div className="flex flex-wrap justify-center gap-2">
           {/* All blogs */}
           <Link href="/blogs">
@@ -116,7 +118,7 @@ export default function BlogPage() {
           ) : (
             blogs.map((blog) => (
               <Link key={blog._id} href={`/blog/${blog.slug || blog._id}`}>
-                <div className="bg-gray-100 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
+                <div className="bg-gray-100 w-120 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
                   {blog.imageUrl && (
                     <img
                       src={blog.imageUrl}
@@ -142,35 +144,6 @@ export default function BlogPage() {
               </Link>
             ))
           )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="w-full lg:w-1/4 space-y-8">
-          {/* Search */}
-          <input
-            type="text"
-            placeholder="Search blog..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded"
-          />
-
-          {/* Recent Posts */}
-          <div>
-            <h4 className="text-lg font-semibold mb-2">Recent Posts</h4>
-            <ul className="text-sm space-y-2">
-              {recentPosts.map((post) => (
-                <li key={post._id}>
-                  <Link
-                    href={`/blogs/${post.categories || post._id}`}
-                    className="text-blue-600 hover:underline block"
-                  >
-                    {post.sectionName}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
     </div>

@@ -280,7 +280,7 @@ const nextConfig = {
               // ✅ REQUIRED FOR NEXTAUTH + GOOGLE + PAYMENTS
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://va.vercel-scripts.com https://*.vercel-scripts.com",
 
-              "style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app https://dumps-expert-next.vercel.app",
+              "style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app https://www.prepmantras.com",
 
               "img-src 'self' data: https: blob:",
 
@@ -308,7 +308,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com https://js.razorpay.com https://www.paypal.com https://*.paypal.com https://www.paypalobjects.com https://vercel.live https://*.vercel.app https://*.vercel-scripts.com",
-              "style-src 'self' 'unsafe-inline' https://*.vercel.app https://dumps-expert-next.vercel.app",
+              "style-src 'self' 'unsafe-inline' https://*.vercel.app https://www.prepmantras.com",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
 

@@ -25,7 +25,7 @@ function getBaseURL() {
 
     // 3. Production fallback
     if (process.env.NODE_ENV === "production") {
-      return "https://dumps-expert-next.vercel.app";
+      return "https://www.prepmantras.com";
     }
 
     // 4. Local development
@@ -161,8 +161,7 @@ export async function generateMetadata() {
     description: seo.description || defaultDescription,
     keywords: seo.keywords || "SAP dumps, SAP certification, prepmantras",
     alternates: {
-      canonical:
-        seo.canonicalurl || "https://dumps-expert-next.vercel.app/ItDumps",
+      canonical: seo.canonicalurl || "https://www.prepmantras.com/ItDumps",
     },
     openGraph: {
       title: seo.ogtitle || seo.title || defaultTitle,
@@ -174,7 +173,7 @@ export async function generateMetadata() {
           height: 630,
         },
       ],
-      url: seo.ogurl || "https://dumps-expert-next.vercel.app/ItDumps",
+      url: seo.ogurl || "https://www.prepmantras.com/ItDumps",
       siteName: "Prepmantras",
       locale: "en_US",
       type: "website",
