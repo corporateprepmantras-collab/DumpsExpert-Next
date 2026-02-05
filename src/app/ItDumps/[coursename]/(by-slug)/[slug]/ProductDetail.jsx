@@ -1,6 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  memo,
+  lazy,
+  Suspense,
+  useRef,
+} from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { FaQuoteLeft } from "react-icons/fa";
@@ -23,6 +32,30 @@ import Breadcrumbs from "@/components/public/Breadcrumbs";
 
 // Lazy load heavy components
 const RelatedProducts = lazy(() => import("./RelatedProducts"));
+
+// Loading skeleton components
+const ImageSkeleton = () => (
+  <div className="w-full h-[400px] rounded-xl bg-gray-200 animate-pulse" />
+);
+
+const PricingSkeleton = () => (
+  <div className="space-y-4">
+    {[1, 2].map((i) => (
+      <div key={i} className="border rounded-lg p-4 animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+        <div className="h-6 bg-gray-200 rounded w-1/2" />
+      </div>
+    ))}
+  </div>
+);
+
+const ContentSkeleton = () => (
+  <div className="space-y-3 animate-pulse">
+    <div className="h-4 bg-gray-200 rounded w-full" />
+    <div className="h-4 bg-gray-200 rounded w-5/6" />
+    <div className="h-4 bg-gray-200 rounded w-4/6" />
+  </div>
+);
 
 // Helper function to safely convert to number
 const toNum = (val) => {
@@ -89,19 +122,21 @@ const extractExamPrices = (examData) => {
   };
 };
 
-// Helper functions with caching
+// Helper functions with caching and TTL
 const productCache = new Map();
 const reviewsCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 async function fetchProduct(slug) {
-  if (productCache.has(slug)) {
-    return productCache.get(slug);
+  const cached = productCache.get(slug);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
   }
 
   try {
     // First try by slug
     let response = await fetch(`/api/products/get-by-slug/${slug}`, {
-      cache: "no-store",
+      next: { revalidate: 300 },
     });
 
     let data = await response.json();
@@ -109,9 +144,8 @@ async function fetchProduct(slug) {
 
     // If not found by slug (404 status), try by exam code
     if (!product && response.status === 404) {
-      console.log(`Product not found by slug "${slug}", trying exam code...`);
       response = await fetch(`/api/products/get-by-exam-code/${slug}`, {
-        cache: "no-store",
+        next: { revalidate: 300 },
       });
 
       if (response.ok) {
@@ -121,7 +155,7 @@ async function fetchProduct(slug) {
     }
 
     if (product) {
-      productCache.set(slug, product);
+      productCache.set(slug, { data: product, timestamp: Date.now() });
     }
 
     return product;
@@ -178,8 +212,9 @@ async function fetchAllProducts() {
 }
 
 async function fetchReviews(productId) {
-  if (reviewsCache.has(productId)) {
-    return reviewsCache.get(productId);
+  const cached = reviewsCache.get(productId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
   }
 
   try {
@@ -190,7 +225,7 @@ async function fetchReviews(productId) {
     const all = data.data || [];
     const published = all.filter((r) => r.status === "Publish");
 
-    reviewsCache.set(productId, published);
+    reviewsCache.set(productId, { data: published, timestamp: Date.now() });
     return published;
   } catch (error) {
     console.error("Error fetching reviews:", error);
@@ -236,127 +271,137 @@ export default function ProductDetailsPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [isLoadingExams, setIsLoadingExams] = useState(true);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+  const [showRelated, setShowRelated] = useState(false);
 
-  const productAvailable = isProductAvailable(product);
+  const relatedRef = useRef(null);
+
+  const productAvailable = useMemo(
+    () => isProductAvailable(product),
+    [product],
+  );
 
   // Update the handleAddToCart function in your ProductDetailsPage component
 
-  const handleAddToCart = (type = "regular") => {
-    if (!product) return;
+  const handleAddToCart = useCallback(
+    (type = "regular") => {
+      if (!product) return;
 
-    if ((type === "regular" || type === "combo") && !productAvailable) {
-      toast.error("⚠️ This product is currently unavailable (PDF not found)");
-      return;
-    }
+      if ((type === "regular" || type === "combo") && !productAvailable) {
+        toast.error("⚠️ This product is currently unavailable (PDF not found)");
+        return;
+      }
 
-    if (
-      type === "online" &&
-      examPrices.priceInr === 0 &&
-      examPrices.priceUsd === 0
-    ) {
-      toast.error("⚠️ Online exam pricing not available for this product");
-      return;
-    }
+      if (
+        type === "online" &&
+        examPrices.priceInr === 0 &&
+        examPrices.priceUsd === 0
+      ) {
+        toast.error("⚠️ Online exam pricing not available for this product");
+        return;
+      }
 
-    if (
-      type === "combo" &&
-      toNum(product.comboPriceInr) === 0 &&
-      toNum(product.comboPriceUsd) === 0
-    ) {
-      toast.error("⚠️ Combo package is not available for this product");
-      return;
-    }
+      if (
+        type === "combo" &&
+        toNum(product.comboPriceInr) === 0 &&
+        toNum(product.comboPriceUsd) === 0
+      ) {
+        toast.error("⚠️ Combo package is not available for this product");
+        return;
+      }
 
-    // Check if item already exists in cart
-    const cartStore = useCartStore.getState();
-    const existingItem = cartStore.cartItems.find(
-      (item) => item._id === product._id && item.type === type,
-    );
+      // Check if item already exists in cart
+      const cartStore = useCartStore.getState();
+      const existingItem = cartStore.cartItems.find(
+        (item) => item._id === product._id && item.type === type,
+      );
 
-    if (existingItem) {
-      toast.info("ℹ️ This item is already in your cart");
-      return;
-    }
+      if (existingItem) {
+        toast.info("ℹ️ This item is already in your cart");
+        return;
+      }
 
-    const examDetails = exams.length > 0 ? exams[0] : {};
+      const examDetails = exams.length > 0 ? exams[0] : {};
 
-    let item = {
-      _id: product._id,
-      productId: product._id,
-      courseId: product._id,
-      type: type,
-      title: product.title,
-      name: product.title,
-      mainPdfUrl: product.mainPdfUrl || "",
-      samplePdfUrl: product.samplePdfUrl || "",
-      dumpsPriceInr: toNum(product.dumpsPriceInr),
-      dumpsPriceUsd: toNum(product.dumpsPriceUsd),
-      dumpsMrpInr: toNum(product.dumpsMrpInr),
-      dumpsMrpUsd: toNum(product.dumpsMrpUsd),
-      comboPriceInr: toNum(product.comboPriceInr),
-      comboPriceUsd: toNum(product.comboPriceUsd),
-      comboMrpInr: toNum(product.comboMrpInr),
-      comboMrpUsd: toNum(product.comboMrpUsd),
-      examPriceInr: examPrices.priceInr,
-      examPriceUsd: examPrices.priceUsd,
-      examMrpInr: examPrices.mrpInr,
-      examMrpUsd: examPrices.mrpUsd,
-      imageUrl: product.imageUrl || "",
-      slug: product.slug,
-      category: product.category,
-      sapExamCode: product.sapExamCode,
-      code: product.code || product.sapExamCode,
-      sku: product.sku,
-      duration: product.duration || examDetails.duration || "",
-      numberOfQuestions:
-        product.numberOfQuestions || examDetails.numberOfQuestions || 0,
-      passingScore: product.passingScore || examDetails.passingScore || "",
-      mainInstructions: product.mainInstructions || "",
-      sampleInstructions: product.sampleInstructions || "",
-      Description: product.Description || "",
-      longDescription: product.longDescription || "",
-      status: product.status || "active",
-      action: product.action || "",
-      metaTitle: product.metaTitle || "",
-      metaKeywords: product.metaKeywords || "",
-      metaDescription: product.metaDescription || "",
-      schema: product.schema || "",
-    };
+      let item = {
+        _id: product._id,
+        productId: product._id,
+        courseId: product._id,
+        type: type,
+        title: product.title,
+        name: product.title,
+        mainPdfUrl: product.mainPdfUrl || "",
+        samplePdfUrl: product.samplePdfUrl || "",
+        dumpsPriceInr: toNum(product.dumpsPriceInr),
+        dumpsPriceUsd: toNum(product.dumpsPriceUsd),
+        dumpsMrpInr: toNum(product.dumpsMrpInr),
+        dumpsMrpUsd: toNum(product.dumpsMrpUsd),
+        comboPriceInr: toNum(product.comboPriceInr),
+        comboPriceUsd: toNum(product.comboPriceUsd),
+        comboMrpInr: toNum(product.comboMrpInr),
+        comboMrpUsd: toNum(product.comboMrpUsd),
+        examPriceInr: examPrices.priceInr,
+        examPriceUsd: examPrices.priceUsd,
+        examMrpInr: examPrices.mrpInr,
+        examMrpUsd: examPrices.mrpUsd,
+        imageUrl: product.imageUrl || "",
+        slug: product.slug,
+        category: product.category,
+        sapExamCode: product.sapExamCode,
+        code: product.code || product.sapExamCode,
+        sku: product.sku,
+        duration: product.duration || examDetails.duration || "",
+        numberOfQuestions:
+          product.numberOfQuestions || examDetails.numberOfQuestions || 0,
+        passingScore: product.passingScore || examDetails.passingScore || "",
+        mainInstructions: product.mainInstructions || "",
+        sampleInstructions: product.sampleInstructions || "",
+        Description: product.Description || "",
+        longDescription: product.longDescription || "",
+        status: product.status || "active",
+        action: product.action || "",
+        metaTitle: product.metaTitle || "",
+        metaKeywords: product.metaKeywords || "",
+        metaDescription: product.metaDescription || "",
+        schema: product.schema || "",
+      };
 
-    switch (type) {
-      case "regular":
-        item.title = `${product.title} [PDF]`;
-        item.name = `${product.title} [PDF]`;
-        item.price = item.dumpsPriceInr;
-        item.priceINR = item.dumpsPriceInr;
-        item.priceUSD = item.dumpsPriceUsd;
-        break;
+      switch (type) {
+        case "regular":
+          item.title = `${product.title} [PDF]`;
+          item.name = `${product.title} [PDF]`;
+          item.price = item.dumpsPriceInr;
+          item.priceINR = item.dumpsPriceInr;
+          item.priceUSD = item.dumpsPriceUsd;
+          break;
 
-      case "online":
-        item.title = `${product.title} [Online Exam]`;
-        item.name = `${product.title} [Online Exam]`;
-        item.price = item.examPriceInr;
-        item.priceINR = item.examPriceInr;
-        item.priceUSD = item.examPriceUsd;
-        break;
+        case "online":
+          item.title = `${product.title} [Online Exam]`;
+          item.name = `${product.title} [Online Exam]`;
+          item.price = item.examPriceInr;
+          item.priceINR = item.examPriceInr;
+          item.priceUSD = item.examPriceUsd;
+          break;
 
-      case "combo":
-        item.title = `${product.title} [Combo]`;
-        item.name = `${product.title} [Combo]`;
-        item.price = item.comboPriceInr;
-        item.priceINR = item.comboPriceInr;
-        item.priceUSD = item.comboPriceUsd;
-        break;
+        case "combo":
+          item.title = `${product.title} [Combo]`;
+          item.name = `${product.title} [Combo]`;
+          item.price = item.comboPriceInr;
+          item.priceINR = item.comboPriceInr;
+          item.priceUSD = item.comboPriceUsd;
+          break;
 
-      default:
-        item.price = item.dumpsPriceInr;
-        item.priceINR = item.dumpsPriceInr;
-        item.priceUSD = item.dumpsPriceUsd;
-    }
+        default:
+          item.price = item.dumpsPriceInr;
+          item.priceINR = item.dumpsPriceInr;
+          item.priceUSD = item.dumpsPriceUsd;
+      }
 
-    useCartStore.getState().addToCart(item);
-    toast.success(`✅ Added ${item.title} to cart!`);
-  };
+      useCartStore.getState().addToCart(item);
+      toast.success(`✅ Added ${item.title} to cart!`);
+    },
+    [product, productAvailable, examPrices, exams],
+  );
 
   useEffect(() => {
     async function loadData() {
@@ -397,41 +442,56 @@ export default function ProductDetailsPage() {
 
         // Fetch reviews and related products in parallel after initial load
         if (productData?._id) {
-          Promise.all([fetchReviews(productData._id), fetchAllProducts()]).then(
-            ([fetchedReviews, allProducts]) => {
-              setReviews(fetchedReviews || []);
+          setIsLoadingReviews(true);
+          fetchReviews(productData._id).then((fetchedReviews) => {
+            setReviews(fetchedReviews || []);
+            setIsLoadingReviews(false);
 
-              if (fetchedReviews && fetchedReviews.length > 0) {
-                const total = fetchedReviews.reduce(
-                  (sum, r) => sum + r.rating,
-                  0,
-                );
-                setAvgRating((total / fetchedReviews.length).toFixed(1));
-              } else {
-                setAvgRating(null);
-              }
-
-              setRelatedProducts(
-                allProducts.filter((p) => p.slug !== slug).slice(0, 12),
+            if (fetchedReviews && fetchedReviews.length > 0) {
+              const total = fetchedReviews.reduce(
+                (sum, r) => sum + r.rating,
+                0,
               );
-            },
-          );
+              setAvgRating((total / fetchedReviews.length).toFixed(1));
+            } else {
+              setAvgRating(null);
+            }
+          });
         }
       } catch (err) {
         console.error("❌ Error loading data:", err);
         setIsLoadingExams(false);
+        setIsLoadingReviews(false);
       }
     }
 
     if (slug) loadData();
   }, [slug]);
 
-  const calculateDiscount = (mrp, price) => {
+  // Intersection observer for related products
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !showRelated) {
+          setShowRelated(true);
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    if (relatedRef.current) {
+      observer.observe(relatedRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [showRelated]);
+
+  const calculateDiscount = useCallback((mrp, price) => {
     if (!mrp || !price || mrp <= price) return 0;
     return Math.round(((mrp - price) / mrp) * 100);
-  };
+  }, []);
 
-  const handleDownload = (url, filename) => {
+  const handleDownload = useCallback((url, filename) => {
     if (!url) {
       toast.error("Download link not available");
       return;
@@ -441,55 +501,61 @@ export default function ProductDetailsPage() {
     link.download = filename;
     link.target = "_blank";
     link.click();
-  };
+  }, []);
 
-  const handleAddReview = async (e) => {
-    e.preventDefault();
+  const handleAddReview = useCallback(
+    async (e) => {
+      e.preventDefault();
 
-    if (!reviewForm.name || !reviewForm.comment || !reviewForm.rating) {
-      toast.error("Please fill all fields and provide a rating");
-      return;
-    }
-
-    const reviewData = {
-      productId: product._id,
-      name: reviewForm.name,
-      comment: reviewForm.comment,
-      rating: reviewForm.rating,
-    };
-
-    const result = await submitReview(reviewData);
-
-    if (result.success) {
-      toast.success("Review submitted successfully 🎉");
-      setReviewForm({ name: "", comment: "", rating: 0 });
-
-      const updatedReviews = await fetchReviews(product._id);
-      setReviews(updatedReviews);
-
-      if (updatedReviews.length > 0) {
-        const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
-        setAvgRating((total / updatedReviews.length).toFixed(1));
+      if (!reviewForm.name || !reviewForm.comment || !reviewForm.rating) {
+        toast.error("Please fill all fields and provide a rating");
+        return;
       }
-    } else {
-      toast.error(result.error || "Failed to submit review");
-    }
-  };
 
-  const toggleAccordion = (index) => {
-    setActiveIndex(index === activeIndex ? null : index);
-  };
+      const reviewData = {
+        productId: product._id,
+        name: reviewForm.name,
+        comment: reviewForm.comment,
+        rating: reviewForm.rating,
+      };
+
+      const result = await submitReview(reviewData);
+
+      if (result.success) {
+        toast.success("Review submitted successfully 🎉");
+        setReviewForm({ name: "", comment: "", rating: 0 });
+
+        const updatedReviews = await fetchReviews(product._id);
+        setReviews(updatedReviews);
+
+        if (updatedReviews.length > 0) {
+          const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
+          setAvgRating((total / updatedReviews.length).toFixed(1));
+        }
+      } else {
+        toast.error(result.error || "Failed to submit review");
+      }
+    },
+    [reviewForm, product],
+  );
+
+  const toggleAccordion = useCallback((index) => {
+    setActiveIndex((prev) => (prev === index ? null : index));
+  }, []);
+
+  const hasOnlineExam = useMemo(
+    () => examPrices.priceInr > 0 || examPrices.priceUsd > 0,
+    [examPrices],
+  );
 
   if (!product)
     return (
       <div className="text-center py-20">
         <div className="flex items-center justify-center h-screen">
-          <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+          <div className="h-8 w-8 border-3 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
         </div>
       </div>
     );
-
-  const hasOnlineExam = examPrices.priceInr > 0 || examPrices.priceUsd > 0;
 
   return (
     <div className="min-h-screen pt-20 bg-white text-gray-800">
@@ -517,23 +583,24 @@ export default function ProductDetailsPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 flex flex-row md:flex-row gap-10">
+      <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10">
         {/* Left Column - Sticky */}
         <div className="md:w-[40%]">
           <div className="md:sticky md:top-24">
-            <div className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-md bg-gray-50">
-              <Image
-                src={product.imageUrl}
-                alt={product.title}
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 40vw"
-                quality={75}
-                loading="lazy"
-                placeholder="blur"
-                blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YzZjRmNiIvPjwvc3ZnPg=="
-              />
-            </div>
+            <Suspense fallback={<ImageSkeleton />}>
+              <div className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-md bg-gray-50">
+                <Image
+                  src={product.imageUrl}
+                  alt={product.title}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                  quality={60}
+                  loading="eager"
+                  priority
+                />
+              </div>
+            </Suspense>
 
             <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
               {[
@@ -544,7 +611,7 @@ export default function ProductDetailsPage() {
                 "24/7 Customer Support",
               ].map((f, i) => (
                 <div key={i} className="flex items-center gap-2 min-w-[200px]">
-                  <FaCheckCircle className="text-blue-600 text-xl" />
+                  <FaCheckCircle className="text-blue-600 text-xl flex-shrink-0" />
                   <span>{f}</span>
                 </div>
               ))}
@@ -693,260 +760,87 @@ export default function ProductDetailsPage() {
 
           {/* Pricing Sections */}
           <div className="mt-4 space-y-6">
-            {/* PDF Download */}
-            {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
-              <div
-                className={`flex flex-col md:flex-row md:justify-between gap-4 p-3 border rounded-lg shadow-sm ${
-                  !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
-                }`}
-              >
-                <div className="w-full">
-                  <p className="font-semibold text-base md:text-lg">
-                    📄 Downloadable PDF File
-                    {!productAvailable && (
-                      <span className="ml-2 text-xs text-red-600 font-normal">
-                        (Currently Unavailable)
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-blue-600 font-bold text-sm md:text-base">
-                    ₹{product.dumpsPriceInr ?? "N/A"}
-                    <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
-                      ₹{product.dumpsMrpInr ?? "N/A"}
-                    </span>
-                    <span className="text-gray-600 text-xs md:text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpInr,
-                        product.dumpsPriceInr,
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                  <p className="text-blue-600 font-bold text-sm md:text-base">
-                    ${product.dumpsPriceUsd ?? "N/A"}
-                    <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
-                      ${product.dumpsMrpUsd ?? "N/A"}
-                    </span>
-                    <span className="text-gray-600 text-xs md:text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpUsd,
-                        product.dumpsPriceUsd,
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                </div>
-
-                <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
-                  {product.samplePdfUrl && (
-                    <button
-                      onClick={() =>
-                        handleDownload(
-                          product.samplePdfUrl,
-                          `${product.title}-Sample.pdf`,
-                        )
-                      }
-                      className="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-700"
-                    >
-                      Download Sample
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleAddToCart("regular")}
-                    disabled={!productAvailable}
-                    className={`font-semibold px-4 py-2 rounded text-sm transition-all ${
-                      productAvailable
-                        ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    title={
-                      !productAvailable
-                        ? "Product unavailable - PDF not found"
-                        : "Add to cart"
+            {isLoadingExams ? (
+              <PricingSkeleton />
+            ) : (
+              <>
+                {/* PDF Download */}
+                {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
+                  <PricingCard
+                    type="pdf"
+                    title="📄 Downloadable PDF File"
+                    priceInr={product.dumpsPriceInr}
+                    priceUsd={product.dumpsPriceUsd}
+                    mrpInr={product.dumpsMrpInr}
+                    mrpUsd={product.dumpsMrpUsd}
+                    isAvailable={productAvailable}
+                    sampleUrl={product.samplePdfUrl}
+                    onDownload={() =>
+                      handleDownload(
+                        product.samplePdfUrl,
+                        `${product.title}-Sample.pdf`,
+                      )
                     }
-                  >
-                    {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
-                  </button>
-                </div>
-              </div>
-            )}
+                    onAddToCart={() => handleAddToCart("regular")}
+                    calculateDiscount={calculateDiscount}
+                  />
+                )}
 
-            {/* Online Exam */}
-            {hasOnlineExam && !isLoadingExams && (
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-white shadow-sm gap-4">
-                <div className="w-full">
-                  <p className="font-semibold text-base mb-2">📝 Online Exam</p>
-                  {exams[0] && (
-                    <p className="text-xs text-gray-600 mb-1">
-                      {exams[0].name || "Online Exam"}
-                    </p>
-                  )}
-                  <p className="text-blue-600 font-bold text-sm md:text-base">
-                    ₹{examPrices.priceInr || "N/A"}
-                    {examPrices.mrpInr > 0 && (
-                      <>
-                        <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
-                          ₹{examPrices.mrpInr}
-                        </span>
-                        <span className="text-gray-600 text-xs md:text-sm ml-1">
-                          (
-                          {calculateDiscount(
-                            examPrices.mrpInr,
-                            examPrices.priceInr,
-                          )}
-                          % off)
-                        </span>
-                      </>
-                    )}
-                  </p>
-                  {exams[0] && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Duration: {exams[0].duration || 0} mins | Questions:{" "}
-                      {exams[0].numberOfQuestions || 0}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
-                  <button
-                    onClick={() =>
+                {/* Online Exam */}
+                {hasOnlineExam && (
+                  <PricingCard
+                    type="online"
+                    title="📝 Online Exam"
+                    priceInr={examPrices.priceInr}
+                    priceUsd={examPrices.priceUsd}
+                    mrpInr={examPrices.mrpInr}
+                    mrpUsd={examPrices.mrpUsd}
+                    isAvailable={true}
+                    examInfo={exams[0]}
+                    onTryExam={() =>
                       router.push(`/exam/sample-instruction/${slug}`)
                     }
-                    className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
-                  >
-                    Try Online Exam
-                  </button>
+                    onAddToCart={() => handleAddToCart("online")}
+                    calculateDiscount={calculateDiscount}
+                  />
+                )}
 
-                  <button
-                    onClick={() => handleAddToCart("online")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded text-sm hover:shadow-lg"
-                  >
-                    🛒 Add to Cart
-                  </button>
-                </div>
-              </div>
+                {/* Combo */}
+                {hasOnlineExam &&
+                  (product.comboPriceInr || product.comboPriceUsd) && (
+                    <PricingCard
+                      type="combo"
+                      title="🎁 Get Combo (PDF + Online Exam)"
+                      priceInr={product.comboPriceInr}
+                      priceUsd={product.comboPriceUsd}
+                      mrpInr={product.comboMrpInr}
+                      mrpUsd={product.comboMrpUsd}
+                      isAvailable={productAvailable}
+                      onAddToCart={() => handleAddToCart("combo")}
+                      calculateDiscount={calculateDiscount}
+                    />
+                  )}
+              </>
             )}
-
-            {/* Combo */}
-            {hasOnlineExam &&
-              (product.comboPriceInr || product.comboPriceUsd) && (
-                <div
-                  className={`flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg shadow-sm gap-4 ${
-                    !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
-                  }`}
-                >
-                  <div className="w-full">
-                    <p className="font-semibold text-sm md:text-base">
-                      🎁 Get Combo (PDF + Online Exam)
-                      {!productAvailable && (
-                        <span className="ml-2 text-xs text-red-600 font-normal">
-                          (Currently Unavailable)
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-blue-600 font-bold text-sm md:text-base">
-                      ₹{product.comboPriceInr ?? "N/A"}
-                      <span className="text-red-600 line-through ml-2 text-xs md:text-sm">
-                        ₹{product.comboMrpInr ?? "N/A"}
-                      </span>
-                      <span className="text-gray-600 text-xs md:text-sm ml-1">
-                        (
-                        {calculateDiscount(
-                          product.comboMrpInr,
-                          product.comboPriceInr,
-                        )}
-                        % off)
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
-                    <button
-                      onClick={() => handleAddToCart("combo")}
-                      disabled={!productAvailable}
-                      className={`font-semibold px-4 py-2 rounded text-sm transition-all ${
-                        productAvailable
-                          ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
-                      title={
-                        !productAvailable
-                          ? "Product unavailable - PDF not found"
-                          : "Add to cart"
-                      }
-                    >
-                      {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
-                    </button>
-                  </div>
-                </div>
-              )}
           </div>
           {/* Description */}
-          <div className="bg-white rounded-2xl shadow-lg p-4">
-            <h2 className="text-lg font-bold mb-3 text-gray-900">
-              Description
-            </h2>
-
-            <div className="relative w-full overflow-visible">
-              <div
-                className="
-        prose prose-sm max-w-none
-        prose-p:text-gray-700
-        prose-li:text-gray-700
-        prose-strong:text-gray-900
-        prose-a:text-blue-600
-        prose-headings:text-gray-900
-
-        break-words
-        whitespace-normal
-
-        [&_img]:max-w-full
-        [&_img]:h-auto
-
-        [&_table]:w-full
-        [&_table]:overflow-x-auto
-        [&_pre]:overflow-x-auto
-        [&_code]:break-words
-      "
-                style={{
-                  wordBreak: "break-word",
-                  overflowWrap: "anywhere",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: product.Description || "No description available",
-                }}
-              />
-            </div>
-          </div>
+          <ContentSection title="Description">
+            <div
+              className="prose prose-sm max-w-none prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-gray-900 prose-a:text-blue-600 prose-headings:text-gray-900 break-words whitespace-normal [&_img]:max-w-full [&_img]:h-auto [&_table]:w-full [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_code]:break-words"
+              style={{
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+              }}
+              dangerouslySetInnerHTML={{
+                __html: product.Description || "No description available",
+              }}
+            />
+          </ContentSection>
 
           {/* Long Description */}
-          <div className="bg-white rounded-2xl shadow-lg p-4 overflow-hidden">
-            <h2 className="text-lg font-bold mb-3 text-gray-900">
-              Detailed Overview
-            </h2>
+          <ContentSection title="Detailed Overview">
             <div
-              className="
-                prose prose-sm max-w-full
-                prose-p:text-gray-700 prose-p:break-words
-                prose-li:text-gray-700 prose-li:break-words
-                prose-strong:text-gray-900
-                prose-a:text-blue-600 prose-a:break-all
-                prose-headings:break-words
-                break-words
-                overflow-hidden
-                [&_*]:max-w-full
-                [&_*]:break-words
-                [&_img]:max-w-full
-                [&_img]:h-auto
-                [&_table]:block
-                [&_table]:max-w-full
-                [&_table]:overflow-x-auto
-                [&_pre]:overflow-x-auto
-                [&_pre]:max-w-full
-                [&_code]:break-all
-              "
+              className="prose prose-sm max-w-full prose-p:text-gray-700 prose-p:break-words prose-li:text-gray-700 prose-li:break-words prose-strong:text-gray-900 prose-a:text-blue-600 prose-a:break-all prose-headings:break-words break-words overflow-hidden [&_*]:max-w-full [&_*]:break-words [&_img]:max-w-full [&_img]:h-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:break-all"
               style={{
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",
@@ -957,24 +851,25 @@ export default function ProductDetailsPage() {
                   product.longDescription || "No detailed overview available",
               }}
             />
-          </div>
+          </ContentSection>
         </div>
       </div>
 
       {/* Full Width Sections Below */}
 
       <div className="container mx-auto px-4">
-        <ReviewsSection
+        <MemoizedReviewsSection
           reviews={reviews}
           reviewForm={reviewForm}
           setReviewForm={setReviewForm}
           handleAddReview={handleAddReview}
+          isLoading={isLoadingReviews}
         />
       </div>
 
       <div className="container mx-auto px-4">
         {product.faqs && product.faqs.length > 0 && (
-          <FAQSection
+          <MemoizedFAQSection
             faqs={product.faqs}
             activeIndex={activeIndex}
             toggleAccordion={toggleAccordion}
@@ -982,13 +877,19 @@ export default function ProductDetailsPage() {
         )}
       </div>
 
-      <Suspense
-        fallback={
-          <div className="py-8 text-center">Loading related products...</div>
-        }
-      >
-        <RelatedProducts currentSlug={slug} maxProducts={10} />
-      </Suspense>
+      <div ref={relatedRef}>
+        {showRelated && (
+          <Suspense
+            fallback={
+              <div className="py-8 text-center">
+                <div className="h-6 w-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+              </div>
+            }
+          >
+            <RelatedProducts currentSlug={slug} maxProducts={10} />
+          </Suspense>
+        )}
+      </div>
 
       <Toaster />
     </div>
@@ -996,6 +897,128 @@ export default function ProductDetailsPage() {
 }
 
 /* Subcomponents */
+
+// Memoized ContentSection component
+const ContentSection = memo(({ title, children }) => (
+  <div className="bg-white rounded-2xl shadow-lg p-4">
+    <h2 className="text-lg font-bold mb-3 text-gray-900">{title}</h2>
+    <div className="relative w-full overflow-visible">{children}</div>
+  </div>
+));
+ContentSection.displayName = "ContentSection";
+
+// Memoized PricingCard component
+const PricingCard = memo(
+  ({
+    type,
+    title,
+    priceInr,
+    priceUsd,
+    mrpInr,
+    mrpUsd,
+    isAvailable,
+    sampleUrl,
+    examInfo,
+    onDownload,
+    onTryExam,
+    onAddToCart,
+    calculateDiscount,
+  }) => {
+    const unavailable = type !== "online" && !isAvailable;
+
+    return (
+      <div
+        className={`flex flex-col md:flex-row md:justify-between gap-4 p-3 border rounded-lg shadow-sm ${
+          unavailable ? "bg-gray-100 opacity-70" : "bg-white"
+        }`}
+      >
+        <div className="w-full">
+          <p className="font-semibold text-base md:text-lg">
+            {title}
+            {unavailable && (
+              <span className="ml-2 text-xs text-red-600 font-normal">
+                (Currently Unavailable)
+              </span>
+            )}
+          </p>
+          {examInfo && (
+            <p className="text-xs text-gray-600 mb-1">
+              {examInfo.name || "Online Exam"}
+            </p>
+          )}
+          <p className="text-blue-600 font-bold text-sm md:text-base">
+            ₹{priceInr ?? "N/A"}
+            {mrpInr > 0 && (
+              <>
+                <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
+                  ₹{mrpInr}
+                </span>
+                <span className="text-gray-600 text-xs md:text-sm ml-1">
+                  ({calculateDiscount(mrpInr, priceInr)}% off)
+                </span>
+              </>
+            )}
+          </p>
+          <p className="text-blue-600 font-bold text-sm md:text-base">
+            ${priceUsd ?? "N/A"}
+            {mrpUsd > 0 && (
+              <>
+                <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
+                  ${mrpUsd}
+                </span>
+                <span className="text-gray-600 text-xs md:text-sm ml-1">
+                  ({calculateDiscount(mrpUsd, priceUsd)}% off)
+                </span>
+              </>
+            )}
+          </p>
+          {examInfo && (
+            <p className="text-xs text-gray-500 mt-1">
+              Duration: {examInfo.duration || 0} mins | Questions:{" "}
+              {examInfo.numberOfQuestions || 0}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
+          {sampleUrl && onDownload && (
+            <button
+              onClick={onDownload}
+              className="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-700 transition-colors"
+            >
+              Download Sample
+            </button>
+          )}
+          {onTryExam && (
+            <button
+              onClick={onTryExam}
+              className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+            >
+              Try Online Exam
+            </button>
+          )}
+          <button
+            onClick={onAddToCart}
+            disabled={unavailable}
+            className={`font-semibold px-4 py-2 rounded text-sm transition-all ${
+              !unavailable
+                ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            title={
+              unavailable
+                ? "Product unavailable - PDF not found"
+                : "Add to cart"
+            }
+          >
+            {!unavailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
+          </button>
+        </div>
+      </div>
+    );
+  },
+);
+PricingCard.displayName = "PricingCard";
 
 function ReviewsSection({
   reviews = [],
@@ -1323,6 +1346,10 @@ function ReviewsSection({
   );
 }
 
+// Memoized Reviews Section
+const MemoizedReviewsSection = memo(ReviewsSection);
+MemoizedReviewsSection.displayName = "MemoizedReviewsSection";
+
 function FAQSection({ faqs, activeIndex, toggleAccordion }) {
   return (
     <div>
@@ -1362,3 +1389,7 @@ function FAQSection({ faqs, activeIndex, toggleAccordion }) {
     </div>
   );
 }
+
+// Memoized FAQ Section
+const MemoizedFAQSection = memo(FAQSection);
+MemoizedFAQSection.displayName = "MemoizedFAQSection";

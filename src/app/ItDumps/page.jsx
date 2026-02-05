@@ -1,11 +1,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaCheckCircle } from "react-icons/fa";
-import guarantee from "../../assets/userAssets/guaranteed.png";
 
 // ✅ Enable ISR for better performance
 export const dynamic = "auto";
 export const revalidate = 1800; // Revalidate every 30 minutes
+
+// Loading skeleton component
+function CategorySkeleton() {
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px] animate-pulse">
+      <div className="h-28 md:h-32 w-full bg-gray-200" />
+      <div className="px-3 pb-4 w-full pt-3">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto" />
+      </div>
+    </div>
+  );
+}
 
 /* ===========================
    ✅ Get correct base URL for server-side fetches
@@ -216,57 +227,41 @@ export default async function ITDumpsPage() {
     `✅ [ITDumps Page] Rendered in ${renderTime}ms with ${dumpsData.length} published categories\n`,
   );
 
+  // Preload images for better performance
+  const priorityCount = Math.min(6, dumpsData.length);
+
   return (
-    <div
-      className="relative min-h-screen w-full pt-24 pb-10 px-4 md:px-8"
-      style={{
-        backgroundImage: `url(${guarantee.src})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-      }}
-    >
-      {/* Backdrop overlay */}
-      <div className="absolute inset-0 bg-white/70 backdrop-blur-md z-0" />
+    <div className="relative min-h-screen w-full pt-20 md:pt-24 pb-10 px-3 md:px-8 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Removed heavy background image and backdrop blur for mobile performance */}
 
       <div className="relative z-10 w-full max-w-7xl mx-auto">
-        {/* Header */}
-        <h1 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-10">
-          Unlock Your Potential with SAP Certification Dumps
+        {/* Header - Optimized for mobile */}
+        <h1 className="text-2xl md:text-4xl font-bold text-center text-gray-900 mb-6 md:mb-10 px-2">
+          SAP Certification Dumps
         </h1>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-center max-w-2xl mx-auto mb-12 text-gray-900 text-sm sm:text-base font-medium">
-          <div className="space-y-3">
-            {[
-              "Instant Download After Purchase",
-              "100% Real & Updated Dumps",
-              "100% Money Back Guarantee",
-            ].map((text, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <FaCheckCircle className="text-blue-600 text-lg flex-shrink-0" />
-                <span>{text}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-3">
-            {["90 Days Free Updates", "24/7 Customer Support"].map(
-              (text, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <FaCheckCircle className="text-blue-600 text-lg flex-shrink-0" />
-                  <span>{text}</span>
-                </div>
-              ),
-            )}
-          </div>
+        {/* Features Grid - Simplified for mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 max-w-2xl mx-auto mb-8 md:mb-12">
+          {[
+            "Instant Download",
+            "100% Real Dumps",
+            "Money Back Guarantee",
+            "90 Days Updates",
+          ].map((text, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 text-gray-900 text-xs md:text-base font-medium"
+            >
+              <FaCheckCircle className="text-blue-600 text-sm md:text-lg flex-shrink-0" />
+              <span>{text}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Categories Grid */}
-        <div className="flex flex-wrap justify-center gap-6">
+        {/* Categories Grid - Optimized */}
+        <div className="flex flex-wrap justify-center gap-3 md:gap-6">
           {dumpsData.length > 0 ? (
-            dumpsData.map((item) => {
+            dumpsData.map((item, index) => {
               const slug = createSlug(item.name);
 
               if (!slug) {
@@ -274,24 +269,28 @@ export default async function ITDumpsPage() {
                 return null;
               }
 
+              const isPriority = index < priorityCount;
+
               return (
                 <Link
                   key={item._id || item.id}
                   href={`/ItDumps/${slug}`}
-                  className="bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px]"
+                  className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md active:scale-95 md:hover:scale-105 transition-shadow md:transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[140px] sm:w-[160px] md:w-[200px]"
                 >
-                  <div className="h-28 md:h-32 w-full relative bg-gray-50">
+                  <div className="h-24 md:h-32 w-full relative bg-gray-50">
                     <Image
                       src={item.image || "https://via.placeholder.com/150"}
                       alt={item.name || "Category"}
                       fill
-                      className="object-contain p-3"
-                      sizes="200px"
-                      loading="lazy"
+                      className="object-contain p-2 md:p-3"
+                      sizes="(max-width: 640px) 140px, (max-width: 768px) 160px, 200px"
+                      loading={isPriority ? "eager" : "lazy"}
+                      priority={isPriority}
+                      quality={60}
                     />
                   </div>
-                  <div className="px-3 pb-4 w-full">
-                    <h3 className="text-sm sm:text-base font-medium capitalize text-gray-800 truncate">
+                  <div className="px-2 pb-3 md:px-3 md:pb-4 w-full">
+                    <h3 className="text-xs md:text-base font-medium capitalize text-gray-800 truncate">
                       {item.name || "Unnamed Category"}
                     </h3>
                   </div>
@@ -300,12 +299,10 @@ export default async function ITDumpsPage() {
             })
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg mb-2">
-                No published categories available at the moment.
+              <p className="text-gray-600 text-base md:text-lg mb-2">
+                No categories available.
               </p>
-              <p className="text-gray-500 text-sm">
-                Please check back later or contact support.
-              </p>
+              <p className="text-gray-500 text-sm">Please check back later.</p>
             </div>
           )}
         </div>
