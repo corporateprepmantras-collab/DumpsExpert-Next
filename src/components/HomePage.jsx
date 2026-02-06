@@ -507,20 +507,20 @@ export default function HomePage({
                         <img
                           src={item.categoryImage}
                           alt={item.categoryName || item.title || "Category"}
-                          className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                          className="w-16 h-12 object-cover rounded-lg flex-shrink-0"
                         />
                       )}
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-orange-600 transition-colors">
+                        <h3 className="text-lg sm:text-base font-semibold text-gray-900 group-hover:text-orange-600 transition-colors">
                           {item.categoryName || item.title || "Certification"}
                         </h3>
                         {item.text && (
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                             {item.text}
                           </p>
                         )}
-                        <p className="text-xs text-orange-500 font-medium mt-1.5">
+                        <p className="text-sm text-orange-500 font-medium mt-1.5">
                           View Details →
                         </p>
                       </div>

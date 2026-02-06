@@ -294,7 +294,7 @@ export default function Navbar() {
                       <div className="font-semibold">
                         {userData?.name || session?.user?.email}
                       </div>
-                      <div className="text-sm max-w-64 text-gray-500">
+                      <div className="text-xs max-w-64 text-gray-500">
                         {userData?.email}
                       </div>
                     </div>

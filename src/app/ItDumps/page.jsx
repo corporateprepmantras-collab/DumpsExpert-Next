@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaCheckCircle } from "react-icons/fa";
+import ImageWithSkeleton from "@/components/ImageWithSkeleton";
 
 // ✅ Enable ISR for better performance
 export const dynamic = "auto";
@@ -278,7 +279,7 @@ export default async function ITDumpsPage() {
                   className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md active:scale-95 md:hover:scale-105 transition-shadow md:transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[140px] sm:w-[160px] md:w-[200px]"
                 >
                   <div className="h-24 md:h-32 w-full relative bg-gray-50">
-                    <Image
+                    <ImageWithSkeleton
                       src={item.image || "https://via.placeholder.com/150"}
                       alt={item.name || "Category"}
                       fill
@@ -287,6 +288,7 @@ export default async function ITDumpsPage() {
                       loading={isPriority ? "eager" : "lazy"}
                       priority={isPriority}
                       quality={60}
+                      skeletonClassName="rounded-t-lg"
                     />
                   </div>
                   <div className="px-2 pb-3 md:px-3 md:pb-4 w-full">

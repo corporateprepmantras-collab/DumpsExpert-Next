@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
+import ImageWithSkeleton from "@/components/ImageWithSkeleton";
 
 // Enable ISR for better performance
 export const dynamic = "auto";
@@ -382,11 +383,17 @@ export default async function CategoryPage({ params, searchParams }) {
             {category && category.descriptionBelow && (
               <div className="mb-8 shadow rounded-lg border border-gray-200 p-6 mt-10 bg-white">
                 {category.image && (
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="max-h-64 mb-4 rounded-lg shadow"
-                  />
+                  <div className="relative w-full h-64 mb-4">
+                    <ImageWithSkeleton
+                      src={category.image}
+                      alt={category.name}
+                      fill
+                      className="object-contain rounded-lg shadow"
+                      sizes="(max-width: 768px) 100vw, 800px"
+                      quality={75}
+                      skeletonClassName="rounded-lg"
+                    />
+                  </div>
                 )}
                 <div
                   className="prose max-w-none text-gray-700"
