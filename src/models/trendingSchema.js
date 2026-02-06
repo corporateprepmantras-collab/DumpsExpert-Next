@@ -2,7 +2,19 @@ import mongoose, { Schema } from "mongoose";
 
 const trendingSchema = new Schema(
   {
-    title: {
+    categoryId: {
+      type: String,
+      required: true,
+    },
+    categoryName: {
+      type: String,
+      required: true,
+    },
+    categoryImage: {
+      type: String,
+      default: "",
+    },
+    text: {
       type: String,
       required: true,
     },

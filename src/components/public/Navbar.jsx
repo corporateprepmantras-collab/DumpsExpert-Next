@@ -48,7 +48,7 @@ export default function Navbar() {
   useEffect(() => {
     setCartItemCount(useCartStore.getState().cartItems.length);
     const unsubscribe = useCartStore.subscribe((state) =>
-      setCartItemCount(state.cartItems.length)
+      setCartItemCount(state.cartItems.length),
     );
     return () => unsubscribe();
   }, []);
@@ -80,7 +80,7 @@ export default function Navbar() {
         setDropdownData(categories);
         sessionStorage.setItem(
           "navbar_categories_cache",
-          JSON.stringify(categories)
+          JSON.stringify(categories),
         );
         console.log("🌐 Categories fetched and cached");
       } catch (err) {
@@ -294,7 +294,7 @@ export default function Navbar() {
                       <div className="font-semibold">
                         {userData?.name || session?.user?.email}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm max-w-64 text-gray-500">
                         {userData?.email}
                       </div>
                     </div>

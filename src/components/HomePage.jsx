@@ -113,6 +113,7 @@ export default function HomePage({
       try {
         const res = await fetch("/api/trending");
         const data = await res.json();
+        console.log("📊 Trending items fetched:", data);
         setTrendingItems(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Failed to fetch trending items:", error);
@@ -492,7 +493,7 @@ export default function HomePage({
                         window.location.href = `/${item.link}`;
                       }
                     }}
-                    className="group relative bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-white border-2 border-gray-200 hover:border-orange-500 rounded-xl px-4 py-3 sm:px-5 sm:py-4 text-left transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-1 active:translate-y-0 cursor-pointer"
+                    className="group relative bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-white border-2 border-gray-200 hover:border-orange-500 rounded-xl px-2 py-1 sm:px-5 sm:py-4 text-left transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-1 active:translate-y-0 cursor-pointer"
                   >
                     {/* Badge Number */}
                     <div className="absolute -top-2 -left-2 bg-orange-500 text-white w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-lg group-hover:scale-110 transition-transform">
@@ -500,12 +501,26 @@ export default function HomePage({
                     </div>
 
                     {/* Content */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-3">
+                      {/* Category Image */}
+                      {item.categoryImage && (
+                        <img
+                          src={item.categoryImage}
+                          alt={item.categoryName || item.title || "Category"}
+                          className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                        />
+                      )}
+
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2">
-                          {item.title}
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-orange-600 transition-colors">
+                          {item.categoryName || item.title || "Certification"}
                         </h3>
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        {item.text && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {item.text}
+                          </p>
+                        )}
+                        <p className="text-xs text-orange-500 font-medium mt-1.5">
                           View Details →
                         </p>
                       </div>

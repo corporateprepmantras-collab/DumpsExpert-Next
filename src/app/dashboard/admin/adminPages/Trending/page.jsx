@@ -4,12 +4,24 @@ import axios from "axios";
 
 export default function ManageTrendingCerts() {
   const [certs, setCerts] = useState([]);
-  const [newTitle, setNewTitle] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [newText, setNewText] = useState("");
   const [newLink, setNewLink] = useState("");
 
   useEffect(() => {
     fetchCerts();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get("/api/product-categories");
+      setCategories(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
 
   const fetchCerts = async () => {
     const res = await axios.get("/api/trending");
@@ -22,8 +34,12 @@ export default function ManageTrendingCerts() {
   };
 
   const addCert = async () => {
-    if (!newTitle.trim()) {
-      alert("Certification name is required");
+    if (!selectedCategory) {
+      alert("Please select a category");
+      return;
+    }
+    if (!newText.trim()) {
+      alert("Description text is required");
       return;
     }
     if (!newLink.trim()) {
@@ -31,14 +47,19 @@ export default function ManageTrendingCerts() {
       return;
     }
     const sanitizedLink = sanitizeLink(newLink);
+    const category = categories.find((cat) => cat._id === selectedCategory);
 
     try {
       const response = await axios.post("/api/trending", {
-        title: newTitle,
+        categoryId: selectedCategory,
+        categoryName: category.name,
+        categoryImage: category.image || "",
+        text: newText,
         link: sanitizedLink,
       });
       console.log("✅ Success:", response.data);
-      setNewTitle("");
+      setSelectedCategory("");
+      setNewText("");
       setNewLink("");
       fetchCerts();
     } catch (error) {
@@ -60,11 +81,23 @@ export default function ManageTrendingCerts() {
         </h2>
 
         <div className="space-y-3 mb-6 bg-gray-50 p-6 rounded-lg border border-gray-200">
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select a category</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Enter certification name"
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
+            placeholder="Enter description text"
             className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
@@ -89,16 +122,30 @@ export default function ManageTrendingCerts() {
               className="border border-gray-200 rounded p-4 bg-gray-50 hover:bg-gray-100"
             >
               <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-800">{cert.title}</p>
-                  {cert.link && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      Link:{" "}
-                      <span className="text-blue-600 break-all">
-                        {cert.link}
-                      </span>
-                    </p>
+                <div className="flex gap-4 flex-1">
+                  {cert.categoryImage && (
+                    <img
+                      src={cert.categoryImage}
+                      alt={cert.categoryName}
+                      className="w-16 h-16 object-cover rounded"
+                    />
                   )}
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">
+                      {cert.categoryName}
+                    </p>
+                    {cert.text && (
+                      <p className="text-sm text-gray-700 mt-1">{cert.text}</p>
+                    )}
+                    {cert.link && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Link:{" "}
+                        <span className="text-blue-600 break-all">
+                          {cert.link}
+                        </span>
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => deleteCert(cert._id)}

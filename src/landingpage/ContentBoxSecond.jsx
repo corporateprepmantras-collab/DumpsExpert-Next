@@ -2,7 +2,7 @@
 
 export default function ContentBoxSecond({ content = "" }) {
   return (
-    <section className="bg-white text-black p-6 md:p-10 rounded-lg shadow-md space-y-8">
+    <section className="bg-white text-black  md:pt-10 md:px-10 rounded-lg shadow-md space-y-8">
       <div
         style={{ lineHeight: "1.6" }}
         dangerouslySetInnerHTML={{ __html: content }}

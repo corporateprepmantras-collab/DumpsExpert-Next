@@ -20,10 +20,28 @@ export async function GET() {
 export async function POST(request) {
   try {
     await connectMongoDB();
-    const { title, link } = await request.json();
+    const { categoryId, categoryName, categoryImage, text, link } =
+      await request.json();
 
-    if (!title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    if (!categoryId) {
+      return NextResponse.json(
+        { error: "Category is required" },
+        { status: 400 },
+      );
+    }
+
+    if (!categoryName) {
+      return NextResponse.json(
+        { error: "Category name is required" },
+        { status: 400 },
+      );
+    }
+
+    if (!text || !text.trim()) {
+      return NextResponse.json(
+        { error: "Description text is required" },
+        { status: 400 },
+      );
     }
 
     if (!link || !link.trim()) {
@@ -40,7 +58,13 @@ export async function POST(request) {
       );
     }
 
-    const newItem = await Trending.create({ title, link: sanitizedLink });
+    const newItem = await Trending.create({
+      categoryId,
+      categoryName,
+      categoryImage: categoryImage || "",
+      text: text.trim(),
+      link: sanitizedLink,
+    });
     const serialized = serializeMongoDoc(newItem.toObject());
 
     return NextResponse.json(
