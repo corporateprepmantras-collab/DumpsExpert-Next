@@ -22,7 +22,6 @@ const userInfoSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
       validate: {
         validator: function (v) {
           return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -211,7 +210,7 @@ const userInfoSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt
-  }
+  },
 );
 
 // ========================================
@@ -340,7 +339,7 @@ userInfoSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
     const changedTimestamp = parseInt(
       this.passwordChangedAt.getTime() / 1000,
-      10
+      10,
     );
     return JWTTimestamp < changedTimestamp;
   }
@@ -433,7 +432,7 @@ userInfoSchema.statics.getStats = async function () {
 userInfoSchema.virtual("accountAge").get(function () {
   if (!this.createdAt) return 0;
   return Math.floor(
-    (Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - this.createdAt.getTime()) / (1000 * 60 * 60 * 24),
   );
 });
 

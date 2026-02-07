@@ -227,7 +227,6 @@ export async function generateStaticParams() {
 
     const res = await fetch(url, {
       next: { revalidate: 60 },
-      cache: "no-store",
     });
 
     if (!res.ok) {

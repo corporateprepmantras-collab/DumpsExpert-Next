@@ -142,12 +142,11 @@ const studentSchema = new mongoose.Schema(
   {
     timestamps: true, // Adds createdAt and updatedAt
     collection: "students",
-  }
+  },
 );
 
 // Indexes for better query performance
-studentSchema.index({ email: 1 });
-studentSchema.index({ enrollmentNumber: 1 });
+// Note: email and enrollmentNumber already have unique indexes from field definitions
 studentSchema.index({ createdAt: -1 });
 
 // Virtual for full name
