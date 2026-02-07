@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FaQuoteLeft } from "react-icons/fa";
 import RelatedProducts from "./RelatedProducts";
@@ -198,6 +198,73 @@ export default function ProductDetailsPage() {
 
   const productAvailable = isProductAvailable(product);
 
+  // Helper function for discount calculation
+  const calculateDiscount = (mrp, price) => {
+    if (!mrp || !price || mrp <= price) return 0;
+    return Math.round(((mrp - price) / mrp) * 100);
+  };
+
+  // Real-time price calculations using useMemo for instant updates
+  const pdfPrices = useMemo(() => {
+    if (!product) return null;
+    return {
+      priceInr: toNum(product.dumpsPriceInr),
+      priceUsd:
+        toNum(product.dumpsPriceUsd) ||
+        (toNum(product.dumpsPriceInr) > 0
+          ? parseFloat((toNum(product.dumpsPriceInr) / 83).toFixed(2))
+          : 0),
+      mrpInr: toNum(product.dumpsMrpInr),
+      mrpUsd:
+        toNum(product.dumpsMrpUsd) ||
+        (toNum(product.dumpsMrpInr) > 0
+          ? parseFloat((toNum(product.dumpsMrpInr) / 83).toFixed(2))
+          : 0),
+      discount: calculateDiscount(product.dumpsMrpInr, product.dumpsPriceInr),
+    };
+  }, [product]);
+
+  const onlineExamPrices = useMemo(() => {
+    return {
+      priceInr: examPrices.priceInr || 0,
+      priceUsd:
+        examPrices.priceUsd ||
+        (examPrices.priceInr > 0
+          ? parseFloat((examPrices.priceInr / 83).toFixed(2))
+          : 0),
+      mrpInr: examPrices.mrpInr || 0,
+      mrpUsd:
+        examPrices.mrpUsd ||
+        (examPrices.mrpInr > 0
+          ? parseFloat((examPrices.mrpInr / 83).toFixed(2))
+          : 0),
+      discount: calculateDiscount(examPrices.mrpInr, examPrices.priceInr),
+    };
+  }, [examPrices]);
+
+  const comboPrices = useMemo(() => {
+    if (!product) return null;
+    return {
+      priceInr: toNum(product.comboPriceInr),
+      priceUsd:
+        toNum(product.comboPriceUsd) ||
+        (toNum(product.comboPriceInr) > 0
+          ? parseFloat((toNum(product.comboPriceInr) / 83).toFixed(2))
+          : 0),
+      mrpInr: toNum(product.comboMrpInr),
+      mrpUsd:
+        toNum(product.comboMrpUsd) ||
+        (toNum(product.comboMrpInr) > 0
+          ? parseFloat((toNum(product.comboMrpInr) / 83).toFixed(2))
+          : 0),
+      discount: calculateDiscount(product.comboMrpInr, product.comboPriceInr),
+    };
+  }, [product]);
+
+  const hasOnlineExam = useMemo(() => {
+    return examPrices.priceInr > 0 || examPrices.priceUsd > 0;
+  }, [examPrices]);
+
   // Update the handleAddToCart function in your ProductDetailsPage component
 
   const handleAddToCart = (type = "regular") => {
@@ -375,11 +442,6 @@ export default function ProductDetailsPage() {
     if (slug) loadData();
   }, [slug]);
 
-  const calculateDiscount = (mrp, price) => {
-    if (!mrp || !price || mrp <= price) return 0;
-    return Math.round(((mrp - price) / mrp) * 100);
-  };
-
   const handleDownload = (url, filename) => {
     if (!url) {
       toast.error("Download link not available");
@@ -437,8 +499,6 @@ export default function ProductDetailsPage() {
         </div>
       </div>
     );
-
-  const hasOnlineExam = examPrices.priceInr > 0 || examPrices.priceUsd > 0;
 
   return (
     <div className="min-h-screen pt-12 sm:pt-14 lg:pt-16 bg-gray-50 text-gray-800">
@@ -612,8 +672,6 @@ export default function ProductDetailsPage() {
             </div>
           )}
 
-          
-
           {avgRating && (
             <div className="flex items-center gap-0.5 flex-wrap">
               {[1, 2, 3, 4, 5].map((v) => (
@@ -635,7 +693,7 @@ export default function ProductDetailsPage() {
           {/* Pricing Sections */}
           <div className="mt-1 sm:mt-1.5 space-y-1 sm:space-y-1.5">
             {/* PDF Download */}
-            {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
+            {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
               <div
                 className={`flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg shadow-sm ${
                   !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
@@ -650,34 +708,30 @@ export default function ProductDetailsPage() {
                       </span>
                     )}
                   </p>
-                  <p className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                    ₹{product.dumpsPriceInr ?? "N/A"}
-                    <span className="text-red-500 ml-1 line-through text-[8px] sm:text-[9px]">
-                      ₹{product.dumpsMrpInr ?? "N/A"}
-                    </span>
-                    <span className="text-gray-600 text-xs sm:text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpInr,
-                        product.dumpsPriceInr,
-                      )}
-                      % off)
-                    </span>
-                  </p>
-                  <p className="text-blue-600 font-bold text-sm sm:text-base">
-                    ${product.dumpsPriceUsd ?? "N/A"}
-                    <span className="text-red-500 ml-2 line-through text-xs sm:text-sm">
-                      ${product.dumpsMrpUsd ?? "N/A"}
-                    </span>
-                    <span className="text-gray-600 text-xs sm:text-sm ml-1">
-                      (
-                      {calculateDiscount(
-                        product.dumpsMrpUsd,
-                        product.dumpsPriceUsd,
-                      )}
-                      % off)
-                    </span>
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                    <div>
+                      <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                        ₹{pdfPrices.priceInr || "N/A"}
+                      </span>
+                      <span className="text-red-500 ml-1 line-through text-[8px] sm:text-[9px]">
+                        ₹{pdfPrices.mrpInr || "N/A"}
+                      </span>
+                      <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
+                        ({pdfPrices.discount}% off)
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                        ${pdfPrices.priceUsd || "N/A"}
+                      </span>
+                      <span className="text-red-500 ml-1 line-through text-[8px] sm:text-[9px]">
+                        ${pdfPrices.mrpUsd || "N/A"}
+                      </span>
+                      <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
+                        ({pdfPrices.discount}% off)
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">
@@ -726,24 +780,40 @@ export default function ProductDetailsPage() {
                       {exams[0].name || "Online Exam"}
                     </p>
                   )}
-                  <p className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                    ₹{examPrices.priceInr || "N/A"}
-                    {examPrices.mrpInr > 0 && (
-                      <>
-                        <span className="text-red-600 line-through ml-2 text-xs sm:text-sm">
-                          ₹{examPrices.mrpInr}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                    <div>
+                      <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                        ₹{onlineExamPrices.priceInr || "N/A"}
+                      </span>
+                      {onlineExamPrices.mrpInr > 0 && (
+                        <>
+                          <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
+                            ₹{onlineExamPrices.mrpInr}
+                          </span>
+                          <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
+                            ({onlineExamPrices.discount}% off)
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {onlineExamPrices.priceUsd > 0 && (
+                      <div>
+                        <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                          ${onlineExamPrices.priceUsd || "N/A"}
                         </span>
-                        <span className="text-gray-600 text-xs sm:text-sm ml-1">
-                          (
-                          {calculateDiscount(
-                            examPrices.mrpInr,
-                            examPrices.priceInr,
-                          )}
-                          % off)
-                        </span>
-                      </>
+                        {onlineExamPrices.mrpUsd > 0 && (
+                          <>
+                            <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
+                              ${onlineExamPrices.mrpUsd}
+                            </span>
+                            <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
+                              ({onlineExamPrices.discount}% off)
+                            </span>
+                          </>
+                        )}
+                      </div>
                     )}
-                  </p>
+                  </div>
                   {exams[0] && (
                     <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
                       Duration: {exams[0].duration || 0} mins | Questions:{" "}
@@ -774,7 +844,8 @@ export default function ProductDetailsPage() {
 
             {/* Combo */}
             {hasOnlineExam &&
-              (product.comboPriceInr || product.comboPriceUsd) && (
+              comboPrices &&
+              (comboPrices.priceInr || comboPrices.priceUsd) && (
                 <div
                   className={`flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg shadow-sm ${
                     !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
@@ -789,20 +860,32 @@ export default function ProductDetailsPage() {
                         </span>
                       )}
                     </p>
-                    <p className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                      ₹{product.comboPriceInr ?? "N/A"}
-                      <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
-                        ₹{product.comboMrpInr ?? "N/A"}
-                      </span>
-                      <span className="text-gray-600 text-[8px] sm:text-[9px] ml-1">
-                        (
-                        {calculateDiscount(
-                          product.comboMrpInr,
-                          product.comboPriceInr,
-                        )}
-                        % off)
-                      </span>
-                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                      <div>
+                        <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                          ₹{comboPrices.priceInr || "N/A"}
+                        </span>
+                        <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
+                          ₹{comboPrices.mrpInr || "N/A"}
+                        </span>
+                        <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
+                          ({comboPrices.discount}% off)
+                        </span>
+                      </div>
+                      {comboPrices.priceUsd && (
+                        <div>
+                          <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                            ${comboPrices.priceUsd || "N/A"}
+                          </span>
+                          <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
+                            ${comboPrices.mrpUsd || "N/A"}
+                          </span>
+                          <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
+                            ({comboPrices.discount}% off)
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">

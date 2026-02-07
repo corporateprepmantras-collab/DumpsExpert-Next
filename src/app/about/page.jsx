@@ -46,7 +46,7 @@ export default function AboutUs() {
 
     const timer = setInterval(() => {
       setStartIndex((prev) =>
-        prev + visibleCards < products.length ? prev + visibleCards : 0
+        prev + visibleCards < products.length ? prev + visibleCards : 0,
       );
     }, 5000);
 
@@ -56,7 +56,7 @@ export default function AboutUs() {
   /* ---------------- NAV ---------------- */
   const next = useCallback(() => {
     setStartIndex((prev) =>
-      prev + visibleCards < products.length ? prev + visibleCards : 0
+      prev + visibleCards < products.length ? prev + visibleCards : 0,
     );
   }, [products.length, visibleCards]);
 
@@ -64,13 +64,13 @@ export default function AboutUs() {
     setStartIndex((prev) =>
       prev - visibleCards >= 0
         ? prev - visibleCards
-        : Math.max(products.length - visibleCards, 0)
+        : Math.max(products.length - visibleCards, 0),
     );
   }, [products.length, visibleCards]);
 
   const visibleProducts = useMemo(
     () => products.slice(startIndex, startIndex + visibleCards),
-    [products, startIndex, visibleCards]
+    [products, startIndex, visibleCards],
   );
 
   const totalPages = Math.ceil(products.length / visibleCards);
@@ -81,15 +81,16 @@ export default function AboutUs() {
       {/* ================= ABOUT SECTION ================= */}
       <section className="min-h-screen flex items-center justify-center px-4">
         <div className="flex flex-col lg:flex-row items-center gap-8 px-6 py-12 max-w-6xl w-full">
-          <div className="lg:w-1/2">
-            <Image
-              src={banner}
-              alt="About Prepmantras"
-              width={500}
-              height={400}
-              priority
-              className="rounded-xl mx-auto"
-            />
+          <div className="lg:w-1/2 w-full">
+            <div className="relative w-full h-64 sm:h-80 md:h-96">
+              <Image
+                src={banner}
+                alt="About Prepmantras"
+                fill
+                priority
+                className="rounded-xl object-contain"
+              />
+            </div>
           </div>
 
           <div className="lg:w-1/2 space-y-6">
@@ -153,11 +154,11 @@ export default function AboutUs() {
                   href={`/ItDumps/sap/${slug}`}
                   className="group bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden flex flex-col"
                 >
-                  <div className="h-52 bg-orange-50 overflow-hidden">
+                  <div className="relative h-52 bg-gradient-to-br from-orange-50 to-blue-50 overflow-hidden">
                     <img
                       src={product.imageUrl || "/placeholder.png"}
                       alt={product.title}
-                      className="h-full w-full object-cover group-hover:scale-110 transition duration-700"
+                      className="h-full w-full object-contain p-3 group-hover:scale-105 transition duration-700"
                     />
                   </div>
 

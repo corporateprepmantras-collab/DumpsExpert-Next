@@ -27,9 +27,13 @@ const AllReviews = () => {
   const applyFilters = () => {
     let filtered = [...reviews];
 
-    // Filter by status
+    // Filter by status (case-insensitive)
     if (filterStatus !== "all") {
-      filtered = filtered.filter((r) => r.status === filterStatus);
+      filtered = filtered.filter((r) => {
+        const reviewStatus = (r.status || "").toLowerCase();
+        const filterValue = filterStatus.toLowerCase();
+        return reviewStatus === filterValue;
+      });
     }
 
     // Filter by date range
@@ -38,6 +42,7 @@ const AllReviews = () => {
       start.setHours(0, 0, 0, 0);
       filtered = filtered.filter((r) => {
         const reviewDate = new Date(r.createdAt || r.date);
+        reviewDate.setHours(0, 0, 0, 0);
         return reviewDate >= start;
       });
     }
@@ -74,7 +79,7 @@ const AllReviews = () => {
   const fetchProductDetails = async (reviewsData) => {
     const productIds = [
       ...new Set(
-        reviewsData.map((r) => r.productId || r.product).filter(Boolean)
+        reviewsData.map((r) => r.productId || r.product).filter(Boolean),
       ),
     ];
 
@@ -113,12 +118,16 @@ const AllReviews = () => {
     if (!confirm("Are you sure you want to delete this review?")) return;
 
     try {
-      await axios.delete(`/api/reviews/${reviewId}`);
+      console.log("Deleting review:", reviewId);
+      const response = await axios.delete(`/api/reviews/${reviewId}`);
+      console.log("Delete response:", response.data);
       toast.success("Review deleted successfully!");
       fetchAllReviews();
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete review");
+      console.error("Delete error:", err);
+      const errorMessage =
+        err.response?.data?.error || err.message || "Failed to delete review";
+      toast.error(`Delete failed: ${errorMessage}`);
     }
   };
 
@@ -131,17 +140,35 @@ const AllReviews = () => {
       return;
 
     try {
-      await Promise.all(
-        selectedReviews.map((id) => axios.delete(`/api/reviews/${id}`))
+      console.log("Bulk deleting reviews:", selectedReviews);
+      const results = await Promise.allSettled(
+        selectedReviews.map((id) => axios.delete(`/api/reviews/${id}`)),
       );
-      toast.success(
-        `${selectedReviews.length} review(s) deleted successfully!`
+
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+
+      console.log(
+        `Bulk delete results: ${successful} successful, ${failed} failed`,
       );
+
+      if (failed > 0) {
+        toast.warning(
+          `${successful} review(s) deleted successfully, ${failed} failed`,
+        );
+      } else {
+        toast.success(
+          `${selectedReviews.length} review(s) deleted successfully!`,
+        );
+      }
+
       setSelectedReviews([]);
       fetchAllReviews();
     } catch (err) {
-      console.error(err);
-      toast.error("Error deleting reviews");
+      console.error("Bulk delete error:", err);
+      const errorMessage =
+        err.response?.data?.error || err.message || "Error deleting reviews";
+      toast.error(`Bulk delete failed: ${errorMessage}`);
     }
   };
 
@@ -154,11 +181,11 @@ const AllReviews = () => {
     try {
       await Promise.all(
         selectedReviews.map((id) =>
-          axios.put(`/api/reviews/${id}`, { status: "Publish" })
-        )
+          axios.put(`/api/reviews/${id}`, { status: "Publish" }),
+        ),
       );
       toast.success(
-        `${selectedReviews.length} review(s) published successfully!`
+        `${selectedReviews.length} review(s) published successfully!`,
       );
       setSelectedReviews([]);
       fetchAllReviews();
@@ -177,11 +204,11 @@ const AllReviews = () => {
     try {
       await Promise.all(
         selectedReviews.map((id) =>
-          axios.put(`/api/reviews/${id}`, { status: "Pending" })
-        )
+          axios.put(`/api/reviews/${id}`, { status: "Pending" }),
+        ),
       );
       toast.success(
-        `${selectedReviews.length} review(s) unpublished successfully!`
+        `${selectedReviews.length} review(s) unpublished successfully!`,
       );
       setSelectedReviews([]);
       fetchAllReviews();
@@ -193,7 +220,7 @@ const AllReviews = () => {
 
   const toggleReviewSelection = (id) => {
     setSelectedReviews((prev) =>
-      prev.includes(id) ? prev.filter((rid) => rid !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((rid) => rid !== id) : [...prev, id],
     );
   };
 
@@ -345,13 +372,21 @@ const AllReviews = () => {
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">Published</p>
           <p className="text-2xl font-bold text-green-600">
-            {reviews.filter((r) => r.status === "Publish").length}
+            {
+              reviews.filter(
+                (r) => (r.status || "").toLowerCase() === "publish",
+              ).length
+            }
           </p>
         </div>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">Pending</p>
           <p className="text-2xl font-bold text-yellow-600">
-            {reviews.filter((r) => r.status === "Pending").length}
+            {
+              reviews.filter(
+                (r) => (r.status || "").toLowerCase() === "pending",
+              ).length
+            }
           </p>
         </div>
       </div>
@@ -476,13 +511,13 @@ const AllReviews = () => {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
-                        }
+                        },
                       )}
                     </td>
                     <td className="p-3 border text-center">
                       <span
                         className={`px-3 py-1 text-white rounded-full text-xs font-medium ${
-                          r.status === "Publish"
+                          (r.status || "").toLowerCase() === "publish"
                             ? "bg-green-500"
                             : "bg-yellow-500"
                         }`}
@@ -492,7 +527,7 @@ const AllReviews = () => {
                     </td>
                     <td className="p-3 border text-center">
                       <div className="flex items-center justify-center gap-2">
-                        {r.status === "Pending" ? (
+                        {(r.status || "").toLowerCase() === "pending" ? (
                           <button
                             onClick={() => handleStatusChange(r._id, "Publish")}
                             className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors"

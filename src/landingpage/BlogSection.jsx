@@ -124,11 +124,11 @@ export default function BlogSection({ blogs = [], categories = [] }) {
                           className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl border border-gray-100 hover:border-[#FF6900]/30 cursor-pointer"
                         >
                           {blog.imageUrl && (
-                            <div className="relative h-48 overflow-hidden">
+                            <div className="relative h-48 overflow-hidden bg-gradient-to-br from-orange-50 to-gray-50">
                               <img
                                 src={blog.imageUrl}
                                 alt={blog.title}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
                               />
                             </div>
                           )}

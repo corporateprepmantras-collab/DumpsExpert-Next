@@ -7,11 +7,13 @@ const BlogCard = ({ title, description, date, imageUrl, slug }) => {
     <>
       <div className="bg-gray-100 h-full flex flex-col justify-between rounded-xl shadow-md p-4 hover:shadow-lg transition">
         {imageUrl && (
-          <img
-            src={imageUrl}
-            alt={title}
-            className="w-full h-60 object-cover rounded mb-4"
-          />
+          <div className="w-full h-60 bg-gradient-to-br from-orange-50 to-gray-50 rounded mb-4 overflow-hidden">
+            <img
+              src={imageUrl}
+              alt={title}
+              className="w-full h-full object-contain p-2"
+            />
+          </div>
         )}
         <div>
           <h2 className="text-lg font-semibold text-gray-800">{title}</h2>

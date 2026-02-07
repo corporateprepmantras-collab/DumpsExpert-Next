@@ -221,13 +221,13 @@ export default function ExamDumpsSlider({ products = [] }) {
                       <img
                         src={product.imageUrl || "/placeholder.png"}
                         alt={product.title}
-                        className="w-full h-full object-contain object-center p-4 sm:object-cover sm:p-0 transition-transform duration-700 group-hover:scale-110 pointer-events-none"
+                        className="w-full h-full object-contain object-center p-4 transition-transform duration-700 group-hover:scale-105 pointer-events-none"
                         loading="lazy"
                         decoding="async"
                         draggable="false"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                      <div className="absolute top-2 right-2 bg-orange-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold shadow-lg z-10">
                         Popular
                       </div>
                     </div>

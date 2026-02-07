@@ -19,7 +19,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-gray-300 relative overflow-hidden">
+    <footer className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-white relative overflow-hidden">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div
@@ -49,7 +49,7 @@ export default function Footer() {
             <h3 className="text-sm font-bold text-white mb-2 tracking-wide">
               About PrepMantras
             </h3>
-            <p className="text-xs leading-relaxed text-gray-400">
+            <p className="text-xs leading-relaxed text-white">
               At PrepMantras, our mission is simple — your exam success. We help
               students clear exams faster and smarter by providing 100%
               authentic, exam-focused questions designed to boost confidence and
@@ -63,7 +63,7 @@ export default function Footer() {
             <h3 className="text-sm font-bold text-white mb-2 tracking-wide">
               Popular Categories
             </h3>
-            <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-gray-400">
+            <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-white">
               {[
                 "SAP",
                 "AZURE",
@@ -98,7 +98,7 @@ export default function Footer() {
             <h3 className="text-sm font-bold text-white mb-2 tracking-wide">
               Popular Links
             </h3>
-            <ul className="space-y-1 text-xs text-gray-400">
+            <ul className="space-y-1 text-xs text-white">
               <li>
                 <button
                   onClick={() => handleNavigation("/about")}
@@ -186,9 +186,7 @@ export default function Footer() {
               </a>
             </div>
             <div className="mt-3">
-              <p className="text-xs text-gray-400 mb-2 font-semibold">
-                We Accept
-              </p>
+              <p className="text-xs text-white mb-2 font-semibold">We Accept</p>
               <Image
                 src={PaymentGateway}
                 alt="Payment Methods"
@@ -203,7 +201,7 @@ export default function Footer() {
           <h3 className="text-xs font-bold text-white mb-2 tracking-wide">
             Legal Disclaimer
           </h3>
-          <div className="space-y-2 text-[11px] leading-relaxed text-gray-400">
+          <div className="space-y-2 text-[11px] leading-relaxed text-white">
             <p>
               PrepMantras.com is an independent educational platform providing
               study materials and practice questions. We are not affiliated with
@@ -223,7 +221,7 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="border-t border-slate-800 pt-4">
-          <div className="flex flex-col gap-2 text-[11px] text-gray-500">
+          <div className="flex flex-col gap-2 text-[11px] text-white">
             <p className="leading-relaxed">
               PrepMantras.com is an independent exam-preparation platform and is
               not affiliated with, endorsed by, or associated with SAP SE,

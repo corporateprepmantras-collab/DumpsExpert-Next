@@ -12,6 +12,7 @@ const ProductList = () => {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -56,6 +57,43 @@ const ProductList = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return;
+
+    try {
+      await Promise.all(
+        selectedProducts.map((id) => axios.delete(`/api/products?id=${id}`)),
+      );
+      setProducts((prev) =>
+        prev.filter((p) => !selectedProducts.includes(p._id)),
+      );
+      setSuccessMessage(
+        `${selectedProducts.length} product(s) deleted successfully!`,
+      );
+      setTimeout(() => setSuccessMessage(""), 3000);
+      setSelectedProducts([]);
+      setDeleteConfirm(null);
+    } catch (err) {
+      setError("Failed to delete selected products");
+      console.error(err);
+      setDeleteConfirm(null);
+    }
+  };
+
+  const toggleSelectProduct = (id) => {
+    setSelectedProducts((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id],
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.length === filtered.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filtered.map((p) => p._id));
+    }
+  };
+
   // Get unique categories and statuses
   const categories = [
     ...new Set(products.map((p) => p.category).filter(Boolean)),
@@ -84,7 +122,30 @@ const ProductList = () => {
       <div className="w-full max-w-full px-3 sm:px-4">
         {/* Header */}
         <div className="flex flex-row md:flex-row justify-between items-start gap-2 mb-2">
-          <h2 className="text-lg font-bold text-gray-800">Products</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-gray-800">Products</h2>
+            {selectedProducts.length > 0 && (
+              <button
+                onClick={() => setDeleteConfirm("bulk")}
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition font-semibold flex items-center gap-1 text-xs"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Delete ({selectedProducts.length})
+              </button>
+            )}
+          </div>
 
           <div className="flex flex-row items-center gap-1.5 w-full md:w-auto flex-wrap">
             {/* Category Filter */}
@@ -300,8 +361,9 @@ const ProductList = () => {
                 </h3>
               </div>
               <p className="text-gray-600 mb-6">
-                Are you sure you want to delete this product? This action cannot
-                be undone.
+                {deleteConfirm === "bulk"
+                  ? `Are you sure you want to delete ${selectedProducts.length} selected product(s)? This action cannot be undone.`
+                  : "Are you sure you want to delete this product? This action cannot be undone."}
               </p>
               <div className="flex justify-end gap-3">
                 <button
@@ -311,7 +373,11 @@ const ProductList = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleDelete(deleteConfirm)}
+                  onClick={() =>
+                    deleteConfirm === "bulk"
+                      ? handleBulkDelete()
+                      : handleDelete(deleteConfirm)
+                  }
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                 >
                   Delete
@@ -327,6 +393,17 @@ const ProductList = () => {
             <table className="w-full text-xs min-w-max">
               <thead className="bg-gray-100 border-b">
                 <tr>
+                  <th className="p-1.5 text-left font-semibold text-gray-700 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedProducts.length === filtered.length &&
+                        filtered.length > 0
+                      }
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                  </th>
                   <th className="p-1.5 text-left font-semibold text-gray-700 text-xs">
                     #
                   </th>
@@ -349,6 +426,9 @@ const ProductList = () => {
                     Status
                   </th>
                   <th className="p-1.5 text-left font-semibold text-gray-700 text-xs">
+                    Stock Status
+                  </th>
+                  <th className="p-1.5 text-left font-semibold text-gray-700 text-xs">
                     Publish Status
                   </th>
                   <th className="p-1.5 text-left font-semibold text-gray-700 text-xs">
@@ -359,7 +439,7 @@ const ProductList = () => {
               <tbody className="divide-y divide-gray-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan="9" className="p-4 text-center">
+                    <td colSpan="11" className="p-4 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
                         <p className="text-gray-500 text-sm">
@@ -370,7 +450,7 @@ const ProductList = () => {
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="p-4 text-center">
+                    <td colSpan="11" className="p-4 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <svg
                           className="w-12 h-12 text-gray-300 mb-2"
@@ -409,6 +489,14 @@ const ProductList = () => {
                       key={product._id}
                       className="hover:bg-gray-50 transition"
                     >
+                      <td className="p-1.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product._id)}
+                          onChange={() => toggleSelectProduct(product._id)}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       <td className="p-1.5 text-gray-600">{i + 1}</td>
                       <td className="p-1.5">
                         <img
@@ -466,6 +554,26 @@ const ProductList = () => {
                             }`}
                           ></span>
                           {product.status}
+                        </span>
+                      </td>
+                      <td className="p-1.5">
+                        <span
+                          className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                            product.stockStatus === "In Stock" ||
+                            !product.stockStatus
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          <span
+                            className={`w-1 h-1 rounded-full mr-1 ${
+                              product.stockStatus === "In Stock" ||
+                              !product.stockStatus
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                            }`}
+                          ></span>
+                          {product.stockStatus || "In Stock"}
                         </span>
                       </td>
                       <td className="p-1.5">

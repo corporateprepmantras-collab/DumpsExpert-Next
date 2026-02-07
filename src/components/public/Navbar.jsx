@@ -345,7 +345,7 @@ export default function Navbar() {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`fixed inset-0 bg-black/70 z-40 transition-opacity duration-200 lg:hidden ${
+        className={`fixed inset-0 bg-black/70 z-[9998] transition-opacity duration-200 lg:hidden ${
           isOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -355,7 +355,7 @@ export default function Navbar() {
 
       {/* Mobile Menu Drawer */}
       <aside
-        className={`fixed top-0 right-0 h-full w-3/4 max-w-xs bg-white shadow-2xl z-50 transform transition-transform duration-300 lg:hidden flex flex-col ${
+        className={`fixed top-0 right-0 h-full w-3/4 max-w-xs bg-white shadow-2xl z-[9999] transform transition-transform duration-300 lg:hidden flex flex-col overflow-hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

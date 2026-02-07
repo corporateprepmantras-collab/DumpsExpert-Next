@@ -97,7 +97,7 @@ export default function Breadcrumbs() {
                   <BreadcrumbLink asChild>
                     <Link
                       href={buildHref(index)}
-                      className={`capitalize transition-colors text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[200px] md:max-w-none ${
+                      className={`capitalize transition-colors text-xs sm:text-sm max-w-[200px] sm:max-w-[300px] md:max-w-none overflow-hidden whitespace-nowrap text-ellipsis inline-block ${
                         index === segments.length - 1
                           ? "text-gray-900 font-medium"
                           : "text-gray-600 hover:text-gray-900"
