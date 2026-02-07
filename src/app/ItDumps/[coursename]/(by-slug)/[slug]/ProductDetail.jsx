@@ -558,22 +558,21 @@ export default function ProductDetailsPage() {
     );
 
   return (
-    <div className="min-h-screen pt-20 bg-white text-gray-800">
-      <div className="container mx-auto px-4 pt-2 pb-3">
+    <div className="min-h-screen pt-16 md:pt-20 bg-gray-50 text-gray-800">
+      <div className="container mx-auto px-3 md:px-6 pt-2 pb-3">
         <Breadcrumbs />
       </div>
-      {/* //updated ui */}
       {/* Product Unavailability Alert */}
       {!productAvailable && product && (
-        <div className="container mx-auto px-4 mb-4">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
-            <div className="flex items-center gap-3">
-              <FaExclamationTriangle className="text-red-500 text-xl flex-shrink-0" />
+        <div className="container mx-auto px-3 md:px-6 mb-4">
+          <div className="bg-red-50 border-l-4 border-red-500 p-3 md:p-4 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <FaExclamationTriangle className="text-red-500 text-lg md:text-xl flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-red-800 text-base">
+                <h3 className="font-semibold text-red-800 text-sm md:text-base">
                   Product Currently Unavailable
                 </h3>
-                <p className="text-red-700 text-sm mt-1">
+                <p className="text-red-700 text-xs md:text-sm mt-1">
                   The PDF file for this product is not available at the moment.
                   Please contact support or check back later.
                 </p>
@@ -583,45 +582,49 @@ export default function ProductDetailsPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 flex flex-col md:flex-row gap-10">
-        {/* Left Column - Sticky */}
-        <div className="md:w-[40%]">
-          <div className="md:sticky md:top-24">
+      <div className="container mx-auto px-3 md:px-6 flex flex-col lg:flex-row gap-6 lg:gap-8">
+        {/* Left Column - Image & Features */}
+        <div className="w-full lg:w-[35%]">
+          <div className="lg:sticky lg:top-24 space-y-4">
             <Suspense fallback={<ImageSkeleton />}>
-              <div className="relative w-full h-[400px] rounded-xl overflow-hidden shadow-md bg-gray-50">
+              <div className="relative w-full h-[280px] sm:h-[350px] md:h-[400px] rounded-xl overflow-hidden shadow-lg bg-white border border-gray-200">
                 <Image
                   src={product.imageUrl}
                   alt={product.title}
                   fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 40vw"
-                  quality={60}
+                  className="object-contain p-4"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 35vw"
+                  quality={75}
                   loading="eager"
                   priority
                 />
               </div>
             </Suspense>
 
-            <div className="flex flex-wrap justify-center gap-6 bg-white border border-gray-200 shadow-sm rounded-xl px-6 py-4 mt-6 text-gray-900 text-sm font-medium">
-              {[
-                "Instant Download After Purchase",
-                "100% Real & Updated Dumps",
-                "100% Money Back Guarantee",
-                "90 Days Free Updates",
-                "24/7 Customer Support",
-              ].map((f, i) => (
-                <div key={i} className="flex items-center gap-2 min-w-[200px]">
-                  <FaCheckCircle className="text-blue-600 text-xl flex-shrink-0" />
-                  <span>{f}</span>
-                </div>
-              ))}
+            <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-5">
+              <div className="space-y-3">
+                {[
+                  "Instant Download After Purchase",
+                  "100% Real & Updated Dumps",
+                  "100% Money Back Guarantee",
+                  "90 Days Free Updates",
+                  "24/7 Customer Support",
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <FaCheckCircle className="text-blue-600 text-lg md:text-xl flex-shrink-0" />
+                    <span className="text-sm md:text-base text-gray-800 font-medium">
+                      {f}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="md:w-[60%] space-y-3">
-          <h1 className="text-2xl md:text-3xl font-bold break-words">
+        {/* Right Column - Details */}
+        <div className="w-full lg:w-[65%] space-y-4 md:space-y-5">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words leading-tight">
             {product.title}
           </h1>
 
@@ -632,13 +635,13 @@ export default function ProductDetailsPage() {
             product.passingScore ||
             product.duration ||
             product.examLastUpdated) && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-4">
-              <h3 className="font-semibold text-base mb-3 text-blue-900 flex items-center gap-2">
-                <FaFileAlt className="text-blue-600" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 md:p-5 shadow-sm">
+              <h3 className="font-semibold text-base md:text-lg mb-4 text-blue-900 flex items-center gap-2">
+                <FaFileAlt className="text-blue-600 text-lg" />
                 Exam Information
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {product.examCode && (
                   <div className="flex items-start gap-2">
                     <FaClipboardList className="text-blue-600 mt-1 flex-shrink-0" />
@@ -759,7 +762,7 @@ export default function ProductDetailsPage() {
           )}
 
           {/* Pricing Sections */}
-          <div className="mt-4 space-y-6">
+          <div className="space-y-4 md:space-y-5">
             {isLoadingExams ? (
               <PricingSkeleton />
             ) : (
@@ -826,7 +829,7 @@ export default function ProductDetailsPage() {
           {/* Description */}
           <ContentSection title="Description">
             <div
-              className="prose prose-sm max-w-none prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-gray-900 prose-a:text-blue-600 prose-headings:text-gray-900 break-words whitespace-normal [&_img]:max-w-full [&_img]:h-auto [&_table]:w-full [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_code]:break-words"
+              className="prose prose-sm md:prose-base max-w-none prose-p:text-gray-700 prose-p:text-sm md:prose-p:text-base prose-li:text-gray-700 prose-li:text-sm md:prose-li:text-base prose-strong:text-gray-900 prose-a:text-blue-600 prose-headings:text-gray-900 prose-headings:text-base md:prose-headings:text-lg break-words whitespace-normal [&_img]:max-w-full [&_img]:h-auto [&_table]:w-full [&_table]:overflow-x-auto [&_table]:text-sm [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:text-xs md:[&_code]:text-sm"
               style={{
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",
@@ -840,7 +843,7 @@ export default function ProductDetailsPage() {
           {/* Long Description */}
           <ContentSection title="Detailed Overview">
             <div
-              className="prose prose-sm max-w-full prose-p:text-gray-700 prose-p:break-words prose-li:text-gray-700 prose-li:break-words prose-strong:text-gray-900 prose-a:text-blue-600 prose-a:break-all prose-headings:break-words break-words overflow-hidden [&_*]:max-w-full [&_*]:break-words [&_img]:max-w-full [&_img]:h-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:break-all"
+              className="prose prose-sm md:prose-base max-w-full prose-p:text-gray-700 prose-p:text-sm md:prose-p:text-base prose-p:break-words prose-li:text-gray-700 prose-li:text-sm md:prose-li:text-base prose-li:break-words prose-strong:text-gray-900 prose-a:text-blue-600 prose-a:break-all prose-headings:break-words prose-headings:text-base md:prose-headings:text-lg break-words overflow-hidden [&_*]:max-w-full [&_*]:break-words [&_img]:max-w-full [&_img]:h-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:text-xs md:[&_table]:text-sm [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:text-xs md:[&_pre]:text-sm [&_code]:break-all [&_code]:text-xs md:[&_code]:text-sm"
               style={{
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",
@@ -857,7 +860,7 @@ export default function ProductDetailsPage() {
 
       {/* Full Width Sections Below */}
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-3 md:px-6 mt-8 md:mt-10">
         <MemoizedReviewsSection
           reviews={reviews}
           reviewForm={reviewForm}
@@ -867,7 +870,7 @@ export default function ProductDetailsPage() {
         />
       </div>
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-3 md:px-6 mt-6 md:mt-8">
         {product.faqs && product.faqs.length > 0 && (
           <MemoizedFAQSection
             faqs={product.faqs}
@@ -877,7 +880,7 @@ export default function ProductDetailsPage() {
         )}
       </div>
 
-      <div ref={relatedRef}>
+      <div ref={relatedRef} className="mt-8 md:mt-10">
         {showRelated && (
           <Suspense
             fallback={
@@ -891,7 +894,7 @@ export default function ProductDetailsPage() {
         )}
       </div>
 
-      <Toaster />
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
@@ -900,8 +903,8 @@ export default function ProductDetailsPage() {
 
 // Memoized ContentSection component
 const ContentSection = memo(({ title, children }) => (
-  <div className="bg-white rounded-2xl shadow-lg p-4">
-    <h2 className="text-lg font-bold mb-3 text-gray-900">{title}</h2>
+  <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 md:p-6">
+    <h2 className="text-lg md:text-xl font-bold mb-4 text-gray-900">{title}</h2>
     <div className="relative w-full overflow-visible">{children}</div>
   </div>
 ));
@@ -928,91 +931,101 @@ const PricingCard = memo(
 
     return (
       <div
-        className={`flex flex-col md:flex-row md:justify-between gap-4 p-3 border rounded-lg shadow-sm ${
-          unavailable ? "bg-gray-100 opacity-70" : "bg-white"
+        className={`border rounded-xl shadow-sm overflow-hidden ${
+          unavailable ? "bg-gray-50 opacity-70" : "bg-white"
         }`}
       >
-        <div className="w-full">
-          <p className="font-semibold text-base md:text-lg">
+        <div className="p-4 md:p-5">
+          <p className="font-semibold text-base md:text-lg mb-2">
             {title}
             {unavailable && (
-              <span className="ml-2 text-xs text-red-600 font-normal">
+              <span className="block sm:inline sm:ml-2 text-xs text-red-600 font-normal mt-1 sm:mt-0">
                 (Currently Unavailable)
               </span>
             )}
           </p>
           {examInfo && (
-            <p className="text-xs text-gray-600 mb-1">
+            <p className="text-xs md:text-sm text-gray-600 mb-2">
               {examInfo.name || "Online Exam"}
             </p>
           )}
-          <p className="text-blue-600 font-bold text-sm md:text-base">
-            ₹{priceInr ?? "N/A"}
-            {mrpInr > 0 && (
-              <>
-                <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
-                  ₹{mrpInr}
-                </span>
-                <span className="text-gray-600 text-xs md:text-sm ml-1">
-                  ({calculateDiscount(mrpInr, priceInr)}% off)
-                </span>
-              </>
-            )}
-          </p>
-          <p className="text-blue-600 font-bold text-sm md:text-base">
-            ${priceUsd ?? "N/A"}
-            {mrpUsd > 0 && (
-              <>
-                <span className="text-red-500 ml-2 line-through text-xs md:text-sm">
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
+            <div>
+              <span className="text-blue-600 font-bold text-lg md:text-xl">
+                ₹{priceInr ?? "N/A"}
+              </span>
+              {mrpInr > 0 && (
+                <>
+                  <span className="text-red-500 ml-2 line-through text-sm md:text-base">
+                    ₹{mrpInr}
+                  </span>
+                  <span className="text-green-600 text-xs md:text-sm ml-2 font-semibold">
+                    Save {calculateDiscount(mrpInr, priceInr)}%
+                  </span>
+                </>
+              )}
+            </div>
+            <div>
+              <span className="text-blue-600 font-bold text-lg md:text-xl">
+                ${priceUsd ?? "N/A"}
+              </span>
+              {mrpUsd > 0 && (
+                <span className="text-red-500 ml-2 line-through text-sm md:text-base">
                   ${mrpUsd}
                 </span>
-                <span className="text-gray-600 text-xs md:text-sm ml-1">
-                  ({calculateDiscount(mrpUsd, priceUsd)}% off)
-                </span>
-              </>
-            )}
-          </p>
+              )}
+            </div>
+          </div>
+
           {examInfo && (
-            <p className="text-xs text-gray-500 mt-1">
-              Duration: {examInfo.duration || 0} mins | Questions:{" "}
-              {examInfo.numberOfQuestions || 0}
+            <p className="text-xs md:text-sm text-gray-600 mb-3">
+              <span className="inline-flex items-center gap-1">
+                <FaClock className="text-gray-500" />
+                {examInfo.duration || 0} mins
+              </span>
+              <span className="mx-2">•</span>
+              <span className="inline-flex items-center gap-1">
+                <FaClipboardList className="text-gray-500" />
+                {examInfo.numberOfQuestions || 0} questions
+              </span>
             </p>
           )}
-        </div>
 
-        <div className="flex flex-row flex-wrap gap-3 items-center justify-end w-full md:w-auto">
-          {sampleUrl && onDownload && (
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            {sampleUrl && onDownload && (
+              <button
+                onClick={onDownload}
+                className="bg-gray-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors flex-1 sm:flex-initial"
+              >
+                Download Sample
+              </button>
+            )}
+            {onTryExam && (
+              <button
+                onClick={onTryExam}
+                className="bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-1 sm:flex-initial"
+              >
+                Try Online Exam
+              </button>
+            )}
             <button
-              onClick={onDownload}
-              className="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-700 transition-colors"
+              onClick={onAddToCart}
+              disabled={unavailable}
+              className={`font-semibold px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-initial ${
+                !unavailable
+                  ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg hover:from-yellow-500 hover:to-orange-600"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              title={
+                unavailable
+                  ? "Product unavailable - PDF not found"
+                  : "Add to cart"
+              }
             >
-              Download Sample
+              {!unavailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
             </button>
-          )}
-          {onTryExam && (
-            <button
-              onClick={onTryExam}
-              className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
-            >
-              Try Online Exam
-            </button>
-          )}
-          <button
-            onClick={onAddToCart}
-            disabled={unavailable}
-            className={`font-semibold px-4 py-2 rounded text-sm transition-all ${
-              !unavailable
-                ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-            title={
-              unavailable
-                ? "Product unavailable - PDF not found"
-                : "Add to cart"
-            }
-          >
-            {!unavailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
-          </button>
+          </div>
         </div>
       </div>
     );
@@ -1144,12 +1157,12 @@ function ReviewsSection({
                 </div>
               </div>
             ) : publishedReviews.length === 0 ? (
-              <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border-2 border-dashed border-gray-300">
-                <FaQuoteLeft className="text-gray-300 text-5xl mx-auto mb-4" />
-                <p className="text-gray-600 text-base font-medium mb-2">
+              <div className="text-center py-12 md:py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">
+                <FaQuoteLeft className="text-gray-300 text-3xl md:text-4xl lg:text-5xl mx-auto mb-3 md:mb-4" />
+                <p className="text-gray-600 text-sm md:text-base font-medium mb-2">
                   No reviews yet
                 </p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-gray-500 text-xs md:text-sm">
                   Be the first to share your experience!
                 </p>
               </div>
@@ -1157,16 +1170,16 @@ function ReviewsSection({
               publishedReviews.map((r, i) => (
                 <div
                   key={r._id || i}
-                  className="bg-white border-2 border-gray-100 rounded-2xl p-5 hover:shadow-xl hover:border-blue-200 transition-all duration-300 group"
+                  className="bg-white border border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-5 hover:shadow-lg hover:border-blue-200 transition-all duration-300"
                 >
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg shadow-md">
+                  <div className="flex items-start justify-between mb-3 gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full w-9 h-9 md:w-10 md:h-10 flex items-center justify-center font-bold text-base md:text-lg shadow-md flex-shrink-0">
                         {(r.customer || r.name || "A")[0].toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-bold text-gray-900 text-base">
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-900 text-sm md:text-base truncate">
                           {r.customer || r.name || "Anonymous"}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
@@ -1174,7 +1187,7 @@ function ReviewsSection({
                             {[...Array(5)].map((_, idx) => (
                               <FaStar
                                 key={idx}
-                                className={`text-base ${
+                                className={`text-sm md:text-base ${
                                   idx < r.rating
                                     ? "text-yellow-400"
                                     : "text-gray-300"
@@ -1188,8 +1201,8 @@ function ReviewsSection({
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-[10px] md:text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
                         {new Date(r.createdAt || r.date).toLocaleDateString(
                           "en-US",
                           { month: "short", day: "numeric", year: "numeric" },
@@ -1200,8 +1213,8 @@ function ReviewsSection({
 
                   {/* Review Text */}
                   <div className="relative">
-                    <FaQuoteLeft className="absolute -left-1 -top-1 text-blue-200 text-xl opacity-50" />
-                    <p className="text-gray-700 text-sm md:text-base leading-relaxed pl-6 break-words">
+                    <FaQuoteLeft className="absolute -left-1 -top-1 text-blue-200 text-base md:text-xl opacity-50" />
+                    <p className="text-gray-700 text-xs sm:text-sm md:text-base leading-relaxed pl-5 md:pl-6 break-words">
                       {r.comment}
                     </p>
                   </div>
@@ -1209,8 +1222,8 @@ function ReviewsSection({
                   {/* Verified Badge (if applicable) */}
                   {r.verified && (
                     <div className="mt-3 flex items-center gap-1 text-green-600">
-                      <FaCheckCircle className="text-sm" />
-                      <span className="text-xs font-medium">
+                      <FaCheckCircle className="text-xs md:text-sm" />
+                      <span className="text-[10px] md:text-xs font-medium">
                         Verified Purchase
                       </span>
                     </div>
@@ -1223,39 +1236,39 @@ function ReviewsSection({
 
         {/* Review Form */}
         <div className="order-1 lg:order-2">
-          <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 md:p-8 shadow-lg border border-blue-100 sticky top-24">
-            <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2">
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl md:rounded-2xl p-5 md:p-8 shadow-md border border-blue-100 lg:sticky lg:top-24">
+            <h3 className="text-base md:text-lg lg:text-xl font-bold text-gray-800 mb-2">
               Write Your Review
             </h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-xs md:text-sm text-gray-600 mb-5 md:mb-6">
               Share your experience to help others make informed decisions
             </p>
 
-            <form onSubmit={handleAddReview} className="space-y-5">
+            <form onSubmit={handleAddReview} className="space-y-4 md:space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
                   Your Name *
                 </label>
                 <div className="relative">
-                  <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                   <input
                     value={reviewForm.name}
                     onChange={(e) =>
                       setReviewForm({ ...reviewForm, name: e.target.value })
                     }
                     placeholder="Enter your full name"
-                    className="w-full border-2 border-gray-200 pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm md:text-base bg-white"
+                    className="w-full border-2 border-gray-200 pl-10 pr-4 py-2.5 md:py-3 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm md:text-base bg-white"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2 md:mb-3">
                   Your Rating *
                 </label>
-                <div className="bg-white rounded-xl p-4 border-2 border-gray-200">
-                  <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="bg-white rounded-lg md:rounded-xl p-3 md:p-4 border-2 border-gray-200">
+                  <div className="flex items-center justify-center gap-1 md:gap-2 mb-2">
                     {[1, 2, 3, 4, 5].map((value) => (
                       <button
                         key={value}
@@ -1263,12 +1276,14 @@ function ReviewsSection({
                         onClick={() =>
                           setReviewForm({ ...reviewForm, rating: value })
                         }
-                        className={`transition-all transform hover:scale-125 ${
-                          value <= reviewForm.rating ? "scale-110" : ""
+                        className={`transition-all transform hover:scale-110 md:hover:scale-125 ${
+                          value <= reviewForm.rating
+                            ? "scale-105 md:scale-110"
+                            : ""
                         }`}
                       >
                         <FaStar
-                          className={`text-3xl md:text-4xl ${
+                          className={`text-2xl md:text-3xl lg:text-4xl ${
                             value <= reviewForm.rating
                               ? "text-yellow-400 drop-shadow-lg"
                               : "text-gray-300 hover:text-yellow-200"
@@ -1277,7 +1292,7 @@ function ReviewsSection({
                       </button>
                     ))}
                   </div>
-                  <p className="text-center text-sm font-medium text-gray-700">
+                  <p className="text-center text-xs md:text-sm font-medium text-gray-700">
                     {reviewForm.rating === 0 && "Click to rate"}
                     {reviewForm.rating === 1 && "⭐ Poor"}
                     {reviewForm.rating === 2 && "⭐⭐ Fair"}
@@ -1289,7 +1304,7 @@ function ReviewsSection({
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
                   Your Review *
                 </label>
                 <textarea
@@ -1298,8 +1313,8 @@ function ReviewsSection({
                     setReviewForm({ ...reviewForm, comment: e.target.value })
                   }
                   placeholder="Tell us about your experience with this product. What did you like? What could be improved?"
-                  rows="6"
-                  className="w-full border-2 border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none text-sm md:text-base bg-white"
+                  rows="5"
+                  className="w-full border-2 border-gray-200 p-3 md:p-4 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none text-sm md:text-base bg-white"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -1309,13 +1324,13 @@ function ReviewsSection({
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-4 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl text-sm md:text-base transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl font-bold transition-all shadow-md hover:shadow-lg text-sm md:text-base transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 Submit Review ✨
               </button>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                <FaCheckCircle className="text-blue-600 mt-0.5 flex-shrink-0" />
+                <FaCheckCircle className="text-blue-600 mt-0.5 flex-shrink-0 text-sm" />
                 <p className="text-xs text-blue-800">
                   Your review will be published after admin approval to ensure
                   quality and authenticity
@@ -1352,34 +1367,35 @@ MemoizedReviewsSection.displayName = "MemoizedReviewsSection";
 
 function FAQSection({ faqs, activeIndex, toggleAccordion }) {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6 text-center flex items-center justify-center gap-2">
-        <FaUser className="text-blue-600" /> Frequently Asked Questions (FAQs)
+    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 md:p-6">
+      <h2 className="text-xl md:text-2xl font-bold mb-5 md:mb-6 text-center flex items-center justify-center gap-2 text-gray-900">
+        <FaUser className="text-blue-600 text-lg md:text-xl" />
+        Frequently Asked Questions
       </h2>
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {faqs.map((faq, idx) => {
           const isOpen = activeIndex === idx;
           return (
             <div
               key={idx}
-              className="border border-gray-200 rounded-xl shadow-sm bg-white"
+              className="border border-gray-200 rounded-lg md:rounded-xl shadow-sm bg-white overflow-hidden transition-all"
             >
               <button
                 onClick={() => toggleAccordion(idx)}
-                className="w-full flex justify-between items-center px-6 py-4 text-left group hover:bg-gray-50"
+                className="w-full flex justify-between items-center px-4 md:px-6 py-3 md:py-4 text-left group hover:bg-gray-50 transition-colors"
               >
-                <span className="font-medium text-gray-800">
+                <span className="font-medium text-gray-800 text-sm md:text-base pr-4">
                   {faq.question}
                 </span>
                 <FaChevronRight
-                  className={`text-gray-600 transform transition-transform ${
+                  className={`text-gray-600 flex-shrink-0 transform transition-transform text-sm md:text-base ${
                     isOpen ? "rotate-90" : ""
                   }`}
                 />
               </button>
               {isOpen && (
-                <div className="px-6 py-2 text-gray-600 text-sm">
-                  <p>{faq.answer}</p>
+                <div className="px-4 md:px-6 py-3 md:py-4 text-gray-600 text-sm md:text-base border-t border-gray-100 bg-gray-50">
+                  <p className="leading-relaxed">{faq.answer}</p>
                 </div>
               )}
             </div>
