@@ -101,7 +101,7 @@ const BlogPage = () => {
       )}
 
       {/* ✅ Blog Page Content */}
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
+      <div className=" pt-10 min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
         {/* Categories Section */}
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="text-center mb-10">

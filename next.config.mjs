@@ -12,6 +12,50 @@ const nextConfig = {
   // Optimize font loading
   optimizeFonts: true,
 
+  // Performance optimizations
+  swcMinify: true,
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+
+  images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 31536000,
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: "prepmantras.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.prepmantras.com",
+      },
+      {
+        protocol: "https",
+        hostname: "via.placeholder.com",
+      },
+    ],
+  },
+
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: [
+      "lucide-react",
+      "@/components/ui",
+      "framer-motion",
+      "react-icons",
+    ],
+    optimizeServerReact: true,
+  },
+
   async redirects() {
     return [
       {
@@ -118,9 +162,14 @@ const nextConfig = {
             framework: {
               name: "framework",
               chunks: "all",
-              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types)[\\/]/,
               priority: 40,
               enforce: true,
+            },
+            commons: {
+              name: "commons",
+              minChunks: 2,
+              priority: 20,
             },
             lib: {
               test: /[\\/]node_modules[\\/]/,
@@ -134,6 +183,12 @@ const nextConfig = {
               minChunks: 1,
               reuseExistingChunk: true,
             },
+            styles: {
+              name: "styles",
+              test: /\.css$/,
+              chunks: "all",
+              enforce: true,
+            },
           },
         },
       };
@@ -141,33 +196,11 @@ const nextConfig = {
     return config;
   },
 
-  swcMinify: true,
-  compress: true,
-
   async headers() {
     return [
-      // ✅ Static assets caching
+      // ✅ Static assets caching - Aggressive
       {
-        source: "/api/auth/session",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-store, max-age=0",
-          },
-        ],
-      },
-      {
-        source: "/api/auth/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-store, max-age=0",
-          },
-        ],
-      },
-
-      {
-        source: "/:all*(svg|jpg|png|webp|avif|woff|woff2|ttf|otf|eot)",
+        source: "/:all*(svg|jpg|jpeg|png|webp|avif|ico|woff|woff2|ttf|otf|eot)",
         locale: false,
         headers: [
           {
@@ -185,14 +218,23 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: "/_next/image/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
 
-      // ✅ API route caching
+      // ✅ API route caching - Optimized
       {
         source: "/api/trending",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=600, stale-while-revalidate=1800",
+            value: "public, s-maxage=1800, stale-while-revalidate=3600",
           },
         ],
       },
@@ -201,7 +243,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=600, stale-while-revalidate=1800",
+            value: "public, s-maxage=1800, stale-while-revalidate=3600",
           },
         ],
       },
@@ -210,16 +252,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=600, stale-while-revalidate=1800",
-          },
-        ],
-      },
-      {
-        source: "/api/products",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-store",
+            value: "public, s-maxage=1800, stale-while-revalidate=3600",
           },
         ],
       },
@@ -228,7 +261,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=900, stale-while-revalidate=1800",
+            value: "public, s-maxage=1800, stale-while-revalidate=3600",
           },
         ],
       },
@@ -237,7 +270,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=900, stale-while-revalidate=1800",
+            value: "public, s-maxage=1800, stale-while-revalidate=3600",
           },
         ],
       },
@@ -246,7 +279,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=900, stale-while-revalidate=1800",
+            value: "public, s-maxage=1800, stale-while-revalidate=3600",
           },
         ],
       },
@@ -255,12 +288,31 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=600",
+            value: "public, s-maxage=600, stale-while-revalidate=1800",
+          },
+        ],
+      },
+      // Auth APIs - No cache
+      {
+        source: "/api/auth/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/api/products",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=900, stale-while-revalidate=1800",
           },
         ],
       },
 
-      // ✅ Global CSP for all pages
+      // ✅ Global CSP and Security Headers for all pages
       {
         source: "/:path*",
         headers: [
@@ -272,6 +324,10 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
           {
             key: "Content-Security-Policy",
             value: [

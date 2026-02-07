@@ -70,7 +70,7 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
           Accept: "application/json",
         },
         signal: controller.signal,
-        next: { revalidate: 300 },
+        next: { revalidate: 60 },
       });
 
       clearTimeout(timeoutId);
@@ -310,6 +310,6 @@ export default async function Page() {
 }
 
 // ✅ Aggressive caching for faster Speed Index
-export const revalidate = 300; // 5 minutes
+export const revalidate = 60; // 1 minute for fresh admin updates
 export const dynamic = "force-static";
 export const fetchCache = "force-cache";

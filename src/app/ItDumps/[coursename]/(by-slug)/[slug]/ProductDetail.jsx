@@ -136,7 +136,7 @@ async function fetchProduct(slug) {
   try {
     // First try by slug
     let response = await fetch(`/api/products/get-by-slug/${slug}`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     });
 
     let data = await response.json();
@@ -145,7 +145,7 @@ async function fetchProduct(slug) {
     // If not found by slug (404 status), try by exam code
     if (!product && response.status === 404) {
       response = await fetch(`/api/products/get-by-exam-code/${slug}`, {
-        next: { revalidate: 300 },
+        next: { revalidate: 60 },
       });
 
       if (response.ok) {
@@ -170,7 +170,7 @@ async function fetchExamsByProductSlug(slug) {
     const response = await fetch(
       `/api/exams/byslug/${encodeURIComponent(slug)}`,
       {
-        next: { revalidate: 1800 },
+        next: { revalidate: 60 },
       },
     );
 
@@ -201,7 +201,7 @@ async function fetchExamsByProductSlug(slug) {
 async function fetchAllProducts() {
   try {
     const response = await fetch(`/api/products?limit=12`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 60 },
     });
     const data = await response.json();
     return data.data || [];
@@ -219,7 +219,7 @@ async function fetchReviews(productId) {
 
   try {
     const response = await fetch(`/api/reviews?productId=${productId}`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 60 },
     });
     const data = await response.json();
     const all = data.data || [];

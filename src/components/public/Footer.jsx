@@ -8,7 +8,7 @@ import {
   FaYoutube,
   FaInstagram,
 } from "react-icons/fa";
-import dumpslogo from "../../assets/logo/premantras_logo.png";
+import dumpslogo from "../../assets/logo/prepmantras_logo_white.png";
 import PaymentGateway from "../../assets/landingassets/paymentGateway.png";
 
 export default function Footer() {
@@ -38,7 +38,7 @@ export default function Footer() {
           <Image
             src={dumpslogo}
             alt="PrepMantras Logo"
-            className="h-8 w-auto"
+            className="h-12 w-auto"
           />
         </div>
 

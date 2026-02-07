@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth/authOptions";
 import { redirect } from "next/navigation";
 import StudentDashboardClient from "@/components/StudentDashboardClient";
 
-export const revalidate = 300;
+export const revalidate = 60; // 1 minute for fresh admin updates
 
 async function getDashboardData(session) {
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -20,17 +20,17 @@ async function getDashboardData(session) {
     const [ordersRes, resultsRes, userRes] = await Promise.all([
       fetch(`${BASE_URL}/api/student/orders`, {
         headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
-        next: { revalidate: 300 },
+        next: { revalidate: 60 },
         cache: "force-cache",
       }),
       fetch(`${BASE_URL}/api/results?studentId=${studentId}`, {
         headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
-        next: { revalidate: 300 },
+        next: { revalidate: 60 },
         cache: "force-cache",
       }),
       fetch(`${BASE_URL}/api/user/me`, {
         headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
-        next: { revalidate: 300 },
+        next: { revalidate: 60 },
         cache: "force-cache",
       }),
     ]);
@@ -56,7 +56,7 @@ async function getDashboardData(session) {
     // Calculate order statistics
     const completedOrders = ordersArray.filter((o) => o.status === "completed");
     const pendingOrders = ordersArray.filter(
-      (o) => o.status === "pending" || o.status === "processing"
+      (o) => o.status === "pending" || o.status === "processing",
     );
 
     // Count products by type
@@ -93,17 +93,17 @@ async function getDashboardData(session) {
             totalAttempts: resultsArray.length,
             averageScore: Math.round(
               resultsArray.reduce((sum, r) => sum + (r.percentage || 0), 0) /
-                resultsArray.length
+                resultsArray.length,
             ),
             highestScore: Math.max(
               ...resultsArray.map((r) => r.percentage || 0),
-              0
+              0,
             ),
             lowestScore: Math.min(
               ...resultsArray
                 .map((r) => r.percentage || 0)
                 .filter((p) => p > 0),
-              100
+              100,
             ),
           }
         : {

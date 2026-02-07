@@ -7,7 +7,7 @@ import { FaChevronRight, FaChevronLeft, FaShoppingCart } from "react-icons/fa";
 async function fetchAllProducts(limit = 12) {
   try {
     const response = await fetch(`/api/products?limit=${limit}`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 60 },
     });
     const data = await response.json();
     return data.data || [];

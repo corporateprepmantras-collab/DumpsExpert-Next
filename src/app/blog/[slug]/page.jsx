@@ -226,7 +226,7 @@ export async function generateStaticParams() {
     console.log("🔍 Fetching blogs for static generation:", url);
 
     const res = await fetch(url, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 60 },
       cache: "no-store",
     });
 
@@ -241,7 +241,7 @@ export async function generateStaticParams() {
     const params = blogs
       .filter(
         (blog) =>
-          blog.slug && (blog.status === "active" || blog.published !== false)
+          blog.slug && (blog.status === "active" || blog.published !== false),
       )
       .map((blog) => ({
         slug: blog.slug,
@@ -289,4 +289,4 @@ function BlogPageLoading() {
 
 // Configure page behavior
 export const dynamic = "force-dynamic"; // or "auto" for ISR
-export const revalidate = 3600; // Revalidate every hour if using ISR
+export const revalidate = 60; // Revalidate every 1 minute for fresh admin updates

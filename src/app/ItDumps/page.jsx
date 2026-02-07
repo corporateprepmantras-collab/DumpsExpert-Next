@@ -5,7 +5,7 @@ import ImageWithSkeleton from "@/components/ImageWithSkeleton";
 
 // ✅ Enable ISR for better performance
 export const dynamic = "auto";
-export const revalidate = 1800; // Revalidate every 30 minutes
+export const revalidate = 60; // Revalidate every 1 minute for fresh admin updates
 
 // Loading skeleton component
 function CategorySkeleton() {
@@ -59,7 +59,7 @@ async function fetchSEO() {
     console.log(`🔍 [SEO] Fetching from: ${url}`);
 
     const res = await fetch(url, {
-      next: { revalidate: 1800 },
+      next: { revalidate: 60 },
       headers: {
         "Content-Type": "application/json",
       },
@@ -99,7 +99,7 @@ async function getDumpsData() {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
       const res = await fetch(url, {
-        next: { revalidate: 1800 },
+        next: { revalidate: 60 },
         headers: {
           "Content-Type": "application/json",
         },
