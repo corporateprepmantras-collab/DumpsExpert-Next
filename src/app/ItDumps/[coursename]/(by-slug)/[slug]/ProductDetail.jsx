@@ -471,19 +471,19 @@ export default function ProductDetailsPage() {
         <div className="w-full lg:w-[35%]">
           <div className="lg:sticky lg:top-20">
             {/* Image */}
-            <div className="bg-white border border-gray-200 rounded-lg p-1 sm:p-1.5 shadow-md">
-              <div className="bg-gray-50 rounded-lg border border-gray-100 p-1">
+            <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 shadow-md">
+              <div className="bg-gray-50 rounded-lg border border-gray-100 p-1.5">
                 <img
                   src={product.imageUrl}
                   alt={product.title}
-                  className="w-full rounded-lg object-contain h-[160px] sm:h-[180px] lg:h-[150px]"
+                  className="w-full rounded-lg object-contain h-[220px] sm:h-[280px] lg:h-[260px]"
                 />
               </div>
             </div>
 
             {/* Features List */}
-            <div className="bg-white border border-gray-200 shadow-md rounded-lg p-1 sm:p-1.5 mt-1.5 lg:mt-2">
-              <div className="flex flex-col space-y-0.5 sm:space-y-1">
+            <div className="bg-white border border-gray-200 shadow-md rounded-lg p-2 sm:p-3 mt-3 lg:mt-4">
+              <div className="flex flex-col space-y-1.5 sm:space-y-2">
                 {[
                   "Instant Download After Purchase",
                   "100% Real & Updated Dumps",
@@ -491,9 +491,9 @@ export default function ProductDetailsPage() {
                   "90 Days Free Updates",
                   "24/7 Customer Support",
                 ].map((f, i) => (
-                  <div key={i} className="flex items-start gap-1">
-                    <FaCheckCircle className="text-green-600 text-[10px] sm:text-xs flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-800 text-[9px] sm:text-[10px] font-medium leading-tight">
+                  <div key={i} className="flex items-start gap-1.5">
+                    <FaCheckCircle className="text-green-600 text-sm flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-800 text-[11px] sm:text-xs font-medium leading-snug">
                       {f}
                     </span>
                   </div>
@@ -612,29 +612,7 @@ export default function ProductDetailsPage() {
             </div>
           )}
 
-          {/* {!isLoadingExams && hasOnlineExam && exams.length > 0 && (
-            <div className="pt-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <p className="font-semibold text-sm md:text-base mb-2">
-                📚 Online Exam Available
-              </p>
-              <div className="text-xs md:text-sm">
-                <p>
-                  <strong> Exam Name:</strong> {exams[0].name || "Online Exam"}
-                </p>
-                <p>
-                  <strong> Total No. of Questions:</strong>{" "}
-                  {exams[0].numberOfQuestions || "Online Exam"}
-                </p>
-                <p>
-                  <strong>Passing Score:</strong>{" "}
-                  {exams[0].passingScore || "N/A"}
-                </p>
-                <p>
-                  <strong>Duration:</strong> {exams[0].duration || 0} mins
-                </p>
-              </div>
-            </div>
-          )} */}
+          
 
           {avgRating && (
             <div className="flex items-center gap-0.5 flex-wrap">
