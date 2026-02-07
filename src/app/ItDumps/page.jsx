@@ -232,17 +232,15 @@ export default async function ITDumpsPage() {
   const priorityCount = Math.min(6, dumpsData.length);
 
   return (
-    <div className="relative min-h-screen w-full pt-20 md:pt-24 pb-10 px-3 md:px-8 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Removed heavy background image and backdrop blur for mobile performance */}
-
-      <div className="relative z-10 w-full max-w-7xl mx-auto">
+    <div className="relative min-h-screen w-full pt-16 md:pt-20 pb-8 md:pb-10 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-3 md:px-6 lg:px-8">
         {/* Header - Optimized for mobile */}
-        <h1 className="text-2xl md:text-4xl font-bold text-center text-gray-900 mb-6 md:mb-10 px-2">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-900 mb-6 md:mb-8 lg:mb-10">
           SAP Certification Dumps
         </h1>
 
         {/* Features Grid - Simplified for mobile */}
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 max-w-2xl mx-auto mb-8 md:mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 lg:gap-6 max-w-4xl mx-auto mb-8 md:mb-10 lg:mb-12">
           {[
             "Instant Download",
             "100% Real Dumps",
@@ -251,16 +249,16 @@ export default async function ITDumpsPage() {
           ].map((text, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 text-gray-900 text-xs md:text-base font-medium"
+              className="flex items-center justify-center md:justify-start gap-2 text-gray-900 text-xs md:text-sm lg:text-base font-medium bg-white rounded-lg p-3 md:p-4 shadow-sm border border-gray-100"
             >
-              <FaCheckCircle className="text-blue-600 text-sm md:text-lg flex-shrink-0" />
-              <span>{text}</span>
+              <FaCheckCircle className="text-blue-600 text-base md:text-lg flex-shrink-0" />
+              <span className="text-center md:text-left">{text}</span>
             </div>
           ))}
         </div>
 
         {/* Categories Grid - Optimized */}
-        <div className="flex flex-wrap justify-center gap-3 md:gap-6">
+        <div className="flex flex-wrap justify-center gap-3 md:gap-4 lg:gap-6">
           {dumpsData.length > 0 ? (
             dumpsData.map((item, index) => {
               const slug = createSlug(item.name);
@@ -276,9 +274,9 @@ export default async function ITDumpsPage() {
                 <Link
                   key={item._id || item.id}
                   href={`/ItDumps/${slug}`}
-                  className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md active:scale-95 md:hover:scale-105 transition-shadow md:transition-transform duration-200 flex flex-col items-center text-center overflow-hidden w-[140px] sm:w-[160px] md:w-[200px]"
+                  className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg active:scale-95 md:hover:scale-105 transition-all duration-200 flex flex-col items-center text-center overflow-hidden w-[145px] sm:w-[165px] md:w-[190px] lg:w-[210px]"
                 >
-                  <div className="h-24 md:h-32 w-full relative bg-gray-50">
+                  <div className="h-28 sm:h-32 md:h-36 lg:h-40 w-full relative bg-gray-50">
                     <ImageWithSkeleton
                       src={item.image || "https://via.placeholder.com/150"}
                       alt={item.name || "Category"}
@@ -288,11 +286,11 @@ export default async function ITDumpsPage() {
                       loading={isPriority ? "eager" : "lazy"}
                       priority={isPriority}
                       quality={60}
-                      skeletonClassName="rounded-t-lg"
+                      skeletonClassName="rounded-t-xl"
                     />
                   </div>
-                  <div className="px-2 pb-3 md:px-3 md:pb-4 w-full">
-                    <h3 className="text-xs md:text-base font-medium capitalize text-gray-800 truncate">
+                  <div className="px-3 py-3 md:px-4 md:py-4 w-full">
+                    <h3 className="text-xs sm:text-sm md:text-base font-semibold capitalize text-gray-800 truncate">
                       {item.name || "Unnamed Category"}
                     </h3>
                   </div>

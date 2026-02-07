@@ -1,18 +1,9 @@
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  memo,
-  lazy,
-  Suspense,
-  useRef,
-} from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import { FaQuoteLeft } from "react-icons/fa";
+import RelatedProducts from "./RelatedProducts";
 import {
   FaCheckCircle,
   FaChevronRight,
@@ -29,33 +20,6 @@ import {
 import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
-
-// Lazy load heavy components
-const RelatedProducts = lazy(() => import("./RelatedProducts"));
-
-// Loading skeleton components
-const ImageSkeleton = () => (
-  <div className="w-full h-[400px] rounded-xl bg-gray-200 animate-pulse" />
-);
-
-const PricingSkeleton = () => (
-  <div className="space-y-4">
-    {[1, 2].map((i) => (
-      <div key={i} className="border rounded-lg p-4 animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-        <div className="h-6 bg-gray-200 rounded w-1/2" />
-      </div>
-    ))}
-  </div>
-);
-
-const ContentSkeleton = () => (
-  <div className="space-y-3 animate-pulse">
-    <div className="h-4 bg-gray-200 rounded w-full" />
-    <div className="h-4 bg-gray-200 rounded w-5/6" />
-    <div className="h-4 bg-gray-200 rounded w-4/6" />
-  </div>
-);
 
 // Helper function to safely convert to number
 const toNum = (val) => {
@@ -122,43 +86,12 @@ const extractExamPrices = (examData) => {
   };
 };
 
-// Helper functions with caching and TTL
-const productCache = new Map();
-const reviewsCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
+// Helper functions
 async function fetchProduct(slug) {
-  const cached = productCache.get(slug);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
-
   try {
-    // First try by slug
-    let response = await fetch(`/api/products/get-by-slug/${slug}`, {
-      next: { revalidate: 60 },
-    });
-
-    let data = await response.json();
-    let product = data.data || null;
-
-    // If not found by slug (404 status), try by exam code
-    if (!product && response.status === 404) {
-      response = await fetch(`/api/products/get-by-exam-code/${slug}`, {
-        next: { revalidate: 60 },
-      });
-
-      if (response.ok) {
-        data = await response.json();
-        product = data.data || null;
-      }
-    }
-
-    if (product) {
-      productCache.set(slug, { data: product, timestamp: Date.now() });
-    }
-
-    return product;
+    const response = await fetch(`/api/products/get-by-slug/${slug}`);
+    const data = await response.json();
+    return data.data || null;
   } catch (error) {
     console.error("Error fetching product:", error);
     return null;
@@ -167,31 +100,34 @@ async function fetchProduct(slug) {
 
 async function fetchExamsByProductSlug(slug) {
   try {
-    const response = await fetch(
-      `/api/exams/byslug/${encodeURIComponent(slug)}`,
-      {
-        next: { revalidate: 60 },
-      },
-    );
+    const endpoints = [`/api/exams/byslug/${encodeURIComponent(slug)}`];
 
-    if (!response.ok) return [];
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) continue;
 
-    const data = await response.json();
-    let exams = [];
+        const data = await response.json();
+        let exams = [];
 
-    if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-      exams = data.data;
-    } else if (Array.isArray(data) && data.length > 0) {
-      exams = data;
-    } else if (
-      data.exams &&
-      Array.isArray(data.exams) &&
-      data.exams.length > 0
-    ) {
-      exams = data.exams;
+        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+          exams = data.data;
+        } else if (Array.isArray(data) && data.length > 0) {
+          exams = data;
+        } else if (
+          data.exams &&
+          Array.isArray(data.exams) &&
+          data.exams.length > 0
+        ) {
+          exams = data.exams;
+        }
+
+        if (exams.length > 0) return exams;
+      } catch (err) {
+        continue;
+      }
     }
-
-    return exams;
+    return [];
   } catch (error) {
     console.error("Error fetching exams:", error);
     return [];
@@ -200,9 +136,7 @@ async function fetchExamsByProductSlug(slug) {
 
 async function fetchAllProducts() {
   try {
-    const response = await fetch(`/api/products?limit=12`, {
-      next: { revalidate: 60 },
-    });
+    const response = await fetch(`/api/products`);
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -212,21 +146,11 @@ async function fetchAllProducts() {
 }
 
 async function fetchReviews(productId) {
-  const cached = reviewsCache.get(productId);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
-
   try {
-    const response = await fetch(`/api/reviews?productId=${productId}`, {
-      next: { revalidate: 60 },
-    });
+    const response = await fetch(`/api/reviews?productId=${productId}`);
     const data = await response.json();
     const all = data.data || [];
-    const published = all.filter((r) => r.status === "Publish");
-
-    reviewsCache.set(productId, { data: published, timestamp: Date.now() });
-    return published;
+    return all.filter((r) => r.status === "Publish");
   } catch (error) {
     console.error("Error fetching reviews:", error);
     return [];
@@ -271,150 +195,137 @@ export default function ProductDetailsPage() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [isLoadingExams, setIsLoadingExams] = useState(true);
-  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
-  const [showRelated, setShowRelated] = useState(false);
 
-  const relatedRef = useRef(null);
-
-  const productAvailable = useMemo(
-    () => isProductAvailable(product),
-    [product],
-  );
+  const productAvailable = isProductAvailable(product);
 
   // Update the handleAddToCart function in your ProductDetailsPage component
 
-  const handleAddToCart = useCallback(
-    (type = "regular") => {
-      if (!product) return;
+  const handleAddToCart = (type = "regular") => {
+    if (!product) return;
 
-      if ((type === "regular" || type === "combo") && !productAvailable) {
-        toast.error("⚠️ This product is currently unavailable (PDF not found)");
-        return;
-      }
+    if ((type === "regular" || type === "combo") && !productAvailable) {
+      toast.error("⚠️ This product is currently unavailable (PDF not found)");
+      return;
+    }
 
-      if (
-        type === "online" &&
-        examPrices.priceInr === 0 &&
-        examPrices.priceUsd === 0
-      ) {
-        toast.error("⚠️ Online exam pricing not available for this product");
-        return;
-      }
+    if (
+      type === "online" &&
+      examPrices.priceInr === 0 &&
+      examPrices.priceUsd === 0
+    ) {
+      toast.error("⚠️ Online exam pricing not available for this product");
+      return;
+    }
 
-      if (
-        type === "combo" &&
-        toNum(product.comboPriceInr) === 0 &&
-        toNum(product.comboPriceUsd) === 0
-      ) {
-        toast.error("⚠️ Combo package is not available for this product");
-        return;
-      }
+    if (
+      type === "combo" &&
+      toNum(product.comboPriceInr) === 0 &&
+      toNum(product.comboPriceUsd) === 0
+    ) {
+      toast.error("⚠️ Combo package is not available for this product");
+      return;
+    }
 
-      // Check if item already exists in cart
-      const cartStore = useCartStore.getState();
-      const existingItem = cartStore.cartItems.find(
-        (item) => item._id === product._id && item.type === type,
-      );
+    // Check if item already exists in cart
+    const cartStore = useCartStore.getState();
+    const existingItem = cartStore.cartItems.find(
+      (item) => item._id === product._id && item.type === type,
+    );
 
-      if (existingItem) {
-        toast.info("ℹ️ This item is already in your cart");
-        return;
-      }
+    if (existingItem) {
+      toast.info("ℹ️ This item is already in your cart");
+      return;
+    }
 
-      const examDetails = exams.length > 0 ? exams[0] : {};
+    const examDetails = exams.length > 0 ? exams[0] : {};
 
-      let item = {
-        _id: product._id,
-        productId: product._id,
-        courseId: product._id,
-        type: type,
-        title: product.title,
-        name: product.title,
-        mainPdfUrl: product.mainPdfUrl || "",
-        samplePdfUrl: product.samplePdfUrl || "",
-        dumpsPriceInr: toNum(product.dumpsPriceInr),
-        dumpsPriceUsd: toNum(product.dumpsPriceUsd),
-        dumpsMrpInr: toNum(product.dumpsMrpInr),
-        dumpsMrpUsd: toNum(product.dumpsMrpUsd),
-        comboPriceInr: toNum(product.comboPriceInr),
-        comboPriceUsd: toNum(product.comboPriceUsd),
-        comboMrpInr: toNum(product.comboMrpInr),
-        comboMrpUsd: toNum(product.comboMrpUsd),
-        examPriceInr: examPrices.priceInr,
-        examPriceUsd: examPrices.priceUsd,
-        examMrpInr: examPrices.mrpInr,
-        examMrpUsd: examPrices.mrpUsd,
-        imageUrl: product.imageUrl || "",
-        slug: product.slug,
-        category: product.category,
-        sapExamCode: product.sapExamCode,
-        code: product.code || product.sapExamCode,
-        sku: product.sku,
-        duration: product.duration || examDetails.duration || "",
-        numberOfQuestions:
-          product.numberOfQuestions || examDetails.numberOfQuestions || 0,
-        passingScore: product.passingScore || examDetails.passingScore || "",
-        mainInstructions: product.mainInstructions || "",
-        sampleInstructions: product.sampleInstructions || "",
-        Description: product.Description || "",
-        longDescription: product.longDescription || "",
-        status: product.status || "active",
-        action: product.action || "",
-        metaTitle: product.metaTitle || "",
-        metaKeywords: product.metaKeywords || "",
-        metaDescription: product.metaDescription || "",
-        schema: product.schema || "",
-      };
+    let item = {
+      _id: product._id,
+      productId: product._id,
+      courseId: product._id,
+      type: type,
+      title: product.title,
+      name: product.title,
+      mainPdfUrl: product.mainPdfUrl || "",
+      samplePdfUrl: product.samplePdfUrl || "",
+      dumpsPriceInr: toNum(product.dumpsPriceInr),
+      dumpsPriceUsd: toNum(product.dumpsPriceUsd),
+      dumpsMrpInr: toNum(product.dumpsMrpInr),
+      dumpsMrpUsd: toNum(product.dumpsMrpUsd),
+      comboPriceInr: toNum(product.comboPriceInr),
+      comboPriceUsd: toNum(product.comboPriceUsd),
+      comboMrpInr: toNum(product.comboMrpInr),
+      comboMrpUsd: toNum(product.comboMrpUsd),
+      examPriceInr: examPrices.priceInr,
+      examPriceUsd: examPrices.priceUsd,
+      examMrpInr: examPrices.mrpInr,
+      examMrpUsd: examPrices.mrpUsd,
+      imageUrl: product.imageUrl || "",
+      slug: product.slug,
+      category: product.category,
+      sapExamCode: product.sapExamCode,
+      code: product.code || product.sapExamCode,
+      sku: product.sku,
+      duration: product.duration || examDetails.duration || "",
+      numberOfQuestions:
+        product.numberOfQuestions || examDetails.numberOfQuestions || 0,
+      passingScore: product.passingScore || examDetails.passingScore || "",
+      mainInstructions: product.mainInstructions || "",
+      sampleInstructions: product.sampleInstructions || "",
+      Description: product.Description || "",
+      longDescription: product.longDescription || "",
+      status: product.status || "active",
+      action: product.action || "",
+      metaTitle: product.metaTitle || "",
+      metaKeywords: product.metaKeywords || "",
+      metaDescription: product.metaDescription || "",
+      schema: product.schema || "",
+    };
 
-      switch (type) {
-        case "regular":
-          item.title = `${product.title} [PDF]`;
-          item.name = `${product.title} [PDF]`;
-          item.price = item.dumpsPriceInr;
-          item.priceINR = item.dumpsPriceInr;
-          item.priceUSD = item.dumpsPriceUsd;
-          break;
+    switch (type) {
+      case "regular":
+        item.title = `${product.title} [PDF]`;
+        item.name = `${product.title} [PDF]`;
+        item.price = item.dumpsPriceInr;
+        item.priceINR = item.dumpsPriceInr;
+        item.priceUSD = item.dumpsPriceUsd;
+        break;
 
-        case "online":
-          item.title = `${product.title} [Online Exam]`;
-          item.name = `${product.title} [Online Exam]`;
-          item.price = item.examPriceInr;
-          item.priceINR = item.examPriceInr;
-          item.priceUSD = item.examPriceUsd;
-          break;
+      case "online":
+        item.title = `${product.title} [Online Exam]`;
+        item.name = `${product.title} [Online Exam]`;
+        item.price = item.examPriceInr;
+        item.priceINR = item.examPriceInr;
+        item.priceUSD = item.examPriceUsd;
+        break;
 
-        case "combo":
-          item.title = `${product.title} [Combo]`;
-          item.name = `${product.title} [Combo]`;
-          item.price = item.comboPriceInr;
-          item.priceINR = item.comboPriceInr;
-          item.priceUSD = item.comboPriceUsd;
-          break;
+      case "combo":
+        item.title = `${product.title} [Combo]`;
+        item.name = `${product.title} [Combo]`;
+        item.price = item.comboPriceInr;
+        item.priceINR = item.comboPriceInr;
+        item.priceUSD = item.comboPriceUsd;
+        break;
 
-        default:
-          item.price = item.dumpsPriceInr;
-          item.priceINR = item.dumpsPriceInr;
-          item.priceUSD = item.dumpsPriceUsd;
-      }
+      default:
+        item.price = item.dumpsPriceInr;
+        item.priceINR = item.dumpsPriceInr;
+        item.priceUSD = item.dumpsPriceUsd;
+    }
 
-      useCartStore.getState().addToCart(item);
-      toast.success(`✅ Added ${item.title} to cart!`);
-    },
-    [product, productAvailable, examPrices, exams],
-  );
+    useCartStore.getState().addToCart(item);
+    toast.success(`✅ Added ${item.title} to cart!`);
+  };
 
   useEffect(() => {
     async function loadData() {
       try {
         setIsLoadingExams(true);
 
-        // Fetch product and exams in parallel
-        const [productData, examsData] = await Promise.all([
-          fetchProduct(slug),
-          fetchExamsByProductSlug(slug),
-        ]);
-
+        const productData = await fetchProduct(slug);
         setProduct(productData);
+
+        const examsData = await fetchExamsByProductSlug(slug);
         setExams(examsData);
 
         if (examsData.length > 0) {
@@ -440,58 +351,36 @@ export default function ProductDetailsPage() {
 
         setIsLoadingExams(false);
 
-        // Fetch reviews and related products in parallel after initial load
-        if (productData?._id) {
-          setIsLoadingReviews(true);
-          fetchReviews(productData._id).then((fetchedReviews) => {
-            setReviews(fetchedReviews || []);
-            setIsLoadingReviews(false);
+        const fetchedReviews = productData?._id
+          ? await fetchReviews(productData._id)
+          : [];
 
-            if (fetchedReviews && fetchedReviews.length > 0) {
-              const total = fetchedReviews.reduce(
-                (sum, r) => sum + r.rating,
-                0,
-              );
-              setAvgRating((total / fetchedReviews.length).toFixed(1));
-            } else {
-              setAvgRating(null);
-            }
-          });
+        setReviews(fetchedReviews || []);
+
+        if (fetchedReviews && fetchedReviews.length > 0) {
+          const total = fetchedReviews.reduce((sum, r) => sum + r.rating, 0);
+          setAvgRating((total / fetchedReviews.length).toFixed(1));
+        } else {
+          setAvgRating(null);
         }
+
+        const allProducts = await fetchAllProducts();
+        setRelatedProducts(allProducts.filter((p) => p.slug !== slug));
       } catch (err) {
         console.error("❌ Error loading data:", err);
         setIsLoadingExams(false);
-        setIsLoadingReviews(false);
       }
     }
 
     if (slug) loadData();
   }, [slug]);
 
-  // Intersection observer for related products
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !showRelated) {
-          setShowRelated(true);
-        }
-      },
-      { rootMargin: "200px" },
-    );
-
-    if (relatedRef.current) {
-      observer.observe(relatedRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [showRelated]);
-
-  const calculateDiscount = useCallback((mrp, price) => {
+  const calculateDiscount = (mrp, price) => {
     if (!mrp || !price || mrp <= price) return 0;
     return Math.round(((mrp - price) / mrp) * 100);
-  }, []);
+  };
 
-  const handleDownload = useCallback((url, filename) => {
+  const handleDownload = (url, filename) => {
     if (!url) {
       toast.error("Download link not available");
       return;
@@ -501,78 +390,73 @@ export default function ProductDetailsPage() {
     link.download = filename;
     link.target = "_blank";
     link.click();
-  }, []);
+  };
 
-  const handleAddReview = useCallback(
-    async (e) => {
-      e.preventDefault();
+  const handleAddReview = async (e) => {
+    e.preventDefault();
 
-      if (!reviewForm.name || !reviewForm.comment || !reviewForm.rating) {
-        toast.error("Please fill all fields and provide a rating");
-        return;
+    if (!reviewForm.name || !reviewForm.comment || !reviewForm.rating) {
+      toast.error("Please fill all fields and provide a rating");
+      return;
+    }
+
+    const reviewData = {
+      productId: product._id,
+      name: reviewForm.name,
+      comment: reviewForm.comment,
+      rating: reviewForm.rating,
+    };
+
+    const result = await submitReview(reviewData);
+
+    if (result.success) {
+      toast.success("Review submitted successfully 🎉");
+      setReviewForm({ name: "", comment: "", rating: 0 });
+
+      const updatedReviews = await fetchReviews(product._id);
+      setReviews(updatedReviews);
+
+      if (updatedReviews.length > 0) {
+        const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
+        setAvgRating((total / updatedReviews.length).toFixed(1));
       }
+    } else {
+      toast.error(result.error || "Failed to submit review");
+    }
+  };
 
-      const reviewData = {
-        productId: product._id,
-        name: reviewForm.name,
-        comment: reviewForm.comment,
-        rating: reviewForm.rating,
-      };
-
-      const result = await submitReview(reviewData);
-
-      if (result.success) {
-        toast.success("Review submitted successfully 🎉");
-        setReviewForm({ name: "", comment: "", rating: 0 });
-
-        const updatedReviews = await fetchReviews(product._id);
-        setReviews(updatedReviews);
-
-        if (updatedReviews.length > 0) {
-          const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
-          setAvgRating((total / updatedReviews.length).toFixed(1));
-        }
-      } else {
-        toast.error(result.error || "Failed to submit review");
-      }
-    },
-    [reviewForm, product],
-  );
-
-  const toggleAccordion = useCallback((index) => {
-    setActiveIndex((prev) => (prev === index ? null : index));
-  }, []);
-
-  const hasOnlineExam = useMemo(
-    () => examPrices.priceInr > 0 || examPrices.priceUsd > 0,
-    [examPrices],
-  );
+  const toggleAccordion = (index) => {
+    setActiveIndex(index === activeIndex ? null : index);
+  };
 
   if (!product)
     return (
       <div className="text-center py-20">
         <div className="flex items-center justify-center h-screen">
-          <div className="h-8 w-8 border-3 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
         </div>
       </div>
     );
 
+  const hasOnlineExam = examPrices.priceInr > 0 || examPrices.priceUsd > 0;
+
   return (
-    <div className="min-h-screen pt-16 md:pt-20 bg-gray-50 text-gray-800">
-      <div className="container mx-auto px-3 md:px-6 pt-2 pb-3">
+    <div className="min-h-screen pt-12 sm:pt-14 lg:pt-16 bg-gray-50 text-gray-800">
+      <div className="container mx-auto px-2 sm:px-3 pt-0.5 pb-1">
         <Breadcrumbs />
       </div>
+      {/* //updated ui */}
       {/* Product Unavailability Alert */}
       {!productAvailable && product && (
-        <div className="container mx-auto px-3 md:px-6 mb-4">
-          <div className="bg-red-50 border-l-4 border-red-500 p-3 md:p-4 rounded-lg shadow-sm">
-            <div className="flex items-start gap-3">
-              <FaExclamationTriangle className="text-red-500 text-lg md:text-xl flex-shrink-0 mt-0.5" />
+        <div className="container mx-auto px-2 sm:px-3 mb-1.5 sm:mb-2">
+          <div className="bg-red-50 border-l-4 border-red-500 p-1.5 sm:p-2 rounded-lg shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <FaExclamationTriangle className="text-red-500 text-sm sm:text-base flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-red-800 text-sm md:text-base">
+                <h3 className="font-semibold text-red-800 text-[10px] sm:text-xs">
                   Product Currently Unavailable
                 </h3>
-                <p className="text-red-700 text-xs md:text-sm mt-1">
+                <p className="text-red-700 text-[9px] sm:text-[10px] mt-0.5 leading-tight">
                   The PDF file for this product is not available at the moment.
                   Please contact support or check back later.
                 </p>
@@ -582,27 +466,24 @@ export default function ProductDetailsPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-3 md:px-6 flex flex-col lg:flex-row gap-6 lg:gap-8">
-        {/* Left Column - Image & Features */}
+      <div className="container mx-auto px-2 sm:px-3 flex flex-col lg:flex-row gap-2 lg:gap-3">
+        {/* Left Column - Sticky */}
         <div className="w-full lg:w-[35%]">
-          <div className="lg:sticky lg:top-24 space-y-4">
-            <Suspense fallback={<ImageSkeleton />}>
-              <div className="relative w-full h-[280px] sm:h-[350px] md:h-[400px] rounded-xl overflow-hidden shadow-lg bg-white border border-gray-200">
-                <Image
+          <div className="lg:sticky lg:top-20">
+            {/* Image */}
+            <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 shadow-md">
+              <div className="bg-gray-50 rounded-lg border border-gray-100 p-1.5">
+                <img
                   src={product.imageUrl}
                   alt={product.title}
-                  fill
-                  className="object-contain p-4"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 35vw"
-                  quality={75}
-                  loading="eager"
-                  priority
+                  className="w-full rounded-lg object-contain h-[220px] sm:h-[280px] lg:h-[260px]"
                 />
               </div>
-            </Suspense>
+            </div>
 
-            <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4 md:p-5">
-              <div className="space-y-3">
+            {/* Features List */}
+            <div className="bg-white border border-gray-200 shadow-md rounded-lg p-2 sm:p-3 mt-3 lg:mt-4">
+              <div className="flex flex-col space-y-1.5 sm:space-y-2">
                 {[
                   "Instant Download After Purchase",
                   "100% Real & Updated Dumps",
@@ -610,9 +491,9 @@ export default function ProductDetailsPage() {
                   "90 Days Free Updates",
                   "24/7 Customer Support",
                 ].map((f, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <FaCheckCircle className="text-blue-600 text-lg md:text-xl flex-shrink-0" />
-                    <span className="text-sm md:text-base text-gray-800 font-medium">
+                  <div key={i} className="flex items-start gap-1.5">
+                    <FaCheckCircle className="text-green-600 text-sm flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-800 text-[11px] sm:text-xs font-medium leading-snug">
                       {f}
                     </span>
                   </div>
@@ -622,9 +503,9 @@ export default function ProductDetailsPage() {
           </div>
         </div>
 
-        {/* Right Column - Details */}
-        <div className="w-full lg:w-[65%] space-y-4 md:space-y-5">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words leading-tight">
+        {/* Right Column */}
+        <div className="w-full lg:w-[65%] space-y-1 sm:space-y-1.5">
+          <h1 className="text-sm sm:text-base lg:text-lg font-bold break-words leading-tight">
             {product.title}
           </h1>
 
@@ -635,19 +516,21 @@ export default function ProductDetailsPage() {
             product.passingScore ||
             product.duration ||
             product.examLastUpdated) && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 md:p-5 shadow-sm">
-              <h3 className="font-semibold text-base md:text-lg mb-4 text-blue-900 flex items-center gap-2">
-                <FaFileAlt className="text-blue-600 text-lg" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-md p-1 sm:p-1.5">
+              <h3 className="font-semibold text-[9px] sm:text-[10px] mb-0.5 sm:mb-1 text-blue-900 flex items-center gap-0.5 sm:gap-1">
+                <FaFileAlt className="text-blue-600 text-[8px] sm:text-[9px]" />
                 Exam Information
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
                 {product.examCode && (
-                  <div className="flex items-start gap-2">
-                    <FaClipboardList className="text-blue-600 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-600">Exam Code</p>
-                      <p className="text-sm font-semibold text-gray-800">
+                  <div className="flex items-start gap-0.5 sm:gap-1">
+                    <FaClipboardList className="text-blue-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
+                    <div className="min-w-0">
+                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
+                        Exam Code
+                      </p>
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
                         {product.examCode}
                       </p>
                     </div>
@@ -655,11 +538,13 @@ export default function ProductDetailsPage() {
                 )}
 
                 {product.examName && (
-                  <div className="flex items-start gap-2">
-                    <FaFileAlt className="text-blue-600 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-600">Exam Name</p>
-                      <p className="text-sm font-semibold text-gray-800">
+                  <div className="flex items-start gap-0.5 sm:gap-1">
+                    <FaFileAlt className="text-blue-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
+                    <div className="min-w-0">
+                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
+                        Exam Name
+                      </p>
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
                         {product.examName}
                       </p>
                     </div>
@@ -667,11 +552,13 @@ export default function ProductDetailsPage() {
                 )}
 
                 {product.totalQuestions && (
-                  <div className="flex items-start gap-2">
-                    <FaClipboardList className="text-blue-600 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-600">Total Questions</p>
-                      <p className="text-sm font-semibold text-gray-800">
+                  <div className="flex items-start gap-0.5 sm:gap-1">
+                    <FaClipboardList className="text-blue-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
+                    <div className="min-w-0">
+                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
+                        Total Questions
+                      </p>
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
                         {product.totalQuestions}
                       </p>
                     </div>
@@ -679,11 +566,13 @@ export default function ProductDetailsPage() {
                 )}
 
                 {product.passingScore && (
-                  <div className="flex items-start gap-2">
-                    <FaTrophy className="text-yellow-600 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-600">Passing Score</p>
-                      <p className="text-sm font-semibold text-gray-800">
+                  <div className="flex items-start gap-0.5 sm:gap-1">
+                    <FaTrophy className="text-yellow-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
+                    <div className="min-w-0">
+                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
+                        Passing Score
+                      </p>
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
                         {product.passingScore}
                       </p>
                     </div>
@@ -691,22 +580,26 @@ export default function ProductDetailsPage() {
                 )}
 
                 {product.duration && (
-                  <div className="flex items-start gap-2">
-                    <FaClock className="text-green-600 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-600">Duration</p>
-                      <p className="text-sm font-semibold text-gray-800">
+                  <div className="flex items-start gap-0.5 sm:gap-1">
+                    <FaClock className="text-green-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
+                    <div className="min-w-0">
+                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
+                        Duration
+                      </p>
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
                         {product.duration}
                       </p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-start gap-2">
-                  <FaCalendarAlt className="text-purple-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-gray-600">Last Updated</p>
-                    <p className="text-sm font-semibold text-gray-800">
+                <div className="flex items-start gap-0.5 sm:gap-1">
+                  <FaCalendarAlt className="text-purple-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
+                  <div className="min-w-0">
+                    <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
+                      Last Updated
+                    </p>
+                    <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
                       {new Date(Date.now()).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
@@ -719,7 +612,7 @@ export default function ProductDetailsPage() {
             </div>
           )}
 
-          {/* {!isLoadingExams && hasOnlineExam && exams.length > 0 && (
+          {!isLoadingExams && hasOnlineExam && exams.length > 0 && (
             <div className="pt-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
               <p className="font-semibold text-sm md:text-base mb-2">
                 📚 Online Exam Available
@@ -741,138 +634,314 @@ export default function ProductDetailsPage() {
                 </p>
               </div>
             </div>
-          )} */}
+          )}
 
           {avgRating && (
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-0.5 flex-wrap">
               {[1, 2, 3, 4, 5].map((v) => (
                 <FaStar
                   key={v}
-                  className={`text-lg md:text-xl ${
+                  className={`text-xs ${
                     v <= Math.round(avgRating)
                       ? "text-yellow-400"
                       : "text-gray-300"
                   }`}
                 />
               ))}
-              <span className="text-xs md:text-sm text-gray-600">
+              <span className="text-[10px] sm:text-[11px] text-gray-600 font-medium">
                 ({avgRating}/5)
               </span>
             </div>
           )}
 
           {/* Pricing Sections */}
-          <div className="space-y-4 md:space-y-5">
-            {isLoadingExams ? (
-              <PricingSkeleton />
-            ) : (
-              <>
-                {/* PDF Download */}
-                {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
-                  <PricingCard
-                    type="pdf"
-                    title="📄 Downloadable PDF File"
-                    priceInr={product.dumpsPriceInr}
-                    priceUsd={product.dumpsPriceUsd}
-                    mrpInr={product.dumpsMrpInr}
-                    mrpUsd={product.dumpsMrpUsd}
-                    isAvailable={productAvailable}
-                    sampleUrl={product.samplePdfUrl}
-                    onDownload={() =>
-                      handleDownload(
-                        product.samplePdfUrl,
-                        `${product.title}-Sample.pdf`,
-                      )
-                    }
-                    onAddToCart={() => handleAddToCart("regular")}
-                    calculateDiscount={calculateDiscount}
-                  />
-                )}
+          <div className="mt-1 sm:mt-1.5 space-y-1 sm:space-y-1.5">
+            {/* PDF Download */}
+            {(product.dumpsPriceInr || product.dumpsPriceUsd) && (
+              <div
+                className={`flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg shadow-sm ${
+                  !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
+                }`}
+              >
+                <div className="w-full">
+                  <p className="font-semibold text-[10px] sm:text-xs mb-0">
+                    📄 Downloadable PDF File
+                    {!productAvailable && (
+                      <span className="ml-2 text-xs text-red-600 font-normal">
+                        (Currently Unavailable)
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                    ₹{product.dumpsPriceInr ?? "N/A"}
+                    <span className="text-red-500 ml-1 line-through text-[8px] sm:text-[9px]">
+                      ₹{product.dumpsMrpInr ?? "N/A"}
+                    </span>
+                    <span className="text-gray-600 text-xs sm:text-sm ml-1">
+                      (
+                      {calculateDiscount(
+                        product.dumpsMrpInr,
+                        product.dumpsPriceInr,
+                      )}
+                      % off)
+                    </span>
+                  </p>
+                  <p className="text-blue-600 font-bold text-sm sm:text-base">
+                    ${product.dumpsPriceUsd ?? "N/A"}
+                    <span className="text-red-500 ml-2 line-through text-xs sm:text-sm">
+                      ${product.dumpsMrpUsd ?? "N/A"}
+                    </span>
+                    <span className="text-gray-600 text-xs sm:text-sm ml-1">
+                      (
+                      {calculateDiscount(
+                        product.dumpsMrpUsd,
+                        product.dumpsPriceUsd,
+                      )}
+                      % off)
+                    </span>
+                  </p>
+                </div>
 
-                {/* Online Exam */}
-                {hasOnlineExam && (
-                  <PricingCard
-                    type="online"
-                    title="📝 Online Exam"
-                    priceInr={examPrices.priceInr}
-                    priceUsd={examPrices.priceUsd}
-                    mrpInr={examPrices.mrpInr}
-                    mrpUsd={examPrices.mrpUsd}
-                    isAvailable={true}
-                    examInfo={exams[0]}
-                    onTryExam={() =>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">
+                  {product.samplePdfUrl && (
+                    <button
+                      onClick={() =>
+                        handleDownload(
+                          product.samplePdfUrl,
+                          `${product.title}-Sample.pdf`,
+                        )
+                      }
+                      className="bg-gray-800 text-white px-2 py-1 rounded text-[9px] sm:text-[10px] hover:bg-gray-700 transition-all w-full sm:w-auto font-medium"
+                    >
+                      📥 Download Sample
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleAddToCart("regular")}
+                    disabled={!productAvailable}
+                    className={`font-semibold px-2 py-1 rounded text-[9px] sm:text-[10px] transition-all w-full sm:flex-1 ${
+                      productAvailable
+                        ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                    title={
+                      !productAvailable
+                        ? "Product unavailable - PDF not found"
+                        : "Add to cart"
+                    }
+                  >
+                    {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Online Exam */}
+            {hasOnlineExam && !isLoadingExams && (
+              <div className="flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg bg-white shadow-sm">
+                <div className="w-full">
+                  <p className="font-semibold text-[10px] sm:text-xs mb-0">
+                    📝 Online Exam
+                  </p>
+                  {exams[0] && (
+                    <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5">
+                      {exams[0].name || "Online Exam"}
+                    </p>
+                  )}
+                  <p className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                    ₹{examPrices.priceInr || "N/A"}
+                    {examPrices.mrpInr > 0 && (
+                      <>
+                        <span className="text-red-600 line-through ml-2 text-xs sm:text-sm">
+                          ₹{examPrices.mrpInr}
+                        </span>
+                        <span className="text-gray-600 text-xs sm:text-sm ml-1">
+                          (
+                          {calculateDiscount(
+                            examPrices.mrpInr,
+                            examPrices.priceInr,
+                          )}
+                          % off)
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  {exams[0] && (
+                    <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                      Duration: {exams[0].duration || 0} mins | Questions:{" "}
+                      {exams[0].numberOfQuestions || 0}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">
+                  <button
+                    onClick={() =>
                       router.push(`/exam/sample-instruction/${slug}`)
                     }
-                    onAddToCart={() => handleAddToCart("online")}
-                    calculateDiscount={calculateDiscount}
-                  />
-                )}
+                    className="bg-blue-600 text-white px-2 py-1 rounded text-[9px] sm:text-[10px] hover:bg-blue-700 transition-all w-full sm:w-auto font-medium"
+                  >
+                    🎯 Try Online Exam
+                  </button>
 
-                {/* Combo */}
-                {hasOnlineExam &&
-                  (product.comboPriceInr || product.comboPriceUsd) && (
-                    <PricingCard
-                      type="combo"
-                      title="🎁 Get Combo (PDF + Online Exam)"
-                      priceInr={product.comboPriceInr}
-                      priceUsd={product.comboPriceUsd}
-                      mrpInr={product.comboMrpInr}
-                      mrpUsd={product.comboMrpUsd}
-                      isAvailable={productAvailable}
-                      onAddToCart={() => handleAddToCart("combo")}
-                      calculateDiscount={calculateDiscount}
-                    />
-                  )}
-              </>
+                  <button
+                    onClick={() => handleAddToCart("online")}
+                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-2 py-1 rounded text-[9px] sm:text-[10px] hover:shadow-lg transition-all w-full sm:flex-1"
+                  >
+                    🛒 Add to Cart
+                  </button>
+                </div>
+              </div>
             )}
+
+            {/* Combo */}
+            {hasOnlineExam &&
+              (product.comboPriceInr || product.comboPriceUsd) && (
+                <div
+                  className={`flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg shadow-sm ${
+                    !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
+                  }`}
+                >
+                  <div className="w-full">
+                    <p className="font-semibold text-[10px] sm:text-xs mb-0">
+                      🎁 Get Combo (PDF + Online Exam)
+                      {!productAvailable && (
+                        <span className="ml-1 text-[8px] sm:text-[9px] text-red-600 font-normal">
+                          (Currently Unavailable)
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-blue-600 font-bold text-[10px] sm:text-xs">
+                      ₹{product.comboPriceInr ?? "N/A"}
+                      <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
+                        ₹{product.comboMrpInr ?? "N/A"}
+                      </span>
+                      <span className="text-gray-600 text-[8px] sm:text-[9px] ml-1">
+                        (
+                        {calculateDiscount(
+                          product.comboMrpInr,
+                          product.comboPriceInr,
+                        )}
+                        % off)
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">
+                    <button
+                      onClick={() => handleAddToCart("combo")}
+                      disabled={!productAvailable}
+                      className={`font-semibold px-2 py-1 rounded text-[9px] sm:text-[10px] transition-all w-full sm:flex-1 ${
+                        productAvailable
+                          ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }`}
+                      title={
+                        !productAvailable
+                          ? "Product unavailable - PDF not found"
+                          : "Add to cart"
+                      }
+                    >
+                      {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
+                    </button>
+                  </div>
+                </div>
+              )}
           </div>
           {/* Description */}
-          <ContentSection title="Description">
-            <div
-              className="prose prose-sm md:prose-base max-w-none prose-p:text-gray-700 prose-p:text-sm md:prose-p:text-base prose-li:text-gray-700 prose-li:text-sm md:prose-li:text-base prose-strong:text-gray-900 prose-a:text-blue-600 prose-headings:text-gray-900 prose-headings:text-base md:prose-headings:text-lg break-words whitespace-normal [&_img]:max-w-full [&_img]:h-auto [&_table]:w-full [&_table]:overflow-x-auto [&_table]:text-sm [&_pre]:overflow-x-auto [&_code]:break-words [&_code]:text-xs md:[&_code]:text-sm"
-              style={{
-                wordBreak: "break-word",
-                overflowWrap: "anywhere",
-              }}
-              dangerouslySetInnerHTML={{
-                __html: product.Description || "No description available",
-              }}
-            />
-          </ContentSection>
+          <div className="bg-white rounded-lg shadow-lg p-1 sm:p-1.5">
+            <h2 className="text-[11px] sm:text-sm font-bold mb-0.5 sm:mb-1 text-gray-900">
+              Description
+            </h2>
 
-          {/* Long Description */}
-          <ContentSection title="Detailed Overview">
-            <div
-              className="prose prose-sm md:prose-base max-w-full prose-p:text-gray-700 prose-p:text-sm md:prose-p:text-base prose-p:break-words prose-li:text-gray-700 prose-li:text-sm md:prose-li:text-base prose-li:break-words prose-strong:text-gray-900 prose-a:text-blue-600 prose-a:break-all prose-headings:break-words prose-headings:text-base md:prose-headings:text-lg break-words overflow-hidden [&_*]:max-w-full [&_*]:break-words [&_img]:max-w-full [&_img]:h-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:text-xs md:[&_table]:text-sm [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:text-xs md:[&_pre]:text-sm [&_code]:break-all [&_code]:text-xs md:[&_code]:text-sm"
-              style={{
-                wordBreak: "break-word",
-                overflowWrap: "anywhere",
-                maxWidth: "100%",
-              }}
-              dangerouslySetInnerHTML={{
-                __html:
-                  product.longDescription || "No detailed overview available",
-              }}
-            />
-          </ContentSection>
+            <div className="relative w-full overflow-visible">
+              <div
+                className="
+        prose prose-xs max-w-none
+        prose-p:text-gray-700 prose-p:text-[10px] prose-p:leading-tight
+        prose-li:text-gray-700 prose-li:text-[10px] prose-li:leading-tight
+        prose-strong:text-gray-900
+        prose-a:text-blue-600
+        prose-headings:text-gray-900 prose-headings:text-[11px]
+
+        break-words
+        whitespace-normal
+
+        [&_img]:max-w-full
+        [&_img]:h-auto
+
+        [&_table]:w-full
+        [&_table]:overflow-x-auto
+        [&_pre]:overflow-x-auto
+        [&_code]:break-words
+      "
+                style={{
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: product.Description || "No description available",
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Full Width Sections Below */}
 
-      <div className="container mx-auto px-3 md:px-6 mt-8 md:mt-10">
-        <MemoizedReviewsSection
+      {/* Long Description - Full Width */}
+      <div className="container mx-auto px-2 sm:px-3 mt-4 sm:mt-5 lg:mt-6">
+        <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 overflow-hidden">
+          <h2 className="text-sm sm:text-base font-bold mb-1.5 sm:mb-2 text-gray-900">
+            Detailed Overview
+          </h2>
+          <div
+            className="
+              prose prose-sm max-w-full
+              prose-p:text-gray-700 prose-p:break-words
+              prose-li:text-gray-700 prose-li:break-words
+              prose-strong:text-gray-900
+              prose-a:text-blue-600 prose-a:break-all
+              prose-headings:break-words
+              break-words
+              overflow-hidden
+              [&_*]:max-w-full
+              [&_*]:break-words
+              [&_img]:max-w-full
+              [&_img]:h-auto
+              [&_table]:block
+              [&_table]:max-w-full
+              [&_table]:overflow-x-auto
+              [&_pre]:overflow-x-auto
+              [&_pre]:max-w-full
+              [&_code]:break-all
+            "
+            style={{
+              wordBreak: "break-word",
+              overflowWrap: "anywhere",
+              maxWidth: "100%",
+            }}
+            dangerouslySetInnerHTML={{
+              __html:
+                product.longDescription || "No detailed overview available",
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="container mx-auto px-2 sm:px-3 mt-6 sm:mt-8 lg:mt-10">
+        <ReviewsSection
           reviews={reviews}
           reviewForm={reviewForm}
           setReviewForm={setReviewForm}
           handleAddReview={handleAddReview}
-          isLoading={isLoadingReviews}
         />
       </div>
 
-      <div className="container mx-auto px-3 md:px-6 mt-6 md:mt-8">
+      <div className="container mx-auto px-2 sm:px-3 mt-6 sm:mt-8">
         {product.faqs && product.faqs.length > 0 && (
-          <MemoizedFAQSection
+          <FAQSection
             faqs={product.faqs}
             activeIndex={activeIndex}
             toggleAccordion={toggleAccordion}
@@ -880,158 +949,14 @@ export default function ProductDetailsPage() {
         )}
       </div>
 
-      <div ref={relatedRef} className="mt-8 md:mt-10">
-        {showRelated && (
-          <Suspense
-            fallback={
-              <div className="py-8 text-center">
-                <div className="h-6 w-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-              </div>
-            }
-          >
-            <RelatedProducts currentSlug={slug} maxProducts={10} />
-          </Suspense>
-        )}
-      </div>
+      <RelatedProducts currentSlug={slug} maxProducts={10} />
 
-      <Toaster position="top-right" richColors />
+      <Toaster />
     </div>
   );
 }
 
 /* Subcomponents */
-
-// Memoized ContentSection component
-const ContentSection = memo(({ title, children }) => (
-  <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 md:p-6">
-    <h2 className="text-lg md:text-xl font-bold mb-4 text-gray-900">{title}</h2>
-    <div className="relative w-full overflow-visible">{children}</div>
-  </div>
-));
-ContentSection.displayName = "ContentSection";
-
-// Memoized PricingCard component
-const PricingCard = memo(
-  ({
-    type,
-    title,
-    priceInr,
-    priceUsd,
-    mrpInr,
-    mrpUsd,
-    isAvailable,
-    sampleUrl,
-    examInfo,
-    onDownload,
-    onTryExam,
-    onAddToCart,
-    calculateDiscount,
-  }) => {
-    const unavailable = type !== "online" && !isAvailable;
-
-    return (
-      <div
-        className={`border rounded-xl shadow-sm overflow-hidden ${
-          unavailable ? "bg-gray-50 opacity-70" : "bg-white"
-        }`}
-      >
-        <div className="p-4 md:p-5">
-          <p className="font-semibold text-base md:text-lg mb-2">
-            {title}
-            {unavailable && (
-              <span className="block sm:inline sm:ml-2 text-xs text-red-600 font-normal mt-1 sm:mt-0">
-                (Currently Unavailable)
-              </span>
-            )}
-          </p>
-          {examInfo && (
-            <p className="text-xs md:text-sm text-gray-600 mb-2">
-              {examInfo.name || "Online Exam"}
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-            <div>
-              <span className="text-blue-600 font-bold text-lg md:text-xl">
-                ₹{priceInr ?? "N/A"}
-              </span>
-              {mrpInr > 0 && (
-                <>
-                  <span className="text-red-500 ml-2 line-through text-sm md:text-base">
-                    ₹{mrpInr}
-                  </span>
-                  <span className="text-green-600 text-xs md:text-sm ml-2 font-semibold">
-                    Save {calculateDiscount(mrpInr, priceInr)}%
-                  </span>
-                </>
-              )}
-            </div>
-            <div>
-              <span className="text-blue-600 font-bold text-lg md:text-xl">
-                ${priceUsd ?? "N/A"}
-              </span>
-              {mrpUsd > 0 && (
-                <span className="text-red-500 ml-2 line-through text-sm md:text-base">
-                  ${mrpUsd}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {examInfo && (
-            <p className="text-xs md:text-sm text-gray-600 mb-3">
-              <span className="inline-flex items-center gap-1">
-                <FaClock className="text-gray-500" />
-                {examInfo.duration || 0} mins
-              </span>
-              <span className="mx-2">•</span>
-              <span className="inline-flex items-center gap-1">
-                <FaClipboardList className="text-gray-500" />
-                {examInfo.numberOfQuestions || 0} questions
-              </span>
-            </p>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            {sampleUrl && onDownload && (
-              <button
-                onClick={onDownload}
-                className="bg-gray-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors flex-1 sm:flex-initial"
-              >
-                Download Sample
-              </button>
-            )}
-            {onTryExam && (
-              <button
-                onClick={onTryExam}
-                className="bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-1 sm:flex-initial"
-              >
-                Try Online Exam
-              </button>
-            )}
-            <button
-              onClick={onAddToCart}
-              disabled={unavailable}
-              className={`font-semibold px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-initial ${
-                !unavailable
-                  ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg hover:from-yellow-500 hover:to-orange-600"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              title={
-                unavailable
-                  ? "Product unavailable - PDF not found"
-                  : "Add to cart"
-              }
-            >
-              {!unavailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  },
-);
-PricingCard.displayName = "PricingCard";
 
 function ReviewsSection({
   reviews = [],
@@ -1059,34 +984,34 @@ function ReviewsSection({
       : 0;
 
   return (
-    <div className="space-y-8 pt-20">
+    <div className="space-y-4 sm:space-y-6 pt-8 sm:pt-10 md:pt-12">
       {/* Header with Overall Rating */}
-      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-6 md:p-8 shadow-lg border border-blue-100">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 shadow-lg border border-blue-100">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="text-center md:text-left">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3 justify-center md:justify-start mb-2">
-              <FaQuoteLeft className="text-blue-600" />
+            <h2 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 justify-center md:justify-start mb-1">
+              <FaQuoteLeft className="text-blue-600 text-xs sm:text-sm md:text-base" />
               Customer Reviews
             </h2>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 text-[10px] sm:text-xs">
               Real feedback from verified customers
             </p>
           </div>
 
           {publishedReviews.length > 0 && (
-            <div className="flex items-center gap-6 bg-white rounded-xl px-6 py-4 shadow-md">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 bg-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 shadow-md w-full sm:w-auto">
               <div className="text-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-4xl md:text-5xl font-bold text-gray-900">
+                <div className="flex items-center gap-1 mb-0.5 justify-center">
+                  <span className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                     {avgRating}
                   </span>
-                  <FaStar className="text-yellow-400 text-2xl" />
+                  <FaStar className="text-yellow-400 text-base sm:text-lg" />
                 </div>
-                <div className="flex items-center gap-1 mb-1">
+                <div className="flex items-center gap-0.5 mb-0.5 justify-center">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FaStar
                       key={star}
-                      className={`text-lg ${
+                      className={`text-sm ${
                         star <= Math.round(avgRating)
                           ? "text-yellow-400"
                           : "text-gray-300"
@@ -1094,13 +1019,13 @@ function ReviewsSection({
                     />
                   ))}
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-[9px] sm:text-[10px] text-gray-500">
                   Based on {publishedReviews.length} review
                   {publishedReviews.length !== 1 ? "s" : ""}
                 </p>
               </div>
 
-              <div className="space-y-1 min-w-[180px]">
+              <div className="space-y-0.5 min-w-[140px] sm:min-w-[160px] w-full sm:w-auto">
                 {[5, 4, 3, 2, 1].map((rating) => {
                   const count = ratingStats[rating];
                   const percentage =
@@ -1109,18 +1034,18 @@ function ReviewsSection({
                       : 0;
 
                   return (
-                    <div key={rating} className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-700 w-8">
+                    <div key={rating} className="flex items-center gap-1">
+                      <span className="text-[9px] sm:text-[10px] font-medium text-gray-700 w-5 sm:w-6">
                         {rating}{" "}
-                        <FaStar className="inline text-yellow-400 text-xs" />
+                        <FaStar className="inline text-yellow-400 text-[9px] sm:text-[10px]" />
                       </span>
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1 sm:h-1.5 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 transition-all"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-600 w-10 text-right">
+                      <span className="text-[9px] sm:text-[10px] text-gray-600 w-6 sm:w-8 text-right">
                         {count}
                       </span>
                     </div>
@@ -1133,36 +1058,38 @@ function ReviewsSection({
       </div>
 
       {/* Mobile: Stack vertically, Desktop: Side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
         {/* Reviews List */}
         <div className="order-2 lg:order-1">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg md:text-xl font-bold text-gray-800">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-sm sm:text-base font-bold text-gray-800">
               What Our Customers Say
             </h3>
             {publishedReviews.length > 0 && (
-              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+              <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
                 {publishedReviews.length}{" "}
                 {publishedReviews.length === 1 ? "Review" : "Reviews"}
               </span>
             )}
           </div>
 
-          <div className="max-h-[600px] lg:max-h-[700px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+          <div className="max-h-[500px] sm:max-h-[600px] lg:max-h-[700px] overflow-y-auto space-y-3 sm:space-y-4 pr-1 sm:pr-2 custom-scrollbar">
             {isLoading ? (
-              <div className="flex items-center justify-center py-16">
+              <div className="flex items-center justify-center py-12 sm:py-16">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-                  <p className="text-gray-600 text-sm">Loading reviews...</p>
+                  <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 sm:border-4 border-blue-500 border-t-transparent mx-auto mb-3 sm:mb-4"></div>
+                  <p className="text-gray-600 text-xs sm:text-sm">
+                    Loading reviews...
+                  </p>
                 </div>
               </div>
             ) : publishedReviews.length === 0 ? (
-              <div className="text-center py-12 md:py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">
-                <FaQuoteLeft className="text-gray-300 text-3xl md:text-4xl lg:text-5xl mx-auto mb-3 md:mb-4" />
-                <p className="text-gray-600 text-sm md:text-base font-medium mb-2">
+              <div className="text-center py-12 sm:py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl sm:rounded-2xl border-2 border-dashed border-gray-300">
+                <FaQuoteLeft className="text-gray-300 text-4xl sm:text-5xl mx-auto mb-3 sm:mb-4" />
+                <p className="text-gray-600 text-sm sm:text-base font-medium mb-1 sm:mb-2">
                   No reviews yet
                 </p>
-                <p className="text-gray-500 text-xs md:text-sm">
+                <p className="text-gray-500 text-xs sm:text-sm">
                   Be the first to share your experience!
                 </p>
               </div>
@@ -1170,24 +1097,24 @@ function ReviewsSection({
               publishedReviews.map((r, i) => (
                 <div
                   key={r._id || i}
-                  className="bg-white border border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-5 hover:shadow-lg hover:border-blue-200 transition-all duration-300"
+                  className="bg-white border-2 border-gray-100 rounded-lg sm:rounded-xl p-2 sm:p-3 hover:shadow-xl hover:border-blue-200 transition-all duration-300 group"
                 >
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-3 gap-2">
-                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full w-9 h-9 md:w-10 md:h-10 flex items-center justify-center font-bold text-base md:text-lg shadow-md flex-shrink-0">
+                  <div className="flex items-start justify-between mb-1.5 sm:mb-2 gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-[10px] sm:text-xs shadow-md flex-shrink-0">
                         {(r.customer || r.name || "A")[0].toUpperCase()}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-gray-900 text-sm md:text-base truncate">
+                      <div>
+                        <p className="font-bold text-gray-900 text-[11px] sm:text-xs">
                           {r.customer || r.name || "Anonymous"}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-0.5 mt-0.5">
                           <div className="flex items-center gap-0.5">
                             {[...Array(5)].map((_, idx) => (
                               <FaStar
                                 key={idx}
-                                className={`text-sm md:text-base ${
+                                className={`text-[10px] ${
                                   idx < r.rating
                                     ? "text-yellow-400"
                                     : "text-gray-300"
@@ -1195,14 +1122,14 @@ function ReviewsSection({
                               />
                             ))}
                           </div>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-[9px] text-gray-500">
                             {r.rating}/5
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <span className="text-[10px] md:text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                      <span className="text-[9px] text-gray-500 bg-gray-100 px-1 py-0.5 rounded-full whitespace-nowrap">
                         {new Date(r.createdAt || r.date).toLocaleDateString(
                           "en-US",
                           { month: "short", day: "numeric", year: "numeric" },
@@ -1213,17 +1140,17 @@ function ReviewsSection({
 
                   {/* Review Text */}
                   <div className="relative">
-                    <FaQuoteLeft className="absolute -left-1 -top-1 text-blue-200 text-base md:text-xl opacity-50" />
-                    <p className="text-gray-700 text-xs sm:text-sm md:text-base leading-relaxed pl-5 md:pl-6 break-words">
+                    <FaQuoteLeft className="absolute -left-1 -top-1 text-blue-200 text-xs sm:text-sm opacity-50" />
+                    <p className="text-gray-700 text-[11px] sm:text-xs leading-relaxed pl-3 sm:pl-4 break-words">
                       {r.comment}
                     </p>
                   </div>
 
                   {/* Verified Badge (if applicable) */}
                   {r.verified && (
-                    <div className="mt-3 flex items-center gap-1 text-green-600">
-                      <FaCheckCircle className="text-xs md:text-sm" />
-                      <span className="text-[10px] md:text-xs font-medium">
+                    <div className="mt-2 flex items-center gap-0.5 text-green-600">
+                      <FaCheckCircle className="text-[10px]" />
+                      <span className="text-[9px] font-medium">
                         Verified Purchase
                       </span>
                     </div>
@@ -1236,39 +1163,39 @@ function ReviewsSection({
 
         {/* Review Form */}
         <div className="order-1 lg:order-2">
-          <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl md:rounded-2xl p-5 md:p-8 shadow-md border border-blue-100 lg:sticky lg:top-24">
-            <h3 className="text-base md:text-lg lg:text-xl font-bold text-gray-800 mb-2">
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 shadow-lg border border-blue-100 sticky top-16 sm:top-20">
+            <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-800 mb-1">
               Write Your Review
             </h3>
-            <p className="text-xs md:text-sm text-gray-600 mb-5 md:mb-6">
+            <p className="text-[10px] sm:text-xs text-gray-600 mb-3 sm:mb-4">
               Share your experience to help others make informed decisions
             </p>
 
-            <form onSubmit={handleAddReview} className="space-y-4 md:space-y-5">
+            <form onSubmit={handleAddReview} className="space-y-2 sm:space-y-3">
               <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-[10px] sm:text-xs font-semibold text-gray-700 mb-1">
                   Your Name *
                 </label>
                 <div className="relative">
-                  <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                  <FaUser className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] sm:text-xs" />
                   <input
                     value={reviewForm.name}
                     onChange={(e) =>
                       setReviewForm({ ...reviewForm, name: e.target.value })
                     }
                     placeholder="Enter your full name"
-                    className="w-full border-2 border-gray-200 pl-10 pr-4 py-2.5 md:py-3 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm md:text-base bg-white"
+                    className="w-full border-2 border-gray-200 pl-7 sm:pl-8 pr-2 sm:pr-3 py-1.5 sm:py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-[11px] sm:text-xs bg-white"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2 md:mb-3">
+                <label className="block text-[10px] sm:text-xs font-semibold text-gray-700 mb-1.5 sm:mb-2">
                   Your Rating *
                 </label>
-                <div className="bg-white rounded-lg md:rounded-xl p-3 md:p-4 border-2 border-gray-200">
-                  <div className="flex items-center justify-center gap-1 md:gap-2 mb-2">
+                <div className="bg-white rounded-lg p-2 sm:p-3 border-2 border-gray-200">
+                  <div className="flex items-center justify-center gap-1 mb-1">
                     {[1, 2, 3, 4, 5].map((value) => (
                       <button
                         key={value}
@@ -1276,14 +1203,12 @@ function ReviewsSection({
                         onClick={() =>
                           setReviewForm({ ...reviewForm, rating: value })
                         }
-                        className={`transition-all transform hover:scale-110 md:hover:scale-125 ${
-                          value <= reviewForm.rating
-                            ? "scale-105 md:scale-110"
-                            : ""
+                        className={`transition-all transform hover:scale-125 ${
+                          value <= reviewForm.rating ? "scale-110" : ""
                         }`}
                       >
                         <FaStar
-                          className={`text-2xl md:text-3xl lg:text-4xl ${
+                          className={`text-lg sm:text-xl md:text-2xl ${
                             value <= reviewForm.rating
                               ? "text-yellow-400 drop-shadow-lg"
                               : "text-gray-300 hover:text-yellow-200"
@@ -1292,7 +1217,7 @@ function ReviewsSection({
                       </button>
                     ))}
                   </div>
-                  <p className="text-center text-xs md:text-sm font-medium text-gray-700">
+                  <p className="text-center text-[10px] sm:text-xs font-medium text-gray-700">
                     {reviewForm.rating === 0 && "Click to rate"}
                     {reviewForm.rating === 1 && "⭐ Poor"}
                     {reviewForm.rating === 2 && "⭐⭐ Fair"}
@@ -1304,7 +1229,7 @@ function ReviewsSection({
               </div>
 
               <div>
-                <label className="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-[10px] sm:text-xs font-semibold text-gray-700 mb-1">
                   Your Review *
                 </label>
                 <textarea
@@ -1313,25 +1238,25 @@ function ReviewsSection({
                     setReviewForm({ ...reviewForm, comment: e.target.value })
                   }
                   placeholder="Tell us about your experience with this product. What did you like? What could be improved?"
-                  rows="5"
-                  className="w-full border-2 border-gray-200 p-3 md:p-4 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none text-sm md:text-base bg-white"
+                  rows="4"
+                  className="w-full border-2 border-gray-200 p-2 sm:p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none text-[11px] sm:text-xs bg-white"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">
                   Minimum 10 characters
                 </p>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl font-bold transition-all shadow-md hover:shadow-lg text-sm md:text-base transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-bold transition-all shadow-lg hover:shadow-xl text-[11px] sm:text-xs transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 Submit Review ✨
               </button>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                <FaCheckCircle className="text-blue-600 mt-0.5 flex-shrink-0 text-sm" />
-                <p className="text-xs text-blue-800">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-1.5 sm:p-2 flex items-start gap-1">
+                <FaCheckCircle className="text-blue-600 mt-0.5 flex-shrink-0 text-[10px] sm:text-xs" />
+                <p className="text-[9px] sm:text-[10px] text-blue-800">
                   Your review will be published after admin approval to ensure
                   quality and authenticity
                 </p>
@@ -1361,41 +1286,37 @@ function ReviewsSection({
   );
 }
 
-// Memoized Reviews Section
-const MemoizedReviewsSection = memo(ReviewsSection);
-MemoizedReviewsSection.displayName = "MemoizedReviewsSection";
-
 function FAQSection({ faqs, activeIndex, toggleAccordion }) {
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 md:p-6">
-      <h2 className="text-xl md:text-2xl font-bold mb-5 md:mb-6 text-center flex items-center justify-center gap-2 text-gray-900">
-        <FaUser className="text-blue-600 text-lg md:text-xl" />
-        Frequently Asked Questions
+    <div className="py-4 sm:py-6">
+      <h2 className="text-sm sm:text-base font-bold mb-3 sm:mb-4 text-center flex items-center justify-center gap-1.5">
+        <FaUser className="text-blue-600 text-xs sm:text-sm" /> Frequently Asked
+        Questions (FAQs)
       </h2>
-      <div className="space-y-3 md:space-y-4">
+      <div className="space-y-2 sm:space-y-3">
         {faqs.map((faq, idx) => {
           const isOpen = activeIndex === idx;
           return (
             <div
               key={idx}
-              className="border border-gray-200 rounded-lg md:rounded-xl shadow-sm bg-white overflow-hidden transition-all"
+              className="border border-gray-200 rounded-lg shadow-sm bg-white"
             >
               <button
                 onClick={() => toggleAccordion(idx)}
-                className="w-full flex justify-between items-center px-4 md:px-6 py-3 md:py-4 text-left group hover:bg-gray-50 transition-colors"
+                className="w-full flex justify-between items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 text-left group hover:bg-gray-50 gap-1.5"
               >
-                <span className="font-medium text-gray-800 text-sm md:text-base pr-4">
+                <span className="font-medium text-gray-800 text-[11px] sm:text-xs text-left">
                   {faq.question}
                 </span>
                 <FaChevronRight
-                  className={`text-gray-600 flex-shrink-0 transform transition-transform text-sm md:text-base ${
+                  className={`text-gray-600 transform transition-transform text-[10px] flex-shrink-0 ${
                     isOpen ? "rotate-90" : ""
                   }`}
                 />
               </button>
               {isOpen && (
-                <div className="px-4 md:px-6 py-3 md:py-4 text-gray-600 text-sm md:text-base border-t border-gray-100 bg-gray-50">
-                  <p className="leading-relaxed">{faq.answer}</p>
+                <div className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-gray-600 text-[10px] sm:text-xs">
+                  <p>{faq.answer}</p>
                 </div>
               )}
             </div>
@@ -1405,7 +1326,3 @@ function FAQSection({ faqs, activeIndex, toggleAccordion }) {
     </div>
   );
 }
-
-// Memoized FAQ Section
-const MemoizedFAQSection = memo(FAQSection);
-MemoizedFAQSection.displayName = "MemoizedFAQSection";
