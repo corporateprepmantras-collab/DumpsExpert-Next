@@ -252,6 +252,39 @@ const QuestionForm = ({
     }));
   };
 
+  // Function to add a new option
+  const addOption = () => {
+    const nextLabel = String.fromCharCode(65 + formData.options.length); // A=65, B=66, C=67, etc.
+    const newOption = { label: nextLabel, text: "", images: [] };
+
+    setFormData((prev) => ({
+      ...prev,
+      options: [...prev.options, newOption],
+    }));
+  };
+
+  // Function to remove an option
+  const removeOption = (index) => {
+    if (formData.options.length <= 2) {
+      alert("Minimum 2 options required!");
+      return;
+    }
+
+    const removedLabel = formData.options[index].label;
+    const updatedOptions = formData.options.filter((_, i) => i !== index);
+
+    // Update correct answers if the removed option was selected
+    const updatedCorrectAnswers = formData.correctAnswers.filter(
+      (answer) => answer !== removedLabel,
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      options: updatedOptions,
+      correctAnswers: updatedCorrectAnswers,
+    }));
+  };
+
   const addMatchingItem = (side) => {
     const items =
       side === "left"
@@ -921,26 +954,55 @@ const QuestionForm = ({
                   key={index}
                   className="mb-4 p-4 border-2 border-green-200 rounded-lg bg-white hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center mb-3">
-                    <span className="font-bold text-lg mr-4 bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                      {option.label}
-                    </span>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type={
-                          formData.questionType === "radio"
-                            ? "radio"
-                            : "checkbox"
-                        }
-                        name="correctAnswers"
-                        checked={formData.correctAnswers.includes(option.label)}
-                        onChange={() => handleCorrectAnswerChange(option.label)}
-                        className="mr-2 w-5 h-5 text-green-500 focus:ring-green-500"
-                      />
-                      <span className="font-medium text-green-700">
-                        Mark as Correct Answer
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <span className="font-bold text-lg mr-4 bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                        {option.label}
                       </span>
-                    </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type={
+                            formData.questionType === "radio"
+                              ? "radio"
+                              : "checkbox"
+                          }
+                          name="correctAnswers"
+                          checked={formData.correctAnswers.includes(
+                            option.label,
+                          )}
+                          onChange={() =>
+                            handleCorrectAnswerChange(option.label)
+                          }
+                          className="mr-2 w-5 h-5 text-green-500 focus:ring-green-500"
+                        />
+                        <span className="font-medium text-green-700">
+                          Mark as Correct Answer
+                        </span>
+                      </label>
+                    </div>
+                    {formData.options.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => removeOption(index)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors flex items-center text-sm"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        Remove
+                      </button>
+                    )}
                   </div>
 
                   <div className="mb-3">
@@ -966,6 +1028,30 @@ const QuestionForm = ({
                   </div>
                 </div>
               ))}
+
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={addOption}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add Option
+                </button>
+              </div>
             </div>
           )}
 

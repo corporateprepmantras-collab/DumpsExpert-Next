@@ -116,11 +116,9 @@ export default function ProductsList({ products, coursename }) {
                 <span className="line-clamp-2">{product.title}</span>
               </td>
               <td className="px-4 py-3 text-right align-top space-y-1 whitespace-nowrap">
-                <span className="block font-bold text-green-600 text-base">
-                  {formatPrice(product.dumpsPriceInr?.trim(), "₹")}
-                </span>
-                <span className="block text-xs text-gray-600">
-                  {formatPrice(product.dumpsPriceUsd, "$")}
+                <span className="block font-bold gap-1 text-green-600 text-base">
+                  {formatPrice(product.dumpsPriceInr?.trim(), "₹")} / 
+                   {formatPrice(product.dumpsPriceUsd, "$")}
                 </span>
               </td>
               <td className="px-4 py-3 text-center">
