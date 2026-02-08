@@ -16,6 +16,8 @@ import {
   FaTrophy,
   FaFileAlt,
   FaCalendarAlt,
+  FaDownload,
+  FaEye,
 } from "react-icons/fa";
 import useCartStore from "@/store/useCartStore";
 import { Toaster, toast } from "sonner";
@@ -426,7 +428,7 @@ export default function ProductDetailsPage() {
 
         if (fetchedReviews && fetchedReviews.length > 0) {
           const total = fetchedReviews.reduce((sum, r) => sum + r.rating, 0);
-          setAvgRating((total / fetchedReviews.length).toFixed(1));
+          setAvgRating(total / fetchedReviews.length);
         } else {
           setAvgRating(null);
         }
@@ -480,7 +482,7 @@ export default function ProductDetailsPage() {
 
       if (updatedReviews.length > 0) {
         const total = updatedReviews.reduce((sum, r) => sum + r.rating, 0);
-        setAvgRating((total / updatedReviews.length).toFixed(1));
+        setAvgRating(total / updatedReviews.length);
       }
     } else {
       toast.error(result.error || "Failed to submit review");
@@ -672,7 +674,7 @@ export default function ProductDetailsPage() {
             </div>
           )}
 
-          {avgRating && (
+          {avgRating && avgRating > 0 && (
             <div className="flex items-center gap-0.5 flex-wrap">
               {[1, 2, 3, 4, 5].map((v) => (
                 <FaStar
@@ -685,216 +687,113 @@ export default function ProductDetailsPage() {
                 />
               ))}
               <span className="text-[10px] sm:text-[11px] text-gray-600 font-medium">
-                ({avgRating}/5)
+                ({avgRating.toFixed(1)}/5)
               </span>
             </div>
           )}
 
-          {/* Pricing Sections */}
-          <div className="mt-1 sm:mt-1.5 space-y-1 sm:space-y-1.5">
-            {/* PDF Download */}
-            {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
-              <div
-                className={`flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg shadow-sm ${
-                  !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
-                }`}
-              >
-                <div className="w-full">
-                  <p className="font-semibold text-[10px] sm:text-xs mb-0">
-                    📄 Downloadable PDF File
+          {/* Pricing Sections - Clean Table Layout */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="divide-y divide-gray-200">
+              {/* Online Exam Questions */}
+              {hasOnlineExam && !isLoadingExams && (
+                <div className="flex items-center px-6 py-3.5">
+                  {/* Product Name */}
+                  <div className="w-64 flex-shrink-0">
+                    <h3 className="text-[15px] font-normal text-gray-900">
+                      Online Exam Questions
+                    </h3>
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
+                    <span className="text-orange-500">
+                      ₹{onlineExamPrices.priceInr || "3499"},
+                    </span>
+                    <span className="text-gray-600">
+                      (${onlineExamPrices.priceUsd || "47.28"})
+                    </span>
+                    <span className="line-through text-gray-500">
+                      ₹{onlineExamPrices.mrpInr || "6000"}
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 ml-auto">
+                    <button
+                      onClick={() =>
+                        router.push(`/exam/sample-instruction/${slug}`)
+                      }
+                      className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
+                    >
+                      <FaEye size={16} />
+                      TRY ONLINE EXAM
+                    </button>
+                    <button
+                      onClick={() => handleAddToCart("online")}
+                      className="flex items-center gap-2 px-5 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold text-xs uppercase rounded transition-colors whitespace-nowrap"
+                    >
+                      <FaShoppingCart size={16} />
+                      ADD TO CART
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* PDF Downloadable Format */}
+              {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
+                <div
+                  className={`flex items-center px-6 py-3.5 ${
+                    !productAvailable ? "bg-gray-50 opacity-70" : ""
+                  }`}
+                >
+                  {/* Product Name */}
+                  <div className="w-64 flex-shrink-0">
+                    <h3 className="text-[15px] font-normal text-gray-900">
+                      PDF Downloadable Format
+                    </h3>
                     {!productAvailable && (
-                      <span className="ml-2 text-xs text-red-600 font-normal">
+                      <span className="text-[10px] text-red-600">
                         (Currently Unavailable)
                       </span>
                     )}
-                  </p>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                    <div>
-                      <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                        ₹{pdfPrices.priceInr || "N/A"}
-                      </span>
-                      <span className="text-red-500 ml-1 line-through text-[8px] sm:text-[9px]">
-                        ₹{pdfPrices.mrpInr || "N/A"}
-                      </span>
-                      <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
-                        ({pdfPrices.discount}% off)
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                        ${pdfPrices.priceUsd || "N/A"}
-                      </span>
-                      <span className="text-red-500 ml-1 line-through text-[8px] sm:text-[9px]">
-                        ${pdfPrices.mrpUsd || "N/A"}
-                      </span>
-                      <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
-                        ({pdfPrices.discount}% off)
-                      </span>
-                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">
-                  {product.samplePdfUrl && (
-                    <button
-                      onClick={() =>
-                        handleDownload(
-                          product.samplePdfUrl,
-                          `${product.title}-Sample.pdf`,
-                        )
-                      }
-                      className="bg-gray-800 text-white px-2 py-1 rounded text-[9px] sm:text-[10px] hover:bg-gray-700 transition-all w-full sm:w-auto font-medium"
-                    >
-                      📥 Download Sample
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleAddToCart("regular")}
-                    disabled={!productAvailable}
-                    className={`font-semibold px-2 py-1 rounded text-[9px] sm:text-[10px] transition-all w-full sm:flex-1 ${
-                      productAvailable
-                        ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    title={
-                      !productAvailable
-                        ? "Product unavailable - PDF not found"
-                        : "Add to cart"
-                    }
-                  >
-                    {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
-                  </button>
-                </div>
-              </div>
-            )}
+                  {/* Pricing */}
+                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
+                    <span className="text-orange-500">
+                      ₹{pdfPrices.priceInr || "4999"},
+                    </span>
+                    <span className="text-gray-600">
+                      (${pdfPrices.priceUsd || "67.55"})
+                    </span>
+                    <span className="line-through text-gray-500">
+                      ₹{pdfPrices.mrpInr || "7000"}
+                    </span>
+                  </div>
 
-            {/* Online Exam */}
-            {hasOnlineExam && !isLoadingExams && (
-              <div className="flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg bg-white shadow-sm">
-                <div className="w-full">
-                  <p className="font-semibold text-[10px] sm:text-xs mb-0">
-                    📝 Online Exam
-                  </p>
-                  {exams[0] && (
-                    <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5">
-                      {exams[0].name || "Online Exam"}
-                    </p>
-                  )}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                    <div>
-                      <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                        ₹{onlineExamPrices.priceInr || "N/A"}
-                      </span>
-                      {onlineExamPrices.mrpInr > 0 && (
-                        <>
-                          <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
-                            ₹{onlineExamPrices.mrpInr}
-                          </span>
-                          <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
-                            ({onlineExamPrices.discount}% off)
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    {onlineExamPrices.priceUsd > 0 && (
-                      <div>
-                        <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                          ${onlineExamPrices.priceUsd || "N/A"}
-                        </span>
-                        {onlineExamPrices.mrpUsd > 0 && (
-                          <>
-                            <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
-                              ${onlineExamPrices.mrpUsd}
-                            </span>
-                            <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
-                              ({onlineExamPrices.discount}% off)
-                            </span>
-                          </>
-                        )}
-                      </div>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 ml-auto">
+                    {product.samplePdfUrl && (
+                      <button
+                        onClick={() =>
+                          handleDownload(
+                            product.samplePdfUrl,
+                            `${product.title}-Sample.pdf`,
+                          )
+                        }
+                        className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
+                      >
+                        <FaDownload size={16} />
+                        DOWNLOAD SAMPLE
+                      </button>
                     )}
-                  </div>
-                  {exams[0] && (
-                    <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
-                      Duration: {exams[0].duration || 0} mins | Questions:{" "}
-                      {exams[0].numberOfQuestions || 0}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">
-                  <button
-                    onClick={() =>
-                      router.push(`/exam/sample-instruction/${slug}`)
-                    }
-                    className="bg-blue-600 text-white px-2 py-1 rounded text-[9px] sm:text-[10px] hover:bg-blue-700 transition-all w-full sm:w-auto font-medium"
-                  >
-                    🎯 Try Online Exam
-                  </button>
-
-                  <button
-                    onClick={() => handleAddToCart("online")}
-                    className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-2 py-1 rounded text-[9px] sm:text-[10px] hover:shadow-lg transition-all w-full sm:flex-1"
-                  >
-                    🛒 Add to Cart
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Combo */}
-            {hasOnlineExam &&
-              comboPrices &&
-              (comboPrices.priceInr || comboPrices.priceUsd) && (
-                <div
-                  className={`flex flex-col gap-1 p-1 sm:p-1.5 border rounded-lg shadow-sm ${
-                    !productAvailable ? "bg-gray-100 opacity-70" : "bg-white"
-                  }`}
-                >
-                  <div className="w-full">
-                    <p className="font-semibold text-[10px] sm:text-xs mb-0">
-                      🎁 Get Combo (PDF + Online Exam)
-                      {!productAvailable && (
-                        <span className="ml-1 text-[8px] sm:text-[9px] text-red-600 font-normal">
-                          (Currently Unavailable)
-                        </span>
-                      )}
-                    </p>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                      <div>
-                        <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                          ₹{comboPrices.priceInr || "N/A"}
-                        </span>
-                        <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
-                          ₹{comboPrices.mrpInr || "N/A"}
-                        </span>
-                        <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
-                          ({comboPrices.discount}% off)
-                        </span>
-                      </div>
-                      {comboPrices.priceUsd && (
-                        <div>
-                          <span className="text-blue-600 font-bold text-[10px] sm:text-xs">
-                            ${comboPrices.priceUsd || "N/A"}
-                          </span>
-                          <span className="text-red-600 line-through ml-1 text-[8px] sm:text-[9px]">
-                            ${comboPrices.mrpUsd || "N/A"}
-                          </span>
-                          <span className="text-gray-600 text-[8px] sm:text-xs ml-1">
-                            ({comboPrices.discount}% off)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row flex-wrap gap-1 w-full">
                     <button
-                      onClick={() => handleAddToCart("combo")}
+                      onClick={() => handleAddToCart("regular")}
                       disabled={!productAvailable}
-                      className={`font-semibold px-2 py-1 rounded text-[9px] sm:text-[10px] transition-all w-full sm:flex-1 ${
+                      className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
                         productAvailable
-                          ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:shadow-lg cursor-pointer"
+                          ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900 cursor-pointer"
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                       }`}
                       title={
@@ -903,12 +802,72 @@ export default function ProductDetailsPage() {
                           : "Add to cart"
                       }
                     >
-                      {productAvailable ? "🛒 Add to Cart" : "🚫 Unavailable"}
+                      <FaShoppingCart size={16} />
+                      {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
                     </button>
                   </div>
                 </div>
               )}
+
+              {/* PDF + Online Exam */}
+              {hasOnlineExam &&
+                comboPrices &&
+                (comboPrices.priceInr || comboPrices.priceUsd) && (
+                  <div
+                    className={`flex items-center px-6 py-3.5 ${
+                      !productAvailable ? "bg-gray-50 opacity-70" : ""
+                    }`}
+                  >
+                    {/* Product Name */}
+                    <div className="w-64 flex-shrink-0">
+                      <h3 className="text-[15px] font-normal text-gray-900">
+                        PDF + Online Exam
+                      </h3>
+                      {!productAvailable && (
+                        <span className="text-[10px] text-red-600">
+                          (Currently Unavailable)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Pricing */}
+                    <div className="flex items-center gap-1.5 text-[15px] mr-8">
+                      <span className="text-orange-500">
+                        ₹{comboPrices.priceInr || "6998"},
+                      </span>
+                      <span className="text-gray-600">
+                        (${comboPrices.priceUsd || "94.57"})
+                      </span>
+                      <span className="line-through text-gray-500">
+                        ₹{comboPrices.mrpInr || "8498"}
+                      </span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 ml-auto">
+                      <button
+                        onClick={() => handleAddToCart("combo")}
+                        disabled={!productAvailable}
+                        className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
+                          productAvailable
+                            ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900 cursor-pointer"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                        title={
+                          !productAvailable
+                            ? "Product unavailable - PDF not found"
+                            : "Add to cart"
+                        }
+                      >
+                        <FaShoppingCart size={16} />
+                        {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+            </div>
           </div>
+
           {/* Description */}
           <div className="bg-white rounded-lg shadow-lg p-1 sm:p-1.5">
             <h2 className="text-[11px] sm:text-sm font-bold mb-0.5 sm:mb-1 text-gray-900">
