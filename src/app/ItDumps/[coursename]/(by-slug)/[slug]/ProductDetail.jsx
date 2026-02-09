@@ -515,14 +515,14 @@ export default function ProductDetailsPage() {
     );
 
   return (
-    <div className="min-h-screen pt-12 sm:pt-14 lg:pt-16 bg-gray-50 text-gray-800">
-      <div className="container mx-auto px-2 sm:px-3 pt-0.5 pb-1">
+    <div className="min-h-screen pt-12 sm:pt-14 md:pt-16 lg:pt-18 bg-gray-50 text-gray-800">
+      <div className="container mx-auto px-2 sm:px-3 md:px-4 pt-0.5 pb-1">
         <Breadcrumbs />
       </div>
       {/* //updated ui */}
       {/* Product Unavailability Alert */}
       {!productAvailable && product && (
-        <div className="container mx-auto px-2 sm:px-3 mb-1.5 sm:mb-2">
+        <div className="container mx-auto px-2 sm:px-3 md:px-4 mb-1.5 sm:mb-2">
           <div className="bg-red-50 border-l-4 border-red-500 p-1.5 sm:p-2 rounded-lg shadow-sm">
             <div className="flex items-center gap-1.5">
               <FaExclamationTriangle className="text-red-500 text-sm sm:text-base flex-shrink-0" />
@@ -540,23 +540,23 @@ export default function ProductDetailsPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-2 sm:px-3 flex flex-col lg:flex-row gap-2 lg:gap-3">
+      <div className="container mx-auto px-2 sm:px-3 md:px-4 flex flex-col md:flex-row lg:flex-row gap-3 md:gap-4 lg:gap-5">
         {/* Left Column - Sticky */}
-        <div className="w-full lg:w-[35%]">
-          <div className="lg:sticky lg:top-20">
+        <div className="w-full md:w-[40%] lg:w-[35%]">
+          <div className="md:sticky lg:sticky md:top-20 lg:top-20">
             {/* Image */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 shadow-md">
+            <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 md:p-4 shadow-md">
               <div className="bg-gray-50 rounded-lg border border-gray-100 p-1.5">
                 <img
                   src={product.imageUrl}
                   alt={product.title}
-                  className="w-full rounded-lg object-contain h-[220px] sm:h-[280px] lg:h-[260px]"
+                  className="w-full rounded-lg object-contain h-[220px] sm:h-[280px] md:h-[320px] lg:h-[300px]"
                 />
               </div>
             </div>
 
             {/* Features List */}
-            <div className="bg-white border border-gray-200 shadow-md rounded-lg p-2 sm:p-3 mt-3 lg:mt-4">
+            <div className="bg-white border border-gray-200 shadow-md rounded-lg p-2 sm:p-3 md:p-4 mt-3 md:mt-4 lg:mt-5">
               <div className="flex flex-col space-y-1.5 sm:space-y-2">
                 {[
                   "Instant Download After Purchase",
@@ -578,7 +578,7 @@ export default function ProductDetailsPage() {
         </div>
 
         {/* Right Column */}
-        <div className="w-full lg:w-[65%] space-y-1 sm:space-y-1.5">
+        <div className="w-full md:w-[60%] lg:w-[65%] space-y-1 sm:space-y-1.5 md:space-y-2">
           <h1 className="text-sm sm:text-base lg:text-lg font-bold break-words leading-tight">
             {product.title}
           </h1>
@@ -690,16 +690,16 @@ export default function ProductDetailsPage() {
             <div className="divide-y divide-gray-200">
               {/* Online Exam Questions */}
               {hasOnlineExam && !isLoadingExams && (
-                <div className="flex items-center px-6 py-3.5">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center px-3 sm:px-4 md:px-6 py-3 sm:py-3.5 gap-3 sm:gap-0">
                   {/* Product Name */}
-                  <div className="w-64 flex-shrink-0">
-                    <h3 className="text-[15px] font-normal text-gray-900">
+                  <div className="w-full sm:w-48 md:w-64 flex-shrink-0">
+                    <h3 className="text-sm sm:text-[14px] md:text-[15px] font-normal text-gray-900">
                       Online Exam Questions
                     </h3>
                   </div>
 
                   {/* Pricing */}
-                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
+                  <div className="flex items-center gap-1.5 text-sm sm:text-[14px] md:text-[15px] mr-0 sm:mr-8">
                     <span className="text-orange-500">
                       ₹{onlineExamPrices.priceInr || "3499"},
                     </span>
@@ -712,21 +712,31 @@ export default function ProductDetailsPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 ml-auto">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:ml-auto">
                     <button
                       onClick={() =>
                         router.push(`/exam/sample-instruction/${slug}`)
                       }
-                      className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
+                      className="flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap"
                     >
-                      <FaEye size={16} />
+                      <FaEye size={14} />
                       TRY ONLINE EXAM
                     </button>
                     <button
                       onClick={() => handleAddToCart("online")}
-                      className="flex items-center gap-2 px-5 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold text-xs uppercase rounded transition-colors whitespace-nowrap"
+                      className="flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 text-gray-900 font-bold text-[10px] sm:text-xs uppercase rounded transition-colors whitespace-nowrap"
+                      style={{
+                        backgroundColor: "#F98B23",
+                        ":hover": { backgroundColor: "#E07A1F" },
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.target.style.backgroundColor = "#E07A1F")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.target.style.backgroundColor = "#F98B23")
+                      }
                     >
-                      <FaShoppingCart size={16} />
+                      <FaShoppingCart size={14} />
                       ADD TO CART
                     </button>
                   </div>
@@ -736,13 +746,13 @@ export default function ProductDetailsPage() {
               {/* PDF Downloadable Format */}
               {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
                 <div
-                  className={`flex items-center px-6 py-3.5 ${
+                  className={`flex flex-col sm:flex-row items-start sm:items-center px-3 sm:px-4 md:px-6 py-3 sm:py-3.5 gap-3 sm:gap-0 ${
                     !productAvailable ? "bg-gray-50 opacity-70" : ""
                   }`}
                 >
                   {/* Product Name */}
-                  <div className="w-64 flex-shrink-0">
-                    <h3 className="text-[15px] font-normal text-gray-900">
+                  <div className="w-full sm:w-48 md:w-64 flex-shrink-0">
+                    <h3 className="text-sm sm:text-[14px] md:text-[15px] font-normal text-gray-900">
                       PDF Downloadable Format
                     </h3>
                     {!productAvailable && (
@@ -753,7 +763,7 @@ export default function ProductDetailsPage() {
                   </div>
 
                   {/* Pricing */}
-                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
+                  <div className="flex items-center gap-1.5 text-sm sm:text-[14px] md:text-[15px] mr-0 sm:mr-8">
                     <span className="text-orange-500">
                       ₹{pdfPrices.priceInr || "4999"},
                     </span>
@@ -766,7 +776,7 @@ export default function ProductDetailsPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 ml-auto">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:ml-auto">
                     {product.samplePdfUrl && (
                       <button
                         onClick={() =>
@@ -775,27 +785,42 @@ export default function ProductDetailsPage() {
                             `${product.title}-Sample.pdf`,
                           )
                         }
-                        className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
+                        className="flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap"
                       >
-                        <FaDownload size={16} />
+                        <FaDownload size={14} />
                         DOWNLOAD SAMPLE
                       </button>
                     )}
                     <button
                       onClick={() => handleAddToCart("regular")}
                       disabled={!productAvailable}
-                      className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
+                      className={`flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold ${
                         productAvailable
-                          ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900 cursor-pointer"
+                          ? "text-gray-900 cursor-pointer"
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                       }`}
+                      style={
+                        productAvailable
+                          ? {
+                              backgroundColor: "#F98B23",
+                            }
+                          : {}
+                      }
+                      onMouseEnter={(e) => {
+                        if (productAvailable)
+                          e.target.style.backgroundColor = "#E07A1F";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (productAvailable)
+                          e.target.style.backgroundColor = "#F98B23";
+                      }}
                       title={
                         !productAvailable
                           ? "Product unavailable - PDF not found"
                           : "Add to cart"
                       }
                     >
-                      <FaShoppingCart size={16} />
+                      <FaShoppingCart size={14} />
                       {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
                     </button>
                   </div>
@@ -807,13 +832,13 @@ export default function ProductDetailsPage() {
                 comboPrices &&
                 (comboPrices.priceInr || comboPrices.priceUsd) && (
                   <div
-                    className={`flex items-center px-6 py-3.5 ${
+                    className={`flex flex-col sm:flex-row items-start sm:items-center px-3 sm:px-4 md:px-6 py-3 sm:py-3.5 gap-3 sm:gap-0 ${
                       !productAvailable ? "bg-gray-50 opacity-70" : ""
                     }`}
                   >
                     {/* Product Name */}
-                    <div className="w-64 flex-shrink-0">
-                      <h3 className="text-[15px] font-normal text-gray-900">
+                    <div className="w-full sm:w-48 md:w-64 flex-shrink-0">
+                      <h3 className="text-sm sm:text-[14px] md:text-[15px] font-normal text-gray-900">
                         PDF + Online Exam
                       </h3>
                       {!productAvailable && (
@@ -824,7 +849,7 @@ export default function ProductDetailsPage() {
                     </div>
 
                     {/* Pricing */}
-                    <div className="flex items-center gap-1.5 text-[15px] mr-8">
+                    <div className="flex items-center gap-1.5 text-sm sm:text-[14px] md:text-[15px] mr-0 sm:mr-8">
                       <span className="text-orange-500">
                         ₹{comboPrices.priceInr || "6998"},
                       </span>
@@ -837,22 +862,37 @@ export default function ProductDetailsPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 ml-auto">
+                    <div className="flex w-full sm:w-auto sm:ml-auto">
                       <button
                         onClick={() => handleAddToCart("combo")}
                         disabled={!productAvailable}
-                        className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
+                        className={`flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold w-full sm:w-auto ${
                           productAvailable
-                            ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900 cursor-pointer"
+                            ? "text-gray-900 cursor-pointer"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         }`}
+                        style={
+                          productAvailable
+                            ? {
+                                backgroundColor: "#F98B23",
+                              }
+                            : {}
+                        }
+                        onMouseEnter={(e) => {
+                          if (productAvailable)
+                            e.target.style.backgroundColor = "#E07A1F";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (productAvailable)
+                            e.target.style.backgroundColor = "#F98B23";
+                        }}
                         title={
                           !productAvailable
                             ? "Product unavailable - PDF not found"
                             : "Add to cart"
                         }
                       >
-                        <FaShoppingCart size={16} />
+                        <FaShoppingCart size={14} />
                         {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
                       </button>
                     </div>

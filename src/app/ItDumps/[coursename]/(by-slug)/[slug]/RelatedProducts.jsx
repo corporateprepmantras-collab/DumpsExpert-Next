@@ -229,7 +229,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
               return (
                 <div
                   key={product._id}
-                  className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden cursor-pointer"
+                  className="flex-shrink-0 w-[45%] sm:w-[32%] md:w-[24%] lg:w-[19%] xl:w-[16%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden cursor-pointer"
                   onClick={() =>
                     router.push(
                       `/ItDumps/${product.category || "sap"}/${product.slug}`,
@@ -242,24 +242,24 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                       <img
                         src={product.imageUrl}
                         alt={product.title}
-                        className="h-24 sm:h-28 md:h-32 w-full object-contain"
+                        className="h-20 sm:h-24 md:h-28 lg:h-32 w-full object-contain"
                         loading="lazy"
                         decoding="async"
                       />
                     </div>
 
                     {/* Product Title */}
-                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors leading-tight">
+                    <h3 className="text-[11px] sm:text-xs md:text-sm font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors leading-tight">
                       {product.title}
                     </h3>
 
                     {/* Price Section */}
                     <div className="flex items-baseline gap-1 md:gap-2 mb-2 flex-wrap">
-                      <p className="text-sm sm:text-base font-bold text-blue-600">
+                      <p className="text-xs sm:text-sm md:text-base font-bold text-blue-600">
                         ₹{product.dumpsPriceInr}
                       </p>
                       {product.dumpsMrpInr > product.dumpsPriceInr && (
-                        <p className="text-xs text-gray-500 line-through">
+                        <p className="text-[10px] sm:text-xs text-gray-500 line-through">
                           ₹{product.dumpsMrpInr}
                         </p>
                       )}
@@ -267,7 +267,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
 
                     {/* Discount Badge */}
                     {product.dumpsMrpInr > product.dumpsPriceInr && (
-                      <div className="inline-block bg-green-100 text-green-800 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
+                      <div className="inline-block bg-green-100 text-green-800 text-[9px] sm:text-[10px] md:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
                         {Math.round(
                           ((product.dumpsMrpInr - product.dumpsPriceInr) /
                             product.dumpsMrpInr) *
@@ -279,8 +279,8 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
 
                     {/* View Details Button */}
                     <div className="mt-auto pt-2">
-                      <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] sm:text-xs font-medium rounded transition-colors">
-                        <FaEye className="text-[8px] sm:text-[10px]" />
+                      <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 md:py-2 bg-blue-500 hover:bg-blue-600 text-white text-[9px] sm:text-[10px] md:text-xs font-medium rounded transition-colors">
+                        <FaEye className="text-[8px] sm:text-[9px] md:text-[10px]" />
                         View Details
                       </button>
                     </div>
