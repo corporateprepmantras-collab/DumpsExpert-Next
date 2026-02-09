@@ -249,7 +249,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                     </div>
 
                     {/* Product Title */}
-                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors leading-tight">
                       {product.title}
                     </h3>
 

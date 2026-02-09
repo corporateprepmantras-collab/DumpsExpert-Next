@@ -609,11 +609,11 @@ export default function ProductDetailsPage() {
                 )}
 
                 {product.examName && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100 col-span-2 sm:col-span-1">
+                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100 col-span-2">
                     <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
                       Exam Name
                     </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900 truncate">
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900 leading-tight">
                       {product.examName}
                     </p>
                   </div>
