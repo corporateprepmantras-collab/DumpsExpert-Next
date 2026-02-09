@@ -118,9 +118,9 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   useEffect(() => {
     async function loadProducts() {
       setIsLoading(true);
-      const allProducts = await fetchAllProducts(maxProducts + 2); // Fetch a few extra
+      const allProducts = await fetchAllProducts(maxProducts + 5); // Fetch more to account for filtering
       const filtered = allProducts
-        .filter((p) => p.slug !== currentSlug)
+        .filter((p) => p.slug !== currentSlug) // Only exclude current product
         .slice(0, maxProducts);
       setRelatedProducts(filtered);
       setIsLoading(false);
@@ -226,22 +226,19 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
             className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
           >
             {relatedProducts.slice(0, maxProducts).map((product) => {
-              const productAvailable = isProductAvailable(product);
               return (
                 <div
                   key={product._id}
-                  className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden"
+                  className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden cursor-pointer"
+                  onClick={() =>
+                    router.push(
+                      `/ItDumps/${product.category || "sap"}/${product.slug}`,
+                    )
+                  }
                 >
                   <div className="p-3 md:p-4 h-full flex flex-col">
                     {/* Product Image */}
-                    <div
-                      className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() =>
-                        router.push(
-                          `/ItDumps/${product.category || "general"}/${product.slug}`,
-                        )
-                      }
-                    >
+                    <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:scale-105 transition-transform">
                       <img
                         src={product.imageUrl}
                         alt={product.title}
@@ -249,24 +246,10 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                         loading="lazy"
                         decoding="async"
                       />
-                      {!productAvailable && (
-                        <div className="mt-1">
-                          <span className="text-[8px] sm:text-[9px] bg-red-100 text-red-600 px-1 py-0.5 rounded text-center block">
-                            Currently Unavailable
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Product Title */}
-                    <h3
-                      className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors cursor-pointer"
-                      onClick={() =>
-                        router.push(
-                          `/ItDumps/${product.category || "general"}/${product.slug}`,
-                        )
-                      }
-                    >
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors">
                       {product.title}
                     </h3>
 
@@ -294,38 +277,11 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                       </div>
                     )}
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col gap-1 mt-auto pt-2">
-                      {/* Read More Button */}
-                      <button
-                        onClick={() =>
-                          router.push(
-                            `/ItDumps/${product.category || "general"}/${product.slug}`,
-                          )
-                        }
-                        className="flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] sm:text-xs font-medium rounded transition-colors"
-                      >
+                    {/* View Details Button */}
+                    <div className="mt-auto pt-2">
+                      <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] sm:text-xs font-medium rounded transition-colors">
                         <FaEye className="text-[8px] sm:text-[10px]" />
-                        Read More
-                      </button>
-
-                      {/* Add to Cart Button */}
-                      <button
-                        onClick={(e) => handleAddToCart(product, e)}
-                        disabled={!productAvailable}
-                        className={`flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] sm:text-xs font-medium rounded transition-colors ${
-                          productAvailable
-                            ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
-                        title={
-                          !productAvailable
-                            ? "Product unavailable"
-                            : "Add to cart"
-                        }
-                      >
-                        <FaShoppingCart className="text-[8px] sm:text-[10px]" />
-                        {productAvailable ? "Add to Cart" : "Unavailable"}
+                        View Details
                       </button>
                     </div>
                   </div>
