@@ -91,7 +91,10 @@ const extractExamPrices = (examData) => {
 // Helper functions
 async function fetchProduct(slug) {
   try {
-    const response = await fetch(`/api/products/get-by-slug/${slug}`);
+    const response = await fetch(`/api/products/get-by-slug/${slug}`, {
+      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      cache: "force-cache",
+    });
     const data = await response.json();
     return data.data || null;
   } catch (error) {
@@ -106,7 +109,10 @@ async function fetchExamsByProductSlug(slug) {
 
     for (const endpoint of endpoints) {
       try {
-        const response = await fetch(endpoint);
+        const response = await fetch(endpoint, {
+          next: { revalidate: 60 }, // Revalidate every 60 seconds
+          cache: "force-cache",
+        });
         if (!response.ok) continue;
 
         const data = await response.json();
@@ -138,7 +144,10 @@ async function fetchExamsByProductSlug(slug) {
 
 async function fetchAllProducts() {
   try {
-    const response = await fetch(`/api/products`);
+    const response = await fetch(`/api/products`, {
+      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      cache: "force-cache",
+    });
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -149,7 +158,10 @@ async function fetchAllProducts() {
 
 async function fetchReviews(productId) {
   try {
-    const response = await fetch(`/api/reviews?productId=${productId}`);
+    const response = await fetch(`/api/reviews?productId=${productId}`, {
+      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      cache: "force-cache",
+    });
     const data = await response.json();
     const all = data.data || [];
     return all.filter((r) => r.status === "Publish");

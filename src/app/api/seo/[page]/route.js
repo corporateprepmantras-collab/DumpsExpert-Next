@@ -19,7 +19,7 @@ export async function GET(req, { params }) {
     return NextResponse.json(seoData, {
       status: 200,
       headers: {
-        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
       },
     });
   } catch (error) {

@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { FaChevronRight, FaChevronLeft, FaShoppingCart } from "react-icons/fa";
+import { FaChevronRight, FaChevronLeft, FaShoppingCart, FaEye } from "react-icons/fa";
+import { useCartStore } from "@/store/useCartStore";
+import { toast, Toaster } from "react-hot-toast";
 
 async function fetchAllProducts(limit = 12) {
   try {
@@ -17,6 +19,18 @@ async function fetchAllProducts(limit = 12) {
   }
 }
 
+// Helper function to convert string values to numbers
+const toNum = (val) => {
+  const num = parseFloat(val);
+  return isNaN(num) ? 0 : num;
+};
+
+// Helper function to check if product is available
+const isProductAvailable = (product) => {
+  if (!product) return false;
+  return product.mainPdfUrl && product.mainPdfUrl.trim() !== "";
+};
+
 export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   const router = useRouter();
   const scrollContainerRef = useRef(null);
@@ -24,6 +38,77 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Add to cart function
+  const handleAddToCart = (product, e) => {
+    e.stopPropagation(); // Prevent card click
+    
+    const productAvailable = isProductAvailable(product);
+    
+    if (!productAvailable) {
+      toast.error("⚠️ This product is currently unavailable (PDF not found)");
+      return;
+    }
+
+    // Check if item already exists in cart
+    const cartStore = useCartStore.getState();
+    const existingItem = cartStore.cartItems.find(
+      (item) => item._id === product._id && item.type === "regular"
+    );
+
+    if (existingItem) {
+      toast.info("ℹ️ This item is already in your cart");
+      return;
+    }
+
+    let item = {
+      _id: product._id,
+      productId: product._id,
+      courseId: product._id,
+      type: "regular",
+      title: `${product.title} [PDF]`,
+      name: `${product.title} [PDF]`,
+      mainPdfUrl: product.mainPdfUrl || "",
+      samplePdfUrl: product.samplePdfUrl || "",
+      dumpsPriceInr: toNum(product.dumpsPriceInr),
+      dumpsPriceUsd: toNum(product.dumpsPriceUsd),
+      dumpsMrpInr: toNum(product.dumpsMrpInr),
+      dumpsMrpUsd: toNum(product.dumpsMrpUsd),
+      comboPriceInr: toNum(product.comboPriceInr),
+      comboPriceUsd: toNum(product.comboPriceUsd),
+      comboMrpInr: toNum(product.comboMrpInr),
+      comboMrpUsd: toNum(product.comboMrpUsd),
+      examPriceInr: 0,
+      examPriceUsd: 0,
+      examMrpInr: 0,
+      examMrpUsd: 0,
+      imageUrl: product.imageUrl || "",
+      slug: product.slug,
+      category: product.category,
+      sapExamCode: product.sapExamCode,
+      code: product.code || product.sapExamCode,
+      sku: product.sku,
+      duration: product.duration || "",
+      numberOfQuestions: product.numberOfQuestions || 0,
+      passingScore: product.passingScore || "",
+      mainInstructions: product.mainInstructions || "",
+      sampleInstructions: product.sampleInstructions || "",
+      Description: product.Description || "",
+      longDescription: product.longDescription || "",
+      status: product.status || "active",
+      action: product.action || "",
+      metaTitle: product.metaTitle || "",
+      metaKeywords: product.metaKeywords || "",
+      metaDescription: product.metaDescription || "",
+      schema: product.schema || "",
+      price: toNum(product.dumpsPriceInr),
+      priceINR: toNum(product.dumpsPriceInr),
+      priceUSD: toNum(product.dumpsPriceUsd),
+    };
+
+    useCartStore.getState().addToCart(item);
+    toast.success(`✅ Added ${item.title} to cart!`);
+  };
 
   useEffect(() => {
     async function loadProducts() {
@@ -135,57 +220,97 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
             ref={scrollContainerRef}
             className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
           >
-            {relatedProducts.slice(0, maxProducts).map((product) => (
-              <div
-                key={product._id}
-                className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden"
-                onClick={() => router.push(`/product/${product.slug}`)}
-              >
-                <div className="p-3 md:p-4 h-full flex flex-col">
-                  {/* Product Image */}
-                  <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:scale-105 transition-transform">
-                    <img
-                      src={product.imageUrl}
-                      alt={product.title}
-                      className="h-24 sm:h-28 md:h-32 w-full object-contain"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  {/* Product Title */}
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors">
-                    {product.title}
-                  </h3>
-                  {/* Price Section */}
-                  <div className="flex items-baseline gap-1 md:gap-2 mb-2 flex-wrap">
-                    <p className="text-sm sm:text-base font-bold text-blue-600">
-                      ₹{product.dumpsPriceInr}
-                    </p>
-                    {product.dumpsMrpInr > product.dumpsPriceInr && (
-                      <p className="text-xs text-gray-500 line-through">
-                        ₹{product.dumpsMrpInr}
-                      </p>
-                    )}
-                  </div>
-                  {/* Discount Badge */}
-                  {product.dumpsMrpInr > product.dumpsPriceInr && (
-                    <div className="inline-block bg-green-100 text-green-800 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
-                      {Math.round(
-                        ((product.dumpsMrpInr - product.dumpsPriceInr) /
-                          product.dumpsMrpInr) *
-                          100,
+            {relatedProducts.slice(0, maxProducts).map((product) => {
+              const productAvailable = isProductAvailable(product);
+              return (
+                <div
+                  key={product._id}
+                  className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[18%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden"
+                >
+                  <div className="p-3 md:p-4 h-full flex flex-col">
+                    {/* Product Image */}
+                    <div 
+                      className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:scale-105 transition-transform cursor-pointer"
+                      onClick={() => router.push(`/ItDumps/${product.category}/${product.slug}`)}
+                    >
+                      <img
+                        src={product.imageUrl}
+                        alt={product.title}
+                        className="h-24 sm:h-28 md:h-32 w-full object-contain"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      {!productAvailable && (
+                        <div className="mt-1">
+                          <span className="text-[8px] sm:text-[9px] bg-red-100 text-red-600 px-1 py-0.5 rounded text-center block">
+                            Currently Unavailable
+                          </span>
+                        </div>
                       )}
-                      % OFF
                     </div>
-                  )}
+                    
+                    {/* Product Title */}
+                    <h3 
+                      className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/ItDumps/${product.category}/${product.slug}`)}
+                    >
+                      {product.title}
+                    </h3>
+                    
+                    {/* Price Section */}
+                    <div className="flex items-baseline gap-1 md:gap-2 mb-2 flex-wrap">
+                      <p className="text-sm sm:text-base font-bold text-blue-600">
+                        ₹{product.dumpsPriceInr}
+                      </p>
+                      {product.dumpsMrpInr > product.dumpsPriceInr && (
+                        <p className="text-xs text-gray-500 line-through">
+                          ₹{product.dumpsMrpInr}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Discount Badge */}
+                    {product.dumpsMrpInr > product.dumpsPriceInr && (
+                      <div className="inline-block bg-green-100 text-green-800 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
+                        {Math.round(
+                          ((product.dumpsMrpInr - product.dumpsPriceInr) /
+                            product.dumpsMrpInr) *
+                            100,
+                        )}
+                        % OFF
+                      </div>
+                    )}
 
-                  {/* Mobile: Show arrow */}
-                  <div className="md:hidden flex items-center justify-end mt-auto pt-2">
-                    <FaChevronRight className="text-blue-600 text-xs" />
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-1 mt-auto pt-2">
+                      {/* Read More Button */}
+                      <button
+                        onClick={() => router.push(`/ItDumps/${product.category}/${product.slug}`)}
+                        className="flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] sm:text-xs font-medium rounded transition-colors"
+                      >
+                        <FaEye className="text-[8px] sm:text-[10px]" />
+                        Read More
+                      </button>
+                      
+                      {/* Add to Cart Button */}
+                      <button
+                        onClick={(e) => handleAddToCart(product, e)}
+                        disabled={!productAvailable}
+                        className={`flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] sm:text-xs font-medium rounded transition-colors ${
+                          productAvailable
+                            ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                        title={!productAvailable ? "Product unavailable" : "Add to cart"}
+                      >
+                        <FaShoppingCart className="text-[8px] sm:text-[10px]" />
+                        {productAvailable ? "Add to Cart" : "Unavailable"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -202,6 +327,8 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
           </div>
         )}
       </div>
+
+      <Toaster />
 
       <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar {

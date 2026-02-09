@@ -23,8 +23,8 @@ const authUserModel =
         image: { type: String },
         emailVerified: { type: Date },
       },
-      { collection: "authUsers" }
-    )
+      { collection: "authUsers" },
+    ),
   );
 
 // Helper to parse FormData
@@ -37,7 +37,7 @@ async function parseFormData(req) {
       if (value.size > 0) {
         data[key] = value;
         console.log(
-          `✅ File added: ${key}, Size: ${value.size}, Name: ${value.name}`
+          `✅ File added: ${key}, Size: ${value.size}, Name: ${value.name}`,
         );
       } else {
         console.log(`⚠️ File skipped (empty): ${key}`);
@@ -178,10 +178,9 @@ export async function GET(req) {
         },
         {
           headers: {
-            "Cache-Control":
-              "public, s-maxage=3600, stale-while-revalidate=7200",
+            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
           },
-        }
+        },
       );
     }
 
@@ -195,7 +194,7 @@ export async function GET(req) {
     console.error("❌ /api/products GET error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -222,13 +221,13 @@ export async function POST(req) {
 
     return NextResponse.json(
       { message: "Product created successfully", data: newProduct },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("POST Error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -245,7 +244,7 @@ export async function PUT(req) {
     if (!id) {
       return NextResponse.json(
         { message: "Product ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -253,7 +252,7 @@ export async function PUT(req) {
     if (!existingProduct) {
       return NextResponse.json(
         { message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -279,7 +278,7 @@ export async function PUT(req) {
     console.log("New mainPdfUrl:", updatedProduct.mainPdfUrl);
     console.log(
       "Changed?:",
-      existingProduct.mainPdfUrl !== updatedProduct.mainPdfUrl
+      existingProduct.mainPdfUrl !== updatedProduct.mainPdfUrl,
     );
 
     if (
@@ -294,7 +293,7 @@ export async function PUT(req) {
         });
 
         console.log(
-          `📦 Found ${affectedOrders.length} orders with this product`
+          `📦 Found ${affectedOrders.length} orders with this product`,
         );
 
         // Send email to each user
@@ -341,14 +340,14 @@ export async function PUT(req) {
             },
             {
               arrayFilters: [{ "elem.productId": id }],
-            }
+            },
           );
           console.log(`✅ Updated PDF URL in ${affectedOrders.length} orders`);
         }
       } catch (notificationError) {
         console.error(
           "❌ Error sending notifications:",
-          notificationError.message
+          notificationError.message,
         );
       }
     }
@@ -363,7 +362,7 @@ export async function PUT(req) {
     console.error("PUT Error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -380,7 +379,7 @@ export async function DELETE(req) {
     if (!id) {
       return NextResponse.json(
         { message: "Product ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -388,7 +387,7 @@ export async function DELETE(req) {
     if (!product) {
       return NextResponse.json(
         { message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -410,7 +409,7 @@ export async function DELETE(req) {
     console.error("DELETE Error:", error);
     return NextResponse.json(
       { message: "Server error", error: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
