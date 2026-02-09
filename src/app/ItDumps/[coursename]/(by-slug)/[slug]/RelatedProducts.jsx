@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { FaChevronRight, FaChevronLeft, FaShoppingCart, FaEye } from "react-icons/fa";
+import {
+  FaChevronRight,
+  FaChevronLeft,
+  FaShoppingCart,
+  FaEye,
+} from "react-icons/fa";
 import { useCartStore } from "@/store/useCartStore";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -42,9 +47,9 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   // Add to cart function
   const handleAddToCart = (product, e) => {
     e.stopPropagation(); // Prevent card click
-    
+
     const productAvailable = isProductAvailable(product);
-    
+
     if (!productAvailable) {
       toast.error("⚠️ This product is currently unavailable (PDF not found)");
       return;
@@ -53,7 +58,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
     // Check if item already exists in cart
     const cartStore = useCartStore.getState();
     const existingItem = cartStore.cartItems.find(
-      (item) => item._id === product._id && item.type === "regular"
+      (item) => item._id === product._id && item.type === "regular",
     );
 
     if (existingItem) {
@@ -229,9 +234,13 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                 >
                   <div className="p-3 md:p-4 h-full flex flex-col">
                     {/* Product Image */}
-                    <div 
+                    <div
                       className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() => router.push(`/ItDumps/${product.category}/${product.slug}`)}
+                      onClick={() =>
+                        router.push(
+                          `/ItDumps/${product.category || "general"}/${product.slug}`,
+                        )
+                      }
                     >
                       <img
                         src={product.imageUrl}
@@ -248,15 +257,19 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Product Title */}
-                    <h3 
+                    <h3
                       className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 mb-2 min-h-[32px] sm:min-h-[40px] group-hover:text-blue-600 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/ItDumps/${product.category}/${product.slug}`)}
+                      onClick={() =>
+                        router.push(
+                          `/ItDumps/${product.category || "general"}/${product.slug}`,
+                        )
+                      }
                     >
                       {product.title}
                     </h3>
-                    
+
                     {/* Price Section */}
                     <div className="flex items-baseline gap-1 md:gap-2 mb-2 flex-wrap">
                       <p className="text-sm sm:text-base font-bold text-blue-600">
@@ -268,7 +281,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                         </p>
                       )}
                     </div>
-                    
+
                     {/* Discount Badge */}
                     {product.dumpsMrpInr > product.dumpsPriceInr && (
                       <div className="inline-block bg-green-100 text-green-800 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
@@ -285,13 +298,17 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                     <div className="flex flex-col gap-1 mt-auto pt-2">
                       {/* Read More Button */}
                       <button
-                        onClick={() => router.push(`/ItDumps/${product.category}/${product.slug}`)}
+                        onClick={() =>
+                          router.push(
+                            `/ItDumps/${product.category || "general"}/${product.slug}`,
+                          )
+                        }
                         className="flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] sm:text-xs font-medium rounded transition-colors"
                       >
                         <FaEye className="text-[8px] sm:text-[10px]" />
                         Read More
                       </button>
-                      
+
                       {/* Add to Cart Button */}
                       <button
                         onClick={(e) => handleAddToCart(product, e)}
@@ -301,7 +318,11 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                             ? "bg-yellow-500 hover:bg-yellow-600 text-gray-900"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         }`}
-                        title={!productAvailable ? "Product unavailable" : "Add to cart"}
+                        title={
+                          !productAvailable
+                            ? "Product unavailable"
+                            : "Add to cart"
+                        }
                       >
                         <FaShoppingCart className="text-[8px] sm:text-[10px]" />
                         {productAvailable ? "Add to Cart" : "Unavailable"}

@@ -583,124 +583,105 @@ export default function ProductDetailsPage() {
             {product.title}
           </h1>
 
-          {/* NEW: Exam Information Card */}
+          {/* UPDATED: Compact Exam Information Card */}
           {(product.examCode ||
             product.examName ||
             product.totalQuestions ||
             product.passingScore ||
             product.duration ||
             product.examLastUpdated) && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-md p-1 sm:p-1.5">
-              <h3 className="font-semibold text-[9px] sm:text-[10px] mb-0.5 sm:mb-1 text-blue-900 flex items-center gap-0.5 sm:gap-1">
-                <FaFileAlt className="text-blue-600 text-[8px] sm:text-[9px]" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-md p-1.5 sm:p-2">
+              <h3 className="font-semibold text-[10px] sm:text-[11px] mb-1 sm:mb-1.5 text-blue-900 flex items-center gap-1">
+                <FaFileAlt className="text-blue-600 text-[9px] sm:text-[10px]" />
                 Exam Information
               </h3>
 
-              <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {product.examCode && (
-                  <div className="flex items-start gap-0.5 sm:gap-1">
-                    <FaClipboardList className="text-blue-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
-                    <div className="min-w-0">
-                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
-                        Exam Code
-                      </p>
-                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
-                        {product.examCode}
-                      </p>
-                    </div>
+                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
+                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
+                      Exam Code
+                    </p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
+                      {product.examCode}
+                    </p>
                   </div>
                 )}
 
                 {product.examName && (
-                  <div className="flex items-start gap-0.5 sm:gap-1">
-                    <FaFileAlt className="text-blue-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
-                    <div className="min-w-0">
-                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
-                        Exam Name
-                      </p>
-                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
-                        {product.examName}
-                      </p>
-                    </div>
+                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100 col-span-2 sm:col-span-1">
+                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
+                      Exam Name
+                    </p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900 truncate">
+                      {product.examName}
+                    </p>
                   </div>
                 )}
 
                 {product.totalQuestions && (
-                  <div className="flex items-start gap-0.5 sm:gap-1">
-                    <FaClipboardList className="text-blue-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
-                    <div className="min-w-0">
-                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
-                        Total Questions
-                      </p>
-                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
-                        {product.totalQuestions}
-                      </p>
-                    </div>
+                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
+                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
+                      Questions
+                    </p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
+                      {product.totalQuestions}
+                    </p>
                   </div>
                 )}
 
                 {product.passingScore && (
-                  <div className="flex items-start gap-0.5 sm:gap-1">
-                    <FaTrophy className="text-yellow-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
-                    <div className="min-w-0">
-                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
-                        Passing Score
-                      </p>
-                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
-                        {product.passingScore}
-                      </p>
-                    </div>
+                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
+                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
+                      Passing Score
+                    </p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
+                      {product.passingScore}
+                    </p>
                   </div>
                 )}
 
                 {product.duration && (
-                  <div className="flex items-start gap-0.5 sm:gap-1">
-                    <FaClock className="text-green-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
-                    <div className="min-w-0">
-                      <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
-                        Duration
-                      </p>
-                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
-                        {product.duration}
-                      </p>
-                    </div>
+                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
+                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
+                      Duration
+                    </p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
+                      {product.duration}
+                    </p>
                   </div>
                 )}
 
-                <div className="flex items-start gap-0.5 sm:gap-1">
-                  <FaCalendarAlt className="text-purple-600 mt-0.5 flex-shrink-0 text-[7px] sm:text-[8px]" />
-                  <div className="min-w-0">
-                    <p className="text-[7px] sm:text-[8px] text-gray-600 leading-none mb-0.5">
-                      Last Updated
-                    </p>
-                    <p className="text-[9px] sm:text-[10px] font-semibold text-gray-800 leading-tight">
-                      {new Date(Date.now()).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
+                <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
+                  <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
+                    Last Updated
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
+                    {new Date(Date.now()).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {avgRating && avgRating > 0 && (
-            <div className="flex items-center gap-0.5 flex-wrap">
-              {[1, 2, 3, 4, 5].map((v) => (
-                <FaStar
-                  key={v}
-                  className={`text-xs ${
-                    v <= Math.round(avgRating)
-                      ? "text-yellow-400"
-                      : "text-gray-300"
-                  }`}
-                />
-              ))}
-              <span className="text-[10px] sm:text-[11px] text-gray-600 font-medium">
-                ({avgRating.toFixed(1)}/5)
-              </span>
+              {avgRating && avgRating > 0 && (
+                <div className="flex items-center gap-0.5 flex-wrap">
+                  {[1, 2, 3, 4, 5].map((v) => (
+                    <FaStar
+                      key={v}
+                      className={`text-xs ${
+                        v <= Math.round(avgRating)
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-[10px] sm:text-[11px] text-gray-600 font-medium">
+                    ({avgRating.toFixed(1)}/5)
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
