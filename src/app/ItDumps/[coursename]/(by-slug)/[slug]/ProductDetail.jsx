@@ -513,23 +513,22 @@ export default function ProductDetailsPage() {
 
   return (
     <div className="min-h-screen pt-12 sm:pt-14 lg:pt-16 bg-gray-50 text-gray-800">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-1 pb-1">
+      <div className="container pt-2 sm:pt-3 lg:pt-4 mx-auto px-3 sm:px-4 lg:px-6 max-w-7xl pb-1">
         <Breadcrumbs />
       </div>
 
-      {/* Product Unavailability Alert */}
+      {/* Product Unavailability Alert - Compact */}
       {!productAvailable && product && (
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mb-4 sm:mb-6">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 sm:p-6 rounded-lg shadow-sm">
-            <div className="flex items-start gap-3 sm:gap-4">
-              <FaExclamationTriangle className="text-red-500 text-xl sm:text-2xl flex-shrink-0 mt-1" />
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 max-w-7xl mb-3 sm:mb-4">
+          <div className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-lg shadow-sm">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <FaExclamationTriangle className="text-red-500 text-base sm:text-lg flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-red-800 text-base sm:text-lg">
+                <h3 className="font-semibold text-red-800 text-sm sm:text-base">
                   Product Currently Unavailable
                 </h3>
-                <p className="text-red-700 text-sm sm:text-base mt-2 leading-relaxed">
+                <p className="text-red-700 text-xs sm:text-sm mt-1 leading-relaxed">
                   The PDF file for this product is not available at the moment.
-                  Please contact support or check back later.
                 </p>
               </div>
             </div>
@@ -537,38 +536,38 @@ export default function ProductDetailsPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Left Column - Image & Features */}
-          <div className="w-full lg:w-[35%]">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 max-w-7xl">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
+          {/* Left Column - Image & Features - More Compact */}
+          <div className="w-full lg:w-[32%]">
             <div className="lg:sticky lg:top-20">
-              {/* Image */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 p-4 sm:p-6">
+              {/* Image - Smaller */}
+              <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 p-3 sm:p-4">
                   <img
                     src={product.imageUrl}
                     alt={product.title}
-                    className="w-full rounded object-contain h-[180px] sm:h-[220px] lg:h-[260px]"
+                    className="w-full rounded object-contain h-[140px] sm:h-[160px] lg:h-[180px]"
                   />
                 </div>
               </div>
 
-              {/* Features List */}
-              <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-4 sm:p-6 mt-4 sm:mt-6">
-                <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-3 sm:mb-4">
+              {/* Features List - Compact */}
+              <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 sm:p-4 mt-3 sm:mt-4">
+                <h3 className="font-semibold text-gray-900 text-xs sm:text-sm mb-2 sm:mb-3">
                   Why Choose Us?
                 </h3>
-                <div className="flex flex-col space-y-2.5 sm:space-y-3">
+                <div className="flex flex-col space-y-1.5 sm:space-y-2">
                   {[
-                    "Instant Download After Purchase",
-                    "100% Real & Updated Dumps",
-                    "100% Money Back Guarantee",
+                    "Instant Download",
+                    "100% Real Dumps",
+                    "Money Back Guarantee",
                     "90 Days Free Updates",
-                    "24/7 Customer Support",
+                    "24/7 Support",
                   ].map((f, i) => (
-                    <div key={i} className="flex items-start gap-2 sm:gap-3">
-                      <FaCheckCircle className="text-green-600 text-sm sm:text-base flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-800 text-xs sm:text-sm font-medium leading-tight">
+                    <div key={i} className="flex items-start gap-2">
+                      <FaCheckCircle className="text-green-600 text-xs sm:text-sm flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-800 text-[11px] sm:text-xs font-medium leading-tight">
                         {f}
                       </span>
                     </div>
@@ -578,86 +577,86 @@ export default function ProductDetailsPage() {
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="w-full lg:w-[65%] space-y-4 sm:space-y-6">
-            <h1 className="text-base sm:text-lg lg:text-xl font-bold break-words leading-tight text-gray-900">
+          {/* Right Column - More Compact */}
+          <div className="w-full lg:w-[68%] space-y-3 sm:space-y-4">
+            <h1 className="text-sm sm:text-base lg:text-lg font-bold break-words leading-tight text-gray-900">
               {product.title}
             </h1>
 
-            {/* Exam Information Card */}
+            {/* Exam Information Card - Ultra Compact */}
             {(product.examCode ||
               product.examName ||
               product.totalQuestions ||
               product.passingScore ||
               product.duration ||
               product.examLastUpdated) && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 sm:p-6">
-                <h3 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4 text-blue-900 flex items-center gap-2">
-                  <FaFileAlt className="text-blue-600 text-sm sm:text-base" />
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1.5 sm:p-2.5 lg:p-1.5">
+                <h3 className="font-semibold text-[11px] sm:text-xs lg:text-[11px] mb-1 sm:mb-1.5 lg:mb-0 text-blue-900 flex items-center gap-1">
+                  <FaFileAlt className="text-blue-600 text-[10px] sm:text-xs lg:text-[10px]" />
                   Exam Information
                 </h3>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-1 sm:gap-1.5 lg:gap-0.5">
                   {product.examCode && (
-                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
-                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                    <div className="bg-white rounded px-1.5 py-0.5 sm:px-2 sm:py-1 lg:px-1.5 lg:py-0.5 border border-blue-100">
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0">
                         Exam Code
                       </p>
-                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                      <p className="text-[11px] sm:text-xs lg:text-[11px] font-semibold text-gray-900">
                         {product.examCode}
                       </p>
                     </div>
                   )}
 
                   {product.examName && (
-                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100 col-span-2 md:col-span-1">
-                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                    <div className="bg-white rounded px-1.5 py-0.5 sm:px-2 sm:py-1 lg:px-1.5 lg:py-0.5 border border-blue-100 col-span-2 md:col-span-3">
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0">
                         Exam Name
                       </p>
-                      <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                      <p className="text-[11px] sm:text-xs lg:text-[11px] font-semibold text-gray-900 break-words leading-tight">
                         {product.examName}
                       </p>
                     </div>
                   )}
 
                   {product.totalQuestions && (
-                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
-                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                    <div className="bg-white rounded px-1.5 py-0.5 sm:px-2 sm:py-1 lg:px-1.5 lg:py-0.5 border border-blue-100">
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0">
                         Questions
                       </p>
-                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                      <p className="text-[11px] sm:text-xs lg:text-[11px] font-semibold text-gray-900">
                         {product.totalQuestions}
                       </p>
                     </div>
                   )}
 
                   {product.passingScore && (
-                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
-                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                    <div className="bg-white rounded px-1.5 py-0.5 sm:px-2 sm:py-1 lg:px-1.5 lg:py-0.5 border border-blue-100">
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0">
                         Passing Score
                       </p>
-                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                      <p className="text-[11px] sm:text-xs lg:text-[11px] font-semibold text-gray-900">
                         {product.passingScore}
                       </p>
                     </div>
                   )}
 
                   {product.duration && (
-                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
-                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                    <div className="bg-white rounded px-1.5 py-0.5 sm:px-2 sm:py-1 lg:px-1.5 lg:py-0.5 border border-blue-100">
+                      <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0">
                         Duration
                       </p>
-                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                      <p className="text-[11px] sm:text-xs lg:text-[11px] font-semibold text-gray-900">
                         {product.duration}
                       </p>
                     </div>
                   )}
 
-                  <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
-                    <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                  <div className="bg-white rounded px-1.5 py-0.5 sm:px-2 sm:py-1 lg:px-1.5 lg:py-0.5 border border-blue-100">
+                    <p className="text-[9px] sm:text-[10px] lg:text-[9px] text-gray-500 mb-0">
                       Last Updated
                     </p>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900">
+                    <p className="text-[11px] sm:text-xs lg:text-[11px] font-semibold text-gray-900">
                       {new Date(Date.now()).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -667,18 +666,18 @@ export default function ProductDetailsPage() {
                   </div>
                 </div>
                 {avgRating && avgRating > 0 && (
-                  <div className="flex items-center gap-1 flex-wrap mt-3 sm:mt-4">
+                  <div className="flex items-center gap-1 flex-wrap mt-1 sm:mt-1.5 lg:mt-0.5">
                     {[1, 2, 3, 4, 5].map((v) => (
                       <FaStar
                         key={v}
-                        className={`text-sm sm:text-base ${
+                        className={`text-[10px] sm:text-xs lg:text-[10px] ${
                           v <= Math.round(avgRating)
                             ? "text-yellow-400"
                             : "text-gray-300"
                         }`}
                       />
                     ))}
-                    <span className="text-sm sm:text-base text-gray-600 font-medium">
+                    <span className="text-[10px] sm:text-xs lg:text-[10px] text-gray-600 font-medium">
                       ({avgRating.toFixed(1)}/5)
                     </span>
                   </div>
@@ -686,53 +685,48 @@ export default function ProductDetailsPage() {
               </div>
             )}
 
-            {/* Pricing Sections - Responsive Table Layout */}
+            {/* Pricing Sections - Ultra Compact */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="divide-y divide-gray-200">
                 {/* Online Exam Questions */}
                 {hasOnlineExam && !isLoadingExams && (
-                  <div className="p-4 sm:p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      {/* Product Name */}
-                      <div className="lg:w-64 lg:flex-shrink-0">
-                        <h3 className="text-sm sm:text-base font-medium text-gray-900">
+                  <div className="p-3 sm:p-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-2 sm:gap-3">
+                      <div className="lg:w-48 lg:flex-shrink-0">
+                        <h3 className="text-xs sm:text-sm font-medium text-gray-900">
                           Online Exam Questions
                         </h3>
                       </div>
 
-                      {/* Pricing */}
-                      <div className="flex items-center gap-2 text-sm sm:text-base flex-wrap">
+                      <div className="flex items-center gap-1.5 text-xs sm:text-sm flex-wrap">
                         <span className="text-orange-500 font-semibold">
                           ₹{onlineExamPrices.priceInr || "3499"}
                         </span>
-                        <span className="text-gray-600">
+                        <span className="text-gray-600 text-[11px] sm:text-xs">
                           (${onlineExamPrices.priceUsd || "47.28"})
                         </span>
-                        <span className="line-through text-gray-500">
+                        <span className="line-through text-gray-500 text-[11px] sm:text-xs">
                           ₹{onlineExamPrices.mrpInr || "6000"}
                         </span>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:ml-auto">
+                      <div className="flex flex-row gap-2 lg:ml-auto">
                         <button
                           onClick={() =>
                             router.push(`/exam/sample-instruction/${slug}`)
                           }
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs sm:text-sm uppercase transition-colors whitespace-nowrap"
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[11px] sm:text-xs uppercase transition-colors whitespace-nowrap"
                         >
-                          <FaEye size={14} className="sm:w-4 sm:h-4" />
-                          <span className="hidden sm:inline">
-                            TRY ONLINE EXAM
-                          </span>
-                          <span className="sm:hidden">TRY EXAM</span>
+                          <FaEye size={12} />
+                          <span className="hidden sm:inline">TRY EXAM</span>
+                          <span className="sm:hidden">TRY</span>
                         </button>
                         <button
                           onClick={() => handleAddToCart("online")}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#FA8B31] hover:bg-[#E57A21] text-gray-900 font-bold text-xs sm:text-sm uppercase rounded transition-colors whitespace-nowrap"
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#FA8B31] hover:bg-[#E57A21] text-gray-900 font-bold text-[11px] sm:text-xs uppercase rounded transition-colors whitespace-nowrap"
                         >
-                          <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
-                          ADD TO CART
+                          <FaShoppingCart size={12} />
+                          ADD
                         </button>
                       </div>
                     </div>
@@ -742,38 +736,35 @@ export default function ProductDetailsPage() {
                 {/* PDF Downloadable Format */}
                 {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
                   <div
-                    className={`p-4 sm:p-6 ${
+                    className={`p-3 sm:p-4 ${
                       !productAvailable ? "bg-gray-50 opacity-70" : ""
                     }`}
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      {/* Product Name */}
-                      <div className="lg:w-64 lg:flex-shrink-0">
-                        <h3 className="text-sm sm:text-base font-medium text-gray-900">
-                          PDF Downloadable Format
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-2 sm:gap-3">
+                      <div className="lg:w-48 lg:flex-shrink-0">
+                        <h3 className="text-xs sm:text-sm font-medium text-gray-900">
+                          PDF Downloadable
                         </h3>
                         {!productAvailable && (
-                          <span className="text-xs text-red-600 mt-1 inline-block">
-                            (Currently Unavailable)
+                          <span className="text-[10px] text-red-600 mt-0.5 inline-block">
+                            (Unavailable)
                           </span>
                         )}
                       </div>
 
-                      {/* Pricing */}
-                      <div className="flex items-center gap-2 text-sm sm:text-base flex-wrap">
+                      <div className="flex items-center gap-1.5 text-xs sm:text-sm flex-wrap">
                         <span className="text-orange-500 font-semibold">
                           ₹{pdfPrices.priceInr || "4999"}
                         </span>
-                        <span className="text-gray-600">
+                        <span className="text-gray-600 text-[11px] sm:text-xs">
                           (${pdfPrices.priceUsd || "67.55"})
                         </span>
-                        <span className="line-through text-gray-500">
+                        <span className="line-through text-gray-500 text-[11px] sm:text-xs">
                           ₹{pdfPrices.mrpInr || "7000"}
                         </span>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:ml-auto">
+                      <div className="flex flex-row gap-2 lg:ml-auto">
                         {product.samplePdfUrl && (
                           <button
                             onClick={() =>
@@ -782,31 +773,24 @@ export default function ProductDetailsPage() {
                                 `${product.title}-Sample.pdf`,
                               )
                             }
-                            className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs sm:text-sm uppercase transition-colors whitespace-nowrap"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[11px] sm:text-xs uppercase transition-colors whitespace-nowrap"
                           >
-                            <FaDownload size={14} className="sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline">
-                              DOWNLOAD SAMPLE
-                            </span>
-                            <span className="sm:hidden">SAMPLE</span>
+                            <FaDownload size={12} />
+                            <span className="hidden sm:inline">SAMPLE</span>
+                            <span className="sm:hidden">PDF</span>
                           </button>
                         )}
                         <button
                           onClick={() => handleAddToCart("regular")}
                           disabled={!productAvailable}
-                          className={`flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded text-xs sm:text-sm uppercase transition-colors whitespace-nowrap font-bold ${
+                          className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded text-[11px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold ${
                             productAvailable
                               ? "bg-[#FA8B31] hover:bg-[#E57A21] text-gray-900 cursor-pointer"
                               : "bg-gray-300 text-gray-500 cursor-not-allowed"
                           }`}
-                          title={
-                            !productAvailable
-                              ? "Product unavailable - PDF not found"
-                              : "Add to cart"
-                          }
                         >
-                          <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
-                          {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
+                          <FaShoppingCart size={12} />
+                          {productAvailable ? "ADD" : "N/A"}
                         </button>
                       </div>
                     </div>
@@ -818,57 +802,46 @@ export default function ProductDetailsPage() {
                   comboPrices &&
                   (comboPrices.priceInr || comboPrices.priceUsd) && (
                     <div
-                      className={`p-4 sm:p-6 ${
+                      className={`p-3 sm:p-4 ${
                         !productAvailable ? "bg-gray-50 opacity-70" : ""
                       }`}
                     >
-                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        {/* Product Name */}
-                        <div className="lg:w-64 lg:flex-shrink-0">
-                          <h3 className="text-sm sm:text-base font-medium text-gray-900">
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-2 sm:gap-3">
+                        <div className="lg:w-48 lg:flex-shrink-0">
+                          <h3 className="text-xs sm:text-sm font-medium text-gray-900">
                             PDF + Online Exam
                           </h3>
                           {!productAvailable && (
-                            <span className="text-xs text-red-600 mt-1 inline-block">
-                              (Currently Unavailable)
+                            <span className="text-[10px] text-red-600 mt-0.5 inline-block">
+                              (Unavailable)
                             </span>
                           )}
                         </div>
 
-                        {/* Pricing */}
-                        <div className="flex items-center gap-2 text-sm sm:text-base flex-wrap">
+                        <div className="flex items-center gap-1.5 text-xs sm:text-sm flex-wrap">
                           <span className="text-orange-500 font-semibold">
                             ₹{comboPrices.priceInr || "6998"}
                           </span>
-                          <span className="text-gray-600">
+                          <span className="text-gray-600 text-[11px] sm:text-xs">
                             (${comboPrices.priceUsd || "94.57"})
                           </span>
-                          <span className="line-through text-gray-500">
+                          <span className="line-through text-gray-500 text-[11px] sm:text-xs">
                             ₹{comboPrices.mrpInr || "8498"}
                           </span>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:ml-auto">
+                        <div className="flex flex-row gap-2 lg:ml-auto">
                           <button
                             onClick={() => handleAddToCart("combo")}
                             disabled={!productAvailable}
-                            className={`flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded text-xs sm:text-sm uppercase transition-colors whitespace-nowrap font-bold ${
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded text-[11px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold ${
                               productAvailable
                                 ? "bg-[#FA8B31] hover:bg-[#E57A21] text-gray-900 cursor-pointer"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                             }`}
-                            title={
-                              !productAvailable
-                                ? "Product unavailable - PDF not found"
-                                : "Add to cart"
-                            }
                           >
-                            <FaShoppingCart
-                              size={14}
-                              className="sm:w-4 sm:h-4"
-                            />
-                            {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
+                            <FaShoppingCart size={12} />
+                            {productAvailable ? "ADD" : "N/A"}
                           </button>
                         </div>
                       </div>
@@ -877,21 +850,21 @@ export default function ProductDetailsPage() {
               </div>
             </div>
 
-            {/* Description */}
-            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-gray-900">
+            {/* Description - Compact */}
+            <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4">
+              <h2 className="text-sm sm:text-base font-bold mb-2 sm:mb-3 text-gray-900">
                 Description
               </h2>
 
               <div className="relative w-full overflow-visible">
                 <div
                   className="
-        prose prose-sm sm:prose max-w-none
-        prose-p:text-gray-700 prose-p:text-sm prose-p:leading-relaxed
-        prose-li:text-gray-700 prose-li:text-sm prose-li:leading-relaxed
+        prose prose-sm max-w-none
+        prose-p:text-gray-700 prose-p:text-xs prose-p:sm:text-sm prose-p:leading-relaxed
+        prose-li:text-gray-700 prose-li:text-xs prose-li:sm:text-sm prose-li:leading-relaxed
         prose-strong:text-gray-900
         prose-a:text-blue-600
-        prose-headings:text-gray-900 prose-headings:text-base
+        prose-headings:text-gray-900 prose-headings:text-sm
 
         break-words
         whitespace-normal
@@ -920,19 +893,19 @@ export default function ProductDetailsPage() {
         {/* Full Width Sections Below */}
 
         {/* Long Description - Full Width */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 max-w-7xl mt-8 sm:mt-12 lg:mt-16">
-          <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 lg:p-10 xl:p-12 overflow-hidden border-2 border-gray-200">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-6 sm:mb-8 text-gray-900 flex items-center gap-3">
-              <FaClipboardList className="text-blue-600 text-2xl sm:text-3xl" />
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 max-w-7xl mt-6 sm:mt-8">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 overflow-hidden border-2 border-gray-200">
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-4 sm:mb-5 text-gray-900 flex items-center gap-2">
+              <FaClipboardList className="text-blue-600 text-lg sm:text-xl" />
               Detailed Overview
             </h2>
             <div
-              className="prose prose-sm sm:prose lg:prose-lg max-w-full
-              prose-p:text-gray-700 prose-p:break-words prose-p:leading-relaxed prose-p:text-sm sm:prose-p:text-base lg:prose-p:text-lg
-              prose-li:text-gray-700 prose-li:break-words prose-li:leading-relaxed prose-li:text-sm sm:prose-li:text-base lg:prose-li:text-lg
+              className="prose prose-sm sm:prose max-w-full
+              prose-p:text-gray-700 prose-p:break-words prose-p:leading-relaxed prose-p:text-xs prose-p:sm:text-sm prose-p:lg:text-base
+              prose-li:text-gray-700 prose-li:break-words prose-li:leading-relaxed prose-li:text-xs prose-li:sm:text-sm prose-li:lg:text-base
               prose-strong:text-gray-900
               prose-a:text-blue-600 prose-a:break-all
-              prose-headings:break-words prose-headings:text-gray-900 prose-headings:text-base sm:prose-headings:text-lg lg:prose-headings:text-xl
+              prose-headings:break-words prose-headings:text-gray-900 prose-headings:text-sm prose-headings:sm:text-base prose-headings:lg:text-lg
               break-words overflow-hidden
               [&_*]:max-w-full [&_*]:break-words
               [&_img]:max-w-full [&_img]:h-auto
@@ -952,7 +925,7 @@ export default function ProductDetailsPage() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 max-w-7xl mt-8 sm:mt-12 lg:mt-16">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 max-w-7xl mt-6 sm:mt-8">
           <ReviewsSection
             reviews={reviews}
             reviewForm={reviewForm}
@@ -961,7 +934,7 @@ export default function ProductDetailsPage() {
           />
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 max-w-7xl mt-8 sm:mt-12">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 max-w-7xl mt-6 sm:mt-8">
           {product.faqs && product.faqs.length > 0 && (
             <FAQSection
               faqs={product.faqs}
