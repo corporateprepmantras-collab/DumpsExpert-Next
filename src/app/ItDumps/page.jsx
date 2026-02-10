@@ -10,8 +10,8 @@ export const revalidate = 60; // Revalidate every 1 minute for fresh admin updat
 // Loading skeleton component
 function CategorySkeleton() {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px] animate-pulse">
-      <div className="h-28 md:h-32 w-full bg-gray-200" />
+    <div className="bg-white border border-gray-200 rounded-lg shadow-md flex flex-col items-center overflow-hidden w-[160px] sm:w-[180px] md:w-[200px] lg:w-[220px] animate-pulse">
+      <div className="h-28 sm:h-32 md:h-36 lg:h-40 w-full bg-gray-200" />
       <div className="px-3 pb-4 w-full pt-3">
         <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto" />
       </div>
@@ -232,15 +232,15 @@ export default async function ITDumpsPage() {
   const priorityCount = Math.min(6, dumpsData.length);
 
   return (
-    <div className="relative min-h-screen w-full pt-16 md:pt-20 pb-8 md:pb-10 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-3 md:px-6 lg:px-8">
-        {/* Header - Optimized for mobile */}
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-900 mb-6 md:mb-8 lg:mb-10">
+    <div className="relative min-h-screen w-full pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+        {/* Header */}
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-gray-900 mb-6 sm:mb-8 md:mb-10 lg:mb-12">
           SAP Certification Dumps
         </h1>
 
-        {/* Features Grid - Simplified for mobile */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 lg:gap-6 max-w-4xl mx-auto mb-8 md:mb-10 lg:mb-12">
+        {/* Features Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6 max-w-5xl mx-auto mb-10 sm:mb-12 md:mb-14 lg:mb-16">
           {[
             "Instant Download",
             "100% Real Dumps",
@@ -249,16 +249,18 @@ export default async function ITDumpsPage() {
           ].map((text, i) => (
             <div
               key={i}
-              className="flex items-center justify-center md:justify-start gap-2 text-gray-900 text-xs md:text-sm lg:text-base font-medium bg-white rounded-lg p-3 md:p-4 shadow-sm border border-gray-100"
+              className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-900 text-xs sm:text-sm md:text-base lg:text-lg font-medium bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm hover:shadow-md border border-gray-100 transition-shadow duration-200"
             >
-              <FaCheckCircle className="text-blue-600 text-base md:text-lg flex-shrink-0" />
-              <span className="text-center md:text-left">{text}</span>
+              <FaCheckCircle className="text-blue-600 text-lg sm:text-xl md:text-2xl flex-shrink-0" />
+              <span className="text-center sm:text-left leading-tight">
+                {text}
+              </span>
             </div>
           ))}
         </div>
 
-        {/* Categories Grid - Optimized */}
-        <div className="flex flex-wrap justify-center gap-3 md:gap-4 lg:gap-6">
+        {/* Categories Grid */}
+        <div className="flex flex-wrap justify-center gap-4 sm:gap-5 md:gap-6 lg:gap-8">
           {dumpsData.length > 0 ? (
             dumpsData.map((item, index) => {
               const slug = createSlug(item.name);
@@ -274,23 +276,26 @@ export default async function ITDumpsPage() {
                 <Link
                   key={item._id || item.id}
                   href={`/ItDumps/${slug}`}
-                  className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg active:scale-95 md:hover:scale-105 transition-all duration-200 flex flex-col items-center text-center overflow-hidden w-[145px] sm:w-[165px] md:w-[190px] lg:w-[210px]"
+                  className="group bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl shadow-md hover:shadow-2xl hover:border-blue-300 active:scale-95 md:hover:scale-105 transition-all duration-300 flex flex-col items-center text-center overflow-hidden w-[155px] sm:w-[180px] md:w-[200px] lg:w-[220px] xl:w-[240px]"
                 >
-                  <div className="h-28 sm:h-32 md:h-36 lg:h-40 w-full relative bg-gray-50">
+                  {/* Image Container */}
+                  <div className="h-32 sm:h-36 md:h-40 lg:h-44 xl:h-48 w-full relative bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-blue-50 group-hover:to-indigo-50 transition-colors duration-300">
                     <ImageWithSkeleton
                       src={item.image || "https://via.placeholder.com/150"}
                       alt={item.name || "Category"}
                       fill
-                      className="object-contain p-2 md:p-3"
-                      sizes="(max-width: 640px) 140px, (max-width: 768px) 160px, 200px"
+                      className="object-contain p-3 sm:p-4 md:p-5 group-hover:scale-110 transition-transform duration-300"
+                      sizes="(max-width: 640px) 155px, (max-width: 768px) 180px, (max-width: 1024px) 200px, (max-width: 1280px) 220px, 240px"
                       loading={isPriority ? "eager" : "lazy"}
                       priority={isPriority}
-                      quality={60}
-                      skeletonClassName="rounded-t-xl"
+                      quality={75}
+                      skeletonClassName="rounded-t-xl sm:rounded-t-2xl"
                     />
                   </div>
-                  <div className="px-3 py-3 md:px-4 md:py-4 w-full">
-                    <h3 className="text-xs sm:text-sm md:text-base font-semibold capitalize text-gray-800 truncate">
+
+                  {/* Text Container */}
+                  <div className="px-3 sm:px-4 md:px-5 py-3 sm:py-4 md:py-5 w-full bg-white group-hover:bg-gradient-to-r group-hover:from-blue-50 group-hover:to-indigo-50 transition-colors duration-300">
+                    <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold capitalize text-gray-800 group-hover:text-blue-700 truncate transition-colors duration-300">
                       {item.name || "Unnamed Category"}
                     </h3>
                   </div>
@@ -298,11 +303,30 @@ export default async function ITDumpsPage() {
               );
             })
           ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-base md:text-lg mb-2">
-                No categories available.
-              </p>
-              <p className="text-gray-500 text-sm">Please check back later.</p>
+            <div className="text-center py-16 sm:py-20 md:py-24 lg:py-32 w-full">
+              <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-8 sm:p-10 md:p-12 max-w-md mx-auto">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-gray-700 text-lg sm:text-xl md:text-2xl font-semibold mb-3">
+                  No categories available
+                </p>
+                <p className="text-gray-500 text-sm sm:text-base md:text-lg">
+                  Please check back later for updates.
+                </p>
+              </div>
             </div>
           )}
         </div>

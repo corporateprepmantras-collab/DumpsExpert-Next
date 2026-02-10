@@ -92,7 +92,7 @@ const extractExamPrices = (examData) => {
 async function fetchProduct(slug) {
   try {
     const response = await fetch(`/api/products/get-by-slug/${slug}`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      next: { revalidate: 60 },
       cache: "force-cache",
     });
     const data = await response.json();
@@ -110,7 +110,7 @@ async function fetchExamsByProductSlug(slug) {
     for (const endpoint of endpoints) {
       try {
         const response = await fetch(endpoint, {
-          next: { revalidate: 60 }, // Revalidate every 60 seconds
+          next: { revalidate: 60 },
           cache: "force-cache",
         });
         if (!response.ok) continue;
@@ -145,7 +145,7 @@ async function fetchExamsByProductSlug(slug) {
 async function fetchAllProducts() {
   try {
     const response = await fetch(`/api/products`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      next: { revalidate: 60 },
       cache: "force-cache",
     });
     const data = await response.json();
@@ -159,7 +159,7 @@ async function fetchAllProducts() {
 async function fetchReviews(productId) {
   try {
     const response = await fetch(`/api/reviews?productId=${productId}`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      next: { revalidate: 60 },
       cache: "force-cache",
     });
     const data = await response.json();
@@ -279,8 +279,6 @@ export default function ProductDetailsPage() {
     return examPrices.priceInr > 0 || examPrices.priceUsd > 0;
   }, [examPrices]);
 
-  // Update the handleAddToCart function in your ProductDetailsPage component
-
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
 
@@ -307,7 +305,6 @@ export default function ProductDetailsPage() {
       return;
     }
 
-    // Check if item already exists in cart
     const cartStore = useCartStore.getState();
     const existingItem = cartStore.cartItems.find(
       (item) => item._id === product._id && item.type === type,
@@ -516,21 +513,21 @@ export default function ProductDetailsPage() {
 
   return (
     <div className="min-h-screen pt-12 sm:pt-14 lg:pt-16 bg-gray-50 text-gray-800">
-      <div className="container mx-auto px-2 sm:px-3 pt-0.5 pb-1">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-1 pb-1">
         <Breadcrumbs />
       </div>
-      {/* //updated ui */}
+
       {/* Product Unavailability Alert */}
       {!productAvailable && product && (
-        <div className="container mx-auto px-2 sm:px-3 mb-1.5 sm:mb-2">
-          <div className="bg-red-50 border-l-4 border-red-500 p-1.5 sm:p-2 rounded-lg shadow-sm">
-            <div className="flex items-center gap-1.5">
-              <FaExclamationTriangle className="text-red-500 text-sm sm:text-base flex-shrink-0" />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mb-4 sm:mb-6">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 sm:p-6 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <FaExclamationTriangle className="text-red-500 text-xl sm:text-2xl flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-red-800 text-[10px] sm:text-xs">
+                <h3 className="font-semibold text-red-800 text-base sm:text-lg">
                   Product Currently Unavailable
                 </h3>
-                <p className="text-red-700 text-[9px] sm:text-[10px] mt-0.5 leading-tight">
+                <p className="text-red-700 text-sm sm:text-base mt-2 leading-relaxed">
                   The PDF file for this product is not available at the moment.
                   Please contact support or check back later.
                 </p>
@@ -540,342 +537,361 @@ export default function ProductDetailsPage() {
         </div>
       )}
 
-      <div className="container mx-auto px-2 sm:px-3 flex flex-col lg:flex-row gap-2 lg:gap-3">
-        {/* Left Column - Sticky */}
-        <div className="w-full lg:w-[35%]">
-          <div className="lg:sticky lg:top-20">
-            {/* Image */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 shadow-md">
-              <div className="bg-gray-50 rounded-lg border border-gray-100 p-1.5">
-                <img
-                  src={product.imageUrl}
-                  alt={product.title}
-                  className="w-full rounded-lg object-contain h-[220px] sm:h-[280px] lg:h-[260px]"
-                />
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* Left Column - Image & Features */}
+          <div className="w-full lg:w-[35%]">
+            <div className="lg:sticky lg:top-20">
+              {/* Image */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 shadow-sm">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 p-4 sm:p-6">
+                  <img
+                    src={product.imageUrl}
+                    alt={product.title}
+                    className="w-full rounded object-contain h-[180px] sm:h-[220px] lg:h-[260px]"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Features List */}
-            <div className="bg-white border border-gray-200 shadow-md rounded-lg p-2 sm:p-3 mt-3 lg:mt-4">
-              <div className="flex flex-col space-y-1.5 sm:space-y-2">
-                {[
-                  "Instant Download After Purchase",
-                  "100% Real & Updated Dumps",
-                  "100% Money Back Guarantee",
-                  "90 Days Free Updates",
-                  "24/7 Customer Support",
-                ].map((f, i) => (
-                  <div key={i} className="flex items-start gap-1.5">
-                    <FaCheckCircle className="text-green-600 text-sm flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-800 text-[11px] sm:text-xs font-medium leading-snug">
-                      {f}
-                    </span>
-                  </div>
-                ))}
+              {/* Features List */}
+              <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-4 sm:p-6 mt-4 sm:mt-6">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-3 sm:mb-4">
+                  Why Choose Us?
+                </h3>
+                <div className="flex flex-col space-y-2.5 sm:space-y-3">
+                  {[
+                    "Instant Download After Purchase",
+                    "100% Real & Updated Dumps",
+                    "100% Money Back Guarantee",
+                    "90 Days Free Updates",
+                    "24/7 Customer Support",
+                  ].map((f, i) => (
+                    <div key={i} className="flex items-start gap-2 sm:gap-3">
+                      <FaCheckCircle className="text-green-600 text-sm sm:text-base flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-800 text-xs sm:text-sm font-medium leading-tight">
+                        {f}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Right Column */}
-        <div className="w-full lg:w-[65%] space-y-1 sm:space-y-1.5">
-          <h1 className="text-sm sm:text-base lg:text-lg font-bold break-words leading-tight">
-            {product.title}
-          </h1>
+          {/* Right Column */}
+          <div className="w-full lg:w-[65%] space-y-4 sm:space-y-6">
+            <h1 className="text-base sm:text-lg lg:text-xl font-bold break-words leading-tight text-gray-900">
+              {product.title}
+            </h1>
 
-          {/* UPDATED: Compact Exam Information Card */}
-          {(product.examCode ||
-            product.examName ||
-            product.totalQuestions ||
-            product.passingScore ||
-            product.duration ||
-            product.examLastUpdated) && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-md p-1.5 sm:p-2">
-              <h3 className="font-semibold text-[10px] sm:text-[11px] mb-1 sm:mb-1.5 text-blue-900 flex items-center gap-1">
-                <FaFileAlt className="text-blue-600 text-[9px] sm:text-[10px]" />
-                Exam Information
-              </h3>
+            {/* Exam Information Card */}
+            {(product.examCode ||
+              product.examName ||
+              product.totalQuestions ||
+              product.passingScore ||
+              product.duration ||
+              product.examLastUpdated) && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 sm:p-6">
+                <h3 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4 text-blue-900 flex items-center gap-2">
+                  <FaFileAlt className="text-blue-600 text-sm sm:text-base" />
+                  Exam Information
+                </h3>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
-                {product.examCode && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Exam Code
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                  {product.examCode && (
+                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
+                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                        Exam Code
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                        {product.examCode}
+                      </p>
+                    </div>
+                  )}
+
+                  {product.examName && (
+                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100 col-span-2 md:col-span-1">
+                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                        Exam Name
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                        {product.examName}
+                      </p>
+                    </div>
+                  )}
+
+                  {product.totalQuestions && (
+                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
+                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                        Questions
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                        {product.totalQuestions}
+                      </p>
+                    </div>
+                  )}
+
+                  {product.passingScore && (
+                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
+                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                        Passing Score
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                        {product.passingScore}
+                      </p>
+                    </div>
+                  )}
+
+                  {product.duration && (
+                    <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
+                      <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                        Duration
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900">
+                        {product.duration}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="bg-white rounded px-3 py-2 sm:px-4 sm:py-3 border border-blue-100">
+                    <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                      Last Updated
                     </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.examCode}
+                    <p className="text-sm sm:text-base font-semibold text-gray-900">
+                      {new Date(Date.now()).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
-                )}
-
-                {product.examName && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100 col-span-2 sm:col-span-1">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Exam Name
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900 truncate">
-                      {product.examName}
-                    </p>
-                  </div>
-                )}
-
-                {product.totalQuestions && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Questions
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.totalQuestions}
-                    </p>
-                  </div>
-                )}
-
-                {product.passingScore && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Passing Score
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.passingScore}
-                    </p>
-                  </div>
-                )}
-
-                {product.duration && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Duration
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.duration}
-                    </p>
-                  </div>
-                )}
-
-                <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                  <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                    Last Updated
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                    {new Date(Date.now()).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
                 </div>
+                {avgRating && avgRating > 0 && (
+                  <div className="flex items-center gap-1 flex-wrap mt-3 sm:mt-4">
+                    {[1, 2, 3, 4, 5].map((v) => (
+                      <FaStar
+                        key={v}
+                        className={`text-sm sm:text-base ${
+                          v <= Math.round(avgRating)
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                    <span className="text-sm sm:text-base text-gray-600 font-medium">
+                      ({avgRating.toFixed(1)}/5)
+                    </span>
+                  </div>
+                )}
               </div>
-              {avgRating && avgRating > 0 && (
-                <div className="flex items-center gap-0.5 flex-wrap">
-                  {[1, 2, 3, 4, 5].map((v) => (
-                    <FaStar
-                      key={v}
-                      className={`text-xs ${
-                        v <= Math.round(avgRating)
-                          ? "text-yellow-400"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                  <span className="text-[10px] sm:text-[11px] text-gray-600 font-medium">
-                    ({avgRating.toFixed(1)}/5)
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+            )}
 
-          {/* Pricing Sections - Clean Table Layout */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="divide-y divide-gray-200">
-              {/* Online Exam Questions */}
-              {hasOnlineExam && !isLoadingExams && (
-                <div className="flex items-center px-6 py-3.5">
-                  {/* Product Name */}
-                  <div className="w-64 flex-shrink-0">
-                    <h3 className="text-[15px] font-normal text-gray-900">
-                      Online Exam Questions
-                    </h3>
+            {/* Pricing Sections - Responsive Table Layout */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="divide-y divide-gray-200">
+                {/* Online Exam Questions */}
+                {hasOnlineExam && !isLoadingExams && (
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                      {/* Product Name */}
+                      <div className="lg:w-64 lg:flex-shrink-0">
+                        <h3 className="text-sm sm:text-base font-medium text-gray-900">
+                          Online Exam Questions
+                        </h3>
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="flex items-center gap-2 text-sm sm:text-base flex-wrap">
+                        <span className="text-orange-500 font-semibold">
+                          ₹{onlineExamPrices.priceInr || "3499"}
+                        </span>
+                        <span className="text-gray-600">
+                          (${onlineExamPrices.priceUsd || "47.28"})
+                        </span>
+                        <span className="line-through text-gray-500">
+                          ₹{onlineExamPrices.mrpInr || "6000"}
+                        </span>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:ml-auto">
+                        <button
+                          onClick={() =>
+                            router.push(`/exam/sample-instruction/${slug}`)
+                          }
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs sm:text-sm uppercase transition-colors whitespace-nowrap"
+                        >
+                          <FaEye size={14} className="sm:w-4 sm:h-4" />
+                          <span className="hidden sm:inline">
+                            TRY ONLINE EXAM
+                          </span>
+                          <span className="sm:hidden">TRY EXAM</span>
+                        </button>
+                        <button
+                          onClick={() => handleAddToCart("online")}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#FA8B31] hover:bg-[#E57A21] text-gray-900 font-bold text-xs sm:text-sm uppercase rounded transition-colors whitespace-nowrap"
+                        >
+                          <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
+                          ADD TO CART
+                        </button>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  {/* Pricing */}
-                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
-                    <span className="text-orange-500">
-                      ₹{onlineExamPrices.priceInr || "3499"},
-                    </span>
-                    <span className="text-gray-600">
-                      (${onlineExamPrices.priceUsd || "47.28"})
-                    </span>
-                    <span className="line-through text-gray-500">
-                      ₹{onlineExamPrices.mrpInr || "6000"}
-                    </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 ml-auto">
-                    <button
-                      onClick={() =>
-                        router.push(`/exam/sample-instruction/${slug}`)
-                      }
-                      className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
-                    >
-                      <FaEye size={16} />
-                      TRY ONLINE EXAM
-                    </button>
-                    <button
-                      onClick={() => handleAddToCart("online")}
-                      className="flex items-center gap-2 px-5 py-2 bg-[#FA8B31] hover:bg-[#FA8B31] text-gray-900 font-bold text-xs uppercase rounded transition-colors whitespace-nowrap"
-                    >
-                      <FaShoppingCart size={16} />
-                      ADD TO CART
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* PDF Downloadable Format */}
-              {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
-                <div
-                  className={`flex items-center px-6 py-3.5 ${
-                    !productAvailable ? "bg-gray-50 opacity-70" : ""
-                  }`}
-                >
-                  {/* Product Name */}
-                  <div className="w-64 flex-shrink-0">
-                    <h3 className="text-[15px] font-normal text-gray-900">
-                      PDF Downloadable Format
-                    </h3>
-                    {!productAvailable && (
-                      <span className="text-[10px] text-red-600">
-                        (Currently Unavailable)
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Pricing */}
-                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
-                    <span className="text-orange-500">
-                      ₹{pdfPrices.priceInr || "4999"},
-                    </span>
-                    <span className="text-gray-600">
-                      (${pdfPrices.priceUsd || "67.55"})
-                    </span>
-                    <span className="line-through text-gray-500">
-                      ₹{pdfPrices.mrpInr || "7000"}
-                    </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 ml-auto">
-                    {product.samplePdfUrl && (
-                      <button
-                        onClick={() =>
-                          handleDownload(
-                            product.samplePdfUrl,
-                            `${product.title}-Sample.pdf`,
-                          )
-                        }
-                        className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
-                      >
-                        <FaDownload size={16} />
-                        DOWNLOAD SAMPLE
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleAddToCart("regular")}
-                      disabled={!productAvailable}
-                      className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
-                        productAvailable
-                          ? "bg-[#FA8B31] hover:bg-[#FA8B31] text-gray-900 cursor-pointer"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
-                      title={
-                        !productAvailable
-                          ? "Product unavailable - PDF not found"
-                          : "Add to cart"
-                      }
-                    >
-                      <FaShoppingCart size={16} />
-                      {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* PDF + Online Exam */}
-              {hasOnlineExam &&
-                comboPrices &&
-                (comboPrices.priceInr || comboPrices.priceUsd) && (
+                {/* PDF Downloadable Format */}
+                {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
                   <div
-                    className={`flex items-center px-6 py-3.5 ${
+                    className={`p-4 sm:p-6 ${
                       !productAvailable ? "bg-gray-50 opacity-70" : ""
                     }`}
                   >
-                    {/* Product Name */}
-                    <div className="w-64 flex-shrink-0">
-                      <h3 className="text-[15px] font-normal text-gray-900">
-                        PDF + Online Exam
-                      </h3>
-                      {!productAvailable && (
-                        <span className="text-[10px] text-red-600">
-                          (Currently Unavailable)
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                      {/* Product Name */}
+                      <div className="lg:w-64 lg:flex-shrink-0">
+                        <h3 className="text-sm sm:text-base font-medium text-gray-900">
+                          PDF Downloadable Format
+                        </h3>
+                        {!productAvailable && (
+                          <span className="text-xs text-red-600 mt-1 inline-block">
+                            (Currently Unavailable)
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="flex items-center gap-2 text-sm sm:text-base flex-wrap">
+                        <span className="text-orange-500 font-semibold">
+                          ₹{pdfPrices.priceInr || "4999"}
                         </span>
-                      )}
-                    </div>
+                        <span className="text-gray-600">
+                          (${pdfPrices.priceUsd || "67.55"})
+                        </span>
+                        <span className="line-through text-gray-500">
+                          ₹{pdfPrices.mrpInr || "7000"}
+                        </span>
+                      </div>
 
-                    {/* Pricing */}
-                    <div className="flex items-center gap-1.5 text-[15px] mr-8">
-                      <span className="text-orange-500">
-                        ₹{comboPrices.priceInr || "6998"},
-                      </span>
-                      <span className="text-gray-600">
-                        (${comboPrices.priceUsd || "94.57"})
-                      </span>
-                      <span className="line-through text-gray-500">
-                        ₹{comboPrices.mrpInr || "8498"}
-                      </span>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 ml-auto">
-                      <button
-                        onClick={() => handleAddToCart("combo")}
-                        disabled={!productAvailable}
-                        className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
-                          productAvailable
-                            ? "bg-[#FA8B31] hover:bg-[#FA8B31] text-gray-900 cursor-pointer"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
-                        title={
-                          !productAvailable
-                            ? "Product unavailable - PDF not found"
-                            : "Add to cart"
-                        }
-                      >
-                        <FaShoppingCart size={16} />
-                        {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:ml-auto">
+                        {product.samplePdfUrl && (
+                          <button
+                            onClick={() =>
+                              handleDownload(
+                                product.samplePdfUrl,
+                                `${product.title}-Sample.pdf`,
+                              )
+                            }
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs sm:text-sm uppercase transition-colors whitespace-nowrap"
+                          >
+                            <FaDownload size={14} className="sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline">
+                              DOWNLOAD SAMPLE
+                            </span>
+                            <span className="sm:hidden">SAMPLE</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleAddToCart("regular")}
+                          disabled={!productAvailable}
+                          className={`flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded text-xs sm:text-sm uppercase transition-colors whitespace-nowrap font-bold ${
+                            productAvailable
+                              ? "bg-[#FA8B31] hover:bg-[#E57A21] text-gray-900 cursor-pointer"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                          title={
+                            !productAvailable
+                              ? "Product unavailable - PDF not found"
+                              : "Add to cart"
+                          }
+                        >
+                          <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
+                          {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
+
+                {/* PDF + Online Exam */}
+                {hasOnlineExam &&
+                  comboPrices &&
+                  (comboPrices.priceInr || comboPrices.priceUsd) && (
+                    <div
+                      className={`p-4 sm:p-6 ${
+                        !productAvailable ? "bg-gray-50 opacity-70" : ""
+                      }`}
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                        {/* Product Name */}
+                        <div className="lg:w-64 lg:flex-shrink-0">
+                          <h3 className="text-sm sm:text-base font-medium text-gray-900">
+                            PDF + Online Exam
+                          </h3>
+                          {!productAvailable && (
+                            <span className="text-xs text-red-600 mt-1 inline-block">
+                              (Currently Unavailable)
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Pricing */}
+                        <div className="flex items-center gap-2 text-sm sm:text-base flex-wrap">
+                          <span className="text-orange-500 font-semibold">
+                            ₹{comboPrices.priceInr || "6998"}
+                          </span>
+                          <span className="text-gray-600">
+                            (${comboPrices.priceUsd || "94.57"})
+                          </span>
+                          <span className="line-through text-gray-500">
+                            ₹{comboPrices.mrpInr || "8498"}
+                          </span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:ml-auto">
+                          <button
+                            onClick={() => handleAddToCart("combo")}
+                            disabled={!productAvailable}
+                            className={`flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded text-xs sm:text-sm uppercase transition-colors whitespace-nowrap font-bold ${
+                              productAvailable
+                                ? "bg-[#FA8B31] hover:bg-[#E57A21] text-gray-900 cursor-pointer"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
+                            title={
+                              !productAvailable
+                                ? "Product unavailable - PDF not found"
+                                : "Add to cart"
+                            }
+                          >
+                            <FaShoppingCart
+                              size={14}
+                              className="sm:w-4 sm:h-4"
+                            />
+                            {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+              </div>
             </div>
-          </div>
 
-          {/* Description */}
-          <div className="bg-white rounded-lg shadow-lg p-1 sm:p-1.5">
-            <h2 className="text-[11px] sm:text-sm font-bold mb-0.5 sm:mb-1 text-gray-900">
-              Description
-            </h2>
+            {/* Description */}
+            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-gray-900">
+                Description
+              </h2>
 
-            <div className="relative w-full overflow-visible">
-              <div
-                className="
-        prose prose-xs max-w-none
-        prose-p:text-gray-700 prose-p:text-[10px] prose-p:leading-tight
-        prose-li:text-gray-700 prose-li:text-[10px] prose-li:leading-tight
+              <div className="relative w-full overflow-visible">
+                <div
+                  className="
+        prose prose-sm sm:prose max-w-none
+        prose-p:text-gray-700 prose-p:text-sm prose-p:leading-relaxed
+        prose-li:text-gray-700 prose-li:text-sm prose-li:leading-relaxed
         prose-strong:text-gray-900
         prose-a:text-blue-600
-        prose-headings:text-gray-900 prose-headings:text-[11px]
+        prose-headings:text-gray-900 prose-headings:text-base
 
         break-words
         whitespace-normal
@@ -888,83 +904,77 @@ export default function ProductDetailsPage() {
         [&_pre]:overflow-x-auto
         [&_code]:break-words
       "
-                style={{
-                  wordBreak: "break-word",
-                  overflowWrap: "anywhere",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: product.Description || "No description available",
-                }}
-              />
+                  style={{
+                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: product.Description || "No description available",
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Full Width Sections Below */}
+        {/* Full Width Sections Below */}
 
-      {/* Long Description - Full Width */}
-      <div className="container mx-auto px-2 sm:px-3 mt-4 sm:mt-5 lg:mt-6">
-        <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 overflow-hidden">
-          <h2 className="text-sm sm:text-base font-bold mb-1.5 sm:mb-2 text-gray-900">
-            Detailed Overview
-          </h2>
-          <div
-            className="
-              prose prose-sm max-w-full
-              prose-p:text-gray-700 prose-p:break-words
-              prose-li:text-gray-700 prose-li:break-words
+        {/* Long Description - Full Width */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 max-w-7xl mt-8 sm:mt-12 lg:mt-16">
+          <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 lg:p-10 xl:p-12 overflow-hidden border-2 border-gray-200">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-6 sm:mb-8 text-gray-900 flex items-center gap-3">
+              <FaClipboardList className="text-blue-600 text-2xl sm:text-3xl" />
+              Detailed Overview
+            </h2>
+            <div
+              className="prose prose-sm sm:prose lg:prose-lg max-w-full
+              prose-p:text-gray-700 prose-p:break-words prose-p:leading-relaxed prose-p:text-sm sm:prose-p:text-base lg:prose-p:text-lg
+              prose-li:text-gray-700 prose-li:break-words prose-li:leading-relaxed prose-li:text-sm sm:prose-li:text-base lg:prose-li:text-lg
               prose-strong:text-gray-900
               prose-a:text-blue-600 prose-a:break-all
-              prose-headings:break-words
-              break-words
-              overflow-hidden
-              [&_*]:max-w-full
-              [&_*]:break-words
-              [&_img]:max-w-full
-              [&_img]:h-auto
-              [&_table]:block
-              [&_table]:max-w-full
-              [&_table]:overflow-x-auto
-              [&_pre]:overflow-x-auto
-              [&_pre]:max-w-full
-              [&_code]:break-all
-            "
-            style={{
-              wordBreak: "break-word",
-              overflowWrap: "anywhere",
-              maxWidth: "100%",
-            }}
-            dangerouslySetInnerHTML={{
-              __html:
-                product.longDescription || "No detailed overview available",
-            }}
+              prose-headings:break-words prose-headings:text-gray-900 prose-headings:text-base sm:prose-headings:text-lg lg:prose-headings:text-xl
+              break-words overflow-hidden
+              [&_*]:max-w-full [&_*]:break-words
+              [&_img]:max-w-full [&_img]:h-auto
+              [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto
+              [&_pre]:overflow-x-auto [&_pre]:max-w-full
+              [&_code]:break-all"
+              style={{
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+                maxWidth: "100%",
+              }}
+              dangerouslySetInnerHTML={{
+                __html:
+                  product.longDescription || "No detailed overview available",
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 max-w-7xl mt-8 sm:mt-12 lg:mt-16">
+          <ReviewsSection
+            reviews={reviews}
+            reviewForm={reviewForm}
+            setReviewForm={setReviewForm}
+            handleAddReview={handleAddReview}
           />
         </div>
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 max-w-7xl mt-8 sm:mt-12">
+          {product.faqs && product.faqs.length > 0 && (
+            <FAQSection
+              faqs={product.faqs}
+              activeIndex={activeIndex}
+              toggleAccordion={toggleAccordion}
+            />
+          )}
+        </div>
+
+        <RelatedProducts currentSlug={slug} maxProducts={10} />
+
+        <Toaster />
       </div>
-
-      <div className="container mx-auto px-2 sm:px-3 mt-6 sm:mt-8 lg:mt-10">
-        <ReviewsSection
-          reviews={reviews}
-          reviewForm={reviewForm}
-          setReviewForm={setReviewForm}
-          handleAddReview={handleAddReview}
-        />
-      </div>
-
-      <div className="container mx-auto px-2 sm:px-3 mt-6 sm:mt-8">
-        {product.faqs && product.faqs.length > 0 && (
-          <FAQSection
-            faqs={product.faqs}
-            activeIndex={activeIndex}
-            toggleAccordion={toggleAccordion}
-          />
-        )}
-      </div>
-
-      <RelatedProducts currentSlug={slug} maxProducts={10} />
-
-      <Toaster />
     </div>
   );
 }
@@ -997,34 +1007,34 @@ function ReviewsSection({
       : 0;
 
   return (
-    <div className="space-y-4 sm:space-y-6 pt-8 sm:pt-10 md:pt-12">
+    <div className="space-y-6 sm:space-y-8 pt-8 sm:pt-12 md:pt-16">
       {/* Header with Overall Rating */}
-      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 shadow-lg border border-blue-100">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
-          <div className="text-center md:text-left">
-            <h2 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 justify-center md:justify-start mb-1">
-              <FaQuoteLeft className="text-blue-600 text-xs sm:text-sm md:text-base" />
+      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-xl border-2 border-blue-200">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8">
+          <div className="text-center lg:text-left">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-3 justify-center lg:justify-start mb-2">
+              <FaQuoteLeft className="text-blue-600 text-xl sm:text-2xl lg:text-3xl" />
               Customer Reviews
             </h2>
-            <p className="text-gray-600 text-[10px] sm:text-xs">
+            <p className="text-gray-600 text-sm sm:text-base">
               Real feedback from verified customers
             </p>
           </div>
 
           {publishedReviews.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 bg-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 shadow-md w-full sm:w-auto">
+            <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-6 bg-white rounded-xl px-6 py-6 shadow-lg w-full lg:w-auto">
               <div className="text-center">
-                <div className="flex items-center gap-1 mb-0.5 justify-center">
-                  <span className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                <div className="flex items-center gap-2 mb-2 justify-center">
+                  <span className="text-4xl sm:text-5xl font-bold text-gray-900">
                     {avgRating}
                   </span>
-                  <FaStar className="text-yellow-400 text-base sm:text-lg" />
+                  <FaStar className="text-yellow-400 text-2xl sm:text-3xl" />
                 </div>
-                <div className="flex items-center gap-0.5 mb-0.5 justify-center">
+                <div className="flex items-center gap-1 mb-2 justify-center">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FaStar
                       key={star}
-                      className={`text-sm ${
+                      className={`text-lg sm:text-xl ${
                         star <= Math.round(avgRating)
                           ? "text-yellow-400"
                           : "text-gray-300"
@@ -1032,13 +1042,13 @@ function ReviewsSection({
                     />
                   ))}
                 </div>
-                <p className="text-[9px] sm:text-[10px] text-gray-500">
+                <p className="text-sm sm:text-base text-gray-500">
                   Based on {publishedReviews.length} review
                   {publishedReviews.length !== 1 ? "s" : ""}
                 </p>
               </div>
 
-              <div className="space-y-0.5 min-w-[140px] sm:min-w-[160px] w-full sm:w-auto">
+              <div className="space-y-2 min-w-[200px] sm:min-w-[260px] w-full md:w-auto">
                 {[5, 4, 3, 2, 1].map((rating) => {
                   const count = ratingStats[rating];
                   const percentage =
@@ -1047,18 +1057,18 @@ function ReviewsSection({
                       : 0;
 
                   return (
-                    <div key={rating} className="flex items-center gap-1">
-                      <span className="text-[9px] sm:text-[10px] font-medium text-gray-700 w-5 sm:w-6">
-                        {rating}{" "}
-                        <FaStar className="inline text-yellow-400 text-[9px] sm:text-[10px]" />
+                    <div key={rating} className="flex items-center gap-3">
+                      <span className="text-sm sm:text-base font-medium text-gray-700 w-8 flex items-center gap-1">
+                        {rating}
+                        <FaStar className="text-yellow-400 text-xs" />
                       </span>
-                      <div className="flex-1 h-1 sm:h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 transition-all"
+                          className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 transition-all duration-500"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
-                      <span className="text-[9px] sm:text-[10px] text-gray-600 w-6 sm:w-8 text-right">
+                      <span className="text-sm sm:text-base text-gray-600 w-8 text-right font-medium">
                         {count}
                       </span>
                     </div>
@@ -1071,38 +1081,36 @@ function ReviewsSection({
       </div>
 
       {/* Mobile: Stack vertically, Desktop: Side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-10">
         {/* Reviews List */}
-        <div className="order-2 lg:order-1">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-sm sm:text-base font-bold text-gray-800">
+        <div className="order-2 xl:order-1">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">
               What Our Customers Say
             </h3>
             {publishedReviews.length > 0 && (
-              <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
+              <span className="text-sm sm:text-base text-gray-500 bg-gray-100 px-3 py-2 rounded-full font-medium">
                 {publishedReviews.length}{" "}
                 {publishedReviews.length === 1 ? "Review" : "Reviews"}
               </span>
             )}
           </div>
 
-          <div className="max-h-[500px] sm:max-h-[600px] lg:max-h-[700px] overflow-y-auto space-y-3 sm:space-y-4 pr-1 sm:pr-2 custom-scrollbar">
+          <div className="max-h-[600px] sm:max-h-[700px] xl:max-h-[900px] overflow-y-auto space-y-4 sm:space-y-6 pr-2 custom-scrollbar">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12 sm:py-16">
+              <div className="flex items-center justify-center py-20">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 sm:border-4 border-blue-500 border-t-transparent mx-auto mb-3 sm:mb-4"></div>
-                  <p className="text-gray-600 text-xs sm:text-sm">
-                    Loading reviews...
-                  </p>
+                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-6"></div>
+                  <p className="text-gray-600 text-base">Loading reviews...</p>
                 </div>
               </div>
             ) : publishedReviews.length === 0 ? (
-              <div className="text-center py-12 sm:py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl sm:rounded-2xl border-2 border-dashed border-gray-300">
-                <FaQuoteLeft className="text-gray-300 text-4xl sm:text-5xl mx-auto mb-3 sm:mb-4" />
-                <p className="text-gray-600 text-sm sm:text-base font-medium mb-1 sm:mb-2">
+              <div className="text-center py-20 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border-2 border-dashed border-gray-300">
+                <FaQuoteLeft className="text-gray-300 text-6xl mx-auto mb-6" />
+                <p className="text-gray-600 text-lg sm:text-xl font-medium mb-4">
                   No reviews yet
                 </p>
-                <p className="text-gray-500 text-xs sm:text-sm">
+                <p className="text-gray-500 text-base sm:text-lg">
                   Be the first to share your experience!
                 </p>
               </div>
@@ -1110,24 +1118,24 @@ function ReviewsSection({
               publishedReviews.map((r, i) => (
                 <div
                   key={r._id || i}
-                  className="bg-white border-2 border-gray-100 rounded-lg sm:rounded-xl p-2 sm:p-3 hover:shadow-xl hover:border-blue-200 transition-all duration-300 group"
+                  className="bg-white border-2 border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-2xl hover:border-blue-300 transition-all duration-300 group"
                 >
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-1.5 sm:mb-2 gap-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center font-bold text-[10px] sm:text-xs shadow-md flex-shrink-0">
+                  <div className="flex items-start justify-between mb-4 gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center font-bold text-lg sm:text-xl shadow-lg flex-shrink-0">
                         {(r.customer || r.name || "A")[0].toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-900 text-[11px] sm:text-xs">
+                        <p className="font-bold text-gray-900 text-base sm:text-lg">
                           {r.customer || r.name || "Anonymous"}
                         </p>
-                        <div className="flex items-center gap-0.5 mt-0.5">
-                          <div className="flex items-center gap-0.5">
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, idx) => (
                               <FaStar
                                 key={idx}
-                                className={`text-[10px] ${
+                                className={`text-sm sm:text-base ${
                                   idx < r.rating
                                     ? "text-yellow-400"
                                     : "text-gray-300"
@@ -1135,14 +1143,14 @@ function ReviewsSection({
                               />
                             ))}
                           </div>
-                          <span className="text-[9px] text-gray-500">
+                          <span className="text-sm sm:text-base text-gray-500 font-medium">
                             {r.rating}/5
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <span className="text-[9px] text-gray-500 bg-gray-100 px-1 py-0.5 rounded-full whitespace-nowrap">
+                      <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                         {new Date(r.createdAt || r.date).toLocaleDateString(
                           "en-US",
                           { month: "short", day: "numeric", year: "numeric" },
@@ -1153,17 +1161,17 @@ function ReviewsSection({
 
                   {/* Review Text */}
                   <div className="relative">
-                    <FaQuoteLeft className="absolute -left-1 -top-1 text-blue-200 text-xs sm:text-sm opacity-50" />
-                    <p className="text-gray-700 text-[11px] sm:text-xs leading-relaxed pl-3 sm:pl-4 break-words">
+                    <FaQuoteLeft className="absolute -left-2 -top-2 text-blue-200 text-lg opacity-50" />
+                    <p className="text-gray-700 text-sm sm:text-base leading-relaxed pl-6 break-words">
                       {r.comment}
                     </p>
                   </div>
 
                   {/* Verified Badge (if applicable) */}
                   {r.verified && (
-                    <div className="mt-2 flex items-center gap-0.5 text-green-600">
-                      <FaCheckCircle className="text-[10px]" />
-                      <span className="text-[9px] font-medium">
+                    <div className="mt-4 flex items-center gap-2 text-green-600">
+                      <FaCheckCircle className="text-sm sm:text-base" />
+                      <span className="text-sm sm:text-base font-medium">
                         Verified Purchase
                       </span>
                     </div>
@@ -1175,40 +1183,40 @@ function ReviewsSection({
         </div>
 
         {/* Review Form */}
-        <div className="order-1 lg:order-2">
-          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 shadow-lg border border-blue-100 sticky top-16 sm:top-20">
-            <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-800 mb-1">
+        <div className="order-1 xl:order-2">
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl p-6 sm:p-8 shadow-xl border-2 border-blue-200 xl:sticky xl:top-24">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
               Write Your Review
             </h3>
-            <p className="text-[10px] sm:text-xs text-gray-600 mb-3 sm:mb-4">
+            <p className="text-sm sm:text-base text-gray-600 mb-6">
               Share your experience to help others make informed decisions
             </p>
 
-            <form onSubmit={handleAddReview} className="space-y-2 sm:space-y-3">
+            <form onSubmit={handleAddReview} className="space-y-4 sm:space-y-6">
               <div>
-                <label className="block text-[10px] sm:text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-2">
                   Your Name *
                 </label>
                 <div className="relative">
-                  <FaUser className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] sm:text-xs" />
+                  <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
                   <input
                     value={reviewForm.name}
                     onChange={(e) =>
                       setReviewForm({ ...reviewForm, name: e.target.value })
                     }
                     placeholder="Enter your full name"
-                    className="w-full border-2 border-gray-200 pl-7 sm:pl-8 pr-2 sm:pr-3 py-1.5 sm:py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-[11px] sm:text-xs bg-white"
+                    className="w-full border-2 border-gray-300 pl-12 pr-4 py-3 sm:py-4 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm sm:text-base bg-white"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] sm:text-xs font-semibold text-gray-700 mb-1.5 sm:mb-2">
+                <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-3">
                   Your Rating *
                 </label>
-                <div className="bg-white rounded-lg p-2 sm:p-3 border-2 border-gray-200">
-                  <div className="flex items-center justify-center gap-1 mb-1">
+                <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-gray-300">
+                  <div className="flex items-center justify-center gap-2 mb-3">
                     {[1, 2, 3, 4, 5].map((value) => (
                       <button
                         key={value}
@@ -1216,21 +1224,21 @@ function ReviewsSection({
                         onClick={() =>
                           setReviewForm({ ...reviewForm, rating: value })
                         }
-                        className={`transition-all transform hover:scale-125 ${
+                        className={`transition-all transform hover:scale-125 active:scale-110 p-2 ${
                           value <= reviewForm.rating ? "scale-110" : ""
                         }`}
                       >
                         <FaStar
-                          className={`text-lg sm:text-xl md:text-2xl ${
+                          className={`text-3xl sm:text-4xl ${
                             value <= reviewForm.rating
                               ? "text-yellow-400 drop-shadow-lg"
-                              : "text-gray-300 hover:text-yellow-200"
+                              : "text-gray-300 hover:text-yellow-300"
                           }`}
                         />
                       </button>
                     ))}
                   </div>
-                  <p className="text-center text-[10px] sm:text-xs font-medium text-gray-700">
+                  <p className="text-center text-sm sm:text-base font-medium text-gray-700">
                     {reviewForm.rating === 0 && "Click to rate"}
                     {reviewForm.rating === 1 && "⭐ Poor"}
                     {reviewForm.rating === 2 && "⭐⭐ Fair"}
@@ -1242,7 +1250,7 @@ function ReviewsSection({
               </div>
 
               <div>
-                <label className="block text-[10px] sm:text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-2">
                   Your Review *
                 </label>
                 <textarea
@@ -1251,25 +1259,25 @@ function ReviewsSection({
                     setReviewForm({ ...reviewForm, comment: e.target.value })
                   }
                   placeholder="Tell us about your experience with this product. What did you like? What could be improved?"
-                  rows="4"
-                  className="w-full border-2 border-gray-200 p-2 sm:p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none text-[11px] sm:text-xs bg-white"
+                  rows="5"
+                  className="w-full border-2 border-gray-300 p-4 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none text-sm sm:text-base bg-white"
                   required
                 />
-                <p className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">
+                <p className="text-xs sm:text-sm text-gray-500 mt-2">
                   Minimum 10 characters
                 </p>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-bold transition-all shadow-lg hover:shadow-xl text-[11px] sm:text-xs transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-4 sm:py-5 rounded-lg font-bold transition-all shadow-lg hover:shadow-xl text-base sm:text-lg transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 Submit Review ✨
               </button>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-1.5 sm:p-2 flex items-start gap-1">
-                <FaCheckCircle className="text-blue-600 mt-0.5 flex-shrink-0 text-[10px] sm:text-xs" />
-                <p className="text-[9px] sm:text-[10px] text-blue-800">
+              <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 flex items-start gap-3">
+                <FaCheckCircle className="text-blue-600 mt-1 flex-shrink-0 text-base" />
+                <p className="text-sm sm:text-base text-blue-800 leading-relaxed">
                   Your review will be published after admin approval to ensure
                   quality and authenticity
                 </p>
@@ -1281,7 +1289,7 @@ function ReviewsSection({
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: #f1f1f1;
@@ -1301,35 +1309,35 @@ function ReviewsSection({
 
 function FAQSection({ faqs, activeIndex, toggleAccordion }) {
   return (
-    <div className="py-4 sm:py-6">
-      <h2 className="text-sm sm:text-base font-bold mb-3 sm:mb-4 text-center flex items-center justify-center gap-1.5">
-        <FaUser className="text-blue-600 text-xs sm:text-sm" /> Frequently Asked
-        Questions (FAQs)
+    <div className="py-6 sm:py-8 lg:py-10">
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-6 sm:mb-8 text-center flex items-center justify-center gap-3">
+        <FaUser className="text-blue-600 text-xl sm:text-2xl lg:text-3xl" />
+        Frequently Asked Questions (FAQs)
       </h2>
-      <div className="space-y-2 sm:space-y-3">
+      <div className="space-y-4 sm:space-y-6">
         {faqs.map((faq, idx) => {
           const isOpen = activeIndex === idx;
           return (
             <div
               key={idx}
-              className="border border-gray-200 rounded-lg shadow-sm bg-white"
+              className="border-2 border-gray-200 rounded-xl shadow-sm bg-white overflow-hidden"
             >
               <button
                 onClick={() => toggleAccordion(idx)}
-                className="w-full flex justify-between items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 text-left group hover:bg-gray-50 gap-1.5"
+                className="w-full flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 text-left group hover:bg-gray-50 gap-4 transition-colors"
               >
-                <span className="font-medium text-gray-800 text-[11px] sm:text-xs text-left">
+                <span className="font-semibold text-gray-800 text-sm sm:text-base lg:text-lg text-left leading-relaxed">
                   {faq.question}
                 </span>
                 <FaChevronRight
-                  className={`text-gray-600 transform transition-transform text-[10px] flex-shrink-0 ${
+                  className={`text-gray-600 transform transition-transform text-lg sm:text-xl flex-shrink-0 ${
                     isOpen ? "rotate-90" : ""
                   }`}
                 />
               </button>
               {isOpen && (
-                <div className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-gray-600 text-[10px] sm:text-xs">
-                  <p>{faq.answer}</p>
+                <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 text-gray-600 text-sm sm:text-base lg:text-lg border-t border-gray-200 bg-gray-50">
+                  <p className="leading-relaxed">{faq.answer}</p>
                 </div>
               )}
             </div>

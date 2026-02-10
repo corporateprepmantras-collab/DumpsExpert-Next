@@ -219,87 +219,136 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
           </div>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-8 md:py-12">
+            <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600 text-sm md:text-base">
+              Loading products...
+            </span>
+          </div>
+        )}
+
+        {/* No Products */}
+        {!isLoading && relatedProducts.length === 0 && (
+          <div className="text-center py-8 md:py-12">
+            <p className="text-gray-600 text-sm md:text-base">
+              No related products available at the moment.
+            </p>
+          </div>
+        )}
+
         {/* Scrollable Container */}
-        <div className="relative">
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
-          >
-            {relatedProducts.slice(0, maxProducts).map((product) => {
-              return (
-                <div
-                  key={product._id}
-                  className="flex-shrink-0 w-[45%] sm:w-[32%] md:w-[24%] lg:w-[19%] xl:w-[16%] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 group overflow-hidden cursor-pointer"
-                  onClick={() =>
-                    router.push(
-                      `/ItDumps/${product.category || "sap"}/${product.slug}`,
-                    )
-                  }
-                >
-                  <div className="p-3 md:p-4 h-full flex flex-col">
-                    {/* Product Image */}
-                    <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-2 md:p-3 mb-2 md:mb-3 group-hover:scale-105 transition-transform">
-                      <img
-                        src={product.imageUrl}
-                        alt={product.title}
-                        className="h-20 sm:h-24 md:h-28 lg:h-32 w-full object-contain"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </div>
-
-                    {/* Product Title */}
-                    <h3 className="text-[11px] sm:text-xs md:text-sm font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors leading-tight">
-                      {product.title}
-                    </h3>
-
-                    {/* Price Section */}
-                    <div className="flex items-baseline gap-1 md:gap-2 mb-2 flex-wrap">
-                      <p className="text-xs sm:text-sm md:text-base font-bold text-blue-600">
-                        ₹{product.dumpsPriceInr}
-                      </p>
-                      {product.dumpsMrpInr > product.dumpsPriceInr && (
-                        <p className="text-[10px] sm:text-xs text-gray-500 line-through">
-                          ₹{product.dumpsMrpInr}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Discount Badge */}
-                    {product.dumpsMrpInr > product.dumpsPriceInr && (
-                      <div className="inline-block bg-green-100 text-green-800 text-[9px] sm:text-[10px] md:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full mb-2">
-                        {Math.round(
-                          ((product.dumpsMrpInr - product.dumpsPriceInr) /
-                            product.dumpsMrpInr) *
-                            100,
-                        )}
-                        % OFF
+        {!isLoading && relatedProducts.length > 0 && (
+          <div className="relative">
+            <div
+              ref={scrollContainerRef}
+              className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+            >
+              {relatedProducts.slice(0, maxProducts).map((product) => {
+                return (
+                  <div
+                    key={product._id}
+                    className="flex-shrink-0 w-[280px] sm:w-[240px] md:w-[220px] lg:w-[250px] xl:w-[280px] bg-white rounded-xl shadow-md hover:shadow-xl border border-gray-200 transition-all duration-300 group overflow-hidden cursor-pointer"
+                    onClick={() =>
+                      router.push(
+                        `/ItDumps/${product.category || "sap"}/${product.slug}`,
+                      )
+                    }
+                  >
+                    <div className="p-4 sm:p-5 h-full flex flex-col">
+                      {/* Product Image */}
+                      <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-4 mb-4 group-hover:scale-105 transition-transform duration-300">
+                        <img
+                          src={product.imageUrl}
+                          alt={product.title}
+                          className="h-24 sm:h-28 md:h-32 w-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       </div>
-                    )}
 
-                    {/* View Details Button */}
-                    <div className="mt-auto pt-2">
-                      <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 md:py-2 bg-blue-500 hover:bg-blue-600 text-white text-[9px] sm:text-[10px] md:text-xs font-medium rounded transition-colors">
-                        <FaEye className="text-[8px] sm:text-[9px] md:text-[10px]" />
-                        View Details
-                      </button>
+                      {/* Product Title */}
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors leading-tight line-clamp-2">
+                        {product.title}
+                      </h3>
+
+                      {/* Exam Code */}
+                      <div className="mb-3">
+                        <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                          {product.sapExamCode}
+                        </span>
+                      </div>
+
+                      {/* Price Section */}
+                      <div className="flex items-baseline gap-2 mb-3">
+                        <p className="text-base sm:text-lg font-bold text-orange-500">
+                          ₹{product.dumpsPriceInr}
+                        </p>
+                        {product.dumpsMrpInr > product.dumpsPriceInr && (
+                          <>
+                            <p className="text-sm text-gray-500 line-through">
+                              ₹{product.dumpsMrpInr}
+                            </p>
+                            <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
+                              {Math.round(
+                                ((product.dumpsMrpInr - product.dumpsPriceInr) /
+                                  product.dumpsMrpInr) *
+                                  100,
+                              )}
+                              % OFF
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="mt-auto space-y-2">
+                        <button
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(
+                              `/ItDumps/${product.category || "sap"}/${product.slug}`,
+                            );
+                          }}
+                        >
+                          <FaEye className="text-sm" />
+                          View Details
+                        </button>
+
+                        <button
+                          className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-lg transition-colors duration-200 ${
+                            isProductAvailable(product)
+                              ? "bg-orange-500 hover:bg-orange-600 text-white"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                          onClick={(e) => handleAddToCart(product, e)}
+                          disabled={!isProductAvailable(product)}
+                        >
+                          <FaShoppingCart className="text-sm" />
+                          {isProductAvailable(product)
+                            ? "Add to Cart"
+                            : "Unavailable"}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Show more link */}
         {relatedProducts.length > maxProducts && (
-          <div className="text-center mt-6 md:mt-8">
+          <div className="text-center mt-8 sm:mt-10">
             <button
               onClick={() => router.push("/ItDumps")}
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm md:text-base transition-colors"
+              className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               View All Products
-              <FaChevronRight className="text-xs" />
+              <FaChevronRight className="text-sm" />
             </button>
           </div>
         )}

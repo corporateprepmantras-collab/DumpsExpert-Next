@@ -14,6 +14,7 @@ import {
   User,
   LogOut,
   LayoutDashboard,
+  Search,
 } from "lucide-react";
 import useCartStore from "@/store/useCartStore";
 
@@ -34,6 +35,11 @@ export default function Navbar() {
   const [cartItemCount, setCartItemCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   // Handle scroll effect
   useEffect(() => {
@@ -96,7 +102,6 @@ export default function Navbar() {
     if (status === "authenticated" && session?.user?.email) {
       const fetchUserData = async () => {
         try {
-          // Check cache first
           const cached = sessionStorage.getItem("user_profile_cache");
 
           if (cached) {
@@ -108,14 +113,12 @@ export default function Navbar() {
             }
           }
 
-          // Fetch from API if not cached or cache is for different user
           const res = await fetch("/api/user/me");
           if (!res.ok) throw new Error("Failed to fetch user profile.");
 
           const data = await res.json();
           setUserData(data);
 
-          // Cache the user data
           sessionStorage.setItem("user_profile_cache", JSON.stringify(data));
           console.log("🌐 User profile fetched and cached");
         } catch (err) {
@@ -126,17 +129,54 @@ export default function Navbar() {
 
       fetchUserData();
     } else {
-      // Clear cache and userData when logged out
       sessionStorage.removeItem("user_profile_cache");
       setUserData(null);
     }
   }, [status, session?.user?.email]);
 
-  // Logout handler
+  // Fetch all products when search modal opens
+  useEffect(() => {
+    if (searchModalOpen && allProducts.length === 0) {
+      fetchAllProducts();
+    }
+  }, [searchModalOpen]);
+
+  // Filter products based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredProducts(allProducts);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = allProducts.filter(
+        (product) =>
+          product.title?.toLowerCase().includes(query) ||
+          product.category?.toLowerCase().includes(query) ||
+          product.examCode?.toLowerCase().includes(query) ||
+          product.sapExamCode?.toLowerCase().includes(query),
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [searchQuery, allProducts]);
+
+  const fetchAllProducts = async () => {
+    setIsLoadingProducts(true);
+    try {
+      const response = await fetch("/api/products");
+      if (response.ok) {
+        const data = await response.json();
+        setAllProducts(data.data || []);
+        setFilteredProducts(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
-      // Clear all cached data
       sessionStorage.removeItem("user_profile_cache");
       sessionStorage.removeItem("navbar_categories_cache");
       await signOut({ callbackUrl: "/" });
@@ -145,7 +185,6 @@ export default function Navbar() {
     }
   };
 
-  // Dashboard redirect logic
   const getDashboardPath = () => {
     if (!userData) return "/dashboard/guest";
     const { role, subscription } = userData;
@@ -155,7 +194,6 @@ export default function Navbar() {
     return "/dashboard/guest";
   };
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       setUserMenuOpen(false);
@@ -165,6 +203,18 @@ export default function Navbar() {
     }
     return () => document.removeEventListener("click", handleClickOutside);
   }, [userMenuOpen]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (searchModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [searchModalOpen]);
 
   return (
     <>
@@ -244,10 +294,19 @@ export default function Navbar() {
 
           {/* Desktop Right Section */}
           <div className="flex items-center gap-4">
-            {/* Search */}
+            {/* Search - Desktop Only */}
             <div className="hidden lg:block">
               <NavbarSearch hideOnLarge={false} />
             </div>
+
+            {/* Search Button - Mobile/Tablet */}
+            <button
+              onClick={() => setSearchModalOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+              aria-label="Search products"
+            >
+              <Search className="w-5 h-5 text-gray-600 group-hover:text-[#113d48] transition-colors" />
+            </button>
 
             {/* Cart with Counter */}
             <Link
@@ -261,6 +320,7 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
+
             {/* Authenticated User */}
             {status === "authenticated" ? (
               <div className="relative">
@@ -406,67 +466,24 @@ export default function Navbar() {
         {/* Mobile Nav Links */}
         <div className="flex-1 overflow-y-auto">
           <ul className="flex flex-col gap-2 px-6 py-4 font-semibold">
-            {navlinks.map((item, index) => {
-              const hasDropdown =
-                item.dropdownKey && dropdownData[item.dropdownKey]?.length > 0;
-              const isActive = activeDropdown === item.dropdownKey;
-
-              return (
-                <li key={index} className="relative">
-                  <div className="flex items-center justify-between">
-                    <Link
-                      href={item.path}
-                      className="flex-1 py-2 px-2 text-gray-700 hover:text-[#113d48] transition-colors"
-                      onClick={() => !hasDropdown && setIsOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                    {hasDropdown && (
-                      <button
-                        className="p-2 hover:bg-gray-50 rounded transition-colors"
-                        onClick={() =>
-                          setActiveDropdown(isActive ? null : item.dropdownKey)
-                        }
-                      >
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform duration-300 ${
-                            isActive ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
-                    )}
-                  </div>
-                  {hasDropdown && isActive && (
-                    <ul className="bg-gray-50 border rounded-lg shadow-lg w-full mt-1 overflow-hidden">
-                      {dropdownData[item.dropdownKey].map((sub, i) => (
-                        <li key={i}>
-                          <Link
-                            href={`/${
-                              item.dropdownKey === "ItDumps"
-                                ? "ItDumps"
-                                : "blogs"
-                            }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-white hover:text-[#113d48] transition-colors border-b last:border-b-0"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            {sub}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              );
-            })}
+            {navlinks.map((item, index) => (
+              <li key={index}>
+                <Link
+                  href={item.path}
+                  className="block py-2 px-2 text-gray-700 hover:text-[#113d48] transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
           </ul>
 
           {/* Mobile Bottom Items */}
           <div className="flex flex-col gap-3 px-6 pb-4 border-t pt-4">
-            <NavbarSearch hideOnLarge={true} />
-
             <Link
               href="/cart"
-              className="flex items-center gap-2 py-2 text-gray-700 hover:text-[#113d48] transition-colors font-semibold"
+              className="flex items-center gap-2 py-2 px-3 text-gray-700 hover:text-[#113d48] hover:bg-gray-50 rounded-lg transition-colors font-semibold"
               onClick={() => setIsOpen(false)}
             >
               <ShoppingCart className="w-5 h-5" />
@@ -511,6 +528,126 @@ export default function Navbar() {
           </div>
         </div>
       </aside>
+
+      {/* Search Modal for Mobile */}
+      {searchModalOpen && (
+        <div className="fixed inset-0 z-[10000] lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setSearchModalOpen(false)}
+          />
+
+          {/* Modal Content */}
+          <div className="absolute inset-0 bg-white flex flex-col">
+            {/* Header */}
+            <div className="flex items-center gap-3 p-4 border-b bg-gradient-to-r from-[#113d48] to-indigo-600 sticky top-0 z-10">
+              <button
+                onClick={() => setSearchModalOpen(false)}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+              <h2 className="text-lg font-bold text-white flex-1">
+                Search Products
+              </h2>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-4 border-b bg-gray-50 sticky top-[60px] z-10">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, code, or category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#113d48] focus:border-transparent outline-none"
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Showing {filteredProducts.length} of {allProducts.length}{" "}
+                products
+              </p>
+            </div>
+
+            {/* Products List */}
+            <div className="flex-1 overflow-y-auto">
+              {isLoadingProducts ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#113d48] border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading products...</p>
+                  </div>
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 px-4">
+                  <Search className="w-16 h-16 text-gray-300 mb-4" />
+                  <p className="text-gray-600 text-center font-medium">
+                    No products found
+                  </p>
+                  <p className="text-gray-400 text-sm text-center mt-2">
+                    Try adjusting your search terms
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredProducts.map((product) => (
+                    <Link
+                      key={product._id}
+                      href={`/product/${product.slug}`}
+                      onClick={() => setSearchModalOpen(false)}
+                      className="block p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex gap-3">
+                        {/* Product Image */}
+                        <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <Search className="w-6 h-6" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
+                            {product.title}
+                          </h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {product.examCode && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                {product.examCode}
+                              </span>
+                            )}
+                            {product.category && (
+                              <span className="text-xs text-gray-500">
+                                {product.category}
+                              </span>
+                            )}
+                          </div>
+                          {product.dumpsPriceInr && (
+                            <p className="text-sm font-semibold text-[#113d48] mt-1">
+                              ₹{product.dumpsPriceInr}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

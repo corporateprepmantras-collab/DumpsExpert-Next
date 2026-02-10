@@ -1,0 +1,342 @@
+/* Desktop UI Enhancements for ProductDetail Component */
+/* Enhanced responsive design for better desktop experience */
+
+/* Desktop-specific improvements */
+@media (min-width: 1024px) {
+  /* Main container improvements */
+  .product-detail-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  /* Better desktop grid layout */
+  .product-detail-grid {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  
+  /* Left column sticky positioning */
+  .product-detail-sidebar {
+    position: sticky;
+    top: 6rem;
+    height: fit-content;
+  }
+  
+  /* Enhanced image container */
+  .product-image-container {
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 1rem;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .product-image-container img {
+    max-height: 400px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Features list desktop styling */
+  .features-list {
+    padding: 2rem;
+  }
+  
+  .features-list h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+  }
+  
+  .feature-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .feature-item:last-child {
+    border-bottom: none;
+  }
+  
+  .feature-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+  }
+  
+  .feature-text {
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  
+  /* Enhanced exam information cards */
+  .exam-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .exam-info-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .exam-info-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+  
+  /* Pricing cards desktop layout */
+  .pricing-section {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .pricing-card {
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+  
+  .pricing-info {
+    flex: 1;
+  }
+  
+  .pricing-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1f2937;
+  }
+  
+  .pricing-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f97316;
+    margin-bottom: 0.5rem;
+  }
+  
+  .pricing-actions {
+    display: flex;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+  
+  .pricing-button {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    min-width: 160px;
+  }
+  
+  .pricing-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Enhanced typography for desktop */
+  .product-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1f2937;
+    margin-bottom: 2rem;
+  }
+  
+  .section-heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  /* Content sections desktop styling */
+  .content-section {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .prose-enhanced {
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+  
+  .prose-enhanced h1,
+  .prose-enhanced h2,
+  .prose-enhanced h3 {
+    color: #1f2937;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .prose-enhanced p {
+    margin-bottom: 1.5rem;
+    color: #374151;
+  }
+  
+  .prose-enhanced ul,
+  .prose-enhanced ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+  }
+  
+  .prose-enhanced li {
+    margin-bottom: 0.5rem;
+    color: #374151;
+  }
+  
+  /* Rating stars desktop enhancement */
+  .rating-stars {
+    display: flex;
+    gap: 0.25rem;
+  }
+  
+  .rating-star {
+    width: 1.25rem;
+    height: 1.25rem;
+    transition: transform 0.1s ease;
+  }
+  
+  .rating-star:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Action buttons desktop styling */
+  .action-buttons-container {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    min-width: 140px;
+  }
+  
+  .action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .action-button-primary {
+    background: #f97316;
+    color: white;
+  }
+  
+  .action-button-primary:hover {
+    background: #ea580c;
+  }
+  
+  .action-button-secondary {
+    background: #374151;
+    color: white;
+  }
+  
+  .action-button-secondary:hover {
+    background: #1f2937;
+  }
+}
+
+/* Extra large desktop (1400px+) */
+@media (min-width: 1400px) {
+  .product-detail-container {
+    max-width: 1600px;
+  }
+  
+  .product-detail-grid {
+    gap: 4rem;
+  }
+  
+  .product-title {
+    font-size: 2.75rem;
+  }
+  
+  .section-heading {
+    font-size: 1.75rem;
+  }
+  
+  .pricing-amount {
+    font-size: 1.75rem;
+  }
+  
+  .content-section {
+    padding: 3rem;
+  }
+}
+
+/* Desktop hover effects */
+@media (hover: hover) {
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+  
+  .hover-shadow:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* High-resolution displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .product-image-container img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Focus improvements for desktop keyboard navigation */
+@media (min-width: 1024px) {
+  .focus-visible:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+  
+  button:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  a:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+}
