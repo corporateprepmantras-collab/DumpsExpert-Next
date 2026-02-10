@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongo";
+import { connectMongoDB } from "@/lib/mongo";
 import Payment from "@/models/paymentSchema";
 
 export async function GET() {
@@ -11,11 +11,11 @@ export async function GET() {
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    await connectDB();
+    await connectMongoDB();
 
     const userId = session.user.id;
 
@@ -24,11 +24,11 @@ export async function GET() {
       .lean();
 
     const completed = payments.filter(
-      (p) => p.status === "completed" || p.status === "success"
+      (p) => p.status === "completed" || p.status === "success",
     ).length;
 
     const pending = payments.filter(
-      (p) => p.status === "pending" || p.status === "processing"
+      (p) => p.status === "pending" || p.status === "processing",
     ).length;
 
     return NextResponse.json({
@@ -48,7 +48,7 @@ export async function GET() {
         error: "Failed to fetch stats",
         data: { completed: 0, pending: 0, total: 0 },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

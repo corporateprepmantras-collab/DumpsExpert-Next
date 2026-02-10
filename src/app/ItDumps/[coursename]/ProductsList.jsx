@@ -43,45 +43,85 @@ export default function ProductsList({ products, coursename }) {
   // Mobile Card View
   if (isMobile) {
     return (
-      <div className="flex flex-col items-center gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {products.map((product) => (
           <div
             key={product._id}
-            className="relative w-full rounded-xl shadow-md border border-gray-200 p-4 bg-white hover:shadow-lg transition-shadow"
+            className="group relative w-full bg-gradient-to-br from-white via-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-5 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden"
           >
-            <div className="mb-3 text-center">
-              <p className="text-xs text-gray-500 mb-1">Exam Code</p>
-              <p className="text-base font-bold text-blue-700">
-                {product.sapExamCode}
-              </p>
-            </div>
-            <div className="mb-3 text-center">
-              <p className="text-xs text-gray-500 mb-1">Name</p>
-              <p className="text-sm font-medium text-gray-800 line-clamp-2">
-                {product.title}
-              </p>
-            </div>
-            <div className="mb-4 text-center space-y-1">
-              <p className="text-xs text-gray-500">Starting at:</p>
-              <p className="text-green-600 font-bold text-base">
-                {formatPrice(product.dumpsPriceInr?.trim(), "₹")}
-              </p>
-              <p className="text-xs text-gray-600">
-                {formatPrice(product.dumpsPriceUsd, "$")}
-              </p>
-              {product.dumpsMrpInr && (
-                <p className="text-xs line-through text-gray-400">
-                  {formatPrice(product.dumpsMrpInr?.trim(), "₹")}
-                </p>
-              )}
-            </div>
-            <div className="w-full">
-              <Link
-                href={`/ItDumps/${coursename}/${product.slug}`}
-                className="block w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-sm text-center py-2.5 rounded-lg shadow-sm transition-all font-semibold"
-              >
-                See Details
-              </Link>
+            {/* Decorative Background Elements */}
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-50 to-transparent rounded-bl-full opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-orange-50 to-transparent rounded-tr-full opacity-50"></div>
+
+            {/* Content */}
+            <div className="relative z-10">
+              {/* Exam Code Badge */}
+              <div className="mb-4 flex justify-center">
+                <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
+                  <svg
+                    className="w-3 h-3 mr-1.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {product.sapExamCode}
+                </div>
+              </div>
+
+              {/* Title */}
+              <div className="mb-4 text-center">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 line-clamp-2 leading-tight group-hover:text-blue-700 transition-colors">
+                  {product.title}
+                </h3>
+              </div>
+
+              {/* Pricing Section */}
+              <div className="mb-5 text-center">
+                <div className="inline-block bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-100">
+                  <p className="text-xs text-green-700 font-medium mb-1">
+                    Starting Price
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="text-lg font-bold text-green-600">
+                      {formatPrice(product.dumpsPriceInr?.trim(), "₹")}
+                    </span>
+                    <span className="text-xs text-gray-500 font-medium">
+                      {formatPrice(product.dumpsPriceUsd, "$")}
+                    </span>
+                  </div>
+                  {product.dumpsMrpInr && (
+                    <p className="text-xs line-through text-gray-400">
+                      MRP: {formatPrice(product.dumpsMrpInr?.trim(), "₹")}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* CTA Button */}
+              <div className="w-full">
+                <Link
+                  href={`/ItDumps/${coursename}/${product.slug}`}
+                  className="block w-full bg-gradient-to-r from-orange-500 via-orange-600 to-red-500 hover:from-orange-600 hover:via-red-600 hover:to-red-600 text-white text-sm font-bold text-center py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    View Details
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </span>
+                </Link>
+              </div>
             </div>
           </div>
         ))}
@@ -117,8 +157,8 @@ export default function ProductsList({ products, coursename }) {
               </td>
               <td className="px-4 py-3 text-right align-top space-y-1 whitespace-nowrap">
                 <span className="block font-bold gap-1 text-green-600 text-base">
-                  {formatPrice(product.dumpsPriceInr?.trim(), "₹")} / 
-                   {formatPrice(product.dumpsPriceUsd, "$")}
+                  {formatPrice(product.dumpsPriceInr?.trim(), "₹")} /
+                  {formatPrice(product.dumpsPriceUsd, "$")}
                 </span>
               </td>
               <td className="px-4 py-3 text-center">

@@ -1,4 +1,4 @@
-import { connectDB } from "@/lib/mongo";
+import { connectMongoDB } from "@/lib/mongo";
 import ProductList from "@/models/productListSchema";
 import { NextResponse } from "next/server";
 
@@ -14,7 +14,7 @@ export async function GET(req, { params }) {
     }
 
     // Connect to database
-    await connectDB();
+    await connectMongoDB();
 
     // Search by exam code (SAP exam code) - case insensitive
     const product = await ProductList.findOne({

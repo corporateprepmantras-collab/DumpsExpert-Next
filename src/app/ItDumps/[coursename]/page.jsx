@@ -157,28 +157,28 @@ export async function generateMetadata({ params }) {
 }
 
 /* ===========================
-   ✅ FAQ Accordion Component
+   ✅ FAQ Accordion Component - Optimized
    =========================== */
 function FAQSection({ faqs }) {
   if (!faqs || faqs.length === 0) return null;
 
   return (
-    <div className="my-8 shadow-md rounded-xl border border-gray-200 p-5 md:p-6 bg-white">
-      <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-5 md:mb-6 text-center">
+    <div className="my-5 sm:my-6 md:my-7 shadow-md rounded-xl border border-gray-200 p-3.5 sm:p-4 md:p-5 bg-white">
+      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3.5 sm:mb-4 md:mb-5 text-center">
         Frequently Asked Questions
       </h2>
-      <div className="space-y-3 md:space-y-4">
+      <div className="space-y-2 sm:space-y-2.5 md:space-y-3">
         {faqs.map((faq, index) => (
           <details
             key={faq._id || index}
-            className="group border border-gray-200 rounded-lg md:rounded-xl overflow-hidden transition-all"
+            className="group border border-gray-200 rounded-lg md:rounded-xl overflow-hidden transition-all hover:shadow-sm"
           >
-            <summary className="cursor-pointer p-3 md:p-4 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center">
-              <span className="font-semibold text-gray-800 pr-4 text-sm md:text-base">
+            <summary className="cursor-pointer p-3 sm:p-3.5 md:p-4 bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center gap-2.5 sm:gap-3">
+              <span className="font-semibold text-gray-800 text-[13px] sm:text-sm md:text-base leading-snug">
                 {faq.question}
               </span>
               <svg
-                className="w-5 h-5 text-gray-600 transition-transform group-open:rotate-180 flex-shrink-0"
+                className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-transform group-open:rotate-180 flex-shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -191,8 +191,8 @@ function FAQSection({ faqs }) {
                 />
               </svg>
             </summary>
-            <div className="p-3 md:p-4 bg-white border-t border-gray-200">
-              <p className="text-gray-700 leading-relaxed text-sm md:text-base">
+            <div className="p-3 sm:p-3.5 md:p-4 bg-white border-t border-gray-200">
+              <p className="text-gray-700 leading-relaxed text-[13px] sm:text-sm md:text-base">
                 {faq.answer}
               </p>
             </div>
@@ -204,7 +204,7 @@ function FAQSection({ faqs }) {
 }
 
 /* ===========================
-   ✅ Main Page Component
+   ✅ Main Page Component - Fully Optimized
    =========================== */
 export default async function CategoryPage({ params, searchParams }) {
   const { coursename } = params;
@@ -233,61 +233,64 @@ export default async function CategoryPage({ params, searchParams }) {
   });
 
   return (
-    <div className="min-h-screen pt-16 md:pt-20 pb-8 md:pb-10 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-3 md:px-6 lg:px-8 mb-4">
+    <div className="min-h-screen pt-14 sm:pt-16 md:pt-20 pb-5 sm:pb-6 md:pb-8 bg-gray-50">
+      {/* Breadcrumbs - Compact */}
+      <div className="max-w-6xl mx-auto px-3.5 sm:px-4 md:px-6 lg:px-8 mb-2.5 sm:mb-3 md:mb-4">
         <Breadcrumbs />
       </div>
 
-      <div className="w-full max-w-6xl mx-auto px-3 md:px-6 lg:px-8">
-        {/* ✅ Category Info */}
+      <div className="w-full max-w-6xl mx-auto px-3.5 sm:px-4 md:px-6 lg:px-8">
+        {/* ✅ Category Info - Tighter Spacing */}
         {category && (
-          <div className="mb-6 shadow-md rounded-xl border border-gray-200 p-5 md:p-6 bg-white">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+          <div className="mb-4 sm:mb-5 md:mb-6 shadow-md rounded-xl border border-gray-200 p-3.5 sm:p-4 md:p-5 bg-white">
+            <h1 className="text-[19px] sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-2.5 md:mb-3 leading-tight">
               {category.name.toUpperCase()} Exam Dumps [2025]
             </h1>
             {category.description && (
               <div
-                className="prose prose-sm md:prose-base max-w-none text-gray-700 mb-3"
+                className="prose prose-sm sm:prose-base max-w-none text-gray-700 [&>*]:mb-1.5 [&>*]:sm:mb-2 [&>*:last-child]:mb-0 [&>p]:text-[13px] [&>p]:sm:text-sm [&>p]:md:text-base [&>p]:leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: category.description }}
               />
             )}
           </div>
         )}
 
-        {/* ✅ No category fallback */}
+        {/* ✅ No category fallback - Tighter */}
         {!category && (
-          <div className="mb-6 shadow-md rounded-xl border border-gray-200 p-5 md:p-6 bg-white">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+          <div className="mb-4 sm:mb-5 md:mb-6 shadow-md rounded-xl border border-gray-200 p-3.5 sm:p-4 md:p-5 bg-white">
+            <h1 className="text-[19px] sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-2.5 leading-tight">
               {coursename.toUpperCase()} Exam Dumps [2025]
             </h1>
-            <p className="text-gray-700 text-sm md:text-base">
+            <p className="text-gray-700 text-[13px] sm:text-sm md:text-base leading-relaxed">
               Explore verified {coursename.toUpperCase()} exam dumps and
               practice tests.
             </p>
           </div>
         )}
 
-        {/* ✅ Search + Results */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4 mb-5">
-          <p className="text-xs md:text-sm text-gray-600">
-            Showing {sortedProducts.length} results
+        {/* ✅ Search + Results - Compact & Responsive */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 sm:gap-3 md:gap-4 mb-3.5 sm:mb-4 md:mb-5">
+          <p className="text-[11px] sm:text-xs md:text-sm text-gray-600 order-2 sm:order-1 font-medium">
+            Showing {sortedProducts.length} result
+            {sortedProducts.length !== 1 ? "s" : ""}
             {searchTerm && ` for "${searchTerm}"`}
           </p>
 
           <form
             method="get"
-            className="flex items-center border border-gray-300 rounded-lg shadow-sm w-full sm:w-auto sm:min-w-[320px] md:min-w-[360px] bg-white overflow-hidden"
+            className="flex items-center border border-gray-300 rounded-lg shadow-sm w-full sm:w-auto sm:min-w-[260px] md:min-w-[300px] lg:min-w-[340px] bg-white overflow-hidden order-1 sm:order-2"
           >
             <input
               type="text"
               name="q"
               defaultValue={searchTerm}
               placeholder="Search Exam Code or Name"
-              className="w-full px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 sm:px-3.5 md:px-4 py-2 sm:py-2.5 text-[13px] sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
             />
             <button
               type="submit"
-              className="px-3 md:px-4 py-2 md:py-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-sm md:text-base transition-colors"
+              className="px-3 sm:px-3.5 md:px-4 py-2 sm:py-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-base sm:text-lg transition-colors flex-shrink-0"
+              aria-label="Search"
             >
               🔍
             </button>
@@ -299,24 +302,24 @@ export default async function CategoryPage({ params, searchParams }) {
           <>
             <ProductsList products={sortedProducts} coursename={coursename} />
 
-            {/* ✅ Bottom Category Description */}
+            {/* ✅ Bottom Category Description - Compact */}
             {category && category.descriptionBelow && (
-              <div className="my-8 shadow-md rounded-xl border border-gray-200 p-5 md:p-6 bg-white">
+              <div className="my-5 sm:my-6 md:my-7 shadow-md rounded-xl border border-gray-200 p-3.5 sm:p-4 md:p-5 bg-white">
                 {category.image && (
-                  <div className="relative w-full h-48 md:h-64 lg:h-72 mb-4">
+                  <div className="relative w-full h-36 sm:h-44 md:h-56 lg:h-64 mb-3 sm:mb-4">
                     <ImageWithSkeleton
                       src={category.image}
                       alt={category.name}
                       fill
                       className="object-contain rounded-lg shadow"
-                      sizes="(max-width: 768px) 100vw, 800px"
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 800px"
                       quality={75}
-                      skeletonClassName="rounded-xl"
+                      skeletonClassName="rounded-lg md:rounded-xl"
                     />
                   </div>
                 )}
                 <div
-                  className="prose prose-sm md:prose-base max-w-none text-gray-700"
+                  className="prose prose-sm sm:prose-base max-w-none text-gray-700 [&>*]:mb-2 [&>*]:sm:mb-2.5 [&>*:last-child]:mb-0 [&>h1]:text-lg [&>h1]:sm:text-xl [&>h1]:md:text-2xl [&>h2]:text-base [&>h2]:sm:text-lg [&>h2]:md:text-xl [&>h3]:text-sm [&>h3]:sm:text-base [&>h3]:md:text-lg [&>p]:text-[13px] [&>p]:sm:text-sm [&>p]:md:text-base [&>p]:leading-relaxed"
                   dangerouslySetInnerHTML={{
                     __html: category.descriptionBelow,
                   }}
@@ -330,17 +333,32 @@ export default async function CategoryPage({ params, searchParams }) {
             )}
           </>
         ) : (
-          <div className="text-center py-16 bg-white rounded-xl shadow-md border border-gray-200">
-            <p className="text-gray-600 text-base md:text-lg font-semibold mb-2">
-              {searchTerm
-                ? `No products found for "${searchTerm}"`
-                : "No products available for this category."}
-            </p>
-            <p className="text-gray-400 text-xs md:text-sm">
-              {searchTerm
-                ? "Try a different search term"
-                : "Please check back later or try a different category."}
-            </p>
+          <div className="text-center py-10 sm:py-12 md:py-14 bg-white rounded-xl shadow-md border border-gray-200 px-4">
+            <div className="max-w-md mx-auto">
+              <svg
+                className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-gray-600 text-base sm:text-lg md:text-xl font-semibold mb-1.5 sm:mb-2">
+                {searchTerm
+                  ? `No products found for "${searchTerm}"`
+                  : "No products available"}
+              </p>
+              <p className="text-gray-400 text-xs sm:text-sm md:text-base">
+                {searchTerm
+                  ? "Try a different search term"
+                  : "Please check back later or try a different category"}
+              </p>
+            </div>
           </div>
         )}
       </div>

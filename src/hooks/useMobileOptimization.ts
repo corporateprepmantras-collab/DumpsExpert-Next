@@ -64,17 +64,25 @@ export const useSwipe = (
 
   const handleTouchStart = useCallback((e: TouchEvent | React.TouchEvent) => {
     touchEnd.current = null;
-    touchStart.current = {
-      x: "touches" in e ? e.touches[0].clientX : e.changedTouches[0].clientX,
-      y: "touches" in e ? e.touches[0].clientY : e.changedTouches[0].clientY,
-    };
+    const touch =
+      (e as TouchEvent).touches?.[0] || (e as TouchEvent).changedTouches?.[0];
+    if (touch) {
+      touchStart.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+      };
+    }
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent | React.TouchEvent) => {
-    touchEnd.current = {
-      x: "touches" in e ? e.touches[0].clientX : e.changedTouches[0].clientX,
-      y: "touches" in e ? e.touches[0].clientY : e.changedTouches[0].clientY,
-    };
+    const touch =
+      (e as TouchEvent).touches?.[0] || (e as TouchEvent).changedTouches?.[0];
+    if (touch) {
+      touchEnd.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+      };
+    }
   }, []);
 
   const handleTouchEnd = useCallback(() => {

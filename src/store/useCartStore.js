@@ -303,4 +303,6 @@ export const subscribeToTotal = (currency, listener) => {
   );
 };
 
+// ✅ Export useCartStore as both named and default export
+export { useCartStore };
 export default useCartStore;
