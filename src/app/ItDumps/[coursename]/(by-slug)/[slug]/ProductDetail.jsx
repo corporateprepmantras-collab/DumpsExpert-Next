@@ -293,8 +293,6 @@ export default function ProductDetailsPage() {
     return examPrices.priceInr > 0 || examPrices.priceUsd > 0;
   }, [examPrices]);
 
-  // Update the handleAddToCart function in your ProductDetailsPage component
-
   const handleAddToCart = (type = "regular") => {
     if (!product) return;
 
@@ -536,7 +534,7 @@ export default function ProductDetailsPage() {
       <div className="container mx-auto px-2 sm:px-3 pt-0.5 pb-1">
         <Breadcrumbs />
       </div>
-      {/* //updated ui */}
+
       {/* Product Unavailability Alert */}
       {!productAvailable && product && (
         <div className="container mx-auto px-2 sm:px-3 mb-1.5 sm:mb-2">
@@ -558,7 +556,7 @@ export default function ProductDetailsPage() {
       )}
 
       <div className="container mx-auto px-2 sm:px-3 flex flex-col lg:flex-row gap-2 lg:gap-3">
-        {/* Left Column - Sticky */}
+        {/* Left Column - Sticky on Desktop */}
         <div className="w-full lg:w-[35%]">
           <div className="lg:sticky lg:top-20">
             {/* Image */}
@@ -600,7 +598,7 @@ export default function ProductDetailsPage() {
             {product.title}
           </h1>
 
-          {/* UPDATED: Compact Exam Information Card */}
+          {/* Compact Exam Information Card - UPDATED for Mobile */}
           {(product.examCode ||
             product.examName ||
             product.totalQuestions ||
@@ -630,7 +628,7 @@ export default function ProductDetailsPage() {
                     <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
                       Exam Name
                     </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900 truncate">
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900 break-words whitespace-normal leading-tight">
                       {product.examName}
                     </p>
                   </div>
@@ -683,7 +681,7 @@ export default function ProductDetailsPage() {
                 </div>
               </div>
               {avgRating && avgRating > 0 && (
-                <div className="flex items-center gap-0.5 flex-wrap">
+                <div className="flex items-center gap-0.5 flex-wrap mt-1.5">
                   {[1, 2, 3, 4, 5].map((v) => (
                     <FaStar
                       key={v}
@@ -702,50 +700,52 @@ export default function ProductDetailsPage() {
             </div>
           )}
 
-          {/* Pricing Sections - Clean Table Layout */}
+          {/* Pricing Sections - UPDATED for Mobile Responsiveness */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="divide-y divide-gray-200">
               {/* Online Exam Questions */}
               {hasOnlineExam && !isLoadingExams && (
-                <div className="flex items-center px-6 py-3.5">
-                  {/* Product Name */}
-                  <div className="w-64 flex-shrink-0">
-                    <h3 className="text-[15px] font-normal text-gray-900">
-                      Online Exam Questions
-                    </h3>
-                  </div>
+                <div className="px-2 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-3.5">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-0">
+                    {/* Product Name */}
+                    <div className="lg:w-64 lg:flex-shrink-0">
+                      <h3 className="text-xs sm:text-sm lg:text-[15px] font-normal text-gray-900">
+                        Online Exam Questions
+                      </h3>
+                    </div>
 
-                  {/* Pricing */}
-                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
-                    <span className="text-orange-500">
-                      ₹{onlineExamPrices.priceInr || "3499"},
-                    </span>
-                    <span className="text-gray-600">
-                      (${onlineExamPrices.priceUsd || "47.28"})
-                    </span>
-                    <span className="line-through text-gray-500">
-                      ₹{onlineExamPrices.mrpInr || "6000"}
-                    </span>
-                  </div>
+                    {/* Pricing */}
+                    <div className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm lg:text-[15px] lg:mr-8">
+                      <span className="text-orange-500">
+                        ₹{onlineExamPrices.priceInr || "3499"},
+                      </span>
+                      <span className="text-gray-600">
+                        (${onlineExamPrices.priceUsd || "47.28"})
+                      </span>
+                      <span className="line-through text-gray-500">
+                        ₹{onlineExamPrices.mrpInr || "6000"}
+                      </span>
+                    </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 ml-auto">
-                    <button
-                      onClick={() =>
-                        router.push(`/exam/sample-instruction/${slug}`)
-                      }
-                      className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
-                    >
-                      <FaEye size={16} />
-                      TRY ONLINE EXAM
-                    </button>
-                    <button
-                      onClick={() => handleAddToCart("online")}
-                      className="flex items-center gap-2 px-5 py-2 bg-[#FA8B31] hover:bg-[#FA8B31] text-gray-900 font-bold text-xs uppercase rounded transition-colors whitespace-nowrap"
-                    >
-                      <FaShoppingCart size={16} />
-                      ADD TO CART
-                    </button>
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto">
+                      <button
+                        onClick={() =>
+                          router.push(`/exam/sample-instruction/${slug}`)
+                        }
+                        className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap"
+                      >
+                        <FaEye size={14} className="sm:w-4 sm:h-4" />
+                        TRY ONLINE EXAM
+                      </button>
+                      <button
+                        onClick={() => handleAddToCart("online")}
+                        className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 bg-[#FA8B31] hover:bg-[#e87b21] text-gray-900 font-bold text-[10px] sm:text-xs uppercase rounded transition-colors whitespace-nowrap"
+                      >
+                        <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
+                        ADD TO CART
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -753,68 +753,70 @@ export default function ProductDetailsPage() {
               {/* PDF Downloadable Format */}
               {pdfPrices && (pdfPrices.priceInr || pdfPrices.priceUsd) && (
                 <div
-                  className={`flex items-center px-6 py-3.5 ${
+                  className={`px-2 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-3.5 ${
                     !productAvailable ? "bg-gray-50 opacity-70" : ""
                   }`}
                 >
-                  {/* Product Name */}
-                  <div className="w-64 flex-shrink-0">
-                    <h3 className="text-[15px] font-normal text-gray-900">
-                      PDF Downloadable Format
-                    </h3>
-                    {!productAvailable && (
-                      <span className="text-[10px] text-red-600">
-                        (Currently Unavailable)
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-0">
+                    {/* Product Name */}
+                    <div className="lg:w-64 lg:flex-shrink-0">
+                      <h3 className="text-xs sm:text-sm lg:text-[15px] font-normal text-gray-900">
+                        PDF Downloadable Format
+                      </h3>
+                      {!productAvailable && (
+                        <span className="text-[9px] sm:text-[10px] text-red-600">
+                          (Currently Unavailable)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Pricing */}
+                    <div className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm lg:text-[15px] lg:mr-8">
+                      <span className="text-orange-500">
+                        ₹{pdfPrices.priceInr || "4999"},
                       </span>
-                    )}
-                  </div>
+                      <span className="text-gray-600">
+                        (${pdfPrices.priceUsd || "67.55"})
+                      </span>
+                      <span className="line-through text-gray-500">
+                        ₹{pdfPrices.mrpInr || "7000"}
+                      </span>
+                    </div>
 
-                  {/* Pricing */}
-                  <div className="flex items-center gap-1.5 text-[15px] mr-8">
-                    <span className="text-orange-500">
-                      ₹{pdfPrices.priceInr || "4999"},
-                    </span>
-                    <span className="text-gray-600">
-                      (${pdfPrices.priceUsd || "67.55"})
-                    </span>
-                    <span className="line-through text-gray-500">
-                      ₹{pdfPrices.mrpInr || "7000"}
-                    </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 ml-auto">
-                    {product.samplePdfUrl && (
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto">
+                      {product.samplePdfUrl && (
+                        <button
+                          onClick={() =>
+                            handleDownload(
+                              product.samplePdfUrl,
+                              `${product.title}-Sample.pdf`,
+                            )
+                          }
+                          className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap"
+                        >
+                          <FaDownload size={14} className="sm:w-4 sm:h-4" />
+                          DOWNLOAD SAMPLE
+                        </button>
+                      )}
                       <button
-                        onClick={() =>
-                          handleDownload(
-                            product.samplePdfUrl,
-                            `${product.title}-Sample.pdf`,
-                          )
+                        onClick={() => handleAddToCart("regular")}
+                        disabled={!productAvailable}
+                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold ${
+                          productAvailable
+                            ? "bg-[#FA8B31] hover:bg-[#e87b21] text-gray-900 cursor-pointer"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                        title={
+                          !productAvailable
+                            ? "Product unavailable - PDF not found"
+                            : "Add to cart"
                         }
-                        className="flex items-center gap-2 px-5 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs uppercase transition-colors whitespace-nowrap"
                       >
-                        <FaDownload size={16} />
-                        DOWNLOAD SAMPLE
+                        <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
+                        {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleAddToCart("regular")}
-                      disabled={!productAvailable}
-                      className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
-                        productAvailable
-                          ? "bg-[#FA8B31] hover:bg-[#FA8B31] text-gray-900 cursor-pointer"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
-                      title={
-                        !productAvailable
-                          ? "Product unavailable - PDF not found"
-                          : "Add to cart"
-                      }
-                    >
-                      <FaShoppingCart size={16} />
-                      {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
-                    </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -824,54 +826,56 @@ export default function ProductDetailsPage() {
                 comboPrices &&
                 (comboPrices.priceInr || comboPrices.priceUsd) && (
                   <div
-                    className={`flex items-center px-6 py-3.5 ${
+                    className={`px-2 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-3.5 ${
                       !productAvailable ? "bg-gray-50 opacity-70" : ""
                     }`}
                   >
-                    {/* Product Name */}
-                    <div className="w-64 flex-shrink-0">
-                      <h3 className="text-[15px] font-normal text-gray-900">
-                        PDF + Online Exam
-                      </h3>
-                      {!productAvailable && (
-                        <span className="text-[10px] text-red-600">
-                          (Currently Unavailable)
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-0">
+                      {/* Product Name */}
+                      <div className="lg:w-64 lg:flex-shrink-0">
+                        <h3 className="text-xs sm:text-sm lg:text-[15px] font-normal text-gray-900">
+                          PDF + Online Exam
+                        </h3>
+                        {!productAvailable && (
+                          <span className="text-[9px] sm:text-[10px] text-red-600">
+                            (Currently Unavailable)
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm lg:text-[15px] lg:mr-8">
+                        <span className="text-orange-500">
+                          ₹{comboPrices.priceInr || "6998"},
                         </span>
-                      )}
-                    </div>
+                        <span className="text-gray-600">
+                          (${comboPrices.priceUsd || "94.57"})
+                        </span>
+                        <span className="line-through text-gray-500">
+                          ₹{comboPrices.mrpInr || "8498"}
+                        </span>
+                      </div>
 
-                    {/* Pricing */}
-                    <div className="flex items-center gap-1.5 text-[15px] mr-8">
-                      <span className="text-orange-500">
-                        ₹{comboPrices.priceInr || "6998"},
-                      </span>
-                      <span className="text-gray-600">
-                        (${comboPrices.priceUsd || "94.57"})
-                      </span>
-                      <span className="line-through text-gray-500">
-                        ₹{comboPrices.mrpInr || "8498"}
-                      </span>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 ml-auto">
-                      <button
-                        onClick={() => handleAddToCart("combo")}
-                        disabled={!productAvailable}
-                        className={`flex items-center gap-2 px-5 py-2 rounded text-xs uppercase transition-colors whitespace-nowrap font-bold ${
-                          productAvailable
-                            ? "bg-[#FA8B31] hover:bg-[#FA8B31] text-gray-900 cursor-pointer"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
-                        title={
-                          !productAvailable
-                            ? "Product unavailable - PDF not found"
-                            : "Add to cart"
-                        }
-                      >
-                        <FaShoppingCart size={16} />
-                        {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto">
+                        <button
+                          onClick={() => handleAddToCart("combo")}
+                          disabled={!productAvailable}
+                          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold ${
+                            productAvailable
+                              ? "bg-[#FA8B31] hover:bg-[#e87b21] text-gray-900 cursor-pointer"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                          title={
+                            !productAvailable
+                              ? "Product unavailable - PDF not found"
+                              : "Add to cart"
+                          }
+                        >
+                          <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
+                          {productAvailable ? "ADD TO CART" : "UNAVAILABLE"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1205,7 +1209,7 @@ function ReviewsSection({
 
         {/* Review Form */}
         <div className="order-1 lg:order-2">
-          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 shadow-lg border border-blue-100 sticky top-16 sm:top-20">
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 shadow-lg border border-blue-100 lg:sticky lg:top-16 sm:lg:top-20">
             <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-800 mb-1">
               Write Your Review
             </h3>

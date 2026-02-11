@@ -72,6 +72,13 @@ export default function ExamDumpsSlider({ products = [] }) {
     };
   }, [isMobile]);
 
+  // Clear auto slide on interaction
+  const clearAutoSlide = useCallback(() => {
+    if (autoSlideRef.current) {
+      clearInterval(autoSlideRef.current);
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -103,13 +110,6 @@ export default function ExamDumpsSlider({ products = [] }) {
       }
     };
   }, [products.length, visibleCards, isDragging, isMobile]);
-
-  // Clear auto slide on interaction
-  const clearAutoSlide = useCallback(() => {
-    if (autoSlideRef.current) {
-      clearInterval(autoSlideRef.current);
-    }
-  }, []);
 
   // Reset auto slide after user interaction ends
   const resetAutoSlide = useCallback(() => {
