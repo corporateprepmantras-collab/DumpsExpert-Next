@@ -30,9 +30,23 @@ const toNum = (val) => {
   return isNaN(num) ? 0 : num;
 };
 
+const normalizePdfUrl = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) return String(value[0] ?? "").trim();
+  if (typeof value === "object" && "url" in value) {
+    const candidate = value.url;
+    return typeof candidate === "string"
+      ? candidate.trim()
+      : String(candidate ?? "").trim();
+  }
+  return String(value ?? "").trim();
+};
+
 // Helper function to check if product is available
 const isProductAvailable = (product) => {
-  return product?.mainPdfUrl && product.mainPdfUrl.trim() !== "";
+  if (!product) return false;
+  return normalizePdfUrl(product.mainPdfUrl).length > 0;
 };
 
 // Helper function to extract exam prices
@@ -319,6 +333,8 @@ export default function ProductDetailsPage() {
     }
 
     const examDetails = exams.length > 0 ? exams[0] : {};
+    const mainPdfUrl = normalizePdfUrl(product.mainPdfUrl);
+    const samplePdfUrl = normalizePdfUrl(product.samplePdfUrl);
 
     let item = {
       _id: product._id,
@@ -327,8 +343,8 @@ export default function ProductDetailsPage() {
       type: type,
       title: product.title,
       name: product.title,
-      mainPdfUrl: product.mainPdfUrl || "",
-      samplePdfUrl: product.samplePdfUrl || "",
+      mainPdfUrl,
+      samplePdfUrl,
       dumpsPriceInr: toNum(product.dumpsPriceInr),
       dumpsPriceUsd: toNum(product.dumpsPriceUsd),
       dumpsMrpInr: toNum(product.dumpsMrpInr),
@@ -457,12 +473,13 @@ export default function ProductDetailsPage() {
   }, [slug]);
 
   const handleDownload = (url, filename) => {
-    if (!url) {
+    const resolvedUrl = normalizePdfUrl(url);
+    if (!resolvedUrl) {
       toast.error("Download link not available");
       return;
     }
     const link = document.createElement("a");
-    link.href = url;
+    link.href = resolvedUrl;
     link.download = filename;
     link.target = "_blank";
     link.click();
@@ -983,8 +1000,11 @@ function ReviewsSection({
   // Calculate rating statistics
   const ratingStats = publishedReviews.reduce(
     (acc, r) => {
-      acc[r.rating] = (acc[r.rating] || 0) + 1;
-      acc.total += r.rating;
+      const ratingValue = Number(r.rating);
+      if (!Number.isFinite(ratingValue)) return acc;
+      const clamped = Math.min(5, Math.max(1, Math.round(ratingValue)));
+      acc[clamped] = (acc[clamped] || 0) + 1;
+      acc.total += ratingValue;
       acc.count += 1;
       return acc;
     },
@@ -995,6 +1015,18 @@ function ReviewsSection({
     ratingStats.count > 0
       ? (ratingStats.total / ratingStats.count).toFixed(1)
       : 0;
+
+  const formatReviewDate = (value) => {
+    if (!value) return "Recently";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? "Recently"
+      : date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6 pt-8 sm:pt-10 md:pt-12">
@@ -1143,10 +1175,7 @@ function ReviewsSection({
                     </div>
                     <div className="text-right flex-shrink-0">
                       <span className="text-[9px] text-gray-500 bg-gray-100 px-1 py-0.5 rounded-full whitespace-nowrap">
-                        {new Date(r.createdAt || r.date).toLocaleDateString(
-                          "en-US",
-                          { month: "short", day: "numeric", year: "numeric" },
-                        )}
+                        {formatReviewDate(r.createdAt || r.date)}
                       </span>
                     </div>
                   </div>
@@ -1300,6 +1329,22 @@ function ReviewsSection({
 }
 
 function FAQSection({ faqs, activeIndex, toggleAccordion }) {
+  const normalizedFaqs = (() => {
+    if (Array.isArray(faqs)) return faqs;
+    if (typeof faqs === "string") {
+      try {
+        const parsed = JSON.parse(faqs);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        console.warn("FAQ parse error:", err);
+        return [];
+      }
+    }
+    return [];
+  })();
+
+  if (normalizedFaqs.length === 0) return null;
+
   return (
     <div className="py-4 sm:py-6">
       <h2 className="text-sm sm:text-base font-bold mb-3 sm:mb-4 text-center flex items-center justify-center gap-1.5">
@@ -1307,11 +1352,11 @@ function FAQSection({ faqs, activeIndex, toggleAccordion }) {
         Questions (FAQs)
       </h2>
       <div className="space-y-2 sm:space-y-3">
-        {faqs.map((faq, idx) => {
+        {normalizedFaqs.map((faq, idx) => {
           const isOpen = activeIndex === idx;
           return (
             <div
-              key={idx}
+              key={faq?._id || idx}
               className="border border-gray-200 rounded-lg shadow-sm bg-white"
             >
               <button
@@ -1319,7 +1364,7 @@ function FAQSection({ faqs, activeIndex, toggleAccordion }) {
                 className="w-full flex justify-between items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 text-left group hover:bg-gray-50 gap-1.5"
               >
                 <span className="font-medium text-gray-800 text-[11px] sm:text-xs text-left">
-                  {faq.question}
+                  {faq?.question || "Frequently asked question"}
                 </span>
                 <FaChevronRight
                   className={`text-gray-600 transform transition-transform text-[10px] flex-shrink-0 ${
@@ -1329,7 +1374,7 @@ function FAQSection({ faqs, activeIndex, toggleAccordion }) {
               </button>
               {isOpen && (
                 <div className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-gray-600 text-[10px] sm:text-xs">
-                  <p>{faq.answer}</p>
+                  <p>{faq?.answer || "Answer not available."}</p>
                 </div>
               )}
             </div>

@@ -30,10 +30,23 @@ const toNum = (val) => {
   return isNaN(num) ? 0 : num;
 };
 
+const normalizePdfUrl = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) return String(value[0] ?? "").trim();
+  if (typeof value === "object" && "url" in value) {
+    const candidate = value.url;
+    return typeof candidate === "string"
+      ? candidate.trim()
+      : String(candidate ?? "").trim();
+  }
+  return String(value ?? "").trim();
+};
+
 // Helper function to check if product is available
 const isProductAvailable = (product) => {
   if (!product) return false;
-  return product.mainPdfUrl && product.mainPdfUrl.trim() !== "";
+  return normalizePdfUrl(product.mainPdfUrl).length > 0;
 };
 
 export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
@@ -73,8 +86,8 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
       type: "regular",
       title: `${product.title} [PDF]`,
       name: `${product.title} [PDF]`,
-      mainPdfUrl: product.mainPdfUrl || "",
-      samplePdfUrl: product.samplePdfUrl || "",
+      mainPdfUrl: normalizePdfUrl(product.mainPdfUrl),
+      samplePdfUrl: normalizePdfUrl(product.samplePdfUrl),
       dumpsPriceInr: toNum(product.dumpsPriceInr),
       dumpsPriceUsd: toNum(product.dumpsPriceUsd),
       dumpsMrpInr: toNum(product.dumpsMrpInr),

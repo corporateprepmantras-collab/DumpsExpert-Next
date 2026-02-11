@@ -4,6 +4,19 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
+const resolvePdfUrl = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) return String(value[0] ?? "").trim();
+  if (typeof value === "object" && "url" in value) {
+    const candidate = value.url;
+    return typeof candidate === "string"
+      ? candidate.trim()
+      : String(candidate ?? "").trim();
+  }
+  return String(value ?? "").trim();
+};
+
 const PdfCoursesClient = () => {
   const [pdfCourses, setPdfCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +61,8 @@ const PdfCoursesClient = () => {
             if (purchaseType !== "regular" && purchaseType !== "combo")
               continue;
 
-            if (!course.mainPdfUrl || course.mainPdfUrl.trim() === "") continue;
+            const pdfUrl = resolvePdfUrl(course.mainPdfUrl);
+            if (!pdfUrl) continue;
 
             const expiryInfo = calculateDaysRemaining(order.purchaseDate);
 
@@ -66,7 +80,7 @@ const PdfCoursesClient = () => {
                 purchaseType: purchaseType,
                 category: course.category || "",
                 imageUrl: course.imageUrl || "",
-                downloadUrl: course.mainPdfUrl,
+                downloadUrl: pdfUrl,
                 ...expiryInfo,
               });
             }
@@ -96,7 +110,7 @@ const PdfCoursesClient = () => {
         : `${filename}.pdf`;
 
       const proxyUrl = `/api/download-pdf?url=${encodeURIComponent(
-        url
+        url,
       )}&filename=${encodeURIComponent(cleanFilename)}`;
 
       const link = document.createElement("a");
@@ -235,8 +249,8 @@ const PdfCoursesClient = () => {
                   course.isExpired
                     ? "bg-gradient-to-r from-red-50 to-gray-50 border-red-200 opacity-75"
                     : course.isExpiringSoon
-                    ? "bg-gradient-to-r from-orange-50 to-white border-orange-200"
-                    : "bg-gradient-to-r from-green-50 to-white border-gray-200"
+                      ? "bg-gradient-to-r from-orange-50 to-white border-orange-200"
+                      : "bg-gradient-to-r from-green-50 to-white border-gray-200"
                 }`}
               >
                 <div className="flex flex-col gap-4">
@@ -275,7 +289,7 @@ const PdfCoursesClient = () => {
                           </svg>
                           <span className="hidden sm:inline">Purchased: </span>
                           {new Date(course.purchaseDate).toLocaleDateString(
-                            "en-GB"
+                            "en-GB",
                           )}
                         </span>
                         <span className="bg-blue-100 text-blue-800 px-2 sm:px-3 py-1 rounded-full font-medium text-xs">
