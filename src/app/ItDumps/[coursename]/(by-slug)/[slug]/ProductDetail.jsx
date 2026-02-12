@@ -531,7 +531,7 @@ export default function ProductDetailsPage() {
 
   return (
     <div className="min-h-screen pt-12 sm:pt-14 lg:pt-16 bg-gray-50 text-gray-800">
-      <div className="container mx-auto px-2 sm:px-3 pt-0.5 pb-1">
+      <div className="container mx-auto px-2  pt-2 sm:pt-2 sm:px-3  pb-1">
         <Breadcrumbs />
       </div>
 
@@ -560,12 +560,18 @@ export default function ProductDetailsPage() {
         <div className="w-full lg:w-[35%]">
           <div className="lg:sticky lg:top-20">
             {/* Image */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 shadow-md">
-              <div className="bg-gray-50 rounded-lg border border-gray-100 p-1.5">
+            <div className="bg-white rounded-lg p-0 sm:p-0 shadow-none">
+              <div className="rounded-lg p-0 sm:p-0">
                 <img
                   src={product.imageUrl}
                   alt={product.title}
-                  className="w-full rounded-lg object-contain h-[220px] sm:h-[280px] lg:h-[260px]"
+                  className="w-full rounded-lg object-contain h-[220px] sm:h-[280px] lg:h-[400px] xl:h-[480px] 2xl:h-[520px] transition-all duration-300"
+                  style={{
+                    border: "none",
+                    boxShadow: "none",
+                    background: "none",
+                    maxHeight: "70vh",
+                  }}
                 />
               </div>
             </div>
@@ -598,105 +604,110 @@ export default function ProductDetailsPage() {
             {product.title}
           </h1>
 
-          {/* Compact Exam Information Card - UPDATED for Mobile */}
+          {/* Exam Information Table - COMPACT VERSION (50% height reduction) */}
           {(product.examCode ||
             product.examName ||
             product.totalQuestions ||
             product.passingScore ||
             product.duration ||
             product.examLastUpdated) && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-md p-1.5 sm:p-2">
-              <h3 className="font-semibold text-[10px] sm:text-[11px] mb-1 sm:mb-1.5 text-blue-900 flex items-center gap-1">
-                <FaFileAlt className="text-blue-600 text-[9px] sm:text-[10px]" />
-                Exam Information
-              </h3>
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <table className="w-full border-collapse">
+                <tbody className="divide-y divide-gray-200">
+                  {product.examCode && (
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-700 bg-gray-50 w-[35%] sm:w-[30%]">
+                        Exam Code
+                      </td>
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs text-gray-900">
+                        {product.examCode}
+                      </td>
+                    </tr>
+                  )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
-                {product.examCode && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Exam Code
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.examCode}
-                    </p>
-                  </div>
-                )}
+                  {product.examName && (
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-700 bg-gray-50 w-[35%] sm:w-[30%]">
+                        Exam Name
+                      </td>
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs text-gray-900 break-words">
+                        {product.examName}
+                      </td>
+                    </tr>
+                  )}
 
-                {product.examName && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100 col-span-2 sm:col-span-1">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Exam Name
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900 break-words whitespace-normal leading-tight">
-                      {product.examName}
-                    </p>
-                  </div>
-                )}
+                  {product.totalQuestions && (
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-700 bg-gray-50 w-[35%] sm:w-[30%]">
+                        Total Questions
+                      </td>
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs text-gray-900">
+                        {product.totalQuestions}
+                      </td>
+                    </tr>
+                  )}
 
-                {product.totalQuestions && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Questions
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.totalQuestions}
-                    </p>
-                  </div>
-                )}
+                  {product.passingScore && (
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-700 bg-gray-50 w-[35%] sm:w-[30%]">
+                        Passing Score
+                      </td>
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs text-gray-900">
+                        {product.passingScore}
+                      </td>
+                    </tr>
+                  )}
 
-                {product.passingScore && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Passing Score
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.passingScore}
-                    </p>
-                  </div>
-                )}
+                  {product.duration && (
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-700 bg-gray-50 w-[35%] sm:w-[30%]">
+                        Duration
+                      </td>
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs text-gray-900">
+                        {product.duration}
+                      </td>
+                    </tr>
+                  )}
 
-                {product.duration && (
-                  <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                    <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                      Duration
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                      {product.duration}
-                    </p>
-                  </div>
-                )}
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-700 bg-gray-50 w-[35%] sm:w-[30%]">
+                      Last Updated
+                    </td>
+                    <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs text-gray-900">
+                      {new Date(Date.now()).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                      })}
+                    </td>
+                  </tr>
 
-                <div className="bg-white rounded px-1.5 py-1 border border-blue-100">
-                  <p className="text-[8px] sm:text-[9px] text-gray-500 mb-0.5">
-                    Last Updated
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] font-semibold text-gray-900">
-                    {new Date(Date.now()).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-              {avgRating && avgRating > 0 && (
-                <div className="flex items-center gap-0.5 flex-wrap mt-1.5">
-                  {[1, 2, 3, 4, 5].map((v) => (
-                    <FaStar
-                      key={v}
-                      className={`text-xs ${
-                        v <= Math.round(avgRating)
-                          ? "text-yellow-400"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                  <span className="text-[10px] sm:text-[11px] text-gray-600 font-medium">
-                    ({avgRating.toFixed(1)}/5)
-                  </span>
-                </div>
-              )}
+                  {avgRating && avgRating > 0 && (
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-700 bg-gray-50 w-[35%] sm:w-[30%]">
+                        Rating
+                      </td>
+                      <td className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {[1, 2, 3, 4, 5].map((v) => (
+                            <FaStar
+                              key={v}
+                              className={`text-[10px] sm:text-xs ${
+                                v <= Math.round(avgRating)
+                                  ? "text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                          <span className="text-[9px] sm:text-[10px] text-gray-600 font-medium ml-1">
+                            ({avgRating.toFixed(1)}/5)
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -728,19 +739,21 @@ export default function ProductDetailsPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto">
+                    <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto w-full lg:w-auto">
                       <button
                         onClick={() =>
                           router.push(`/exam/sample-instruction/${slug}`)
                         }
-                        className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap"
+                        className="flex-1 min-w-[180px] lg:min-w-[200px] flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap text-center"
+                        style={{ maxWidth: "100%" }}
                       >
-                        <FaEye size={14} className="sm:w-4 sm:h-4" />
+                        <FaEye size={14} className="sm:w-4 sm:h-4 w-6" />
                         TRY ONLINE EXAM
                       </button>
                       <button
                         onClick={() => handleAddToCart("online")}
-                        className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 bg-[#FA8B31] hover:bg-[#e87b21] text-gray-900 font-bold text-[10px] sm:text-xs uppercase rounded transition-colors whitespace-nowrap"
+                        className="flex-1 min-w-[180px] lg:min-w-[200px] flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 bg-[#FA8B31] hover:bg-[#e87b21] text-gray-900 font-bold text-[10px] sm:text-xs uppercase rounded transition-colors whitespace-nowrap text-center"
+                        style={{ maxWidth: "100%" }}
                       >
                         <FaShoppingCart size={14} className="sm:w-4 sm:h-4" />
                         ADD TO CART
@@ -784,7 +797,7 @@ export default function ProductDetailsPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto">
+                    <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto w-full lg:w-auto">
                       {product.samplePdfUrl && (
                         <button
                           onClick={() =>
@@ -793,7 +806,7 @@ export default function ProductDetailsPage() {
                               `${product.title}-Sample.pdf`,
                             )
                           }
-                          className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap"
+                          className="flex-1 min-w-[180px] lg:min-w-[200px] flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap text-center"
                         >
                           <FaDownload size={14} className="sm:w-4 sm:h-4" />
                           DOWNLOAD SAMPLE
@@ -802,7 +815,7 @@ export default function ProductDetailsPage() {
                       <button
                         onClick={() => handleAddToCart("regular")}
                         disabled={!productAvailable}
-                        className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold ${
+                        className={`flex-1 min-w-[180px] lg:min-w-[200px] flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold text-center ${
                           productAvailable
                             ? "bg-[#FA8B31] hover:bg-[#e87b21] text-gray-900 cursor-pointer"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -857,11 +870,11 @@ export default function ProductDetailsPage() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto">
+                      <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 lg:ml-auto w-full lg:w-auto">
                         <button
                           onClick={() => handleAddToCart("combo")}
                           disabled={!productAvailable}
-                          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold ${
+                          className={`flex-1 min-w-[180px] lg:min-w-[200px] flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 rounded text-[10px] sm:text-xs uppercase transition-colors whitespace-nowrap font-bold text-center ${
                             productAvailable
                               ? "bg-[#FA8B31] hover:bg-[#e87b21] text-gray-900 cursor-pointer"
                               : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -889,8 +902,10 @@ export default function ProductDetailsPage() {
             </h2>
 
             <div className="relative w-full overflow-visible">
-              <div
-                className="
+              {product.Description ? (
+                <div
+                  key={product.Description}
+                  className="
         prose prose-xs max-w-none
         prose-p:text-gray-700 prose-p:text-[10px] prose-p:leading-tight
         prose-li:text-gray-700 prose-li:text-[10px] prose-li:leading-tight
@@ -909,14 +924,19 @@ export default function ProductDetailsPage() {
         [&_pre]:overflow-x-auto
         [&_code]:break-words
       "
-                style={{
-                  wordBreak: "break-word",
-                  overflowWrap: "anywhere",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: product.Description || "No description available",
-                }}
-              />
+                  style={{
+                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: product.Description,
+                  }}
+                />
+              ) : (
+                <div className="text-gray-400 text-xs">
+                  No description available
+                </div>
+              )}
             </div>
           </div>
         </div>

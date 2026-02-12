@@ -260,7 +260,7 @@ export default async function ITDumpsPage() {
         </div>
 
         {/* Categories Grid */}
-        <div className="flex flex-wrap justify-center gap-4 sm:gap-5 md:gap-6 lg:gap-8">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           {dumpsData.length > 0 ? (
             dumpsData.map((item, index) => {
               const slug = createSlug(item.name);
@@ -276,16 +276,16 @@ export default async function ITDumpsPage() {
                 <Link
                   key={item._id || item.id}
                   href={`/ItDumps/${slug}`}
-                  className="group bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl shadow-md hover:shadow-2xl hover:border-blue-300 active:scale-95 md:hover:scale-105 transition-all duration-300 flex flex-col items-center text-center overflow-hidden w-[155px] sm:w-[180px] md:w-[200px] lg:w-[220px] xl:w-[240px]"
+                  className="group bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl shadow-md hover:shadow-2xl hover:border-blue-300 active:scale-95 md:hover:scale-105 transition-all duration-300 flex flex-col items-center text-center overflow-hidden w-[120px] sm:w-[135px] md:w-[150px] lg:w-[160px] xl:w-[170px] h-[70px] sm:h-[80px] md:h-[90px] lg:h-[100px] xl:h-[110px]"
                 >
                   {/* Image Container */}
-                  <div className="h-32 sm:h-36 md:h-40 lg:h-44 xl:h-48 w-full relative bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-blue-50 group-hover:to-indigo-50 transition-colors duration-300">
+                  <div className="h-8 sm:h-10 md:h-12 lg:h-14 xl:h-16 w-full relative bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-blue-50 group-hover:to-indigo-50 transition-colors duration-300 flex items-center justify-center">
                     <ImageWithSkeleton
                       src={item.image || "https://via.placeholder.com/150"}
                       alt={item.name || "Category"}
                       fill
-                      className="object-contain p-3 sm:p-4 md:p-5 group-hover:scale-110 transition-transform duration-300"
-                      sizes="(max-width: 640px) 155px, (max-width: 768px) 180px, (max-width: 1024px) 200px, (max-width: 1280px) 220px, 240px"
+                      className="object-contain p-0.5 sm:p-1 md:p-1.5 group-hover:scale-110 transition-transform duration-300"
+                      sizes="(max-width: 640px) 120px, (max-width: 768px) 135px, (max-width: 1024px) 150px, (max-width: 1280px) 160px, 170px"
                       loading={isPriority ? "eager" : "lazy"}
                       priority={isPriority}
                       quality={75}
@@ -294,8 +294,8 @@ export default async function ITDumpsPage() {
                   </div>
 
                   {/* Text Container */}
-                  <div className="px-3 sm:px-4 md:px-5 py-3 sm:py-4 md:py-5 w-full bg-white group-hover:bg-gradient-to-r group-hover:from-blue-50 group-hover:to-indigo-50 transition-colors duration-300">
-                    <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold capitalize text-gray-800 group-hover:text-blue-700 truncate transition-colors duration-300">
+                  <div className="px-1.5 sm:px-2 md:px-2.5 py-0.5 sm:py-1 md:py-1.5 w-full bg-white group-hover:bg-gradient-to-r group-hover:from-blue-50 group-hover:to-indigo-50 transition-colors duration-300 flex-1 flex items-center justify-center">
+                    <h3 className="text-[10px] sm:text-xs md:text-sm font-bold capitalize text-gray-800 group-hover:text-blue-700 truncate transition-colors duration-300">
                       {item.name || "Unnamed Category"}
                     </h3>
                   </div>

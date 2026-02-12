@@ -20,6 +20,51 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
     { format: "underline", icon: "U", title: "Underline" },
     { format: "strikeThrough", icon: "S", title: "Strikethrough" },
     { separator: true },
+    {
+      format: "justifyLeft",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <rect x="3" y="4" width="12" height="2" fill="currentColor" />
+          <rect x="3" y="8" width="8" height="2" fill="currentColor" />
+          <rect x="3" y="12" width="10" height="2" fill="currentColor" />
+        </svg>
+      ),
+      title: "Align Left",
+    },
+    {
+      format: "justifyCenter",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <rect x="5" y="4" width="8" height="2" fill="currentColor" />
+          <rect x="3" y="8" width="12" height="2" fill="currentColor" />
+          <rect x="4" y="12" width="10" height="2" fill="currentColor" />
+        </svg>
+      ),
+      title: "Align Center",
+    },
+    {
+      format: "justifyRight",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <rect x="3" y="4" width="12" height="2" fill="currentColor" />
+          <rect x="7" y="8" width="8" height="2" fill="currentColor" />
+          <rect x="5" y="12" width="10" height="2" fill="currentColor" />
+        </svg>
+      ),
+      title: "Align Right",
+    },
+    {
+      format: "justifyFull",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <rect x="3" y="4" width="12" height="2" fill="currentColor" />
+          <rect x="3" y="8" width="12" height="2" fill="currentColor" />
+          <rect x="3" y="12" width="12" height="2" fill="currentColor" />
+        </svg>
+      ),
+      title: "Justify",
+    },
+    { separator: true },
     { format: "insertOrderedList", icon: "1.", title: "Ordered List" },
     { format: "insertUnorderedList", icon: "•", title: "Bullet List" },
     { separator: true },
@@ -224,11 +269,18 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
       <div className="sticky top-0 z-10 border rounded-t bg-gray-100 p-2 flex flex-wrap gap-1 shadow-sm">
         <select
           className="border p-1 text-sm"
-          onChange={(e) =>
-            document.execCommand("formatBlock", false, `h${e.target.value}`)
-          }
+          defaultValue="p"
+          onChange={(e) => {
+            editorRef.current.focus();
+            if (e.target.value === "p") {
+              document.execCommand("formatBlock", false, "p");
+            } else {
+              document.execCommand("formatBlock", false, `h${e.target.value}`);
+            }
+            onChange(editorRef.current.innerHTML);
+          }}
         >
-          <option value="">Paragraph</option>
+          <option value="p">Paragraph</option>
           <option value="1">H1</option>
           <option value="2">H2</option>
           <option value="3">H3</option>
@@ -265,6 +317,7 @@ const RichTextEditor = ({ value, onChange, error = "", label = "Editor" }) => {
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onBlur={handleInput}
         onPaste={handlePaste}
         className="
     border border-t-0 rounded-b p-4 min-h-[200px]
