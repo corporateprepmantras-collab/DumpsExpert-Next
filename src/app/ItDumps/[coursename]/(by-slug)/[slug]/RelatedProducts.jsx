@@ -183,7 +183,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-gray-50 to-blue-50 py-8 md:py-12">
+      <div className="bg-gray-50 py-8 md:py-12">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
@@ -198,7 +198,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-blue-50 py-8 md:py-12">
+    <div className="bg-gray-50 py-8 md:py-12">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">
@@ -271,11 +271,11 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                   >
                     <div className="p-4 sm:p-5 h-full flex flex-col">
                       {/* Product Image */}
-                      <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-4 mb-4 group-hover:scale-105 transition-transform duration-300">
+                      <div className="bg-gray-50 rounded-xl mb-4 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
                         <img
                           src={product.imageUrl}
                           alt={product.title}
-                          className="h-24 sm:h-28 md:h-32 w-full object-contain"
+                          className="h-32 sm:h-36 md:h-40 w-full object-contain"
                           loading="lazy"
                           decoding="async"
                         />

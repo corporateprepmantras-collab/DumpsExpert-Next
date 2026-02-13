@@ -270,7 +270,7 @@ const BlogDetail = ({ slug }) => {
               {/* Related Blogs */}
               {recentBlogs.length > 0 && (
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-5 flex items-center">
+                  <h3 className="text-lg pt-4 sm:text-xl font-bold text-gray-900 mb-4 sm:mb-5 flex items-center">
                     <svg
                       className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600"
                       fill="none"
@@ -289,28 +289,33 @@ const BlogDetail = ({ slug }) => {
                   <div className="space-y-3 sm:space-y-4">
                     {recentBlogs.slice(0, 5).map((b, index) => (
                       <Link key={b._id} href={`/blog/${b.slug}`}>
-                        <div className="group flex gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 cursor-pointer">
+                        <div className="group p-2 sm:p-3 rounded-lg sm:rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 cursor-pointer">
+                          {/* Full-width image on top */}
                           {b.imageUrl ? (
-                            <img
-                              src={b.imageUrl}
-                              alt={b.title || b.sectionName}
-                              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0 group-hover:scale-105 transition-transform duration-200"
-                              loading="lazy"
-                            />
+                            <div className="w-full overflow-hidden rounded-lg">
+                              <img
+                                src={b.imageUrl}
+                                alt={b.title || b.sectionName}
+                                className="w-full h-28 sm:h-32 md:h-36 object-cover group-hover:scale-105 transition-transform duration-200"
+                                loading="lazy"
+                              />
+                            </div>
                           ) : (
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex-shrink-0 flex items-center justify-center">
-                              <span className="text-xl sm:text-2xl font-bold text-blue-600">
+                            <div className="w-full h-28 sm:h-32 md:h-36 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                              <span className="text-2xl sm:text-3xl font-bold text-blue-600">
                                 {index + 1}
                               </span>
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-xs sm:text-sm font-semibold text-gray-900 group-hover:text-blue-600 line-clamp-2 transition-colors leading-snug mb-1">
+
+                          {/* Title below image */}
+                          <div className="mt-3">
+                            <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 line-clamp-2 transition-colors leading-snug mb-1">
                               {b.title || b.sectionName}
                             </h4>
-                            <p className="text-[10px] sm:text-xs text-gray-500 flex items-center">
+                            <p className="text-xs text-gray-500 flex items-center">
                               <svg
-                                className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1"
+                                className="w-3 h-3 mr-1"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"

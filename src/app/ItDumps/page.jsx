@@ -1,8 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
-import { FaCheckCircle } from "react-icons/fa";
 import ImageWithSkeleton from "@/components/ImageWithSkeleton";
-
+import sapExamdumps from "@/assets/userAssets/sap examdumps.webp";
 // ✅ Enable ISR for better performance
 export const dynamic = "auto";
 export const revalidate = 60; // Revalidate every 1 minute for fresh admin updates
@@ -232,32 +230,24 @@ export default async function ITDumpsPage() {
   const priorityCount = Math.min(6, dumpsData.length);
 
   return (
-    <div className="relative min-h-screen w-full pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+    <div className="relative min-h-screen backdrop-blur-sm backdrop-saturate-125 w-full pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-10 sm:pb-12 md:pb-16 lg:pb-20 bg-transparent">
+      {/* full-page background image (behind content) */}
+      <div className="absolute inset-0 -z-10 backdrop-blur-sm backdrop-saturate-125">
+        <ImageWithSkeleton
+          src={sapExamdumps}
+          alt="SAP background"
+          fill={true}
+          className="object-cover"
+          priority={true}
+          quality={80}
+          skeletonClassName=""
+        />
+      </div>
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 bg-black/20 backdrop-blur-sm backdrop-saturate-125 rounded-3xl">
         {/* Header */}
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-gray-900 mb-6 sm:mb-8 md:mb-10 lg:mb-12">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-white drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)] mb-6 sm:mb-8 md:mb-10 lg:mb-12">
           SAP Certification Dumps
         </h1>
-
-        {/* Features Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6 max-w-5xl mx-auto mb-10 sm:mb-12 md:mb-14 lg:mb-16">
-          {[
-            "Instant Download",
-            "100% Real Dumps",
-            "Money Back Guarantee",
-            "90 Days Updates",
-          ].map((text, i) => (
-            <div
-              key={i}
-              className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-gray-900 text-xs sm:text-sm md:text-base lg:text-lg font-medium bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm hover:shadow-md border border-gray-100 transition-shadow duration-200"
-            >
-              <FaCheckCircle className="text-blue-600 text-lg sm:text-xl md:text-2xl flex-shrink-0" />
-              <span className="text-center sm:text-left leading-tight">
-                {text}
-              </span>
-            </div>
-          ))}
-        </div>
 
         {/* Categories Grid */}
         <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
