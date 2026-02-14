@@ -27,7 +27,7 @@ export default function BlogSection({ blogs = [], categories = [] }) {
     .slice(currentIndex, currentIndex + slidesPerView);
 
   return (
-    <section className="relative py-20 px-4 bg-gradient-to-br from-gray-50 to-white overflow-hidden">
+    <section className="relative py-20 px-4 sm:px-6 lg:px-12 bg-gradient-to-br from-gray-50 to-white overflow-hidden">
       {/* Background Decoration */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#FF6900] rounded-full blur-3xl"></div>
@@ -70,7 +70,7 @@ export default function BlogSection({ blogs = [], categories = [] }) {
                 whileTap={{ scale: 0.95 }}
                 className="px-6 py-2 rounded-full border-2 border-[#FF6900] text-[#FF6900] hover:bg-[#FF6900] hover:text-white transition-all duration-300 font-medium"
               >
-                {cat.category}
+                <Link href={`/blogs/${cat.slug}`}>{cat.category}</Link>
               </motion.button>
             ))}
           </motion.div>

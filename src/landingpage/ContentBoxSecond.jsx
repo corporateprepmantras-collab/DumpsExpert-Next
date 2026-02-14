@@ -2,44 +2,48 @@
 
 export default function ContentBoxSecond({ content = "" }) {
   return (
-    <section className="bg-white text-black  md:pt-10 md:px-10 rounded-lg shadow-md space-y-8">
-      <div
-        style={{ lineHeight: "1.6" }}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
+    <div className="w-full py-8 px-4 sm:px-6 lg:px-12">
+      <div className="max-w-7xl mx-auto">
+        <section className="bg-white text-black p-6 md:p-10 rounded-lg shadow-md space-y-8">
+          <div
+            style={{ lineHeight: "1.6" }}
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
 
-      <style jsx>{`
-        div :global(h1) {
-          font-size: 2rem;
-          font-weight: 800;
-          margin-bottom: 0.5rem;
-        }
-        div :global(h2) {
-          font-size: 1.75rem;
-          font-weight: 700;
-          margin-bottom: 0.5rem;
-        }
-        div :global(h3) {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin-top: 1rem;
-          margin-bottom: 0.5rem;
-        }
-        div :global(h4) {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-top: 0.75rem;
-          margin-bottom: 0.5rem;
-        }
-        div :global(p) {
-          font-size: 1rem;
-          margin-bottom: 1rem;
-        }
-        div :global(li) {
-          font-size: 1rem;
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
-    </section>
+          <style jsx>{`
+            div :global(h1) {
+              font-size: 2rem;
+              font-weight: 800;
+              margin-bottom: 0.5rem;
+            }
+            div :global(h2) {
+              font-size: 1.75rem;
+              font-weight: 700;
+              margin-bottom: 0.5rem;
+            }
+            div :global(h3) {
+              font-size: 1.5rem;
+              font-weight: 700;
+              margin-top: 1rem;
+              margin-bottom: 0.5rem;
+            }
+            div :global(h4) {
+              font-size: 1.25rem;
+              font-weight: 600;
+              margin-top: 0.75rem;
+              margin-bottom: 0.5rem;
+            }
+            div :global(p) {
+              font-size: 1rem;
+              margin-bottom: 1rem;
+            }
+            div :global(li) {
+              font-size: 1rem;
+              margin-bottom: 0.5rem;
+            }
+          `}</style>
+        </section>
+      </div>
+    </div>
   );
 }

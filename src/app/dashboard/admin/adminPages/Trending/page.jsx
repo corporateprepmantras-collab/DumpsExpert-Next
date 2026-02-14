@@ -77,7 +77,7 @@ export default function ManageTrendingCerts() {
     <div className="min-h-screen pt-20 bg-white text-black p-8">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl font-semibold mb-6 text-center">
-          Manage Top Trending Certifications
+          Manage Top Trending Certifications (Popular Dumps)
         </h2>
 
         <div className="space-y-3 mb-6 bg-gray-50 p-6 rounded-lg border border-gray-200">

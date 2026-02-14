@@ -314,8 +314,8 @@ export default function ExamDumpsSlider({ products = [] }) {
   }
 
   return (
-    <div className="w-full py-16 px-4 bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-[1100px] mx-auto">
+    <div className="w-full py-16 px-4 sm:px-6 lg:px-12 bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-900 mb-3">
@@ -422,7 +422,7 @@ export default function ExamDumpsSlider({ products = [] }) {
                   <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 flex flex-col h-full">
                     <a
                       href={`/ItDumps/sap/${slug}`}
-                      className="block flex flex-col h-full"
+                      className="flex flex-col h-full"
                     >
                       {/* Image Container */}
                       <div className="relative w-full h-40 sm:h-48 bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden flex-shrink-0">

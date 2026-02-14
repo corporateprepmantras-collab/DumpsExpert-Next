@@ -12,15 +12,17 @@ export default function GeneralFAQs({ faqs = [] }) {
 
   if (faqs.length === 0) {
     return (
-      <section className="w-full py-16 px-4 md:px-12 text-center">
-        <p>No FAQs available.</p>
+      <section className="w-full py-16 px-4 sm:px-6 lg:px-12 text-center">
+        <div className="max-w-7xl mx-auto">
+          <p>No FAQs available.</p>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="w-full bg-gradient-to-br from-white to-gray-50 py-16 px-4 md:px-12">
-      <div className="max-w-6xl mx-auto">
+    <section className="w-full bg-gradient-to-br from-white to-gray-50 py-16 px-4 sm:px-6 lg:px-12">
+      <div className="max-w-7xl mx-auto">
         <h2 className="text-4xl font-bold mb-12 text-center text-gray-900 flex items-center justify-center gap-3">
           <FaQuestionCircle className="text-indigo-600" size={32} />
           Frequently Asked Questions

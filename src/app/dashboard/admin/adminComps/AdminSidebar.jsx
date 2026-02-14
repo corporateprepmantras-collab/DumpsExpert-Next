@@ -357,8 +357,12 @@ const sidebarItems = [
             to: "/dashboard/admin/adminPages/refund-policy",
           },
           {
-            label: "Trending Section",
+            label: "Popular Dumps Section",
             to: "/dashboard/admin/adminPages/Trending",
+          },
+          {
+            label: "Trending Categories (Images) 🔥",
+            to: "/dashboard/admin/adminPages/TrendingSection",
           },
         ],
       },

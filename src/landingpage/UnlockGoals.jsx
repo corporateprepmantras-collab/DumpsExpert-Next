@@ -96,174 +96,176 @@ const WhyChooseSection = () => {
   }, []);
 
   return (
-    <div className="w-full bg-gradient-to-b from-white via-gray-50 to-gray-100">
-      {/* Desktop View */}
-      <div className="hidden md:flex md:flex-row w-full min-h-[75vh]">
-        {/* Sticky Left Panel */}
-        <div className="md:w-1/2 md:sticky md:top-0 h-auto md:h-[75vh] bg-gradient-to-br from-indigo-800 via-indigo-700 to-purple-800 text-white p-8 sm:p-12 flex flex-col justify-center items-center">
-          <div className="text-center">
-            <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                <Award className="text-white" size={32} />
-              </div>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
-              Why Choose <br />
-              <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
-                Prepmantras?
-              </span>
-            </h2>
-            <p className="text-sm md:text-base text-white/90 leading-relaxed max-w-lg">
-              Unlock your potential with our premium resources.
-              <br className="hidden sm:block" />
-              <span className="block mt-2">
-                Real questions, real results, real support — all designed to
-                help you succeed.
-              </span>
-            </p>
-
-            {/* Quick Stats */}
-            <div className="mt-8 space-y-3">
-              <div className="flex items-center gap-3">
-                <CheckCircle size={20} className="text-cyan-300" />
-                <span className="text-sm">100% Verified Content</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Zap size={20} className="text-yellow-300" />
-                <span className="text-sm">Instant Access</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Clock size={20} className="text-pink-300" />
-                <span className="text-sm">24/7 Support</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Scrollable Cards Section */}
-        <div className="md:w-1/2 bg-white h-[75vh] overflow-y-scroll snap-y snap-mandatory">
-          {cardData.map((card, index) => (
-            <section
-              key={index}
-              className="h-[75vh] snap-start flex flex-col items-center justify-center px-8 text-center"
-            >
-              <div className="relative mb-8">
-                <div className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
-                  <Image
-                    src={card.icon}
-                    alt={card.title}
-                    width={128}
-                    height={128}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <div
-                  className={`absolute -top-3 -right-3 px-3 py-1 bg-gradient-to-r ${card.color} text-white text-xs font-bold rounded-full shadow-lg`}
-                >
-                  {card.badge}
+    <div className="w-full bg-gradient-to-b from-white via-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-12">
+      <div className="max-w-7xl mx-auto">
+        {/* Desktop View */}
+        <div className="hidden md:flex md:flex-row w-full min-h-[75vh] rounded-xl overflow-hidden shadow-lg">
+          {/* Sticky Left Panel */}
+          <div className="md:w-1/2 md:sticky md:top-0 h-auto md:h-[75vh] bg-gradient-to-br from-indigo-800 via-indigo-700 to-purple-800 text-white p-8 sm:p-12 flex flex-col justify-center items-center">
+            <div className="text-center">
+              <div className="mb-6 flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                  <Award className="text-white" size={32} />
                 </div>
               </div>
-
-              <h3 className="text-lg md:text-xl font-bold mb-3 text-gray-900">
-                {card.title}
-              </h3>
-              <p className="max-w-2xl text-gray-600 text-sm md:text-base leading-relaxed">
-                {card.description}
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
+                Why Choose <br />
+                <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+                  Prepmantras?
+                </span>
+              </h2>
+              <p className="text-sm md:text-base text-white/90 leading-relaxed max-w-lg">
+                Unlock your potential with our premium resources.
+                <br className="hidden sm:block" />
+                <span className="block mt-2">
+                  Real questions, real results, real support — all designed to
+                  help you succeed.
+                </span>
               </p>
 
-              {/* Decorative line */}
-              <div className="mt-8 w-20 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></div>
-            </section>
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile View */}
-      <div className="md:hidden w-full bg-gradient-to-b from-white to-gray-100 py-12 px-4">
-        {/* Mobile Header */}
-        <div className="text-center mb-12">
-          <div className="mb-4 flex justify-center">
-            <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center">
-              <Award className="text-indigo-600" size={28} />
-            </div>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-gray-900">
-            Why Choose
-            <br />
-            <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Prepmantras?
-            </span>
-          </h2>
-          <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-            Real questions, real results, real support
-          </p>
-        </div>
-
-        {/* Mobile Cards Grid */}
-        <div className="space-y-6 max-w-2xl mx-auto">
-          {cardData.map((card, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100"
-            >
-              {/* Card Image */}
-              <div
-                className={`relative h-48 bg-gradient-to-br ${card.color} overflow-hidden`}
-              >
-                <Image
-                  src={card.icon}
-                  alt={card.title}
-                  width={300}
-                  height={200}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/20"></div>
-
-                {/* Badge */}
-                <div
-                  className={`absolute top-3 right-3 px-3 py-1 bg-gradient-to-r ${card.color} text-white text-xs font-bold rounded-full shadow-lg`}
-                >
-                  {card.badge}
+              {/* Quick Stats */}
+              <div className="mt-8 space-y-3">
+                <div className="flex items-center gap-3">
+                  <CheckCircle size={20} className="text-cyan-300" />
+                  <span className="text-sm">100% Verified Content</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Zap size={20} className="text-yellow-300" />
+                  <span className="text-sm">Instant Access</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock size={20} className="text-pink-300" />
+                  <span className="text-sm">24/7 Support</span>
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Card Content */}
-              <div className="p-6">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 line-clamp-2">
+          {/* Scrollable Cards Section */}
+          <div className="md:w-1/2 bg-white h-[75vh] overflow-y-scroll snap-y snap-mandatory">
+            {cardData.map((card, index) => (
+              <section
+                key={index}
+                className="h-[75vh] snap-start flex flex-col items-center justify-center px-8 text-center"
+              >
+                <div className="relative mb-8">
+                  <div className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                    <Image
+                      src={card.icon}
+                      alt={card.title}
+                      width={128}
+                      height={128}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <div
+                    className={`absolute -top-3 -right-3 px-3 py-1 bg-gradient-to-r ${card.color} text-white text-xs font-bold rounded-full shadow-lg`}
+                  >
+                    {card.badge}
+                  </div>
+                </div>
+
+                <h3 className="text-lg md:text-xl font-bold mb-3 text-gray-900">
                   {card.title}
                 </h3>
-                <p className="text-gray-600 text-sm sm:text-base leading-relaxed line-clamp-3">
+                <p className="max-w-2xl text-gray-600 text-sm md:text-base leading-relaxed">
                   {card.description}
                 </p>
 
-                {/* Read More Link */}
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <button className="text-indigo-600 font-semibold text-sm">
-                    Learn More →
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+                {/* Decorative line */}
+                <div className="mt-8 w-20 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"></div>
+              </section>
+            ))}
+          </div>
         </div>
 
-        {/* Mobile Stats */}
-        <div className="mt-12 grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 text-center border border-blue-100">
-            <div className="text-2xl font-bold text-blue-600">100%</div>
-            <div className="text-xs text-gray-600 mt-1">Verified</div>
+        {/* Mobile View */}
+        <div className="md:hidden w-full bg-gradient-to-b from-white to-gray-100 py-12">
+          {/* Mobile Header */}
+          <div className="text-center mb-12">
+            <div className="mb-4 flex justify-center">
+              <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center">
+                <Award className="text-indigo-600" size={28} />
+              </div>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-gray-900">
+              Why Choose
+              <br />
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Prepmantras?
+              </span>
+            </h2>
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+              Real questions, real results, real support
+            </p>
           </div>
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 text-center border border-purple-100">
-            <div className="text-2xl font-bold text-purple-600">24/7</div>
-            <div className="text-xs text-gray-600 mt-1">Support</div>
+
+          {/* Mobile Cards Grid */}
+          <div className="space-y-6 max-w-2xl mx-auto">
+            {cardData.map((card, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100"
+              >
+                {/* Card Image */}
+                <div
+                  className={`relative h-48 bg-gradient-to-br ${card.color} overflow-hidden`}
+                >
+                  <Image
+                    src={card.icon}
+                    alt={card.title}
+                    width={300}
+                    height={200}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20"></div>
+
+                  {/* Badge */}
+                  <div
+                    className={`absolute top-3 right-3 px-3 py-1 bg-gradient-to-r ${card.color} text-white text-xs font-bold rounded-full shadow-lg`}
+                  >
+                    {card.badge}
+                  </div>
+                </div>
+
+                {/* Card Content */}
+                <div className="p-6">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 line-clamp-2">
+                    {card.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm sm:text-base leading-relaxed line-clamp-3">
+                    {card.description}
+                  </p>
+
+                  {/* Read More Link */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <button className="text-indigo-600 font-semibold text-sm">
+                      Learn More →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 text-center border border-green-100">
-            <div className="text-2xl font-bold text-green-600">Free</div>
-            <div className="text-xs text-gray-600 mt-1">Updates</div>
-          </div>
-          <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 text-center border border-orange-100">
-            <div className="text-2xl font-bold text-orange-600">90 Days</div>
-            <div className="text-xs text-gray-600 mt-1">Money Back</div>
+
+          {/* Mobile Stats */}
+          <div className="mt-12 grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 text-center border border-blue-100">
+              <div className="text-2xl font-bold text-blue-600">100%</div>
+              <div className="text-xs text-gray-600 mt-1">Verified</div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 text-center border border-purple-100">
+              <div className="text-2xl font-bold text-purple-600">24/7</div>
+              <div className="text-xs text-gray-600 mt-1">Support</div>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 text-center border border-green-100">
+              <div className="text-2xl font-bold text-green-600">Free</div>
+              <div className="text-xs text-gray-600 mt-1">Updates</div>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 text-center border border-orange-100">
+              <div className="text-2xl font-bold text-orange-600">90 Days</div>
+              <div className="text-xs text-gray-600 mt-1">Money Back</div>
+            </div>
           </div>
         </div>
       </div>
