@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   FaChevronRight,
   FaChevronLeft,
@@ -11,11 +12,16 @@ import {
 import { useCartStore } from "@/store/useCartStore";
 import { toast, Toaster } from "react-hot-toast";
 
+// Optimized fetch with better cache strategy
 async function fetchAllProducts(limit = 12) {
   try {
     const response = await fetch(`/api/products?limit=${limit}`, {
-      next: { revalidate: 60 },
+      next: { revalidate: 30 }, // Faster revalidation
+      cache: "force-cache",
     });
+
+    if (!response.ok) return [];
+
     const data = await response.json();
     return data.data || [];
   } catch (error) {
@@ -49,6 +55,129 @@ const isProductAvailable = (product) => {
   return normalizePdfUrl(product.mainPdfUrl).length > 0;
 };
 
+// Memoized Product Card component for better performance
+const ProductCard = memo(
+  ({ product, onAddToCart, onViewDetails, isProductAvailable }) => {
+    const handleViewClick = useCallback(
+      (e) => {
+        e.stopPropagation();
+        onViewDetails(product);
+      },
+      [product, onViewDetails],
+    );
+
+    const handleAddClick = useCallback(
+      (e) => {
+        e.stopPropagation();
+        onAddToCart(product, e);
+      },
+      [product, onAddToCart],
+    );
+
+    const handleCardClick = useCallback(() => {
+      onViewDetails(product);
+    }, [product, onViewDetails]);
+
+    const isAvailable = useMemo(() => isProductAvailable(product), [product]);
+
+    const discount = useMemo(() => {
+      if (product.dumpsMrpInr > product.dumpsPriceInr) {
+        return Math.round(
+          ((product.dumpsMrpInr - product.dumpsPriceInr) /
+            product.dumpsMrpInr) *
+            100,
+        );
+      }
+      return 0;
+    }, [product.dumpsMrpInr, product.dumpsPriceInr]);
+
+    return (
+      <div
+        className="flex-shrink-0 w-[92%] sm:w-[320px] md:w-[340px] lg:w-[360px] bg-white rounded-xl shadow-lg hover:shadow-xl border border-gray-200 transition-all duration-300 overflow-hidden cursor-pointer snap-center ml-[4%] first:ml-[4%] sm:ml-0"
+        onClick={handleCardClick}
+      >
+        <div className="p-5 h-full flex flex-col">
+          {/* Product Image */}
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-[220px]">
+            <Image
+              src={product.imageUrl || "/placeholder.png"}
+              alt={product.title}
+              width={320}
+              height={220}
+              className="object-contain p-4"
+              loading="lazy"
+              quality={75}
+            />
+            {/* Availability Badge */}
+            {!isAvailable && (
+              <div className="absolute top-2 right-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500 text-white">
+                  Out of Stock
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Product Title */}
+          <h3 className="text-base font-bold text-gray-900 mb-3 hover:text-blue-600 transition-colors leading-snug line-clamp-2 min-h-[3rem]">
+            {product.title}
+          </h3>
+
+          {/* Exam Code */}
+          <div className="mb-3">
+            <span className="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-lg">
+              {product.sapExamCode}
+            </span>
+          </div>
+
+          {/* Price Section */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <p className="text-xl font-bold text-orange-500">
+              ₹{product.dumpsPriceInr}
+            </p>
+            {product.dumpsMrpInr > product.dumpsPriceInr && (
+              <>
+                <p className="text-sm text-gray-500 line-through">
+                  ₹{product.dumpsMrpInr}
+                </p>
+                <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
+                  {discount}% OFF
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-auto space-y-2.5">
+            <button
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+              onClick={handleViewClick}
+            >
+              <FaEye className="text-sm" />
+              View Details
+            </button>
+
+            <button
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors shadow-sm ${
+                isAvailable
+                  ? "bg-orange-500 hover:bg-orange-600 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              onClick={handleAddClick}
+              disabled={!isAvailable}
+            >
+              <FaShoppingCart className="text-sm" />
+              {isAvailable ? "Add to Cart" : "Unavailable"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+
+ProductCard.displayName = "ProductCard";
+
 export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   const router = useRouter();
   const scrollContainerRef = useRef(null);
@@ -59,9 +188,12 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
 
-  // Add to cart function
-  const handleAddToCart = (product, e) => {
-    e.stopPropagation(); // Prevent card click
+  // Memoized helper functions
+  const productAvailabilityCheck = useMemo(() => isProductAvailable, []);
+
+  // Add to cart function with useCallback
+  const handleAddToCart = useCallback((product, e) => {
+    e?.stopPropagation(); // Prevent card click
 
     const productAvailable = isProductAvailable(product);
 
@@ -128,14 +260,30 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
 
     useCartStore.getState().addToCart(item);
     toast.success(`✅ Added ${item.title} to cart!`);
-  };
+  }, []);
 
+  // View details handler with useCallback
+  const handleViewDetails = useCallback(
+    (product) => {
+      router.push(
+        `/itcertifications/${product.category || "sap"}/${product.slug}`,
+      );
+    },
+    [router],
+  );
+
+  // Fetch products with memoization
   useEffect(() => {
+    let isMounted = true;
+
     async function loadProducts() {
       setIsLoading(true);
-      const allProducts = await fetchAllProducts(maxProducts + 5); // Fetch more to account for filtering
+      const allProducts = await fetchAllProducts(maxProducts + 5);
+
+      if (!isMounted) return;
+
       const filtered = allProducts
-        .filter((p) => p.slug !== currentSlug) // Only exclude current product
+        .filter((p) => p.slug !== currentSlug)
         .slice(0, maxProducts);
       setRelatedProducts(filtered);
       setIsLoading(false);
@@ -144,16 +292,20 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
     if (currentSlug) {
       loadProducts();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentSlug, maxProducts]);
 
-  const checkScrollButtons = () => {
+  const checkScrollButtons = useCallback(() => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } =
         scrollContainerRef.current;
       setCanScrollLeft(scrollLeft > 0);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkScrollButtons();
@@ -166,7 +318,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
         window.removeEventListener("resize", checkScrollButtons);
       };
     }
-  }, [relatedProducts]);
+  }, [relatedProducts, checkScrollButtons]);
 
   // Auto-scroll functionality
   useEffect(() => {
@@ -179,13 +331,11 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
         const isAtEnd = scrollLeft >= scrollWidth - clientWidth - 10;
 
         if (isAtEnd) {
-          // Reset to beginning
           scrollContainerRef.current.scrollTo({
             left: 0,
             behavior: "smooth",
           });
         } else {
-          // Scroll by full container width to show one card at a time
           const scrollAmount = clientWidth;
           scrollContainerRef.current.scrollBy({
             left: scrollAmount,
@@ -193,7 +343,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
           });
         }
       }
-    }, 3000); // Auto-scroll every 3 seconds
+    }, 3000);
 
     return () => {
       if (autoScrollIntervalRef.current) {
@@ -202,15 +352,13 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
     };
   }, [isAutoScrolling, relatedProducts]);
 
-  const scroll = (direction) => {
-    // Pause auto-scroll when user manually scrolls
+  const scroll = useCallback((direction) => {
     setIsAutoScrolling(false);
     if (autoScrollIntervalRef.current) {
       clearInterval(autoScrollIntervalRef.current);
     }
 
     if (scrollContainerRef.current) {
-      // Scroll by full container width to show one card at a time
       const scrollAmount = scrollContainerRef.current.clientWidth;
       const newScrollLeft =
         direction === "left"
@@ -222,12 +370,17 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
         behavior: "smooth",
       });
 
-      // Resume auto-scroll after 5 seconds of inactivity
       setTimeout(() => {
         setIsAutoScrolling(true);
       }, 5000);
     }
-  };
+  }, []);
+
+  // Memoize displayed products
+  const displayedProducts = useMemo(
+    () => relatedProducts.slice(0, maxProducts),
+    [relatedProducts, maxProducts],
+  );
 
   if (isLoading) {
     return (
@@ -299,105 +452,15 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
               setIsAutoScrolling(true);
             }}
           >
-            {relatedProducts.slice(0, maxProducts).map((product) => {
-              return (
-                <div
-                  key={product._id}
-                  className="flex-shrink-0 w-[92%] sm:w-[320px] md:w-[340px] lg:w-[360px] bg-white rounded-xl shadow-lg hover:shadow-xl border border-gray-200 transition-all duration-300 overflow-hidden cursor-pointer snap-center ml-[4%] first:ml-[4%] sm:ml-0"
-                  onClick={() =>
-                    router.push(
-                      `/itcertifications/${product.category || "sap"}/${product.slug}`,
-                    )
-                  }
-                >
-                  <div className="p-5 h-full flex flex-col">
-                    {/* Product Image */}
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-[220px]">
-                      <img
-                        src={product.imageUrl}
-                        alt={product.title}
-                        className="h-full w-full object-contain p-4"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      {/* Availability Badge */}
-                      {!isProductAvailable(product) && (
-                        <div className="absolute top-2 right-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500 text-white">
-                            Out of Stock
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Product Title */}
-                    <h3 className="text-base font-bold text-gray-900 mb-3 hover:text-blue-600 transition-colors leading-snug line-clamp-2 min-h-[3rem]">
-                      {product.title}
-                    </h3>
-
-                    {/* Exam Code */}
-                    <div className="mb-3">
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-lg">
-                        {product.sapExamCode}
-                      </span>
-                    </div>
-
-                    {/* Price Section */}
-                    <div className="flex items-center gap-2 mb-4 flex-wrap">
-                      <p className="text-xl font-bold text-orange-500">
-                        ₹{product.dumpsPriceInr}
-                      </p>
-                      {product.dumpsMrpInr > product.dumpsPriceInr && (
-                        <>
-                          <p className="text-sm text-gray-500 line-through">
-                            ₹{product.dumpsMrpInr}
-                          </p>
-                          <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
-                            {Math.round(
-                              ((product.dumpsMrpInr - product.dumpsPriceInr) /
-                                product.dumpsMrpInr) *
-                                100,
-                            )}
-                            % OFF
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="mt-auto space-y-2.5">
-                      <button
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(
-                            `/itcertifications/${product.category || "sap"}/${product.slug}`,
-                          );
-                        }}
-                      >
-                        <FaEye className="text-sm" />
-                        View Details
-                      </button>
-
-                      <button
-                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors shadow-sm ${
-                          isProductAvailable(product)
-                            ? "bg-orange-500 hover:bg-orange-600 text-white"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
-                        onClick={(e) => handleAddToCart(product, e)}
-                        disabled={!isProductAvailable(product)}
-                      >
-                        <FaShoppingCart className="text-sm" />
-                        {isProductAvailable(product)
-                          ? "Add to Cart"
-                          : "Unavailable"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {displayedProducts.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={product}
+                onAddToCart={handleAddToCart}
+                onViewDetails={handleViewDetails}
+                isProductAvailable={isProductAvailable}
+              />
+            ))}
           </div>
         </div>
 

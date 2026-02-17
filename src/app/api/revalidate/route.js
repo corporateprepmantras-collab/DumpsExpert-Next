@@ -15,7 +15,8 @@ export async function POST(request) {
 
     // Validate secret key
     const REVALIDATE_SECRET =
-      process.env.REVALIDATE_SECRET || "your-secret-key-2026";
+      process.env.REVALIDATE_SECRET ||
+      "prepmantras_cache_secret_2026_secure_key";
 
     if (secret !== REVALIDATE_SECRET) {
       return NextResponse.json({ message: "Invalid secret" }, { status: 401 });

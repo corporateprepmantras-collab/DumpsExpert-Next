@@ -383,11 +383,6 @@ const nextConfig = {
     ];
   },
 
-  webpack: (config, { dev, isServer }) => {
-    // Let Next.js handle optimization by default
-    return config;
-  },
-
   poweredByHeader: false,
 
   output: process.env.BUILD_STANDALONE === "true" ? "standalone" : undefined,

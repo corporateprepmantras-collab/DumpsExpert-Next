@@ -5,9 +5,9 @@
  * Or: npm run clear-cache
  */
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL || "https://www.prepmantras.com";
-const SECRET = process.env.REVALIDATE_SECRET || "your-secret-key-2026";
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+const SECRET =
+  process.env.REVALIDATE_SECRET || "prepmantras_cache_secret_2026_secure_key";
 
 async function clearCache(path = "/") {
   try {
