@@ -247,16 +247,16 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
 
   return (
     <div className="bg-gray-50 py-8 md:py-12">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2 sm:px-4">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 px-2">
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">
             Related Products
           </h2>
         </div>
 
         {/* Carousel Container with Navigation */}
-        <div className="relative group">
+        <div className="relative group px-2 sm:px-0">
           {/* Left Navigation Button */}
           <button
             onClick={() => scroll("left")}
@@ -288,7 +288,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
           {/* Scrollable Container */}
           <div
             ref={scrollContainerRef}
-            className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth snap-x snap-mandatory"
+            className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth snap-x snap-mandatory justify-start"
             onMouseEnter={() => {
               setIsAutoScrolling(false);
               if (autoScrollIntervalRef.current) {
@@ -303,20 +303,20 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
               return (
                 <div
                   key={product._id}
-                  className="flex-shrink-0 w-[calc(100%-2rem)] sm:w-[300px] md:w-[320px] lg:w-[340px] bg-white rounded-lg shadow-md hover:shadow-xl border border-gray-200 transition-all duration-300 overflow-hidden cursor-pointer snap-center mx-auto"
+                  className="flex-shrink-0 w-[92%] sm:w-[320px] md:w-[340px] lg:w-[360px] bg-white rounded-xl shadow-lg hover:shadow-xl border border-gray-200 transition-all duration-300 overflow-hidden cursor-pointer snap-center ml-[4%] first:ml-[4%] sm:ml-0"
                   onClick={() =>
                     router.push(
                       `/itcertifications/${product.category || "sap"}/${product.slug}`,
                     )
                   }
                 >
-                  <div className="p-4 h-full flex flex-col">
+                  <div className="p-5 h-full flex flex-col">
                     {/* Product Image */}
-                    <div className="bg-gray-50 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-[220px]">
                       <img
                         src={product.imageUrl}
                         alt={product.title}
-                        className="h-32 sm:h-36 w-full object-contain p-3"
+                        className="h-full w-full object-contain p-4"
                         loading="lazy"
                         decoding="async"
                       />
@@ -331,28 +331,28 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                     </div>
 
                     {/* Product Title */}
-                    <h3 className="text-sm font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors leading-tight line-clamp-2">
+                    <h3 className="text-base font-bold text-gray-900 mb-3 hover:text-blue-600 transition-colors leading-snug line-clamp-2 min-h-[3rem]">
                       {product.title}
                     </h3>
 
                     {/* Exam Code */}
-                    <div className="mb-2">
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                    <div className="mb-3">
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-lg">
                         {product.sapExamCode}
                       </span>
                     </div>
 
                     {/* Price Section */}
-                    <div className="flex items-baseline gap-2 mb-3">
-                      <p className="text-lg font-bold text-orange-500">
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                      <p className="text-xl font-bold text-orange-500">
                         ₹{product.dumpsPriceInr}
                       </p>
                       {product.dumpsMrpInr > product.dumpsPriceInr && (
                         <>
-                          <p className="text-xs text-gray-500 line-through">
+                          <p className="text-sm text-gray-500 line-through">
                             ₹{product.dumpsMrpInr}
                           </p>
-                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                          <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
                             {Math.round(
                               ((product.dumpsMrpInr - product.dumpsPriceInr) /
                                 product.dumpsMrpInr) *
@@ -365,9 +365,9 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="mt-auto space-y-2">
+                    <div className="mt-auto space-y-2.5">
                       <button
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push(
@@ -375,12 +375,12 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                           );
                         }}
                       >
-                        <FaEye className="text-xs" />
+                        <FaEye className="text-sm" />
                         View Details
                       </button>
 
                       <button
-                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors shadow-sm ${
                           isProductAvailable(product)
                             ? "bg-orange-500 hover:bg-orange-600 text-white"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -388,7 +388,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                         onClick={(e) => handleAddToCart(product, e)}
                         disabled={!isProductAvailable(product)}
                       >
-                        <FaShoppingCart className="text-xs" />
+                        <FaShoppingCart className="text-sm" />
                         {isProductAvailable(product)
                           ? "Add to Cart"
                           : "Unavailable"}
