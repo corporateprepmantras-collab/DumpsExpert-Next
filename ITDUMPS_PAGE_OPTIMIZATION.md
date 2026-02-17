@@ -1,12 +1,12 @@
-# ItDumps Page Performance Optimizations
+# itcertifications Page Performance Optimizations
 
 ## Overview
 
-Optimized the main ItDumps listing page (`/ItDumps`) and category pages (`/ItDumps/[category]`) to reduce load times significantly.
+Optimized the main itcertifications listing page (`/itcertifications`) and category pages (`/itcertifications/[category]`) to reduce load times significantly.
 
 ## Issues Found
 
-### Main Page (`/ItDumps`)
+### Main Page (`/itcertifications`)
 
 ❌ Using `force-dynamic` - prevented any caching  
 ❌ `cache: "no-store"` on all fetches - every request hit database  
@@ -14,7 +14,7 @@ Optimized the main ItDumps listing page (`/ItDumps`) and category pages (`/ItDum
 ❌ Short revalidation (60s) with no-store contradiction  
 ❌ No database indexes for category lookups
 
-### Category Pages (`/ItDumps/[category]`)
+### Category Pages (`/itcertifications/[category]`)
 
 ❌ `cache: "no-store"` - prevented CDN caching  
 ❌ Fetching ALL products instead of filtered query  
@@ -23,7 +23,7 @@ Optimized the main ItDumps listing page (`/ItDumps`) and category pages (`/ItDum
 
 ## Optimizations Applied
 
-### 1. **Main ItDumps Page (`/ItDumps/page.jsx`)**
+### 1. **Main itcertifications Page (`/itcertifications/page.jsx`)**
 
 #### Before:
 
@@ -53,7 +53,7 @@ fetch(url, {
 - Reduces database queries by ~95%
 - Much faster subsequent visits
 
-### 2. **Category Pages (`/ItDumps/[coursename]/page.jsx`)**
+### 2. **Category Pages (`/itcertifications/[coursename]/page.jsx`)**
 
 #### Before:
 
@@ -139,10 +139,10 @@ productCategorySchema.index({ name: 1 }); // For searching
 
 ## Files Modified
 
-1. ✅ [/app/ItDumps/page.jsx](src/app/ItDumps/page.jsx)
+1. ✅ [/app/itcertifications/page.jsx](src/app/itcertifications/page.jsx)
    - Changed from force-dynamic to ISR
    - Updated caching strategy
-2. ✅ [/app/ItDumps/[coursename]/page.jsx](src/app/ItDumps/[coursename]/page.jsx)
+2. ✅ [/app/itcertifications/[coursename]/page.jsx](src/app/itcertifications/[coursename]/page.jsx)
    - Added ISR configuration
    - Improved fetch caching
 
@@ -166,26 +166,26 @@ npm run start
 
 ### Test Pages
 
-1. **Main ItDumps Page:**
-   - Visit: `http://localhost:3000/ItDumps`
+1. **Main itcertifications Page:**
+   - Visit: `http://localhost:3000/itcertifications`
    - Check Network tab for cached responses
    - Reload and notice instant load
 
 2. **Category Page (Example):**
-   - Visit: `http://localhost:3000/ItDumps/sap`
+   - Visit: `http://localhost:3000/itcertifications/sap`
    - Verify products load quickly
    - Check cache headers in response
 
 ### Production URLs
 
-- Main: https://www.prepmantras.com/ItDumps
-- Category Example: https://www.prepmantras.com/ItDumps/sap
+- Main: https://www.prepmantras.com/itcertifications
+- Category Example: https://www.prepmantras.com/itcertifications/sap
 
 ## Deployment
 
 ```bash
 git add .
-git commit -m "perf: optimize ItDumps pages - 70-90% faster with ISR caching"
+git commit -m "perf: optimize itcertifications pages - 70-90% faster with ISR caching"
 git push
 ```
 
@@ -193,7 +193,7 @@ git push
 
 After deployment, verify:
 
-- [ ] Main /ItDumps page loads in < 2s (first visit)
+- [ ] Main /itcertifications page loads in < 2s (first visit)
 - [ ] Return visits load in < 0.5s
 - [ ] Cache-Control headers present in API responses
 - [ ] Category pages load quickly
@@ -248,7 +248,7 @@ export const dynamic = "force-dynamic";
 
 ## Summary
 
-✅ **Main ItDumps page:** 70% faster  
+✅ **Main itcertifications page:** 70% faster  
 ✅ **Category pages:** 70% faster  
 ✅ **Database load:** 95% reduction  
 ✅ **Cache hit rate:** Improved from 0% to ~95%  

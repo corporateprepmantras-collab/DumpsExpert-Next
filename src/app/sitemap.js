@@ -57,7 +57,7 @@ export default async function sitemap() {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/ItDumps`,
+      url: `${baseUrl}/itcertifications`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
@@ -68,7 +68,7 @@ export default async function sitemap() {
   const productRoutes = products
     .filter((p) => p.slug && p.status === "active")
     .map((product) => ({
-      url: `${baseUrl}/ItDumps/sap/${product.slug}`,
+      url: `${baseUrl}/itcertifications/sap/${product.slug}`,
       lastModified: product.updatedAt
         ? new Date(product.updatedAt)
         : new Date(),

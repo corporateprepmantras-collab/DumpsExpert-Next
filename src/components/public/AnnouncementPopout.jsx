@@ -72,7 +72,7 @@ export default function AnnouncementPopout() {
             Special Offer! Check out our latest deals!
           </p>
           <a
-            href="/ItDumps" // Adjust link as needed
+            href="/itcertifications" // Adjust link as needed
             className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Shop Now

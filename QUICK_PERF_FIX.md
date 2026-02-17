@@ -2,7 +2,7 @@
 
 ## What Was Fixed
 
-Your product detail page at `/ItDumps/sap/c-p2w10-2504` was loading slowly due to:
+Your product detail page at `/itcertifications/sap/c-p2w10-2504` was loading slowly due to:
 
 1. ❌ No caching - every request hit the database
 2. ❌ Fetching ALL products for related items
@@ -78,7 +78,7 @@ productListSchema.index({ sapExamCode: 1 });
 ## Test It Now
 
 1. **Clear your browser cache**
-2. **Visit:** https://www.prepmantras.com/ItDumps/sap/c-p2w10-2504
+2. **Visit:** https://www.prepmantras.com/itcertifications/sap/c-p2w10-2504
 3. **Notice the difference!**
 
 ## Deploy Commands

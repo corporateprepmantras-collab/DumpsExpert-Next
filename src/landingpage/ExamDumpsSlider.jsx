@@ -421,7 +421,7 @@ export default function ExamDumpsSlider({ products = [] }) {
                 >
                   <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 flex flex-col h-full">
                     <a
-                      href={`/ItDumps/sap/${slug}`}
+                      href={`/itcertifications/sap/${slug}`}
                       className="flex flex-col h-full"
                     >
                       {/* Image Container */}

@@ -1,4 +1,4 @@
-# ✅ Mobile Optimization Complete - ProductDetail & ItDumps Pages
+# ✅ Mobile Optimization Complete - ProductDetail & itcertifications Pages
 
 ## 🚀 **FULLY OPTIMIZED MOBILE EXPERIENCE**
 
@@ -188,7 +188,7 @@ Your pages are now **fully mobile-optimized** and ready for users. The design fo
 
 **Test URLs:**
 
-- `/ItDumps` - Main category listing ✅ Already optimized
-- `/ItDumps/sap/[product-slug]` - Product details ✅ Now fully optimized
+- `/itcertifications` - Main category listing ✅ Already optimized
+- `/itcertifications/sap/[product-slug]` - Product details ✅ Now fully optimized
 
 Your mobile conversion rates should see significant improvement! 📈

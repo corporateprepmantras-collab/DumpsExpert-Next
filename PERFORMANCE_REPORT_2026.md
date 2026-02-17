@@ -72,7 +72,7 @@ Fonts (woff, woff2, ttf) → immutable, 31536000s
 ✅ Animated skeleton while loading
 ✅ Smooth fade-in transitions
 ✅ Prevents layout shift (CLS)
-✅ Applied to: ItDumps pages, category images
+✅ Applied to: itcertifications pages, category images
 ```
 
 #### Next/Image Best Practices
@@ -123,8 +123,8 @@ Variable font: --font-inter
 
 ```javascript
 Homepage: revalidate every 1800s (30min)
-/ItDumps: revalidate every 1800s
-/ItDumps/[category]: revalidate every 1800s
+/itcertifications: revalidate every 1800s
+/itcertifications/[category]: revalidate every 1800s
 /blogs/[slug]: revalidate every 1800s
 ```
 
@@ -209,9 +209,9 @@ CSS: ~15KB
 ### Test Key Pages
 
 - ✅ Homepage: `/`
-- ✅ IT Dumps: `/ItDumps`
-- ✅ Category: `/ItDumps/aws`
-- ✅ Product: `/ItDumps/aws/[slug]`
+- ✅ IT Dumps: `/itcertifications`
+- ✅ Category: `/itcertifications/aws`
+- ✅ Product: `/itcertifications/aws/[slug]`
 - ✅ Blog: `/blogs/[slug]`
 - ✅ Cart: `/cart`
 

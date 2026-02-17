@@ -43,7 +43,7 @@ const RedirectManager = () => {
 
     if (!isExternalUrl && !isInternalUrl) {
       toast.error(
-        "To URL must start with / for internal links or http:// for external links"
+        "To URL must start with / for internal links or http:// for external links",
       );
       return false;
     }
@@ -156,7 +156,7 @@ const RedirectManager = () => {
               </label>
               <input
                 type="text"
-                placeholder="/old-page or /ItDumps/azure"
+                placeholder="/old-page or /itcertifications/azure"
                 value={form.fromUrl}
                 onChange={(e) => setForm({ ...form, fromUrl: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"

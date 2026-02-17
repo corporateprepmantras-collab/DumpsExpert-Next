@@ -143,7 +143,7 @@ export async function generateMetadata({ params }) {
         category.metaDescription ||
         `Get verified ${category.name} exam dumps and practice materials.`,
       images: [category.image || "/default-og.jpg"],
-      url: `/ItDumps/${coursename}`,
+      url: `/itcertifications/${coursename}`,
     },
     twitter: {
       card: "summary_large_image",

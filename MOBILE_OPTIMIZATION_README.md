@@ -29,7 +29,7 @@ This document covers the comprehensive mobile optimization implemented for the D
 
 ### 2. ProductDetail.jsx
 
-**Location**: `src/app/ItDumps/[vendor]/[slug]/ProductDetail.jsx`
+**Location**: `src/app/itcertifications/[vendor]/[slug]/ProductDetail.jsx`
 **Status**: ✅ Complete
 
 **Mobile Features:**

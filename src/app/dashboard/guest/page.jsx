@@ -59,7 +59,7 @@ const GuestDashboard = () => {
       icon: BookOpen,
       color: "bg-blue-50 text-blue-600",
       action: "Browse Now",
-      href: "/ItDumps",
+      href: "/itcertifications",
     },
     {
       title: "Practice Tests",
@@ -67,7 +67,7 @@ const GuestDashboard = () => {
       icon: Award,
       color: "bg-purple-50 text-purple-600",
       action: "Start Practice",
-      href: "/ItDumps",
+      href: "/itcertifications",
     },
     {
       title: "Study Materials",
@@ -75,7 +75,7 @@ const GuestDashboard = () => {
       icon: BookOpen,
       color: "bg-green-50 text-green-600",
       action: "View Resources",
-      href: "/ItDumps",
+      href: "/itcertifications",
     },
   ];
 
@@ -300,7 +300,7 @@ const GuestDashboard = () => {
                 <span>Free Updates for 3 Months</span>
               </li>
             </ul>
-            <Link href="/ItDumps">
+            <Link href="/itcertifications">
               <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
                 Buy Your First Exam Now
               </button>
@@ -355,7 +355,7 @@ const GuestDashboard = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <Link key={index} href="/ItDumps" className="block">
+            <Link key={index} href="/itcertifications" className="block">
               <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 hover:shadow-xl transition-shadow duration-300 cursor-pointer">
                 <div
                   className={`${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}

@@ -111,7 +111,7 @@ export default function Footer() {
               </li>
               <li>
                 <button
-                  onClick={() => handleNavigation("/itDumps")}
+                  onClick={() => handleNavigation("/itcertifications")}
                   className="hover:text-blue-400 transition-colors cursor-pointer text-left w-full"
                 >
                   IT Dumps

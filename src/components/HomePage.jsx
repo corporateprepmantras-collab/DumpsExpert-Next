@@ -575,7 +575,7 @@ export default function HomePage({
             {/* View All Button */}
             {trendingItems && trendingItems.length > 0 && (
               <div className="text-center mt-8 sm:mt-12">
-                <Link href="/ItDumps">
+                <Link href="/itcertifications">
                   <button className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold px-6 py-3 sm:px-8 sm:py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-sm sm:text-base">
                     View All Certifications
                     <svg

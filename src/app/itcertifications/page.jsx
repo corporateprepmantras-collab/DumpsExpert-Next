@@ -171,7 +171,8 @@ export async function generateMetadata() {
     description: seo.description || defaultDescription,
     keywords: seo.keywords || "SAP dumps, SAP certification, prepmantras",
     alternates: {
-      canonical: seo.canonicalurl || "https://www.prepmantras.com/ItDumps",
+      canonical:
+        seo.canonicalurl || "https://www.prepmantras.com/itcertifications",
     },
     openGraph: {
       title: seo.ogtitle || seo.title || defaultTitle,
@@ -183,7 +184,7 @@ export async function generateMetadata() {
           height: 630,
         },
       ],
-      url: seo.ogurl || "https://www.prepmantras.com/ItDumps",
+      url: seo.ogurl || "https://www.prepmantras.com/itcertifications",
       siteName: "Prepmantras",
       locale: "en_US",
       type: "website",
@@ -215,15 +216,15 @@ function createSlug(name) {
 /* ===========================
    ✅ Page Component
    =========================== */
-export default async function ITDumpsPage() {
+export default async function itcertificationsPage() {
   const startTime = Date.now();
-  console.log("\n🚀 [ITDumps Page] Starting render...");
+  console.log("\n🚀 [itcertifications Page] Starting render...");
 
   const dumpsData = await getDumpsData();
 
   const renderTime = Date.now() - startTime;
   console.log(
-    `✅ [ITDumps Page] Rendered in ${renderTime}ms with ${dumpsData.length} published categories\n`,
+    `✅ [itcertifications Page] Rendered in ${renderTime}ms with ${dumpsData.length} published categories\n`,
   );
 
   // Preload images for better performance
@@ -267,7 +268,7 @@ export default async function ITDumpsPage() {
               return (
                 <Link
                   key={item._id || item.id}
-                  href={`/ItDumps/${slug}`}
+                  href={`/itcertifications/${slug}`}
                   className="group bg-white border-2 border-gray-200 rounded-xl sm:rounded-2xl shadow-md hover:shadow-2xl hover:border-blue-300 active:scale-95 md:hover:scale-105 transition-all duration-300 flex flex-col items-center text-center overflow-hidden w-[120px] sm:w-[135px] md:w-[150px] lg:w-[160px] xl:w-[170px] h-[70px] sm:h-[80px] md:h-[90px] lg:h-[100px] xl:h-[110px]"
                 >
                   {/* Image Container */}

@@ -265,7 +265,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                     className="flex-shrink-0 w-[280px] sm:w-[240px] md:w-[220px] lg:w-[250px] xl:w-[280px] bg-white rounded-xl shadow-md hover:shadow-xl border border-gray-200 transition-all duration-300 group overflow-hidden cursor-pointer"
                     onClick={() =>
                       router.push(
-                        `/ItDumps/${product.category || "sap"}/${product.slug}`,
+                        `/itcertifications/${product.category || "sap"}/${product.slug}`,
                       )
                     }
                   >
@@ -322,7 +322,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(
-                              `/ItDumps/${product.category || "sap"}/${product.slug}`,
+                              `/itcertifications/${product.category || "sap"}/${product.slug}`,
                             );
                           }}
                         >
@@ -357,7 +357,7 @@ export default function RelatedProducts({ currentSlug, maxProducts = 10 }) {
         {relatedProducts.length > maxProducts && (
           <div className="text-center mt-8 sm:mt-10">
             <button
-              onClick={() => router.push("/ItDumps")}
+              onClick={() => router.push("/itcertifications")}
               className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               View All Products

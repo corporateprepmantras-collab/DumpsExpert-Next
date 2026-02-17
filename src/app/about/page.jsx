@@ -151,7 +151,7 @@ export default function AboutUs() {
               return (
                 <a
                   key={product._id}
-                  href={`/ItDumps/sap/${slug}`}
+                  href={`/itcertifications/sap/${slug}`}
                   className="group bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden flex flex-col"
                 >
                   <div className="relative h-52 bg-gradient-to-br from-orange-50 to-blue-50 overflow-hidden">

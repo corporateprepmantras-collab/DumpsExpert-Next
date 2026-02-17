@@ -101,7 +101,7 @@ export default function ProductsList({ products, coursename }) {
               {/* CTA Button */}
               <div className="w-full">
                 <Link
-                  href={`/ItDumps/${coursename}/${product.slug}`}
+                  href={`/itcertifications/${coursename}/${product.slug}`}
                   className="block w-full bg-gradient-to-r from-orange-500 via-orange-600 to-red-500 hover:from-orange-600 hover:via-red-600 hover:to-red-600 text-white text-sm font-bold text-center py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95"
                 >
                   <span className="flex items-center justify-center gap-2">
@@ -163,7 +163,7 @@ export default function ProductsList({ products, coursename }) {
               </td>
               <td className="px-4 py-3 text-center">
                 <Link
-                  href={`/ItDumps/${coursename}/${product.slug}`}
+                  href={`/itcertifications/${coursename}/${product.slug}`}
                   className="inline-block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-5 py-2 rounded-lg shadow-sm font-semibold transition-all text-xs hover:shadow-md"
                 >
                   See Details

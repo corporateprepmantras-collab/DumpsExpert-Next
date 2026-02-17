@@ -559,21 +559,24 @@ const ProductList = () => {
                       <td className="p-1.5">
                         <span
                           className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                            product.stockStatus === "In Stock" ||
-                            !product.stockStatus
+                            product.mainPdfUrl &&
+                            product.mainPdfUrl.trim() !== ""
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
                           }`}
                         >
                           <span
                             className={`w-1 h-1 rounded-full mr-1 ${
-                              product.stockStatus === "In Stock" ||
-                              !product.stockStatus
+                              product.mainPdfUrl &&
+                              product.mainPdfUrl.trim() !== ""
                                 ? "bg-green-500"
                                 : "bg-red-500"
                             }`}
                           ></span>
-                          {product.stockStatus || "In Stock"}
+                          {product.mainPdfUrl &&
+                          product.mainPdfUrl.trim() !== ""
+                            ? "In Stock"
+                            : "Out of Stock"}
                         </span>
                       </td>
                       <td className="p-1.5">

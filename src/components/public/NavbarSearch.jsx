@@ -51,7 +51,7 @@ export default function NavbarSearch({ hideOnLarge = false }) {
     const slug = encodeURIComponent(product.slug || product.title);
     return (
       <Link
-        href={`/ItDumps/${product.category}/${slug}`}
+        href={`/itcertifications/${product.category}/${slug}`}
         className="group bg-white rounded-xl shadow-md overflow-hidden flex flex-col hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-300"
       >
         <div className="relative h-48 bg-gradient-to-br from-orange-50 to-blue-50 overflow-hidden">

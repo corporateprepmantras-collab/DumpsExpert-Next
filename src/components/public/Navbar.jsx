@@ -21,7 +21,11 @@ import useCartStore from "@/store/useCartStore";
 const navlinks = [
   { label: "Home", path: "/" },
   { label: "About Us", path: "/about" },
-  { label: "IT Dumps", path: "/ItDumps", dropdownKey: "ItDumps" },
+  {
+    label: "IT Dumps",
+    path: "/itcertifications",
+    dropdownKey: "itcertifications",
+  },
   { label: "Blogs", path: "/blogs", dropdownKey: "blogs" },
   { label: "Contact Us", path: "/contact" },
 ];
@@ -31,7 +35,10 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const [userData, setUserData] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [dropdownData, setDropdownData] = useState({ ItDumps: [], blogs: [] });
+  const [dropdownData, setDropdownData] = useState({
+    itcertifications: [],
+    blogs: [],
+  });
   const [cartItemCount, setCartItemCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -80,7 +87,7 @@ export default function Navbar() {
 
         const categories = {
           blogs: blogData.map((c) => c.category),
-          ItDumps: productData.map((p) => p.name),
+          itcertifications: productData.map((p) => p.name),
         };
 
         setDropdownData(categories);
@@ -275,8 +282,8 @@ export default function Navbar() {
                         <li key={i}>
                           <Link
                             href={`/${
-                              item.dropdownKey === "ItDumps"
-                                ? "ItDumps"
+                              item.dropdownKey === "itcertifications"
+                                ? "itcertifications"
                                 : "blogs"
                             }/${sub.toLowerCase().replace(/\s+/g, "-")}`}
                             className="block px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-[#113d48] hover:to-indigo-600 hover:text-white transition-all duration-200 border-b last:border-b-0 border-gray-100"

@@ -34,7 +34,7 @@ export default function NotFound() {
             </button>
           </Link>
 
-          <Link href="/ItDumps">
+          <Link href="/itcertifications">
             <button className="group flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-8 py-4 rounded-full shadow-lg hover:shadow-xl border-2 border-gray-200 hover:border-orange-500 transition-all duration-300 transform hover:scale-105 active:scale-95">
               <BookOpen className="w-5 h-5 text-orange-500" />
               Browse Certifications
@@ -49,10 +49,10 @@ export default function NotFound() {
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { name: "AWS", href: "/ItDumps/aws" },
-              { name: "Azure", href: "/ItDumps/azure" },
-              { name: "GCP", href: "/ItDumps/gcp" },
-              { name: "CompTIA", href: "/ItDumps/comptia" },
+              { name: "AWS", href: "/itcertifications/aws" },
+              { name: "Azure", href: "/itcertifications/azure" },
+              { name: "GCP", href: "/itcertifications/gcp" },
+              { name: "CompTIA", href: "/itcertifications/comptia" },
             ].map((cert) => (
               <Link key={cert.name} href={cert.href}>
                 <button className="w-full py-3 px-4 bg-gradient-to-br from-gray-50 to-white hover:from-orange-50 hover:to-white border-2 border-gray-200 hover:border-orange-500 rounded-xl font-semibold text-gray-900 hover:text-orange-600 transition-all duration-300 transform hover:-translate-y-1 shadow-sm hover:shadow-md">

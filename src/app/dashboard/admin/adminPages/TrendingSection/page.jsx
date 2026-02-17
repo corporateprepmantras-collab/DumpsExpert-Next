@@ -261,7 +261,7 @@ export default function ManageTrendingSection() {
                       redirectLink: e.target.value,
                     })
                   }
-                  placeholder="Redirect Link (required) e.g., ItDumps/aws"
+                  placeholder="Redirect Link (required) e.g., itcertifications/aws"
                   className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <input

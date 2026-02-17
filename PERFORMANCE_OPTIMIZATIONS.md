@@ -2,7 +2,7 @@
 
 ## Overview
 
-Optimized the product detail page (`/ItDumps/[vendor]/[examCode]`) to significantly reduce load times and improve user experience.
+Optimized the product detail page (`/itcertifications/[vendor]/[examCode]`) to significantly reduce load times and improve user experience.
 
 ## Optimizations Applied
 
@@ -102,7 +102,7 @@ Added strategic indexes for common queries:
    npm run build
    npm run start
    ```
-   Visit: https://www.prepmantras.com/ItDumps/sap/c-p2w10-2504
+   Visit: https://www.prepmantras.com/itcertifications/sap/c-p2w10-2504
 
 ## Cache Configuration Summary
 
