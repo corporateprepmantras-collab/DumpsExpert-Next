@@ -113,11 +113,23 @@ export const metadata = {
     bing: process.env.BING_VERIFICATION,
   },
 
-  // ✅ CORRECT ICONS (THIS FIXES YOUR CRASH)
+  // ✅ FAVICON & ICONS - Prepmantras Logo
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
     shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      {
+        rel: "icon",
+        url: "/favicon.ico",
+      },
+    ],
   },
 };
 
@@ -157,6 +169,27 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <head>
+        {/* Favicon - Prepmantras Icon */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon-16x16.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/apple-touch-icon.png"
+        />
+        <link rel="shortcut icon" href="/favicon.ico" />
+
         {/* Critical CSS for instant render */}
         <style
           dangerouslySetInnerHTML={{
