@@ -75,7 +75,7 @@ export default function BlogSection({ blogs = [], categories = [] }) {
             ))}
           </motion.div>
         )}
-
+{/* //update  */}
         {/* Blog Carousel */}
         <div className="relative">
           {blogs.length === 0 ? (
