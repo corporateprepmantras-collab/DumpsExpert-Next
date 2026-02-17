@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clear-cache": "node clear-cache.js",
+    "revalidate": "node clear-cache.js"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^35.4.0",
