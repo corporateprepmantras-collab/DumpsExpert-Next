@@ -98,10 +98,10 @@ async function getDumpsData() {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
       const res = await fetch(url, {
-        cache: \"no-store\",
+        cache: "no-store",
         headers: {
-          \"Content-Type\": \"application/json\",
-          \"Cache-Control\": \"no-cache, no-store, must-revalidate\",
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
         },
         signal: controller.signal,
       });
