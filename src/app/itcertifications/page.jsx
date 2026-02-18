@@ -159,6 +159,41 @@ async function getDumpsData() {
 }
 
 /* ===========================
+   ✅ Fetch IT Certifications Content
+   =========================== */
+async function getItCertificationsContent() {
+  try {
+    const baseUrl = getBaseURL();
+    const url = `${baseUrl}/api/itcertifications-content`;
+
+    console.log(`🔍 [IT Certifications Content] Fetching from: ${url}`);
+
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+    });
+
+    if (!res.ok) {
+      console.error(
+        `❌ [IT Certifications Content] Fetch failed: ${res.status} ${res.statusText}`,
+      );
+      return { upperPara: "", lowerPara: "" };
+    }
+
+    const json = await res.json();
+    console.log("✅ [IT Certifications Content] Data fetched successfully");
+
+    return json || { upperPara: "", lowerPara: "" };
+  } catch (error) {
+    console.error("❌ [IT Certifications Content] Fetch error:", error.message);
+    return { upperPara: "", lowerPara: "" };
+  }
+}
+
+/* ===========================
    ✅ Dynamic Metadata
    =========================== */
 export async function generateMetadata() {
@@ -223,6 +258,7 @@ export default async function itcertificationsPage() {
   console.log("\n🚀 [itcertifications Page] Starting render...");
 
   const dumpsData = await getDumpsData();
+  const itCertContent = await getItCertificationsContent();
 
   const renderTime = Date.now() - startTime;
   console.log(
@@ -251,8 +287,29 @@ export default async function itcertificationsPage() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 bg-black/20 backdrop-blur-sm rounded-3xl">
         {/* Header */}
         <h1 className="text-2xl p-6 sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-white drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)] mb-6 sm:mb-8 md:mb-10 lg:mb-12">
-          SAP Certification Dumps
+          IT Certifications Exam Dumps – Pass Your Certification on First
+          Attempt
         </h1>
+
+        {/* Introduction Section */}
+        <div className="mb-6 sm:mb-8 px-4 sm:px-6 md:px-8">
+          {itCertContent.upperPara ? (
+            <div
+              className="text-white text-center text-sm sm:text-base md:text-lg leading-relaxed drop-shadow-lg prose prose-invert max-w-none prose-p:my-2 prose-strong:text-white prose-strong:font-bold"
+              dangerouslySetInnerHTML={{ __html: itCertContent.upperPara }}
+            />
+          ) : (
+            <p className="text-white text-center text-sm sm:text-base md:text-lg leading-relaxed drop-shadow-lg">
+              Welcome to the ultimate destination for{" "}
+              <strong>latest IT certification exam preparation</strong>. Get{" "}
+              <strong>latest exam dumps</strong>,{" "}
+              <strong>real exam questions</strong>, and verified{" "}
+              <strong>question and answers PDF files</strong> designed to help
+              you achieve a <strong>100% passing result</strong> on your first
+              attempt.
+            </p>
+          )}
+        </div>
 
         {/* Categories Grid */}
         <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
@@ -325,6 +382,18 @@ export default async function itcertificationsPage() {
             </div>
           )}
         </div>
+
+        {/* Detailed Content Section */}
+        {itCertContent.lowerPara && (
+          <div className="mt-12 sm:mt-14 md:mt-16 lg:mt-20 px-4 sm:px-6 md:px-8 pb-8 sm:pb-10 md:pb-12">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-6 sm:p-8 md:p-10 lg:p-12 border border-gray-200">
+              <div
+                className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-headings:font-bold prose-h2:text-2xl prose-h2:sm:text-3xl prose-h2:md:text-4xl prose-h2:mb-6 prose-h2:border-b-4 prose-h2:border-blue-600 prose-h2:pb-3 prose-p:text-gray-700 prose-p:text-base prose-p:sm:text-lg prose-p:leading-relaxed prose-ul:space-y-3 prose-li:text-gray-800 prose-strong:text-gray-900 prose-strong:font-semibold"
+                dangerouslySetInnerHTML={{ __html: itCertContent.lowerPara }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

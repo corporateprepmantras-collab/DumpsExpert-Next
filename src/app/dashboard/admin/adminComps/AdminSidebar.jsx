@@ -341,6 +341,10 @@ const sidebarItems = [
             to: "/dashboard/admin/adminPages/ContentSection2",
           },
           {
+            label: "IT Certifications Content",
+            to: "/dashboard/admin/adminPages/ItCertificationsContent",
+          },
+          {
             label: "Guarantee Page",
             to: "/dashboard/admin/adminPages/Guarantee",
           },
@@ -361,7 +365,7 @@ const sidebarItems = [
             to: "/dashboard/admin/adminPages/Trending",
           },
           {
-            label: "Trending Categories (Images) 🔥",
+            label: "Trending Categories (Images)",
             to: "/dashboard/admin/adminPages/TrendingSection",
           },
         ],
