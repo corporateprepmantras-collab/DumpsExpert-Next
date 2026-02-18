@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "clear-cache": "node clear-cache.js",
-    "revalidate": "node clear-cache.js"
+    "revalidate": "node clear-cache.js",
+    "clear-prod": "node clear-production-cache.js",
+    "clear-production": "node clear-production-cache.js"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^35.4.0",

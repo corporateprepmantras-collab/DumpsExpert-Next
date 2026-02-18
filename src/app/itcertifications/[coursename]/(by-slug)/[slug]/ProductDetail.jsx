@@ -106,8 +106,10 @@ const extractExamPrices = (examData) => {
 async function fetchProduct(slug) {
   try {
     const response = await fetch(`/api/products/get-by-slug/${slug}`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
-      cache: "force-cache",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
     });
     const data = await response.json();
     return data.data || null;
@@ -124,8 +126,10 @@ async function fetchExamsByProductSlug(slug) {
     for (const endpoint of endpoints) {
       try {
         const response = await fetch(endpoint, {
-          next: { revalidate: 60 }, // Revalidate every 60 seconds
-          cache: "force-cache",
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+          },
         });
         if (!response.ok) continue;
 
@@ -159,8 +163,10 @@ async function fetchExamsByProductSlug(slug) {
 async function fetchAllProducts() {
   try {
     const response = await fetch(`/api/products`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
-      cache: "force-cache",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
     });
     const data = await response.json();
     return data.data || [];
@@ -173,8 +179,10 @@ async function fetchAllProducts() {
 async function fetchReviews(productId) {
   try {
     const response = await fetch(`/api/reviews?productId=${productId}`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
-      cache: "force-cache",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
     });
     const data = await response.json();
     const all = data.data || [];

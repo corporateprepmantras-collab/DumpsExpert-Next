@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth/authOptions";
 import { redirect } from "next/navigation";
 import StudentDashboardClient from "@/components/StudentDashboardClient";
 
-export const revalidate = 60; // 1 minute for fresh admin updates
+export const revalidate = 0; // Real-time updates - no caching
+export const dynamic = "force-dynamic";
 
 async function getDashboardData(session) {
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -20,18 +21,15 @@ async function getDashboardData(session) {
     const [ordersRes, resultsRes, userRes] = await Promise.all([
       fetch(`${BASE_URL}/api/student/orders`, {
         headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
-        next: { revalidate: 60 },
-        cache: "force-cache",
+        cache: "no-store",
       }),
       fetch(`${BASE_URL}/api/results?studentId=${studentId}`, {
         headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
-        next: { revalidate: 60 },
-        cache: "force-cache",
+        cache: "no-store",
       }),
       fetch(`${BASE_URL}/api/user/me`, {
         headers: { Cookie: `next-auth.session-token=${session.sessionToken}` },
-        next: { revalidate: 60 },
-        cache: "force-cache",
+        cache: "no-store",
       }),
     ]);
 

@@ -2,8 +2,8 @@ import Link from "next/link";
 import ImageWithSkeleton from "@/components/ImageWithSkeleton";
 import sapExamdumps from "@/assets/userAssets/sap examdumps.webp";
 // ✅ Enable ISR for better performance
-export const dynamic = "auto";
-export const revalidate = 60; // Revalidate every 1 minute for fresh admin updates
+export const dynamic = "force-dynamic";
+export const revalidate = 0; // Real-time updates - no caching
 
 // Loading skeleton component
 function CategorySkeleton() {
@@ -57,9 +57,10 @@ async function fetchSEO() {
     console.log(`🔍 [SEO] Fetching from: ${url}`);
 
     const res = await fetch(url, {
-      next: { revalidate: 60 },
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     });
 
@@ -97,9 +98,10 @@ async function getDumpsData() {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
       const res = await fetch(url, {
-        next: { revalidate: 60 },
+        cache: \"no-store\",
         headers: {
-          "Content-Type": "application/json",
+          \"Content-Type\": \"application/json\",
+          \"Cache-Control\": \"no-cache, no-store, must-revalidate\",
         },
         signal: controller.signal,
       });

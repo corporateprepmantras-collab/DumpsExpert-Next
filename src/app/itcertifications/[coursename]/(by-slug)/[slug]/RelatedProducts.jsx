@@ -12,12 +12,14 @@ import {
 import { useCartStore } from "@/store/useCartStore";
 import { toast, Toaster } from "react-hot-toast";
 
-// Optimized fetch with better cache strategy
+// Optimized fetch with no cache for real-time updates
 async function fetchAllProducts(limit = 12) {
   try {
     const response = await fetch(`/api/products?limit=${limit}`, {
-      next: { revalidate: 30 }, // Faster revalidation
-      cache: "force-cache",
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
     });
 
     if (!response.ok) return [];

@@ -5,8 +5,8 @@ import ImageWithSkeleton from "@/components/ImageWithSkeleton";
 import ProductsList from "./ProductsList";
 
 // Enable ISR for better performance
-export const dynamic = "auto";
-export const revalidate = 60; // Revalidate every 1 minute for fresh admin updates
+export const dynamic = "force-dynamic";
+export const revalidate = 0; // Real-time updates - no caching
 
 /* ===========================
    ✅ Fetch category + products with graceful fallback
@@ -19,13 +19,19 @@ async function fetchCategoryData(coursename) {
 
     const [prodRes, catRes] = await Promise.all([
       fetch(`${baseUrl}/api/products`, {
-        next: { revalidate: 60 },
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
       }).catch((err) => {
         console.error("❌ Products fetch failed:", err.message);
         return null;
       }),
       fetch(`${baseUrl}/api/product-categories`, {
-        next: { revalidate: 60 },
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
       }).catch((err) => {
         console.error("❌ Categories fetch failed:", err.message);
         return null;

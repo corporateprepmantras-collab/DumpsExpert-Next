@@ -228,89 +228,26 @@ const nextConfig = {
         ],
       },
 
-      // ✅ API route caching - Optimized
+      // ✅ API route caching - DISABLED for real-time updates
       {
-        source: "/api/trending",
+        source: "/api/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=1800, stale-while-revalidate=3600",
+            value:
+              "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
           },
-        ],
-      },
-      {
-        source: "/api/seo/:path*",
-        headers: [
           {
-            key: "Cache-Control",
-            value: "public, s-maxage=1800, stale-while-revalidate=3600",
+            key: "Pragma",
+            value: "no-cache",
           },
-        ],
-      },
-      {
-        source: "/api/blogs/:path*",
-        headers: [
           {
-            key: "Cache-Control",
-            value: "public, s-maxage=1800, stale-while-revalidate=3600",
+            key: "Expires",
+            value: "0",
           },
         ],
       },
-      {
-        source: "/api/product-categories",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=1800, stale-while-revalidate=3600",
-          },
-        ],
-      },
-      {
-        source: "/api/general-faqs",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=1800, stale-while-revalidate=3600",
-          },
-        ],
-      },
-      {
-        source: "/api/content:number",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=1800, stale-while-revalidate=3600",
-          },
-        ],
-      },
-      {
-        source: "/api/announcement",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=600, stale-while-revalidate=1800",
-          },
-        ],
-      },
-      // Auth APIs - No cache
-      {
-        source: "/api/auth/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-store, max-age=0",
-          },
-        ],
-      },
-      {
-        source: "/api/products",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=900, stale-while-revalidate=1800",
-          },
-        ],
-      },
+      // Auth APIs - No cache (already covered by /api/:path* above)
 
       // ✅ Global CSP and Security Headers for all pages
       {

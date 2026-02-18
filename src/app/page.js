@@ -66,11 +66,13 @@ async function fetchWithTimeout(endpoint, timeoutMs = 10000, retries = 2) {
     try {
       const response = await fetch(url, {
         headers: {
-          "Cache-Control": "no-cache, must-revalidate",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
           Accept: "application/json",
         },
         signal: controller.signal,
-        next: { revalidate: 10 },
+        cache: "no-store",
       });
 
       clearTimeout(timeoutId);
@@ -309,7 +311,7 @@ export default async function Page() {
   );
 }
 
-// ✅ Faster revalidation for admin updates
-export const revalidate = 10; // 10 seconds for quick updates
-export const dynamic = "force-static";
-export const fetchCache = "default-cache";
+// ✅ REAL-TIME: No caching for instant updates
+export const revalidate = 0; // Real-time updates
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
