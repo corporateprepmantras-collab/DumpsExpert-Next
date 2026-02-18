@@ -12,6 +12,8 @@ export default function ManageTrendingSection() {
     description: "",
     order: 0,
   });
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [existingCategoryImage, setExistingCategoryImage] = useState("");
 
   // Products State
   const [products, setProducts] = useState([]);
@@ -22,6 +24,8 @@ export default function ManageTrendingSection() {
     description: "",
     order: 0,
   });
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [existingProductImage, setExistingProductImage] = useState("");
 
   // UI State
   const [activeTab, setActiveTab] = useState("categories"); // "categories" or "products"
@@ -131,6 +135,89 @@ export default function ManageTrendingSection() {
     }
   };
 
+  const editCategory = (category) => {
+    setEditingCategoryId(category._id);
+    setExistingCategoryImage(category.image || "");
+    setNewCategory({
+      title: category.title,
+      redirectLink: category.redirectLink,
+      description: category.description || "",
+      order: category.order || 0,
+    });
+    // Scroll to top to show the form
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const updateCategory = async () => {
+    if (!editingCategoryId) return;
+    if (!newCategory.title.trim()) {
+      alert("Category title is required");
+      return;
+    }
+    if (!newCategory.redirectLink.trim()) {
+      alert("Redirect link is required");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      let imageUrl = undefined;
+
+      // Upload new image if file is selected
+      if (categoryImages.length > 0) {
+        imageUrl = await uploadImage(categoryImages[0]);
+      }
+
+      const updateData = {
+        id: editingCategoryId,
+        ...newCategory,
+      };
+
+      // Handle image updates
+      if (imageUrl) {
+        // New image uploaded - use it
+        updateData.image = imageUrl;
+      } else if (!existingCategoryImage) {
+        // Existing image was removed - clear it
+        updateData.image = "";
+      }
+      // If existingCategoryImage still exists and no new upload, don't include image field (keep existing)
+
+      await axios.put(`/api/trending-categories`, updateData);
+
+      setNewCategory({
+        title: "",
+        redirectLink: "",
+        description: "",
+        order: 0,
+      });
+      setCategoryImages([]);
+      setCategoryResetKey((prev) => prev + 1);
+      setEditingCategoryId(null);
+      setExistingCategoryImage("");
+      fetchCategories();
+      alert("Category updated successfully!");
+    } catch (error) {
+      console.error("❌ Error updating category:", error);
+      alert(`Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setExistingCategoryImage("");
+    setNewCategory({
+      title: "",
+      redirectLink: "",
+      description: "",
+      order: 0,
+    });
+    setCategoryImages([]);
+    setCategoryResetKey((prev) => prev + 1);
+  };
+
   // ========== Product Functions ==========
   const addProduct = async () => {
     if (!selectedCategoryId) {
@@ -198,6 +285,104 @@ export default function ManageTrendingSection() {
     }
   };
 
+  const editProduct = (product) => {
+    setEditingProductId(product._id);
+    setExistingProductImage(product.image || "");
+    setSelectedCategoryId(product.trendingCategoryId);
+    setNewProduct({
+      title: product.title,
+      redirectLink: product.redirectLink,
+      description: product.description || "",
+      order: product.order || 0,
+    });
+    // Scroll to top to show the form
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const updateProduct = async () => {
+    if (!editingProductId) return;
+    if (!selectedCategoryId) {
+      alert("Please select a category");
+      return;
+    }
+    if (!newProduct.title.trim()) {
+      alert("Product title is required");
+      return;
+    }
+    if (!newProduct.redirectLink.trim()) {
+      alert("Redirect link is required");
+      return;
+    }
+
+    const category = categories.find((cat) => cat._id === selectedCategoryId);
+    if (!category) {
+      alert("Category not found");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      let imageUrl = undefined;
+
+      // Upload new image if file is selected
+      if (productImages.length > 0) {
+        imageUrl = await uploadImage(productImages[0]);
+      }
+
+      const updateData = {
+        id: editingProductId,
+        trendingCategoryId: selectedCategoryId,
+        categoryName: category.title,
+        ...newProduct,
+      };
+
+      // Handle image updates
+      if (imageUrl) {
+        // New image uploaded - use it
+        updateData.image = imageUrl;
+      } else if (!existingProductImage) {
+        // Existing image was removed - clear it
+        updateData.image = "";
+      }
+      // If existingProductImage still exists and no new upload, don't include image field (keep existing)
+
+      await axios.put(`/api/trending-products`, updateData);
+
+      setNewProduct({
+        title: "",
+        redirectLink: "",
+        description: "",
+        order: 0,
+      });
+      setProductImages([]);
+      setProductResetKey((prev) => prev + 1);
+      setEditingProductId(null);
+      setExistingProductImage("");
+      setSelectedCategoryId("");
+      fetchProducts();
+      alert("Product updated successfully!");
+    } catch (error) {
+      console.error("❌ Error updating product:", error);
+      alert(`Error: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const cancelEditProduct = () => {
+    setEditingProductId(null);
+    setExistingProductImage("");
+    setNewProduct({
+      title: "",
+      redirectLink: "",
+      description: "",
+      order: 0,
+    });
+    setSelectedCategoryId("");
+    setProductImages([]);
+    setProductResetKey((prev) => prev + 1);
+  };
+
   // Get products for selected category
   const getProductsByCategory = (categoryId) => {
     return products.filter((p) => p.trendingCategoryId === categoryId);
@@ -240,7 +425,7 @@ export default function ManageTrendingSection() {
             {/* Add Category Form */}
             <div className="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
               <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                Add New Category
+                {editingCategoryId ? "Edit Category" : "Add New Category"}
               </h2>
               <div className="space-y-3">
                 <input
@@ -282,6 +467,31 @@ export default function ManageTrendingSection() {
                   <label className="block text-sm font-semibold text-gray-700">
                     Category Image (Optional)
                   </label>
+                  {editingCategoryId && existingCategoryImage && (
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-600 mb-2">
+                        Current Image:
+                      </p>
+                      <div className="relative inline-block">
+                        <img
+                          src={existingCategoryImage}
+                          alt="Current category"
+                          className="w-32 h-32 object-cover rounded border-2 border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setExistingCategoryImage("")}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition"
+                          title="Remove current image"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Upload a new image below to replace it
+                      </p>
+                    </div>
+                  )}
                   <ImageUploader
                     onImagesSelect={handleCategoryImagesSelect}
                     resetKey={categoryResetKey}
@@ -300,13 +510,28 @@ export default function ManageTrendingSection() {
                   placeholder="Display Order (0 = first)"
                   className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <button
-                  onClick={addCategory}
-                  disabled={uploading}
-                  className="w-full bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {uploading ? "Uploading..." : "Add Category"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={editingCategoryId ? updateCategory : addCategory}
+                    disabled={uploading}
+                    className="flex-1 bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploading
+                      ? "Uploading..."
+                      : editingCategoryId
+                        ? "Update Category"
+                        : "Add Category"}
+                  </button>
+                  {editingCategoryId && (
+                    <button
+                      onClick={cancelEditCategory}
+                      disabled={uploading}
+                      className="px-6 py-3 bg-gray-500 text-white rounded hover:bg-gray-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -355,12 +580,20 @@ export default function ManageTrendingSection() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => deleteCategory(cat._id)}
-                        className="text-red-600 hover:text-red-800 font-semibold px-4 py-2 bg-red-100 rounded hover:bg-red-200 transition whitespace-nowrap"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => editCategory(cat)}
+                          className="text-blue-600 hover:text-blue-800 font-semibold px-4 py-2 bg-blue-100 rounded hover:bg-blue-200 transition whitespace-nowrap"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteCategory(cat._id)}
+                          className="text-red-600 hover:text-red-800 font-semibold px-4 py-2 bg-red-100 rounded hover:bg-red-200 transition whitespace-nowrap"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -375,7 +608,7 @@ export default function ManageTrendingSection() {
             {/* Add Product Form */}
             <div className="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
               <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                Add New Product
+                {editingProductId ? "Edit Product" : "Add New Product"}
               </h2>
               <div className="space-y-3">
                 <select
@@ -429,6 +662,31 @@ export default function ManageTrendingSection() {
                   <label className="block text-sm font-semibold text-gray-700">
                     Product Image (Optional)
                   </label>
+                  {editingProductId && existingProductImage && (
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-600 mb-2">
+                        Current Image:
+                      </p>
+                      <div className="relative inline-block">
+                        <img
+                          src={existingProductImage}
+                          alt="Current product"
+                          className="w-32 h-32 object-cover rounded border-2 border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setExistingProductImage("")}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition"
+                          title="Remove current image"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Upload a new image below to replace it
+                      </p>
+                    </div>
+                  )}
                   <ImageUploader
                     onImagesSelect={handleProductImagesSelect}
                     resetKey={productResetKey}
@@ -447,13 +705,28 @@ export default function ManageTrendingSection() {
                   placeholder="Display Order (0 = first)"
                   className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <button
-                  onClick={addProduct}
-                  disabled={uploading}
-                  className="w-full bg-green-600 text-white px-4 py-3 rounded hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {uploading ? "Uploading..." : "Add Product"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={editingProductId ? updateProduct : addProduct}
+                    disabled={uploading}
+                    className="flex-1 bg-green-600 text-white px-4 py-3 rounded hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploading
+                      ? "Uploading..."
+                      : editingProductId
+                        ? "Update Product"
+                        : "Add Product"}
+                  </button>
+                  {editingProductId && (
+                    <button
+                      onClick={cancelEditProduct}
+                      disabled={uploading}
+                      className="px-6 py-3 bg-gray-500 text-white rounded hover:bg-gray-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -514,12 +787,20 @@ export default function ManageTrendingSection() {
                                   </p>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => deleteProduct(product._id)}
-                                className="text-red-600 hover:text-red-800 font-semibold px-4 py-2 bg-red-100 rounded hover:bg-red-200 transition whitespace-nowrap"
-                              >
-                                Delete
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => editProduct(product)}
+                                  className="text-blue-600 hover:text-blue-800 font-semibold px-4 py-2 bg-blue-100 rounded hover:bg-blue-200 transition whitespace-nowrap"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => deleteProduct(product._id)}
+                                  className="text-red-600 hover:text-red-800 font-semibold px-4 py-2 bg-red-100 rounded hover:bg-red-200 transition whitespace-nowrap"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
